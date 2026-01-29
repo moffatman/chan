@@ -99,6 +99,13 @@ class MediaScanFields {
     fieldName: 'audioBitrate',
     merger: PrimitiveMerger(),
   );
+  static String? getForceFormat(MediaScan x) => x.forceFormat;
+  static const forceFormat = ReadOnlyHiveFieldAdapter<MediaScan, String?>(
+    getter: getForceFormat,
+    fieldNumber: 13,
+    fieldName: 'forceFormat',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class MediaScanAdapter extends TypeAdapter<MediaScan> {
@@ -123,7 +130,8 @@ class MediaScanAdapter extends TypeAdapter<MediaScan> {
     9: MediaScanFields.format,
     10: MediaScanFields.pixFmt,
     11: MediaScanFields.videoBitrate,
-    12: MediaScanFields.audioBitrate
+    12: MediaScanFields.audioBitrate,
+    13: MediaScanFields.forceFormat
   };
 
   @override
@@ -146,13 +154,14 @@ class MediaScanAdapter extends TypeAdapter<MediaScan> {
       pixFmt: fields[10] as String?,
       videoBitrate: fields[11] as int?,
       audioBitrate: fields[12] as int?,
+      forceFormat: fields[13] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, MediaScan obj) {
     writer
-      ..writeByte(13)
+      ..writeByte(14)
       ..writeByte(0)
       ..write(obj.hasAudio)
       ..writeByte(1)
@@ -178,7 +187,9 @@ class MediaScanAdapter extends TypeAdapter<MediaScan> {
       ..writeByte(11)
       ..write(obj.videoBitrate)
       ..writeByte(12)
-      ..write(obj.audioBitrate);
+      ..write(obj.audioBitrate)
+      ..writeByte(13)
+      ..write(obj.forceFormat);
   }
 
   @override

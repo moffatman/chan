@@ -817,7 +817,14 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 			}
 			final stat = await file.stat();
 			int size = stat.size;
-			final scan = await MediaScan.scan(file.uri);
+			MediaScan scan = await MediaScan.scan(file.uri);
+			if (scan.forceFormat == 'mjpeg') {
+				// TODO: Just check codec. so it applies to all renames?
+				// Wrong file extension, rename it
+				file = await file.copy(Persistence.shareCacheDirectory.child('${file.uri.pathSegments.last}.jpeg'));
+				ext = 'jpg';
+				scan = await MediaScan.scan(file.uri);
+			}
 			// We may shrink under the size limit just by removing the audio
 			if ((scan.duration, scan.audioBitrate) case (Duration duration, int audioBitrate) when !board.webmAudioAllowed) {
 				final audioSize = ((duration.inMilliseconds / 1000) * (audioBitrate / 8)).round();

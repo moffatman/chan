@@ -69,6 +69,15 @@ class MediaConversionResult {
 	String toString() => 'MediaConversionResult(file: ${file.path}, hasAudio: $hasAudio, isAudioOnly: $isAudioOnly)';
 }
 
+/// Use exception for control flow to break out of the lock...
+class _TryForceFormatException implements Exception {
+	final String forceFormat;
+	const _TryForceFormatException(this.forceFormat);
+
+	@override
+	String toString() => '_TryForceFormatException(forceFormat: $forceFormat)';
+}
+
 @HiveType(typeId: 38)
 class MediaScan {
 	static final Map<String, MediaScan> _fileScans = {};
@@ -100,6 +109,8 @@ class MediaScan {
 	final int? videoBitrate;
 	@HiveField(12, defaultValue: null)
 	final int? audioBitrate;
+	@HiveField(13, defaultValue: null)
+	final String? forceFormat;
 
 	MediaScan({
 		required this.hasAudio,
@@ -114,7 +125,8 @@ class MediaScan {
 		required this.format,
 		required this.pixFmt,
 		required this.videoBitrate,
-		required this.audioBitrate
+		required this.audioBitrate,
+		required this.forceFormat
 	});
 
 	static final _ffprobeLock = Mutex();
@@ -125,7 +137,8 @@ class MediaScan {
 		Map<String, String> headers = const {},
 		String extraCookie = '',
 		int tries = 0,
-		bool force = false
+		bool force = false,
+		String? forceFormat
 	}) async {
 		try {
 			if (_webScans[file] case MediaScan scan when !force) {
@@ -153,6 +166,9 @@ class MediaScan {
 						if (headers2.isNotEmpty) ...[
 							"-headers",
 							headers2.entries.map((h) => "${h.key}: ${h.value}").join('\r\n')
+						],
+						if (forceFormat case final format?) ...[
+							'-f', format
 						],
 						"-i",
 						file.toStringFFMPEG(),
@@ -233,6 +249,11 @@ class MediaScan {
 						audioStream ??= stream;
 					}
 				}
+				final videoCodecName = videoStream?['codec_name'] as String?;
+				if (width == 0 && height == 0 && videoCodecName == 'png' && forceFormat == null) {
+					// Reddit progressive JPEG sometimes has PNG extension...
+					throw const _TryForceFormatException('mjpeg');
+				}
 				final scan = MediaScan(
 					hasAudio: audioStream != null,
 					duration: seconds == null ? null : Duration(milliseconds: (1000 * seconds).round()),
@@ -241,12 +262,13 @@ class MediaScan {
 					audioBitrate: (audioStream?['bit_rate'] as String?)?.tryParseInt,
 					width: width == 0 ? null : width,
 					height: height == 0 ? null : height,
-					codec: videoStream?['codec_name'] as String?,
+					codec: videoCodecName,
 					videoFramerate: videoFramerate,
 					pixFmt: videoStream?['pix_fmt'] as String?,
 					sizeInBytes: (format['size'] as String?)?.tryParseInt,
 					metadata: metadata,
-					format: format['format_name'] as String?
+					format: format['format_name'] as String?,
+					forceFormat: forceFormat
 				);
 				if (file.scheme != 'file') {
 					_webScans[file] = scan;
@@ -254,9 +276,12 @@ class MediaScan {
 				return scan;
 			});
 		}
+		on _TryForceFormatException catch (e) {
+			return _scan(file, headers: headers, extraCookie: extraCookie, tries: tries, force: force, forceFormat: e.forceFormat);
+		}
 		on FormatException {
 			if (tries < 3) {
-				return _scan(file, headers: headers, tries: tries + 1, force: force);
+				return _scan(file, headers: headers, extraCookie: extraCookie, tries: tries + 1, force: force);
 			}
 			else {
 				rethrow;
@@ -806,6 +831,9 @@ class MediaConversion {
 								'-loop', '1',
 								'-framerate', '1'
 							],
+						if (scan.forceFormat case final format?) ...[
+							'-f', format
+						],
 						'-i', inputUri.toStringFFMPEG(),
 						if (soundSource case (final url, _, _)) ...[
 							if (soundSourceHeaders.isNotEmpty) ...[
