@@ -1242,6 +1242,9 @@ class AttachmentViewerController extends ChangeNotifier {
 							saveAsDestinationSubfolders = settings.gallerySavePathOrganizing.subfoldersFor(this);
 						}
 						break;
+					case FilesOpenLocation.custom:
+						saveAsDestinationDir = settings.filesOpenLocationCustomDir;
+						break;
 					case FilesOpenLocation.lastLocation:
 						break;
 				}

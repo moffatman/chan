@@ -2547,6 +2547,18 @@ class SavedSettingsFields {
     fieldName: 'saveAsMenuDestinationIndexes',
     merger: OrderedSetLikePrimitiveListMerger<int>(),
   );
+  static String? getFilesOpenLocationCustomDir(SavedSettings x) =>
+      x.filesOpenLocationCustomDir;
+  static void setFilesOpenLocationCustomDir(SavedSettings x, String? v) =>
+      x.filesOpenLocationCustomDir = v;
+  static const filesOpenLocationCustomDir =
+      HiveFieldAdapter<SavedSettings, String?>(
+    getter: getFilesOpenLocationCustomDir,
+    setter: setFilesOpenLocationCustomDir,
+    fieldNumber: 214,
+    fieldName: 'filesOpenLocationCustomDir',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -2760,7 +2772,8 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     210: SavedSettingsFields.doubleTapToSeekVideo,
     211: SavedSettingsFields.showHotPostsInScrollbar,
     212: SavedSettingsFields.filesOpenLocationIndex,
-    213: SavedSettingsFields.saveAsMenuDestinationIndexes
+    213: SavedSettingsFields.saveAsMenuDestinationIndexes,
+    214: SavedSettingsFields.filesOpenLocationCustomDir
   };
 
   @override
@@ -2988,13 +3001,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       showHotPostsInScrollbar: fields[211] as bool?,
       filesOpenLocationIndex: fields[212] as int?,
       saveAsMenuDestinationIndexes: (fields[213] as List?)?.cast<int>(),
+      filesOpenLocationCustomDir: fields[214] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(201)
+      ..writeByte(202)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -3396,7 +3410,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(212)
       ..write(obj.filesOpenLocationIndex)
       ..writeByte(213)
-      ..write(obj.saveAsMenuDestinationIndexes);
+      ..write(obj.saveAsMenuDestinationIndexes)
+      ..writeByte(214)
+      ..write(obj.filesOpenLocationCustomDir);
   }
 
   @override

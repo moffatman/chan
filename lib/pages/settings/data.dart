@@ -565,12 +565,26 @@ final dataSettings = [
 							|| GallerySavePathOrganizing.siteAndThreadNameSubfolders => (GallerySavePathOrganizing.siteSubfolders, 'Per-site'),
 						_ => null
 					};
+					final filesOpenLocation = Settings.filesOpenLocationSetting.read(context);
+					final needsFilesOpenLocationReset = filesOpenLocation == FilesOpenLocation.mediaSaveDirectory
+						|| filesOpenLocation == FilesOpenLocation.organizedPath;
 					if (newSavePathOrganizing != null) {
 						final reallyChange = await confirm(context, 'Warning', content: 'Your current save path organizing structure is not compatible with gallery saving. It will be changed to ${newSavePathOrganizing.$2}');
 						if (!reallyChange || !context.mounted) {
 							return;
 						}
+					}
+					if (needsFilesOpenLocationReset) {
+						final reallyChange = await confirm(context, 'Warning', content: 'Your current files open location is not compatible with gallery saving. It will be changed to Last location.');
+						if (!reallyChange || !context.mounted) {
+							return;
+						}
+					}
+					if (newSavePathOrganizing != null) {
 						Settings.gallerySavePathOrganizingSetting.write(context, newSavePathOrganizing.$1);
+					}
+					if (needsFilesOpenLocationReset) {
+						Settings.filesOpenLocationSetting.write(context, FilesOpenLocation.lastLocation);
 					}
 				}
 				setPath(newPath);
@@ -651,7 +665,7 @@ final dataSettings = [
 				icon: CupertinoIcons.folder_open,
 				setting: HookedSetting(
 					setting: Settings.filesOpenLocationSetting,
-					beforeChange: (context, oldValue, newValue) {
+					beforeChange: (context, oldValue, newValue) async {
 						if ((newValue == FilesOpenLocation.mediaSaveDirectory
 								|| newValue == FilesOpenLocation.organizedPath)
 							&& !usingFiles) {
@@ -662,15 +676,28 @@ final dataSettings = [
 									message: 'Set media save directory to Files first'
 								);
 							}
-							return Future.value(false);
+							return false;
 						}
-						return Future.value(true);
+						if (newValue == FilesOpenLocation.custom) {
+							final directory = await pickDirectory();
+							if (!context.mounted) {
+								return false;
+							}
+							if (directory == null) {
+								return false;
+							}
+							await Settings.filesOpenLocationCustomDirSetting.write(context, directory);
+						}
+						return true;
 					}
 				),
 				children: {
 					FilesOpenLocation.lastLocation: (null, 'Last location'),
-					FilesOpenLocation.mediaSaveDirectory: (null, 'Media save directory'),
-					FilesOpenLocation.organizedPath: (null, 'Organized path')
+					FilesOpenLocation.custom: (null, 'Custom'),
+					if (usingFiles)
+						FilesOpenLocation.mediaSaveDirectory: (null, 'Media save directory'),
+					if (usingFiles)
+						FilesOpenLocation.organizedPath: (null, 'Organized path')
 				}
 			);
 		}

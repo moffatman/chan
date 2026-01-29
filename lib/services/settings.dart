@@ -745,7 +745,8 @@ enum GallerySavePathOrganizing {
 enum FilesOpenLocation {
 	lastLocation,
 	mediaSaveDirectory,
-	organizedPath
+	organizedPath,
+	custom
 }
 
 FilesOpenLocation filesOpenLocationFromIndex(int index) {
@@ -1310,6 +1311,8 @@ class SavedSettings extends HiveObject {
 	int filesOpenLocationIndex;
 	@HiveField(213, merger: OrderedSetLikePrimitiveListMerger<int>())
 	List<int> saveAsMenuDestinationIndexes;
+	@HiveField(214)
+	String? filesOpenLocationCustomDir;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1525,6 +1528,7 @@ class SavedSettings extends HiveObject {
 		bool? showHotPostsInScrollbar,
 		int? filesOpenLocationIndex,
 		List<int>? saveAsMenuDestinationIndexes,
+		this.filesOpenLocationCustomDir,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -2809,6 +2813,8 @@ class Settings extends ChangeNotifier {
 		filesOpenLocationToIndex
 	);
 	FilesOpenLocation get filesOpenLocation => filesOpenLocationFromIndex(_settings.filesOpenLocationIndex);
+	static const filesOpenLocationCustomDirSetting = SavedSetting(SavedSettingsFields.filesOpenLocationCustomDir);
+	String? get filesOpenLocationCustomDir => filesOpenLocationCustomDirSetting(this);
 
 	static const saveAsMenuDestinationIndexesSetting = SavedSetting(SavedSettingsFields.saveAsMenuDestinationIndexes);
 	static final saveAsMenuDestinationsSetting = MappedSetting(
