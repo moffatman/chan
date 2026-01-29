@@ -71,6 +71,8 @@ public class MainActivity extends FlutterFragmentActivity {
 
     private MethodChannel.Result saveFileAsResult;
     private String newDocumentSourcePath;
+    private String newDocumentDestinationDir;
+    private List<String> newDocumentDestinationSubfolders = new ArrayList<>();
     private FlutterFragment lastFragment;
     private static int LEGACY_STATUS_BAR_FLAGS =
             WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS
@@ -197,6 +199,32 @@ public class MainActivity extends FlutterFragmentActivity {
                 else if (input.endsWith(".mp3")) {
                     intent.setType("audio/mp3");
                 }
+                if (newDocumentDestinationDir != null) {
+                    try {
+                        Uri destination = Uri.parse(newDocumentDestinationDir);
+                        DocumentFile dir = DocumentFile.fromTreeUri(getApplicationContext(), destination);
+                        if (dir != null) {
+                            for (String subdirName : newDocumentDestinationSubfolders) {
+                                DocumentFile subdir = fastFindFile(dir, subdirName);
+                                if (subdir != null && subdir.isDirectory()) {
+                                    dir = subdir;
+                                }
+                                else {
+                                    dir = dir.createDirectory(subdirName);
+                                }
+                                if (dir == null) {
+                                    break;
+                                }
+                            }
+                            if (dir != null) {
+                                intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, dir.getUri());
+                            }
+                        }
+                    }
+                    catch (Exception e) {
+                        Log.w("newDocument", "Failed to set initial directory", e);
+                    }
+                }
                 return intent;
             }
         }, uri -> {
@@ -305,6 +333,9 @@ public class MainActivity extends FlutterFragmentActivity {
                     else if (call.method.equals("saveFileAs")) {
                         this.saveFileAsResult = result;
                         this.newDocumentSourcePath = call.argument("sourcePath");
+                        this.newDocumentDestinationDir = call.argument("destinationDir");
+                        List<String> destinationSubfolders = call.argument("destinationSubfolders");
+                        this.newDocumentDestinationSubfolders = destinationSubfolders != null ? destinationSubfolders : new ArrayList<>();
                         String destinationName = call.argument("destinationName");
                         newDocument.launch(destinationName);
                     }
