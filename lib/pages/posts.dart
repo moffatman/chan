@@ -219,7 +219,14 @@ class _PostsPageState extends State<PostsPage> {
 					}
 				},
 				onSlowScroll: widget.zone.onPostSeen == null ? null : _onSlowScroll,
-				sliver: SliverList(
+				sliver: effectiveReplies.isEmpty ? SliverToBoxAdapter(
+					child: Container(
+						padding: const EdgeInsets.all(16),
+						width: double.infinity,
+						color: theme.backgroundColor,
+						child: const Text('Nothing to show')
+					)
+				) : SliverList(
 					delegate: SliverDontRebuildChildBuilderDelegate(
 						addRepaintBoundaries: false,
 						list: effectiveReplies,
