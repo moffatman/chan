@@ -291,7 +291,8 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 			'action': 'delete',
 			'password': receipt.password,
 			'confirmation': 'true',
-			'${thread.board}-${thread.id}-${receipt.id}': 'true',
+			if (thread.id == receipt.id)'${thread.board}-${receipt.id}': 'true'
+			else '${thread.board}-${thread.id}-${receipt.id}': 'true',
 			if (imageOnly) 'deleteUploads': 'true'
 		}, options: Options(
 			extra: {
