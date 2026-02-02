@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui';
 
@@ -189,6 +190,37 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 					throw PostFailedException(error);
 				}
 			}
+		);
+	}
+
+	@override
+	bool get supportsWebPostingFallback => true;
+	@override
+	Future<EncodedWebPost> encodePostForWeb(DraftPost post) async {
+		final password = makeRandomBase64String(8);
+		final javascript = StringBuffer('document.querySelector("#newPostFieldHide").click()');
+		if (post.file case final file?) {
+			final stringBuffer = StringBuffer();
+			await base64.encoder.bind(File(file).openRead()).forEach(stringBuffer.write);
+			final mimeType = lookupMimeType(file) ?? 'application/octet-stream';
+			final base64String = stringBuffer.toString();
+			javascript.write(';var file = new File([Uint8Array.fromBase64("$base64String")], "${post.overrideFilename ?? FileBasename.get(file)}", {options: {type: "$mimeType"}})');
+			javascript.write(';postCommon.addSelectedFile(file)');
+		}
+		return (
+			password: password,
+			fields: {
+				'message': post.text,
+				'password': password,
+				if (post.threadId == null) 'subject': post.subject,
+				if (post.spoiler == true) 'spoiler': 'on'
+				else 'spoiler': null,
+				'name': post.name,
+				'email': post.options,
+				if (post.flag case final flag?) 'flag': flag.code
+				else 'flag': null
+			},
+			javascript: javascript.toString()
 		);
 	}
 
