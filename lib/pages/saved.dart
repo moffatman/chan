@@ -1606,7 +1606,8 @@ class _SavedPageState extends State<SavedPage> {
 						disableUpdates: !TickerMode.of(context),
 						useFiltersFromContext: false,
 						includeImageboardKeyAndBoardInSearchString: true,
-						filterableAdapter: null,
+						filterHint: 'Search saved attachments',
+						filterableAdapter: (a) => (a.imageboard.key, a.item),
 						itemBuilder: (context, item, options) => Builder(
 							builder: (context) {
 								makeController() => AttachmentViewerController(

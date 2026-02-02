@@ -1957,7 +1957,7 @@ class PostReceipt {
 }
 
 @HiveType(typeId: 18)
-class SavedAttachment {
+class SavedAttachment implements Filterable {
 	@HiveField(0)
 	final Attachment attachment;
 	@HiveField(1)
@@ -1986,6 +1986,53 @@ class SavedAttachment {
 
 	@override
 	String toString() => 'SavedAttachment($attachment)';
+
+	@override
+	String get board => attachment.board;
+	
+	@override
+	String? getFilterFieldText(String fieldName) {
+		switch (fieldName) {
+			case 'filename':
+				return attachment.filename;
+			case 'dimensions':
+				return '${attachment.width}x${attachment.height}';
+			case 'md5':
+				return attachment.md5;
+			default:
+				return null;
+		}
+	}
+	
+	@override
+	bool get hasFile => true;
+	
+	@override
+	int get id => 0;
+
+	@override
+	bool get isDeleted => false;
+
+	@override
+	bool get isSticky => false;
+
+	@override
+	bool get isThread => false;
+
+	@override
+	Iterable<String> get md5s => [attachment.md5];
+
+	@override
+	Iterable<int> get repliedToIds => const [];
+
+	@override
+	int get replyCount => 0;
+
+	@override
+	int get threadId => 0;
+
+	@override
+	DateTime? get time => null;
 }
 
 @HiveType(typeId: 19)

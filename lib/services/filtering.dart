@@ -94,7 +94,7 @@ abstract class Filterable {
 	String? getFilterFieldText(String fieldName);
 	String get board;
 	int get id;
-	int get threadId;
+	int? get threadId;
 	Iterable<int> get repliedToIds;
 	bool get hasFile;
 	bool get isThread;
@@ -102,7 +102,7 @@ abstract class Filterable {
 	int get replyCount;
 	bool get isDeleted;
 	bool get isSticky;
-	DateTime get time;
+	DateTime? get time;
 }
 
 class EmptyFilterable implements Filterable {
@@ -973,7 +973,8 @@ class OldStickiedThreadsFilter implements Filter {
 		if (!item.isSticky) {
 			return null;
 		}
-		if (item.time.isAfter(threshold)) {
+		final time = item.time;
+		if (time != null && time.isAfter(threshold)) {
 			return null;
 		}
 		if (excludeBoards.contains(item.board)) {

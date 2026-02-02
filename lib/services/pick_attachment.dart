@@ -6,6 +6,7 @@ import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/pages/web_image_picker.dart';
 import 'package:chan/services/apple.dart';
+import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
@@ -24,11 +25,12 @@ import 'package:chan/services/clipboard_image.dart';
 import 'package:dio/dio.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart' hide WeakMap;
+import 'package:flutter/material.dart' hide WeakMap;
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:weak_map/weak_map.dart';
 
 final List<String> receivedFilePaths = [];
 final attachmentSourceNotifier = EasyListenable();
@@ -232,6 +234,225 @@ Future<String?> _galleryPicker(BuildContext context) async {
 	}
 }
 
+class SavedAttachmentsModal extends StatefulWidget {
+	const SavedAttachmentsModal({super.key});
+	@override
+	createState() => _SavedAttachmentsModalState();
+}
+
+class _SavedAttachmentsModalState extends State<SavedAttachmentsModal> {
+	final _overscrollModalPageKey = GlobalKey<OverscrollModalPageState>(debugLabel: '_SavedAttachmentsModalState._overscrollModalPageKey');
+	bool _searchTapped = false;
+	late final FocusNode _searchFocusNode;
+	late final TextEditingController _searchController;
+	late final List<ImageboardScoped<SavedAttachment>> allSavedAttachments;
+	final WeakMap<ImageboardScoped<SavedAttachment>, String?> _searchStrings = WeakMap();
+
+	@override
+	void initState() {
+		super.initState();
+		_searchFocusNode = FocusNode();
+		_searchController = TextEditingController();
+		allSavedAttachments = ImageboardRegistry.instance.imageboardsIncludingDev.expand((i) => i.persistence.savedAttachments.values.map((a) => i.scope(a))).toList();
+		allSavedAttachments.sort((a, b) => b.item.savedTime.compareTo(a.item.savedTime));
+	}
+
+	void _focusSearch() {
+		_searchFocusNode.requestFocus();
+		_searchTapped = true;
+		setState(() {});
+	}
+
+	void closeSearch() {
+		_searchFocusNode.unfocus();
+		_searchController.clear();
+		setState(() {
+			_searchTapped = false;
+		});
+	}
+
+	bool _matchesSearchFilter(ImageboardScoped<SavedAttachment> item, RegExp query) {
+		return (_searchStrings[item] ??= [
+			item.imageboard.key,
+			// Include the slashes
+			item.imageboard.site.formatBoardName(item.item.attachment.board),
+			...allPatternFields.tryMap(item.item.getFilterFieldText),
+		].join(' ')).contains(query);
+	}
+
+	@override
+	Widget build(BuildContext context) {
+		final List<ImageboardScoped<SavedAttachment>> savedAttachments;
+		if (_searchController.text.isNotEmpty) {
+			final queryPattern = RegExp(RegExp.escape(_searchController.text), caseSensitive: false);
+			savedAttachments = allSavedAttachments.where((a) => _matchesSearchFilter(a, queryPattern)).toList();
+		}
+		else {
+			savedAttachments = allSavedAttachments;
+		}
+		return OverscrollModalPage.sliver(
+			key: _overscrollModalPageKey,
+			sliver: DecoratedSliver(
+				decoration: BoxDecoration(
+					color: ChanceTheme.backgroundColorOf(context)
+				),
+				sliver: SliverMainAxisGroup(
+					slivers: [
+						SliverToBoxAdapter(
+							child: Padding(
+								padding: const EdgeInsets.all(16),
+								child: Row(
+									mainAxisSize: MainAxisSize.min,
+									children: [
+										Expanded(
+											child: Center(
+												child: AdaptiveSearchTextField(
+													onTap: () {
+														setState(() {
+															_searchTapped = true;
+														});
+													},
+													onChanged: (searchText) {
+														setState(() {});
+													},
+													onSubmitted: (_) {
+														final isHardwareKeyboard = MediaQueryData.fromView(View.of(context)).viewInsets.bottom <= 100;
+														if (isHardwareKeyboard) {
+															// Stay focused, usually it will clear to close keyboard (show more items)
+															Future.microtask(_focusSearch);
+														}
+													},
+													controller: _searchController,
+													enableIMEPersonalizedLearning: Settings.enableIMEPersonalizedLearningSetting.watch(context),
+													autocorrect: false,
+													focusNode: _searchFocusNode,
+													placeholder: 'Search saved attachments',
+													smartQuotesType: SmartQuotesType.disabled,
+													smartDashesType: SmartDashesType.disabled
+												)
+											),
+										),
+										if (_searchTapped) CupertinoButton(
+											padding: const EdgeInsets.only(left: 8),
+											minimumSize: Size.zero,
+											onPressed: closeSearch,
+											child: const Text('Cancel')
+										)
+									]
+								)
+							)
+						),
+						if (savedAttachments.isEmpty) const SliverToBoxAdapter(
+							child: SizedBox(
+								height: 100,
+								child: Center(
+									child: Text('Nothing to see here')
+								)
+							)
+						),
+						SliverPadding(
+							padding: const EdgeInsets.all(16),
+							sliver: SliverGrid.builder(
+								gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+									maxCrossAxisExtent: 100,
+									mainAxisSpacing: 16,
+									crossAxisSpacing: 16,
+									childAspectRatio: 1
+								),
+								findChildIndexCallback: (key) {
+									if (key case ValueKey(value: ImageboardScoped<SavedAttachment> a)) {
+										final matchedIndex = savedAttachments.indexOf(a);
+										if (matchedIndex >= 0) {
+											return matchedIndex;
+										}
+									}
+									return null;
+								},
+								addAutomaticKeepAlives: false,
+								addRepaintBoundaries: false,
+								itemCount: savedAttachments.length,
+								itemBuilder: (context, i) {
+									final attachment = savedAttachments[i];
+									return GestureDetector(
+										key: ValueKey(attachment),
+										onLongPress: () {
+											showGalleryPretagged(
+												initialAttachment: TaggedAttachment(
+													imageboard: attachment.imageboard,
+													semanticParentIds: [-999],
+													attachment: attachment.item.attachment,
+													postId: 0
+												),
+												context: context,
+												attachments: savedAttachments.map((a) => TaggedAttachment(
+													imageboard: a.imageboard,
+													semanticParentIds: [-999],
+													attachment: a.item.attachment,
+													postId: 0
+												)).toList(),
+												overrideSources: {
+													for (final l in savedAttachments)
+														l.item.attachment: l.item.file.uri
+												},
+												onChange: (a) {
+													_overscrollModalPageKey.currentState!.animateToProportion(savedAttachments.indexWhere((s) => s.item.attachment == a.attachment) / savedAttachments.length);
+												},
+												heroOtherEndIsBoxFitCover: false
+											);
+										},
+										child: CupertinoInkwell(
+											padding: EdgeInsets.zero,
+											onPressed: () {
+												Navigator.of(context).pop(attachment.item.file.path);
+											},
+											child: ClipRRect(
+												borderRadius: BorderRadius.circular(8),
+												child: Hero(
+													tag: TaggedAttachment(
+														imageboard: attachment.imageboard,
+														attachment: attachment.item.attachment,
+														semanticParentIds: [-999],
+														postId: 0
+													),
+													child: MediaThumbnail(
+														uri: attachment.item.file.uri,
+														fit: BoxFit.contain
+													),
+													flightShuttleBuilder: (context, animation, direction, fromContext, toContext) {
+														return (direction == HeroFlightDirection.push ? fromContext.widget as Hero : toContext.widget as Hero).child;
+													},
+													createRectTween: (startRect, endRect) {
+														if (startRect != null && endRect != null) {
+															if (attachment.item.attachment.type == AttachmentType.image) {
+																// Need to deflate the original startRect because it has inbuilt layoutInsets
+																// This SavedAttachmentThumbnail will always fill its size
+																final rootPadding = MediaQueryData.fromView(View.of(context)).padding - sumAdditionalSafeAreaInsets();
+																startRect = rootPadding.deflateRect(startRect);
+															}
+														}
+														return CurvedRectTween(curve: Curves.ease, begin: startRect, end: endRect);
+													}
+												)
+											)
+										)
+									);
+								}
+							)
+						)
+					]
+				)
+			)
+		);
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		_searchController.dispose();
+		_searchFocusNode.dispose();
+	}
+}
+
 List<AttachmentPickingSource> getAttachmentSources({
 	required bool includeClipboard
 }) {
@@ -313,97 +534,8 @@ List<AttachmentPickingSource> getAttachmentSources({
 		name: 'Saved Attachments',
 		icon: Adaptive.icons.bookmark,
 		pick: (context) {
-			final savedAttachments = ImageboardRegistry.instance.imageboardsIncludingDev.expand((i) => i.persistence.savedAttachments.values.map((a) => i.scope(a))).toList();
-			savedAttachments.sort((a, b) => b.item.savedTime.compareTo(a.item.savedTime));
-			final key = GlobalKey<OverscrollModalPageState>();
 			return Navigator.of(context).push<String>(TransparentRoute(
-				builder: (context) => OverscrollModalPage.sliver(
-					key: key,
-					sliver: DecoratedSliver(
-						decoration: BoxDecoration(
-							color: ChanceTheme.backgroundColorOf(context)
-						),
-						sliver: SliverPadding(
-							padding: const EdgeInsets.all(16),
-							sliver: SliverGrid.builder(
-								gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-									maxCrossAxisExtent: 100,
-									mainAxisSpacing: 16,
-									crossAxisSpacing: 16,
-									childAspectRatio: 1
-								),
-								addAutomaticKeepAlives: false,
-								addRepaintBoundaries: false,
-								itemCount: savedAttachments.length,
-								itemBuilder: (context, i) {
-									final attachment = savedAttachments[i];
-									return GestureDetector(
-										onLongPress: () {
-											showGalleryPretagged(
-												initialAttachment: TaggedAttachment(
-													imageboard: attachment.imageboard,
-													semanticParentIds: [-999],
-													attachment: attachment.item.attachment,
-													postId: 0
-												),
-												context: context,
-												attachments: savedAttachments.map((a) => TaggedAttachment(
-													imageboard: a.imageboard,
-													semanticParentIds: [-999],
-													attachment: a.item.attachment,
-													postId: 0
-												)).toList(),
-												overrideSources: {
-													for (final l in savedAttachments)
-														l.item.attachment: l.item.file.uri
-												},
-												onChange: (a) {
-													key.currentState!.animateToProportion(savedAttachments.indexWhere((s) => s.item.attachment == a.attachment) / savedAttachments.length);
-												},
-												heroOtherEndIsBoxFitCover: false
-											);
-										},
-										child: CupertinoInkwell(
-											padding: EdgeInsets.zero,
-											onPressed: () {
-												Navigator.of(context).pop(attachment.item.file.path);
-											},
-											child: ClipRRect(
-												borderRadius: BorderRadius.circular(8),
-												child: Hero(
-													tag: TaggedAttachment(
-														imageboard: attachment.imageboard,
-														attachment: attachment.item.attachment,
-														semanticParentIds: [-999],
-														postId: 0
-													),
-													child: MediaThumbnail(
-														uri: attachment.item.file.uri,
-														fit: BoxFit.contain
-													),
-													flightShuttleBuilder: (context, animation, direction, fromContext, toContext) {
-														return (direction == HeroFlightDirection.push ? fromContext.widget as Hero : toContext.widget as Hero).child;
-													},
-													createRectTween: (startRect, endRect) {
-														if (startRect != null && endRect != null) {
-															if (attachment.item.attachment.type == AttachmentType.image) {
-																// Need to deflate the original startRect because it has inbuilt layoutInsets
-																// This SavedAttachmentThumbnail will always fill its size
-																final rootPadding = MediaQueryData.fromView(View.of(context)).padding - sumAdditionalSafeAreaInsets();
-																startRect = rootPadding.deflateRect(startRect);
-															}
-														}
-														return CurvedRectTween(curve: Curves.ease, begin: startRect, end: endRect);
-													}
-												)
-											)
-										)
-									);
-								}
-							)
-						)
-					)
-				)
+				builder: (context) => const SavedAttachmentsModal()
 			));
 		}
 	);
