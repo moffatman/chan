@@ -20,6 +20,6 @@ class TabsPage extends StatelessWidget {
 			afterUse: () => Navigator.pop(context),
 			menuAxisDirection: AxisDirection.up
 		);
-		return PopupDrawerPage(list: list);
+		return PopupDrawerPage(list: list, title: 'Tabs');
 	}
 }

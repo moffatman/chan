@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class PopupDrawerPage<T extends Object> extends StatelessWidget {
+	final String title;
 	final DrawerList<T> list;
 
 	const PopupDrawerPage({
+		required this.title,
 		required this.list,
 		super.key
 	});
@@ -28,7 +30,7 @@ class PopupDrawerPage<T extends Object> extends StatelessWidget {
 								color: theme.barColor,
 								padding: const EdgeInsets.all(16),
 								alignment: Alignment.center,
-								child: const Text('Tabs')
+								child: Text(title)
 							)
 						),
 						if (list.pinFirstItem) SliverToBoxAdapter(

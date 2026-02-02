@@ -299,7 +299,7 @@ class _SettingsPageState extends State<SettingsPage> {
 																		},
 																		menuAxisDirection: AxisDirection.right
 																	);
-																	return PopupDrawerPage(list: list);
+																	return PopupDrawerPage(list: list, title: '/chance/ notifications');
 																}
 															));
 															if (selection != null && context.mounted) {
