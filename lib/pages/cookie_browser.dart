@@ -113,7 +113,7 @@ class _CookieBrowserState extends State<CookieBrowser> {
 							valueListenable: _progress,
 							builder: (context, progress, _) => LinearProgressIndicator(
 								minHeight: 5,
-								value: dprint(progress),
+								value: progress,
 								valueColor: AlwaysStoppedAnimation(ChanceTheme.primaryColorOf(context)),
 								backgroundColor: ChanceTheme.backgroundColorOf(context)
 							)
