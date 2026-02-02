@@ -11,6 +11,7 @@ import 'package:chan/services/css.dart';
 import 'package:chan/services/hcaptcha.dart';
 import 'package:chan/services/html_error.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/screen_size_hacks.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/services/theme.dart';
@@ -917,6 +918,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	final Map<Chan4CustomCaptchaLetterKey, _PickerStuff> _pickerStuff = {};
 	final List<_PickerStuff> _orphanPickerStuff = [];
 	List<int?> _taskChoices = [];
+	List<bool> _collapseTasks = [];
 	bool _cloudGuessFailed = false;
 	String? _lastCloudGuess;
 	String? _ip;
@@ -1133,6 +1135,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		}
 		else if (challenge case Captcha4ChanCustomChallengeTasks challenge) {
 			_taskChoices = List.filled(challenge.tasks.length, null);
+			_collapseTasks = List.filled(challenge.tasks.length, false);
 			setState(() {});
 		}
 	}
@@ -1886,47 +1889,125 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 					child: Column(
 						mainAxisSize: MainAxisSize.min,
 						children: [
-							for (final task in challenge.tasks.indexed) Container(
-								decoration: BoxDecoration(
-									color: theme.primaryColorWithBrightness(0.15),
-									borderRadius: BorderRadius.circular(8)
-								),
-								margin: const EdgeInsets.only(bottom: 16),
-								child: Column(
-									mainAxisSize: MainAxisSize.min,
-									children: [
-										Padding(
-											padding: const EdgeInsets.all(8),
-											child: _buildTask(task.$2.text)
-										),
-										Wrap(
-											children: task.$2.choices.indexed.map((choice) => CupertinoInkwell(
-												padding: EdgeInsets.zero,
-												onPressed: () {
-													setState(() {
-														_taskChoices[task.$1] = choice.$1;
-													});
-												},
-												child: Container(
+							...challenge.tasks.indexed.map((task) {
+								final maxTaskWidth = task.$2.choices.fold(0.0, (m, c) {
+									if (c.height < 100 && c.height > 0) {
+										return max(m, c.width * (100 / c.height));
+									}
+									return max(m, c.width.toDouble());
+								});
+								return Container(
+									decoration: BoxDecoration(
+										color: theme.primaryColorWithBrightness(0.15),
+										borderRadius: BorderRadius.circular(8)
+									),
+									margin: const EdgeInsets.only(bottom: 16),
+									child: Column(
+										mainAxisSize: MainAxisSize.min,
+										children: [
+											// We can fit multiple in a row
+											if ((maxTaskWidth + 16) < min(500, estimateWidth(context)) / 2) ...[
+												Padding(
 													padding: const EdgeInsets.all(8),
-													decoration: BoxDecoration(
-														color: _taskChoices[task.$1] == choice.$1 ? theme.secondaryColor : null,
-														borderRadius: const BorderRadius.all(Radius.circular(4)),
-													),
-													constraints: const BoxConstraints(
-														minWidth: 100,
-														minHeight: 100
-													),
-													child: RawImage(
-														image: choice.$2,
-														fit: BoxFit.contain
-													)
+													child: _buildTask(task.$2.text)
+												),
+												Wrap(
+													children: task.$2.choices.indexed.map((choice) => CupertinoInkwell(
+														padding: EdgeInsets.zero,
+														onPressed: () {
+															setState(() {
+																_taskChoices[task.$1] = choice.$1;
+															});
+														},
+														child: Container(
+															padding: const EdgeInsets.all(8),
+															decoration: BoxDecoration(
+																color: _taskChoices[task.$1] == choice.$1 ? theme.primaryColorWithBrightness(0.7) : null,
+																borderRadius: const BorderRadius.all(Radius.circular(4)),
+															),
+															constraints: const BoxConstraints(
+																minWidth: 100,
+																minHeight: 100
+															),
+															child: RawImage(
+																image: choice.$2,
+																fit: BoxFit.contain
+															)
+														)
+													)).toList()
 												)
-											)).toList()
-										)
-									]
-								)
-							),
+											]
+											else ...[
+												Container(
+													padding: const EdgeInsets.all(8),
+													child: _buildTask(task.$2.text)
+												),
+												...task.$2.choices.indexed.map((choice) {
+													final collapseChoice = _collapseTasks[task.$1] && _taskChoices[task.$1] != choice.$1;
+													final activeSingleChoice = _collapseTasks[task.$1] && _taskChoices[task.$1] == choice.$1;
+													return Expander(
+														expanded: !collapseChoice,
+														duration: const Duration(milliseconds: 250),
+														curve: Curves.ease,
+														bottomSafe: true,
+														child: CupertinoInkwell(
+															padding: EdgeInsets.zero,
+															onPressed: () {
+																setState(() {
+																	if (_taskChoices[task.$1] == choice.$1) {
+																		_collapseTasks[task.$1] = !_collapseTasks[task.$1];
+																	}
+																	else {
+																		_collapseTasks[task.$1] = true;
+																		_taskChoices[task.$1] = choice.$1;
+																	}
+																});
+															},
+															child: AnimatedPadding(
+																duration: const Duration(milliseconds: 250),
+																curve: Curves.ease,
+																padding: activeSingleChoice ? const EdgeInsets.only(bottom: 8) : EdgeInsets.zero,
+																child: Container(
+																	padding: const EdgeInsets.symmetric(horizontal: 8),
+																	decoration: BoxDecoration(
+																		color: _taskChoices[task.$1] == choice.$1 ? theme.primaryColorWithBrightness(0.7) : null,
+																		borderRadius: const BorderRadius.all(Radius.circular(4)),
+																	),
+																	child: Column(
+																		mainAxisSize: MainAxisSize.min,
+																		children: [
+																			AnimatedSize(
+																				duration: const Duration(milliseconds: 250),
+																				curve: Curves.ease,
+																				child: activeSingleChoice ? Icon(Icons.arrow_drop_up, color: theme.backgroundColor) : const SizedBox(height: 8)
+																			),
+																			ConstrainedBox(
+																				constraints: const BoxConstraints(
+																					minWidth: 100,
+																					minHeight: 100
+																				),
+																				child: RawImage(
+																					image: choice.$2,
+																					fit: BoxFit.contain
+																				)
+																			),
+																			AnimatedSize(
+																				duration: const Duration(milliseconds: 250),
+																				curve: Curves.ease,
+																				child: activeSingleChoice ? Icon(Icons.arrow_drop_down, color: theme.backgroundColor) : const SizedBox(height: 8)
+																			)
+																		]
+																	)
+																)
+															)
+														)
+													);
+												})
+											]
+										]
+									)
+								);
+							}),
 							Row(
 								mainAxisAlignment: MainAxisAlignment.center,
 								children: [

@@ -976,7 +976,7 @@ class _ExpanderState extends State<Expander> with SingleTickerProviderStateMixin
 					)
 				),
 				child: FadeTransition(
-					opacity: animation,
+					opacity: CurvedAnimation(parent: animation, curve: widget.curve),
 					child: widget.child
 				)
 			)
