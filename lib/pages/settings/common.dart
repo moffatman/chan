@@ -1012,17 +1012,17 @@ class PopupSubpageSettingWidget extends StandardSettingWidget {
 
 	@override
 	Iterable<SettingWidget> search(BuildContext context, List<String> query) sync* {
-		final desc = description.toLowerCase();
-		if (query.every((q) => desc.contains(q))) {
+		final children = settings.expand((s) => s.search(context, query)).toList();
+		if (children.isNotEmpty) {
 			yield this;
+			yield _IndentedGroup(
+				settings: children
+			);
 		}
 		else {
-			final children = settings.expand((s) => s.search(context, query)).toList();
-			if (children.isNotEmpty) {
+			final desc = description.toLowerCase();
+			if (query.every((q) => desc.contains(q))) {
 				yield this;
-				yield _IndentedGroup(
-					settings: children
-				);
 			}
 		}
 	}
