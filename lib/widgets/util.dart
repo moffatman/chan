@@ -133,7 +133,11 @@ Future<void> alertError(BuildContext context, Object error, StackTrace? stackTra
 	FutureOr<void> Function()? afterFix
 }) {
 	return alert(context, 'Error', error.toStringDio(), actions: {
-		...actions,
+		for (final action in actions.entries)
+			action.key: () async {
+				await action.value();
+				await afterFix?.call();
+			},
 		...generateBugRemedies(error, stackTrace, context, afterFix: afterFix)
 	}, barrierDismissible: barrierDismissible);
 }
