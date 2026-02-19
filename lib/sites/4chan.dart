@@ -1441,7 +1441,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 	Future<ImageboardRedirectGateway?> getRedirectGateway(Uri uri, String? Function() title, Future<String?> Function() html) async {
 		if (uri.host == sysUrl && uri.path == '/captcha') {
 			final h = await html();
-			if (h != null && h.contains('https://mcl.spur.us/d/mcl.js') && !h.contains("window.parent.postMessage")) {
+			if (h != null && h.contains('https://mcl.spur.us/d/mcl.js') && !h.contains("<script>window.parent.postMessage")) {
 				return const ImageboardRedirectGateway(
 					name: '4chan firewall',
 					alwaysNeedsManualSolving: false
