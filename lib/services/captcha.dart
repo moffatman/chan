@@ -46,7 +46,7 @@ class HeadlessSolveNotPossibleException implements Exception {
 }
 
 Future<CaptchaSolution?> solveCaptcha({
-	required BuildContext? context,
+	required BuildContext? Function() getContext,
 	required ImageboardSite site,
 	required CaptchaRequest request,
 	ValueChanged<DateTime>? onTryAgainAt,
@@ -56,6 +56,7 @@ Future<CaptchaSolution?> solveCaptcha({
 	CancelToken? cancelToken
 }) async {
 	Future<CaptchaSolution?> pushModal(Widget Function(ValueChanged<CaptchaSolution?> onCaptchaSolved) builder) async {
+		final context = getContext();
 		if (context == null) {
 			throw const HeadlessSolveNotPossibleException();
 		}
@@ -108,6 +109,7 @@ Future<CaptchaSolution?> solveCaptcha({
 					// User cancelled it
 					return null;
 				}
+				final context = getContext();
 				if (context == null || e is CooldownException) {
 					if (
 						e is CloudflareHandlerNotAllowedException ||
@@ -145,6 +147,7 @@ Future<CaptchaSolution?> solveCaptcha({
 						// User cancelled it
 						return null;
 					}
+					final context = getContext();
 					if (context == null || e is CooldownException) {
 						rethrow;
 					}
@@ -170,6 +173,7 @@ Future<CaptchaSolution?> solveCaptcha({
 			if (initialChallenge?.instantSolution case Chan4CustomCaptchaSolution solution) {
 				return solution;
 			}
+			final context = getContext();
 			if (context?.mounted != true) {
 				initialCloudGuess?.challenge.dispose();
 			}

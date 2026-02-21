@@ -336,7 +336,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 				DateTime? tryAgainAt0;
 				final request = await _getCaptchaRequest(cancelToken);
 				final captcha = await solveCaptcha(
-					context: initialState.context?.ifMounted ?? ImageboardRegistry.instance.context,
+					getContext: () => initialState.context?.ifMounted ?? ImageboardRegistry.instance.context,
 					beforeModal: initialState.beforeModal,
 					afterModal: initialState.afterModal,
 					site: site,

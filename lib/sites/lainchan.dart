@@ -682,7 +682,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 		};
 		if (pageDoc.querySelector('input[name="simple_spam"]')?.parentNode?.parentNode?.firstChild?.text?.nonEmptyOrNull case String simpleSpamQuestion) {
 			final solution = await solveCaptcha(
-				context: ImageboardRegistry.instance.context,
+				getContext: () => ImageboardRegistry.instance.context,
 				site: this,
 				request: SimpleTextCaptchaRequest(
 					question: simpleSpamQuestion,

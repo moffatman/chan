@@ -459,7 +459,7 @@ class Imageboard extends ChangeNotifier {
 						icon: CupertinoIcons.exclamationmark_square
 					);
 					final solution2 = await solveCaptcha(
-						context: ImageboardRegistry.instance.context!,
+						getContext: () => ImageboardRegistry.instance.context!,
 						site: site,
 						request: e.captchaRequest,
 						cancelToken: cancelToken
