@@ -772,7 +772,7 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 		), recognizer, enableUnconditionalInteraction);
 	}
 	(InlineSpan, TapGestureRecognizer) _build(BuildContext context, Post? post, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options) {
-		int? actualThreadId = threadId;
+		int? actualThreadId = options.showCrossThreadLabel ? null : threadId;
 		Post? thisPostLoaded = zone.crossThreadPostFromArchive(board, postId);
 		if (board == zone.board) {
 			thisPostLoaded ??= zone.findPost(postId);
