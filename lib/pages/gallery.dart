@@ -1207,7 +1207,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																final currentRoute = navigator.currentRoute;
 																void onThumbnailTap(TaggedAttachment attachment) {
 																	navigator.popUntil((r) => r == currentRoute);
-																	final index = widget.attachments.indexWhere((a) => a == attachment);
+																	final index = widget.attachments.indexWhere((a) => a.attachment == attachment.attachment);
 																	if (index == -1) {
 																		showToast(
 																			context: context,
