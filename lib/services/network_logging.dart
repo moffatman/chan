@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/share.dart';
+import 'package:chan/services/storage.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/version.dart';
 import 'package:dio/dio.dart';
@@ -41,6 +42,18 @@ class LoggingInterceptor extends Interceptor {
 			text: gzippedPath,
 			type: 'file',
 			sharePositionOrigin: null
+		);
+	});
+
+	Future<void> reportViaSaveAs(BuildContext context) async => lock.protect(() async {
+		final gzippedPath = '${fileObj.path}.gz';
+		await copyGzipped(fileObj.path, gzippedPath);
+		if (!context.mounted) return;
+		await saveFileAs(
+			sourcePath: gzippedPath,
+			destinationName: 'network.log.gz',
+			context: context,
+			type: SaveAsFileType.other
 		);
 	});
 

@@ -806,13 +806,36 @@ final dataSettings = [
 	),
 	SimpleButtonSettingWidget(
 		description: 'Send network logs',
-		icon: CupertinoIcons.mail,
-		onPressed: (context) => LoggingInterceptor.instance.reportViaEmail()
-	),
-	SimpleButtonSettingWidget(
-		description: 'Share network logs',
 		icon: CupertinoIcons.share,
-		onPressed: (context) => LoggingInterceptor.instance.reportViaShareSheet(context)
+		onPressed: (context) async {
+			final choice = await showAdaptiveDialog<Future<void> Function(BuildContext)>(
+				context: context,
+				barrierDismissible: true,
+				builder: (context) => AdaptiveAlertDialog(
+					actions: [
+						AdaptiveDialogAction(
+							child: const Text('Share...'),
+							onPressed: () => Navigator.pop<Future<void> Function(BuildContext)>(context, LoggingInterceptor.instance.reportViaShareSheet)
+						),
+						AdaptiveDialogAction(
+							child: const Text('Save as...'),
+							onPressed: () => Navigator.pop<Future<void> Function(BuildContext)>(context, LoggingInterceptor.instance.reportViaSaveAs)
+						),
+						AdaptiveDialogAction(
+							child: const Text('Email to developer'),
+							onPressed: () => Navigator.pop<Future<void> Function(BuildContext)>(context, (_) => LoggingInterceptor.instance.reportViaEmail())
+						),
+						AdaptiveDialogAction(
+							child: const Text('Cancel'),
+							onPressed: () => Navigator.pop(context)
+						)
+					]
+				)
+			);
+			if (context.mounted) {
+				choice?.call(context);
+			}
+		}
 	),
 	SimpleButtonSettingWidget(
 		description: 'Export data to JSON',
