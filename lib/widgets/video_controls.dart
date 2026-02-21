@@ -9,9 +9,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
-import 'package:mutex/mutex.dart';
-
-const _positionUpdatePeriod = Duration(milliseconds: 30);
 
 class VideoControls extends StatefulWidget {
 	final AttachmentViewerController controller;
@@ -34,12 +31,8 @@ class _VideoControlsState extends State<VideoControls> {
 	StreamSubscription<bool>? _playingSubscription;
 	StreamSubscription<Duration>? _durationSubscription;
 	StreamSubscription<double>? _volumeSubscription;
-	final position = ValueNotifier(Duration.zero);
-	bool _playingBeforeLongPress = false;
-	bool _currentlyWithinLongPress = false;
-	final _mutex = Mutex();
+	ValueNotifier<Duration> position = ValueNotifier(Duration.zero);
 	final _clipRRectKey = GlobalKey(debugLabel: '_VideoControlsState._clipRRectKey');
-	int _lastGoodDurationInMilliseconds = 0;
 
 	@override
 	void initState() {
@@ -54,7 +47,6 @@ class _VideoControlsState extends State<VideoControls> {
 			position.value = state.position;
 		}
 		widget.controller.addListener(_onControllerUpdate);
-		Future.delayed(_positionUpdatePeriod, _updatePosition);
 	}
 
 	@override
@@ -88,56 +80,13 @@ class _VideoControlsState extends State<VideoControls> {
 	void _onVideoUpdate(Object _) {
 		if (!mounted) return;
 		final v = videoPlayerController?.player.state;
-		final duration = (v?.duration ?? Duration.zero);
-		if (duration > Duration.zero) {
-			_lastGoodDurationInMilliseconds = duration.inMilliseconds;
-		}
 		if (v != null) {
+			position.value = v.position;
 			setState(() {
 				value = v;
 			});
 		}
 	}
-
-	void _updatePosition() async {
-		if (!mounted) {
-			return;
-		}
-		if (!_currentlyWithinLongPress) {
-			final newPosition = videoPlayerController?.player.state.position;
-			if (newPosition != null) {
-				position.value = newPosition;
-			}
-		}
-		Future.delayed(_positionUpdatePeriod, _updatePosition);
-	}
-
-	Future<void> _onLongPressStart() => _mutex.protect(() async {
-		_playingBeforeLongPress = value?.playing ?? false;
-		_currentlyWithinLongPress = true;
-	});
-
-	Future<void> _onLongPressUpdate(double relativePosition) async {
-		if (_currentlyWithinLongPress) {
-			final newPosition = Duration(milliseconds: (relativePosition.clamp(0, 1) * _lastGoodDurationInMilliseconds).round());
-			if (!_mutex.isLocked) {
-				await _mutex.protect(() async {
-					position.value = newPosition;
-					await videoPlayerController?.player.seek(newPosition);
-					await videoPlayerController?.player.play();
-					await videoPlayerController?.player.pause();
-					await Future.delayed(const Duration(milliseconds: 50));
-				});
-			}
-		}
-	}
-
-	Future<void> _onLongPressEnd() => _mutex.protect(() async {
-		if (_playingBeforeLongPress) {
-			await videoPlayerController?.player.play();
-		}
-		_currentlyWithinLongPress = false;
-	});
 
 	double _calculateSliderWidth() {
 		return (_clipRRectKey.currentContext?.findRenderObject() as RenderBox?)?.paintBounds.width ?? MediaQuery.sizeOf(context).width;
@@ -167,13 +116,13 @@ class _VideoControlsState extends State<VideoControls> {
 							padding: const EdgeInsets.all(8),
 							child: GestureDetector(
 								onTapUp: (x) async {
-									await _onLongPressStart();
-									await _onLongPressUpdate(x.localPosition.dx / _calculateSliderWidth());
-									await _onLongPressEnd();
+									await widget.controller.onLongPressStart();
+									await widget.controller.onCoalescedLongPressUpdate(x.localPosition.dx / _calculateSliderWidth());
+									await widget.controller.onLongPressEnd();
 								},
-								onHorizontalDragStart: (x) => _onLongPressStart(),
-								onHorizontalDragUpdate: (x) => _onLongPressUpdate(x.localPosition.dx / _calculateSliderWidth()),
-								onHorizontalDragEnd: (x) => _onLongPressEnd(),
+								onHorizontalDragStart: (x) => widget.controller.onLongPressStart(),
+								onHorizontalDragUpdate: (x) => widget.controller.onLongPressUpdate(x.localPosition.dx / _calculateSliderWidth()),
+								onHorizontalDragEnd: (x) => widget.controller.onLongPressEnd(),
 								child: ClipRRect(
 									borderRadius: BorderRadius.circular(8),
 									key: _clipRRectKey,
@@ -237,7 +186,7 @@ class _VideoControlsState extends State<VideoControls> {
 						}
 					),
 					AdaptiveIconButton(
-						icon: Icon((_currentlyWithinLongPress ? _playingBeforeLongPress : (value?.playing ?? false)) ? CupertinoIcons.pause_fill : CupertinoIcons.play_arrow_solid),
+						icon: Icon((widget.controller.currentlyWithinLongPress ? widget.controller.playingBeforeLongPress : (value?.playing ?? false)) ? CupertinoIcons.pause_fill : CupertinoIcons.play_arrow_solid),
 						onPressed: value == null ? null : () async {
 							if (value?.playing ?? false) {
 								await videoPlayerController?.player.pause();

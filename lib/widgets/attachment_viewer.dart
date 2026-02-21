@@ -356,6 +356,10 @@ class AttachmentViewerController extends ChangeNotifier {
 	final loadingSpinnerKey = GlobalKey(debugLabel: 'AttachmentViewerController.loadingSpinnerKey');
 	/// Blocks of text to draw on top of image
 	List<RecognizedTextBlock> get textBlocks => _textBlocks;
+	/// Whether a long-press gesture is happening now
+	bool get currentlyWithinLongPress => _currentlyWithinLongPress;
+	/// Whether playback will be resumed after the current long-press gesture
+	bool get playingBeforeLongPress => _playingBeforeLongPress;
 
 	Uri get goodImagePublicSource {
 		switch (_goodImageSource) {
@@ -397,7 +401,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		bool isDownloaded = false,
 		Thread? thread,
 	}) : _isPrimary = isPrimary, _isDownloaded = isDownloaded, _thread = thread {
-		_longPressFactor.addListener(_onCoalescedLongPressUpdate);
+		_longPressFactor.addListener(() => onCoalescedLongPressUpdate(_longPressFactor.value));
 		// optimistic
 		_goodImageSource = initialGoodSource;
 		_isFullResolution = initialGoodSource != null;
@@ -1027,7 +1031,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		return '${position.inMinutes.toString()}:${(position.inSeconds % 60).toString().padLeft(2, '0')} / ${duration.inMinutes.toString()}:${(duration.inSeconds % 60).toString().padLeft(2, '0')}';
 	}
 
-	void _onLongPressStart() {
+	Future<void> onLongPressStart() async {
 		if (videoPlayerController == null) {
 			 return;
 		}
@@ -1037,17 +1041,17 @@ class AttachmentViewerController extends ChangeNotifier {
 		_currentlyWithinLongPress = true;
 		_overlayText = _formatPosition(videoPlayerController!.player.state.position, videoPlayerController!.player.state.duration);
 		notifyListeners();
-		videoPlayerController!.player.pause();
+		await videoPlayerController!.player.pause();
 	}
 
-	void _onLongPressUpdate(double factor) {
+	void onLongPressUpdate(double factor) {
 		if (_isDisposed) {
 			return;
 		}
 		_longPressFactor.value = factor;
 	}
 
-	void _onCoalescedLongPressUpdate() async {
+	Future<void> onCoalescedLongPressUpdate(double factor) async {
 		if (_isDisposed) {
 			return;
 		}
@@ -1065,9 +1069,9 @@ class AttachmentViewerController extends ChangeNotifier {
 		}
 	}
 
-	Future<void> _onLongPressEnd() async {
+	Future<void> onLongPressEnd() async {
 		if (_playingBeforeLongPress) {
-			videoPlayerController!.player.play();
+			await videoPlayerController!.player.play();
 		}
 		_currentlyWithinLongPress = false;
 		_overlayText = null;
@@ -1574,7 +1578,7 @@ class AttachmentViewer extends StatelessWidget {
 						if (attachment.type.usesVideoPlayer && details.offsetFromOrigin.dx.abs() > details.offsetFromOrigin.dy.abs()) {
 							lightHapticFeedback();
 							controller._longPressMode = _LongPressMode.scrub;
-							controller._onLongPressStart();
+							controller.onLongPressStart();
 						}
 						else {
 							controller._longPressMode = _LongPressMode.zoom;
@@ -1593,7 +1597,7 @@ class AttachmentViewer extends StatelessWidget {
 				}
 				else if (controller._longPressMode == _LongPressMode.scrub) {
 					final factor = details.offsetFromOrigin.dx / (MediaQuery.sizeOf(controller.context).width / 2);
-					controller._onLongPressUpdate(factor);
+					controller.onLongPressUpdate(factor);
 				}
 			},
 			onDoubleTapDragEnd: (details) {
@@ -1602,7 +1606,7 @@ class AttachmentViewer extends StatelessWidget {
 				}
 				if (controller._longPressMode == _LongPressMode.scrub) {
 					lightHapticFeedback();
-					controller._onLongPressEnd();
+					controller.onLongPressEnd();
 				}
 				controller._doubleTapDragAnchor = null;
 				controller._longPressMode = null;
@@ -2106,7 +2110,7 @@ class AttachmentViewer extends StatelessWidget {
 												active: controller.isFullResolution,
 												value: (loadingProgress == 1 && buffering) ? null : loadingProgress,
 												useRealKey: !inContextMenu,
-												force: buffering
+												force: buffering && !controller._currentlyWithinLongPress
 											)
 										) : const SizedBox.shrink()
 									)
