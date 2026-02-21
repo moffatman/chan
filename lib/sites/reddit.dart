@@ -27,6 +27,20 @@ import 'package:linkify/linkify.dart';
 import 'package:markdown/markdown.dart' as markdown;
 import 'package:html/dom.dart' as dom;
 
+class _SuperscriptBracketedSyntax extends markdown.InlineSyntax {
+  static const _pattern = r'\^\(([^)]+)\)';
+
+  _SuperscriptBracketedSyntax() : super(_pattern,
+		startCharacter: 0x5E // ^
+	);
+
+  @override
+  bool onMatch(markdown.InlineParser parser, Match match) {
+		parser.addNode(markdown.Element.text('sup', unescapeAllBackslashes(match.group(1)!)));
+    return true;
+  }
+}
+
 class _SuperscriptSyntax extends markdown.InlineSyntax {
   static const _pattern = r'\^([^ ]+)';
 
@@ -36,7 +50,7 @@ class _SuperscriptSyntax extends markdown.InlineSyntax {
 
   @override
   bool onMatch(markdown.InlineParser parser, Match match) {
-		parser.addNode(markdown.Element.text('sup', match.group(1)!));
+		parser.addNode(markdown.Element.text('sup', unescapeAllBackslashes(match.group(1)!)));
     return true;
   }
 }
@@ -50,7 +64,7 @@ class _SpoilerSyntax extends markdown.InlineSyntax {
 
   @override
   bool onMatch(markdown.InlineParser parser, Match match) {
-		parser.addNode(markdown.Element.text('spoiler', match.group(1)!));
+		parser.addNode(markdown.Element.text('spoiler', unescapeAllBackslashes(match.group(1)!)));
     return true;
   }
 }
@@ -64,7 +78,7 @@ class _StrikethroughSyntax extends markdown.InlineSyntax {
 
   @override
   bool onMatch(markdown.InlineParser parser, Match match) {
-		parser.addNode(markdown.Element.text('strikethrough', match.group(1)!));
+		parser.addNode(markdown.Element.text('strikethrough', unescapeAllBackslashes(match.group(1)!)));
     return true;
   }
 }
@@ -261,6 +275,7 @@ class SiteReddit extends ImageboardSite {
 	static final _inlineImagePattern = RegExp(r'https:\/\/(?:preview|i)\.redd\.it\/[^\r\n\t\f\v\) ]+');
 
 	static final _inlineSyntaxes = [
+		_SuperscriptBracketedSyntax(),
 		_SuperscriptSyntax(),
 		_SpoilerSyntax(),
 		_StrikethroughSyntax(),

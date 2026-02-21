@@ -75,6 +75,10 @@ extension _LastChar on String {
   }
 }
 
+String unescapeAllBackslashes(String str) {
+  return str.replaceAllMapped(_escapeSymbolPattern, (m) => m.group(1)!);
+}
+
 class LooseUrlLinkifier extends Linkifier {
   final bool unescapeBackslashes;
   /// Skip "$link" (avoid HTML attribute values)
@@ -93,7 +97,7 @@ class LooseUrlLinkifier extends Linkifier {
     if (!unescapeBackslashes) {
       return str;
     }
-    return str.replaceAllMapped(_escapeSymbolPattern, (m) => m.group(1)!);
+    return unescapeAllBackslashes(str);
   }
 
   @override
