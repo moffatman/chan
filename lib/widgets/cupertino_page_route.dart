@@ -64,6 +64,8 @@ mixin CupertinoRouteTransitionMixin<T> on PageRoute<T> {
 
 	ValueNotifier<String?>? _previousTitle;
 
+	bool _userGesture = false;
+
 	ValueListenable<String?> get previousTitle {
 		assert(
 			_previousTitle != null,
@@ -109,8 +111,8 @@ mixin CupertinoRouteTransitionMixin<T> on PageRoute<T> {
 		return nextRoute is CupertinoRouteTransitionMixin && !nextRoute.fullscreenDialog;
 	}
 
-	static bool isPopGestureInProgress(PageRoute<dynamic> route) {
-		return route.navigator!.userGestureInProgress;
+	static bool isPopGestureInProgress(CupertinoRouteTransitionMixin<dynamic> route) {
+		return route._userGesture;
 	}
 
 	@override
@@ -119,7 +121,7 @@ mixin CupertinoRouteTransitionMixin<T> on PageRoute<T> {
 	@override
 	bool get popGestureEnabled => _isPopGestureEnabled(this);
 
-	static bool _isPopGestureEnabled<T>(PageRoute<T> route) {
+	static bool _isPopGestureEnabled<T>(CupertinoRouteTransitionMixin<T> route) {
 		if (route.isFirst) {
 			return false;
 		}
@@ -153,17 +155,21 @@ mixin CupertinoRouteTransitionMixin<T> on PageRoute<T> {
 		return result;
 	}
 
-	static _CupertinoBackGestureController<T> _startPopGesture<T>(PageRoute<T> route) {
+	static _CupertinoBackGestureController<T> _startPopGesture<T>(CupertinoRouteTransitionMixin<T> route) {
 		assert(_isPopGestureEnabled(route));
 
+		route._userGesture = true;
 		return _CupertinoBackGestureController<T>(
 			navigator: route.navigator!,
 			controller: route.controller!, // protected access
+			didStopUserGesture: () {
+				route._userGesture = false;
+			}
 		);
 	}
 
 	static Widget buildPageTransitions<T>(
-		PageRoute<T> route,
+		CupertinoRouteTransitionMixin<T> route,
 		BuildContext context,
 		Animation<double> animation,
 		Animation<double> secondaryAnimation,
@@ -508,12 +514,14 @@ class _CupertinoBackGestureController<T> {
 	_CupertinoBackGestureController({
 		required this.navigator,
 		required this.controller,
+		required this.didStopUserGesture,
 	}) {
 		navigator.didStartUserGesture();
 	}
 
 	final AnimationController controller;
 	final NavigatorState navigator;
+	final VoidCallback didStopUserGesture;
 
 	void dragUpdate(double delta) {
 		controller.value -= delta;
@@ -549,11 +557,13 @@ class _CupertinoBackGestureController<T> {
 			late AnimationStatusListener animationStatusCallback;
 			animationStatusCallback = (AnimationStatus status) {
 				navigator.didStopUserGesture();
+				didStopUserGesture();
 				controller.removeStatusListener(animationStatusCallback);
 			};
 			controller.addStatusListener(animationStatusCallback);
 		} else {
 			navigator.didStopUserGesture();
+			didStopUserGesture();
 		}
 	}
 }
