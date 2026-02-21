@@ -521,7 +521,7 @@ class CloudflareInterceptor extends Interceptor {
 				// Show toast after firstLoad, with a bit of time to clear in case we never get challenged
 				() async {
 					await firstLoad.future;
-					await Future.delayed(const Duration(milliseconds: 150));
+					await Future.delayed(const Duration(milliseconds: 500));
 					if (!headlessCompleter.isCompleted) {
 						showToast(
 							context: ImageboardRegistry.instance.context!,
