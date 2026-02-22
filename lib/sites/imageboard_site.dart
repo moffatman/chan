@@ -23,6 +23,7 @@ import 'package:chan/services/request_fixup.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/strict_json.dart';
 import 'package:chan/services/util.dart';
+import 'package:chan/services/webview_introspection.dart';
 import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/8chan.dart';
 import 'package:chan/sites/8kun.dart';
@@ -1751,26 +1752,41 @@ abstract class ImageboardSiteArchive {
 	Timer? _cacheGarbageCollectionTimer;
 	String get userAgent => overrideUserAgent ?? Settings.instance.userAgent;
 	final String? overrideUserAgent;
+	final bool addIntrospectedHeaders;
 	ImageboardSiteArchive({
-		required this.overrideUserAgent
+		required this.overrideUserAgent,
+		required this.addIntrospectedHeaders
 	}) {
 		client.interceptors.add(CloudflareBlockingInterceptor());
 		client.interceptors.add(HTTP429BackoffInterceptor(client: client));
 		client.interceptors.add(InterceptorsWrapper(
-			onRequest: (options, handler) {
-				options.headers['user-agent'] ??= userAgent;
-				final extraCookie = getExtraCookie(options.uri);
-				options.extra.update(kExtraCookie, (existing) {
-					if (existing is String && existing.contains(extraCookie)) {
-						// Don't re-add on re-entrant request
-						return existing;
+			onRequest: (options, handler) async {
+				try {
+					options.headers['user-agent'] ??= userAgent;
+					final extraCookie = getExtraCookie(options.uri);
+					options.extra.update(kExtraCookie, (existing) {
+						if (existing is String && existing.contains(extraCookie)) {
+							// Don't re-add on re-entrant request
+							return existing;
+						}
+						if (existing is String && existing.isEmpty) {
+							return extraCookie;
+						}
+						return '$existing; $extraCookie';
+					}, ifAbsent: () => extraCookie);
+					if (addIntrospectedHeaders) {
+						options.headers.addAll(await WebViewIntrospection.instance.getDefaultHeaders());
 					}
-					if (existing is String && existing.isEmpty) {
-						return extraCookie;
-					}
-					return '$existing; $extraCookie';
-				}, ifAbsent: () => extraCookie);
-				handler.next(options);
+					handler.next(options);
+				}
+				catch (e, st) {
+					handler.reject(DioError(
+						requestOptions: options,
+						response: null,
+						error: e
+					)..stackTrace = st, false);
+					return;
+				}
 			}
 		));
 		client.interceptors.add(SeparatedCookieManager());
@@ -2049,7 +2065,8 @@ abstract class ImageboardSiteArchive {
 	bool operator == (Object other) =>
 		identical(this, other) ||
 		other is ImageboardSiteArchive &&
-		other.overrideUserAgent == overrideUserAgent;
+		other.overrideUserAgent == overrideUserAgent &&
+		other.addIntrospectedHeaders == addIntrospectedHeaders;
 	
 	@override
 	int get hashCode => baseUrl.hashCode;
@@ -2065,7 +2082,8 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		required this.archives,
 		required this.imageHeaders,
 		required this.videoHeaders,
-		required super.overrideUserAgent
+		required super.overrideUserAgent,
+		required super.addIntrospectedHeaders
 	});
 	/// Get headers to use to download an Attachment
 	Map<String, String> getHeaders(Uri url) {
@@ -2643,6 +2661,7 @@ abstract class ImageboardSiteLoginSystem {
 
 ImageboardSiteArchive? makeArchive(Map archive) {
 	final overrideUserAgent = archive['overrideUserAgent'] as String?;
+	final addIntrospectedHeaders = archive['addIntrospectedHeaders'] as bool? ?? false;
 	final boards = (archive['boards'] as List?)?.cast<Map>().map((b) => ImageboardBoard(
 		title: b['title'] as String,
 		name: b['name'] as String,
@@ -2657,7 +2676,8 @@ ImageboardSiteArchive? makeArchive(Map archive) {
 			boards: boards,
 			useRandomUseragent: archive['useRandomUseragent'] as bool? ?? false,
 			hasAttachmentRateLimit: archive['hasAttachmentRateLimit'] as bool? ?? false,
-			overrideUserAgent: overrideUserAgent
+			overrideUserAgent: overrideUserAgent,
+			addIntrospectedHeaders: addIntrospectedHeaders
 		);
 	}
 	else if (archive['type'] == 'fuuka') {
@@ -2665,7 +2685,8 @@ ImageboardSiteArchive? makeArchive(Map archive) {
 			name: archive['name'] as String,
 			baseUrl: archive['baseUrl'] as String,
 			boards: boards,
-			overrideUserAgent: overrideUserAgent
+			overrideUserAgent: overrideUserAgent,
+			addIntrospectedHeaders: addIntrospectedHeaders
 		);
 	}
 	else {
@@ -2676,6 +2697,7 @@ ImageboardSiteArchive? makeArchive(Map archive) {
 
 ImageboardSite makeSite(Map data) {
 	final overrideUserAgent = data['overrideUserAgent'] as String?;
+	final addIntrospectedHeaders = data['addIntrospectedHeaders'] as bool? ?? false;
 	final archives = [
 		...(data['archives'] as List? ?? []).cast<Map>().tryMap<ImageboardSiteArchive>(makeArchive),
 		// archives2 exists because old versions will crash with unsupported archives in 'archives' list
@@ -2696,6 +2718,7 @@ ImageboardSite makeSite(Map data) {
 			imageUrl: data['imageUrl'] as String?,
 			maxUploadSizeBytes: data['maxUploadSizeBytes'] as int?,
 			overrideUserAgent: overrideUserAgent,
+			addIntrospectedHeaders: addIntrospectedHeaders,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
@@ -2708,6 +2731,7 @@ ImageboardSite makeSite(Map data) {
 			baseUrl: data['baseUrl'] as String,
 			imageUrl: data['imageUrl'] as String?,
 			overrideUserAgent: overrideUserAgent,
+			addIntrospectedHeaders: addIntrospectedHeaders,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
@@ -2725,6 +2749,7 @@ ImageboardSite makeSite(Map data) {
 			baseUrl: data['baseUrl'] as String,
 			imageUrl: data['imageUrl'] as String?,
 			overrideUserAgent: overrideUserAgent,
+			addIntrospectedHeaders: addIntrospectedHeaders,
 			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
 			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
 			archives: archives,
@@ -2740,6 +2765,7 @@ ImageboardSite makeSite(Map data) {
 			baseUrl: data['baseUrl'] as String,
 			imageUrl: data['imageUrl'] as String?,
 			overrideUserAgent: overrideUserAgent,
+			addIntrospectedHeaders: addIntrospectedHeaders,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
@@ -2754,6 +2780,7 @@ ImageboardSite makeSite(Map data) {
 			faviconPath: data['faviconPath'] as String? ?? '/favicon.ico',
 			defaultUsername: data['defaultUsername'] as String? ?? 'Anonymous',
 			overrideUserAgent: overrideUserAgent,
+			addIntrospectedHeaders: addIntrospectedHeaders,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
@@ -2765,6 +2792,7 @@ ImageboardSite makeSite(Map data) {
 			name: data['name'] as String,
 			baseUrl: data['baseUrl'] as String,
 			overrideUserAgent: overrideUserAgent,
+			addIntrospectedHeaders: addIntrospectedHeaders,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders
@@ -2776,6 +2804,7 @@ ImageboardSite makeSite(Map data) {
 			baseUrl: data['baseUrl'] as String,
 			maxUploadSizeBytes: data['maxUploadSizeBytes'] as int,
 			overrideUserAgent: overrideUserAgent,
+			addIntrospectedHeaders: addIntrospectedHeaders,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders
@@ -2784,6 +2813,7 @@ ImageboardSite makeSite(Map data) {
 	else if (data['type'] == 'reddit') {
 		return SiteReddit(
 			overrideUserAgent: overrideUserAgent,
+			addIntrospectedHeaders: addIntrospectedHeaders,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders
@@ -2792,6 +2822,7 @@ ImageboardSite makeSite(Map data) {
 	else if (data['type'] == 'hackernews') {
 		return SiteHackerNews(
 			overrideUserAgent: overrideUserAgent,
+			addIntrospectedHeaders: addIntrospectedHeaders,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders
@@ -2803,6 +2834,7 @@ ImageboardSite makeSite(Map data) {
 			baseUrl: data['baseUrl'] as String,
 			imageUrl: data['imageUrl'] as String?,
 			overrideUserAgent: overrideUserAgent,
+			addIntrospectedHeaders: addIntrospectedHeaders,
 			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
 			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
 			archives: archives,
@@ -2848,6 +2880,7 @@ ImageboardSite makeSite(Map data) {
 			stickyCloudflare: data['stickyCloudflare'] as bool? ?? false,
 			subjectCharacterLimit: data['subjectCharacterLimit'] as int?,
 			overrideUserAgent: overrideUserAgent,
+			addIntrospectedHeaders: addIntrospectedHeaders,
 			boardFlags: (data['boardFlags'] as Map?)?.cast<String, Map>().map((k, v) => MapEntry(k, v.cast<String, String>())),
 			boardsWithCountryFlags: (data['boardsWithCountryFlags'] as List?)?.cast<String>() ?? [],
 			searchUrl: data['searchUrl'] as String? ?? '',
@@ -2862,6 +2895,7 @@ ImageboardSite makeSite(Map data) {
 			baseUrl: data['baseUrl'] as String,
 			boards: boards,
 			overrideUserAgent: overrideUserAgent,
+			addIntrospectedHeaders: addIntrospectedHeaders,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
@@ -2878,6 +2912,7 @@ ImageboardSite makeSite(Map data) {
 			baseUrl: data['baseUrl'] as String,
 			boards: boards,
 			overrideUserAgent: overrideUserAgent,
+			addIntrospectedHeaders: addIntrospectedHeaders,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
@@ -2898,6 +2933,7 @@ ImageboardSite makeSite(Map data) {
 			boardsPath: data['boardsPath'] as String,
 			defaultUsername: data['defaultUsername'] as String,
 			overrideUserAgent: overrideUserAgent,
+			addIntrospectedHeaders: addIntrospectedHeaders,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
@@ -2924,6 +2960,7 @@ ImageboardSite makeSite(Map data) {
 			boardsPath: data['boardsPath'] as String,
 			defaultUsername: data['defaultUsername'] as String,
 			overrideUserAgent: overrideUserAgent,
+			addIntrospectedHeaders: addIntrospectedHeaders,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
@@ -2946,6 +2983,7 @@ ImageboardSite makeSite(Map data) {
 			faviconPath: data['faviconPath'] as String,
 			postsPerPage: data['postsPerPage'] as int,
 			overrideUserAgent: overrideUserAgent,
+			addIntrospectedHeaders: addIntrospectedHeaders,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders
@@ -2958,6 +2996,7 @@ ImageboardSite makeSite(Map data) {
 			captchaKey: data['captchaKey'] as String? ?? '',
 			defaultUsername: data['defaultUsername'] as String? ?? 'Anonymous',
 			overrideUserAgent: overrideUserAgent,
+			addIntrospectedHeaders: addIntrospectedHeaders,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders
@@ -2976,6 +3015,7 @@ ImageboardSite makeSite(Map data) {
 			gridCaptchaQuestion: data['gridCaptchaQuestion'] as String?,
 			textCaptchaQuestion: data['textCaptchaQuestion'] as String?,
 			overrideUserAgent: overrideUserAgent,
+			addIntrospectedHeaders: addIntrospectedHeaders,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders
@@ -2992,6 +3032,7 @@ ImageboardSite makeSite(Map data) {
 			postsPerPage: data['postsPerPage'] as int? ?? 15,
 			searchResultsPerPage: data['searchResultsPerPage'] as int? ?? 25,
 			overrideUserAgent: overrideUserAgent,
+			addIntrospectedHeaders: addIntrospectedHeaders,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders

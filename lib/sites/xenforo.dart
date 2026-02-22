@@ -46,6 +46,7 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 		required this.faviconPath,
 		required this.postsPerPage,
 		required super.overrideUserAgent,
+		required super.addIntrospectedHeaders,
 		required super.archives,
 		required super.imageHeaders,
 		required super.videoHeaders

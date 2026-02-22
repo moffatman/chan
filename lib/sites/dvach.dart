@@ -35,6 +35,7 @@ class SiteDvach extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 		required this.baseUrl,
 		required this.name,
 		required super.overrideUserAgent,
+		required super.addIntrospectedHeaders,
 		required super.archives,
 		required super.imageHeaders,
 		required super.videoHeaders

@@ -41,6 +41,7 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 		this.defaultUsername = 'Anonymous',
 		required this.faviconPath,
 		required super.overrideUserAgent,
+		required super.addIntrospectedHeaders,
 		required super.archives,
 		required super.imageHeaders,
 		required super.videoHeaders,

@@ -96,6 +96,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 		required this.imageUrl,
 		this.maxUploadSizeBytes,
 		required super.overrideUserAgent,
+		required super.addIntrospectedHeaders,
 		required super.archives,
 		required super.imageHeaders,
 		required super.videoHeaders,

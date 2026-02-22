@@ -18,7 +18,8 @@ class WrappedArchive extends ImageboardSite {
     archives: const [],
     imageHeaders: const {},
     videoHeaders: const {},
-    overrideUserAgent: archive.overrideUserAgent
+    overrideUserAgent: archive.overrideUserAgent,
+    addIntrospectedHeaders: archive.addIntrospectedHeaders
   );
 
   @override

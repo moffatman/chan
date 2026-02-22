@@ -123,6 +123,7 @@ void main() async {
         name: 'example',
         imageUrl: null,
         overrideUserAgent: null,
+        addIntrospectedHeaders: false,
         archives: const [],
         imageHeaders: const {},
         videoHeaders: const {},

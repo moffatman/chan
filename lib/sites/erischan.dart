@@ -10,6 +10,7 @@ class SiteErischan extends SiteLainchan2 {
 		required super.additionalCookies,
 		required super.imageUrl,
 		required super.overrideUserAgent,
+		required super.addIntrospectedHeaders,
 		required super.boardsWithHtmlOnlyFlags,
 		required super.boardsWithMemeFlags,
 		required super.archives,

@@ -11,6 +11,7 @@ class SiteLainchanOrg extends SiteLainchan {
 		required super.name,
 		required super.imageUrl,
 		required super.overrideUserAgent,
+		required super.addIntrospectedHeaders,
 		required super.archives,
 		required super.imageHeaders,
 		required super.videoHeaders,

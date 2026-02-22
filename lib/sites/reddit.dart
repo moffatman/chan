@@ -251,6 +251,7 @@ class SiteReddit extends ImageboardSite {
 
 	SiteReddit({
 		required super.overrideUserAgent,
+		required super.addIntrospectedHeaders,
 		required super.archives,
 		required super.imageHeaders,
 		required super.videoHeaders

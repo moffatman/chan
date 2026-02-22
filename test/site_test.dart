@@ -81,6 +81,7 @@ void main() {
 			);
 			final reddit = SiteReddit(
 				overrideUserAgent: null,
+				addIntrospectedHeaders: false,
 				archives: [],
 				imageHeaders: const {},
 				videoHeaders: const {}

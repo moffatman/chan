@@ -47,6 +47,7 @@ class SiteKarachan extends ImageboardSite with DecodeGenericUrlMixin {
 		required this.captchaKey,
 		this.defaultUsername = 'Anonymous',
 		required super.overrideUserAgent,
+		required super.addIntrospectedHeaders,
 		required super.archives,
 		required super.imageHeaders,
 		required super.videoHeaders

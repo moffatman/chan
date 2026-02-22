@@ -17,6 +17,7 @@ class SiteSoyjak extends SiteLainchan2 {
 		this.captchaQuestion,
 		this.boardsWithCaptcha,
 		required super.overrideUserAgent,
+		required super.addIntrospectedHeaders,
 		required super.boardsWithHtmlOnlyFlags,
 		required super.boardsWithMemeFlags,
 		required super.archives,
