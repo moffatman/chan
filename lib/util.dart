@@ -768,6 +768,7 @@ extension ParseNum on String {
 extension DateTimeConversion on DateTime {
 	DateTime get startOfDay => DateTime(year, month, day, 0, 0, 0);
 	DateTime get endOfDay => DateTime(year, month, day, 23, 59, 59);
+	int get secondsSinceEpoch => millisecondsSinceEpoch ~/ Duration.millisecondsPerSecond;
 	static const kISO8601DateFormat = 'YYYY-MM-DD';
 	String get toISO8601Date => formatDate(kISO8601DateFormat);
 	// Don't change this without checking httpHeader stuff
@@ -790,8 +791,9 @@ extension DateTimeConversion on DateTime {
 			.replaceAll('D', day.toString());
 	}
 	DateTime toSecondsRounded() {
-		return DateTime.fromMillisecondsSinceEpoch(1000 * (millisecondsSinceEpoch / 1000).round(), isUtc: isUtc);
+		return DateTime.fromMicrosecondsSinceEpoch(Duration.microsecondsPerSecond * (microsecondsSinceEpoch / Duration.microsecondsPerSecond).round(), isUtc: isUtc);
 	}
+	static DateTime fromSecondsSinceEpoch(int secondsSinceEpoch, {bool isUtc = false}) => DateTime.fromMicrosecondsSinceEpoch(secondsSinceEpoch * Duration.microsecondsPerSecond, isUtc: isUtc);
 	String get _toHttpHeader => '$weekdayShortName, $dDD $monthShortName $year $tHH:$tMM:$tSS GMT';
 	String get toHttpHeader => toUtc().toSecondsRounded()._toHttpHeader;
 	static final _httpHeaderPattern = RegExp(r'^[A-Z][a-z]{2}, (\d\d) ([A-Z][a-z]{2}) (\d{4,}) (\d\d):(\d\d):(\d\d) GMT$');
@@ -1067,6 +1069,13 @@ extension ClampAboveZero on Duration {
 			return Duration.zero;
 		}
 		return this;
+	}
+}
+
+extension DurationConversion on Duration {
+	static Duration fromSeconds(double seconds) => Duration(microseconds: (seconds * Duration.microsecondsPerSecond).round());
+	double get inSecondsFloat {
+		return inMicroseconds / Duration.microsecondsPerSecond;
 	}
 }
 

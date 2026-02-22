@@ -119,7 +119,7 @@ class SiteDvach extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 			text: data['comment'] as String,
 			name: name.toString().trim(),
 			posterId: posterId,
-			time: DateTime.fromMillisecondsSinceEpoch((data['timestamp'] as int) * 1000),
+			time: DateTimeConversion.fromSecondsSinceEpoch(data['timestamp'] as int),
 			spanFormat: PostSpanFormat.lainchan,
 			attachments_: _makeAttachments(board, threadId, data),
 			flag: switch (_iconFlagPattern.firstMatch((data['icon'] as String?) ?? '')) {
@@ -162,7 +162,7 @@ class SiteDvach extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 				imageCount: (e.value['files_count'] as int) - op.attachments.length,
 				isEndless: e.value['endless'] == 1,
 				lastUpdatedTime: switch (e.value['lasthit']) {
-					int s => DateTime.fromMillisecondsSinceEpoch(s * 1000),
+					int s => DateTimeConversion.fromSecondsSinceEpoch(s),
 					_ => null
 				}
 			);

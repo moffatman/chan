@@ -73,7 +73,7 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 		final lastSolvedCaptcha = widget.site.persistence?.browserState.loginFields[SiteLynxchan.kLoginFieldLastSolvedCaptchaKey];
 		final idResponse = await widget.site.client.getUri<List<int>>(captchaJsUrl.replace(queryParameters: {
 			'boardUri': widget.request.board,
-			'd': (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString(),
+			'd': DateTime.now().secondsSinceEpoch.toString(),
 			if (lastSolvedCaptcha != null) 'solvedCaptcha': lastSolvedCaptcha
 		}), options: Options(
 			responseType: ResponseType.bytes,

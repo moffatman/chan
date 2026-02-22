@@ -10,6 +10,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/services/util.dart';
+import 'package:chan/util.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:archive/archive_io.dart';
 import 'package:uuid/uuid.dart';
@@ -39,7 +40,7 @@ Future<File> export({
 	required bool includeSavedAttachments,
 	required bool includeFullHistory
 }) async {
-	final destination = Persistence.temporaryDirectory.child('${DateTime.now().millisecondsSinceEpoch ~/ 1000}.backup.zip');
+	final destination = Persistence.temporaryDirectory.child('${DateTime.now().secondsSinceEpoch}.backup.zip');
 	final compressibleFiles = <String>[];
 	final renamedCompressibleFiles = <(String, String)>[];
 	final uncompressibleDirs = <String>[];
@@ -100,7 +101,7 @@ Future<File> export({
 
 Future<File> exportJson() async {
 	final encoder = ZipFileEncoder();
-	final zipPath = Persistence.temporaryDirectory.child('${DateTime.now().millisecondsSinceEpoch ~/ 1000}.json.zip');
+	final zipPath = Persistence.temporaryDirectory.child('${DateTime.now().secondsSinceEpoch}.json.zip');
 	encoder.create(zipPath);
 	void dumpOne(String path, dynamic object) {
 		// ArchiveFile.file only works for ascii

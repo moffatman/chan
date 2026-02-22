@@ -388,7 +388,7 @@ String formatTimeDiff(Duration diff, {bool milliseconds = false}) {
 	if (milliseconds && diff.inSeconds == 0) {
 		return '${diff.inMilliseconds}ms';
 	}
-	final seconds = (diff.inMilliseconds / 1000).round();
+	final seconds = diff.inSecondsFloat.round();
 	// Rounded up
 	if (seconds >= 60) {
 		return '1m';
@@ -409,7 +409,7 @@ String formatDuration(Duration? d) {
 	if (d == null) {
 		return '--:--';
 	}
-	final seconds = (d.inMilliseconds / 1000).round();
+	final seconds = d.inSecondsFloat.round();
 	return '${(seconds / 60).floor()}:${(seconds % 60).toString().padLeft(2, '0')}';
 }
 

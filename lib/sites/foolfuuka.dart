@@ -274,7 +274,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			text: (data['comment_processed'] as String?) ?? '',
 			name: (data['name'] as String?) ?? '',
 			trip: data['trip'] as String?,
-			time: DateTime.fromMillisecondsSinceEpoch((data['timestamp'] as int) * 1000),
+			time: DateTimeConversion.fromSecondsSinceEpoch(data['timestamp'] as int),
 			id: id,
 			threadId: threadId,
 			attachments_: a == null ? [] : [a],

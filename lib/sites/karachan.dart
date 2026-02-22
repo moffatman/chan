@@ -320,7 +320,7 @@ class SiteKarachan extends ImageboardSite with DecodeGenericUrlMixin {
 				text: _fixRelativeUrls(e.querySelector('.postMessage')!.innerHtml),
 				name: e.querySelector('.postInfo .name')!.text,
 				posterId: posterId,
-				time: DateTime.fromMillisecondsSinceEpoch(1000 * int.parse(e.querySelector('.postInfo .dateTime')!.attributes['data-raw']!)),
+				time: DateTimeConversion.fromSecondsSinceEpoch(int.parse(e.querySelector('.postInfo .dateTime')!.attributes['data-raw']!)),
 				spanFormat: PostSpanFormat.karachan,
 				attachmentDeleted: attachmentDeleted,
 				attachments_: attachments

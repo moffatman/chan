@@ -827,7 +827,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 			}
 			// We may shrink under the size limit just by removing the audio
 			if ((scan.duration, scan.audioBitrate) case (Duration duration, int audioBitrate) when !board.webmAudioAllowed) {
-				final audioSize = ((duration.inMilliseconds / 1000) * (audioBitrate / 8)).round();
+				final audioSize = (duration.inSecondsFloat * (audioBitrate / 8)).round();
 				// Sanity check the estimated size
 				if (audioSize < 0.15 * size) {
 					size -= audioSize;

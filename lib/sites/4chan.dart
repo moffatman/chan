@@ -489,7 +489,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 			text: data['com'] as String? ?? '',
 			name: unescape.convert(data['name'] as String? ?? ''),
 			trip: data['trip'] as String?,
-			time: DateTime.fromMillisecondsSinceEpoch((data['time'] as int) * 1000),
+			time: DateTimeConversion.fromSecondsSinceEpoch(data['time'] as int),
 			id: data['no'] as int,
 			threadId: threadId,
 			attachments_: a == null ? const [] : [a].toList(growable: false),
@@ -565,7 +565,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 			attachmentDeleted: op['filedeleted'] == 1,
 			title: (title == null) ? null : unescape.convert(title),
 			isSticky: op['sticky'] == 1,
-			time: DateTime.fromMillisecondsSinceEpoch((op['time'] as int) * 1000),
+			time: DateTimeConversion.fromSecondsSinceEpoch(op['time'] as int),
 			uniqueIPCount: op['unique_ips'] as int?,
 			customSpoilerId: op['custom_spoiler'] as int?
 		);
@@ -688,7 +688,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 			isSticky: threadData['sticky'] == 1,
 			isArchived: isArchived,
 			isLocked: threadData['closed'] == 1,
-			time: DateTime.fromMillisecondsSinceEpoch((threadData['time'] as int) * 1000),
+			time: DateTimeConversion.fromSecondsSinceEpoch(threadData['time'] as int),
 			currentPage: currentPage
 		);
 	});
@@ -1311,7 +1311,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 						board: linkMatch.group(1)!,
 						text: post.querySelector('.postMessage')!.innerHtml,
 						name: post.querySelector('.name')!.text.trim(),
-						time: DateTime.fromMillisecondsSinceEpoch(1000 * int.parse(post.querySelector('.dateTime')!.attributes['data-utc']!)),
+						time: DateTimeConversion.fromSecondsSinceEpoch(int.parse(post.querySelector('.dateTime')!.attributes['data-utc']!)),
 						threadId: int.parse(linkMatch.group(2)!),
 						id: int.parse(linkMatch.group(3)!),
 						spanFormat: PostSpanFormat.chan4Search,
@@ -1361,7 +1361,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 					board: board,
 					text: post.querySelector('.postMessage')!.innerHtml,
 					name: post.querySelector('.name')!.text.trim(),
-					time: DateTime.fromMillisecondsSinceEpoch(1000 * int.parse(post.querySelector('.dateTime')!.attributes['data-utc']!)),
+					time: DateTimeConversion.fromSecondsSinceEpoch(int.parse(post.querySelector('.dateTime')!.attributes['data-utc']!)),
 					threadId: threadId,
 					id: postId,
 					spanFormat: PostSpanFormat.chan4Search,

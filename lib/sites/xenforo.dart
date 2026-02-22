@@ -530,7 +530,7 @@ class SiteXenforo extends ImageboardSite with ForumSite {
   }
 
 	static DateTime _parseTime(dom.Element time) {
-		return DateTime.fromMillisecondsSinceEpoch(int.parse(time.attributes['data-timestamp'] ?? time.attributes['data-time']!) * 1000);
+		return DateTimeConversion.fromSecondsSinceEpoch(int.parse(time.attributes['data-timestamp'] ?? time.attributes['data-time']!));
 	}
 
 	static final _catalogReplyCountPattern = RegExp(r'^(\d+)(K?)$');

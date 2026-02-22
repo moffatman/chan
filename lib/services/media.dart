@@ -256,7 +256,7 @@ class MediaScan {
 				}
 				final scan = MediaScan(
 					hasAudio: audioStream != null,
-					duration: seconds == null ? null : Duration(milliseconds: (1000 * seconds).round()),
+					duration: seconds == null ? null : DurationConversion.fromSeconds(seconds),
 					bitrate: (format['bit_rate'] as String?)?.tryParseInt,
 					videoBitrate: (videoStream?['bit_rate'] as String?)?.tryParseInt,
 					audioBitrate: (audioStream?['bit_rate'] as String?)?.tryParseInt,
@@ -727,9 +727,9 @@ class MediaConversion {
 					},
 					null => 2000000
 				};
-				int? outputDurationInMilliseconds = scan.duration?.inMilliseconds;
+				double? outputDurationInSeconds = scan.duration?.inSecondsFloat;
 				if (isVideoOutput && maximumDurationInSeconds != null) {
-					outputDurationInMilliseconds = min((maximumDurationInSeconds! * 1000).round(), outputDurationInMilliseconds!);
+					outputDurationInSeconds = min(maximumDurationInSeconds!, outputDurationInSeconds!);
 				}
 				(int, int)? newSize;
 				if ((scan.width, scan.height) case (int width, int height)) {
@@ -740,10 +740,10 @@ class MediaConversion {
 						newSize = (fittedSize.width.roundToEven, fittedSize.height.roundToEven);
 					}
 					if (maximumSizeInBytes case final maximumSizeInBytes?) {
-						if (outputDurationInMilliseconds case final ms? when isVideoOutput) {
+						if (outputDurationInSeconds case final s? when isVideoOutput) {
 							// Just a way to try and not get stuck, slowly reduce bitrate target over attempts
 							final bitsPerByte = 8 - (_scaleDownRetry.attempts / 6);
-							final maximumBitrate = (bitsPerByte * (maximumSizeInBytes / (ms / 1000))).round();
+							final maximumBitrate = (bitsPerByte * (maximumSizeInBytes / s)).round();
 							if (maximumBitrate < outputBitrate) {
 								// Limit bitrate
 								outputBitrate = maximumBitrate;
@@ -766,9 +766,9 @@ class MediaConversion {
 					final soundScan = await MediaScan.scan(url, headers: headers, extraCookie: extraCookie);
 					final soundDuration = soundScan.duration;
 					if (soundDuration != null) {
-						final ms = outputDurationInMilliseconds = max(outputDurationInMilliseconds ?? soundDuration.inMilliseconds, soundDuration.inMilliseconds);
+						outputDurationInSeconds = max(outputDurationInSeconds ?? soundDuration.inSecondsFloat, soundDuration.inSecondsFloat);
 						// Use params for it to loop forever then cut off at the right time
-						maximumDurationInSeconds = ms / 1000;
+						maximumDurationInSeconds = outputDurationInSeconds;
 					}
 				}
 				double? earlyDetectionEstimatedNormalizedSize;
@@ -933,8 +933,9 @@ class MediaConversion {
 					operation = _session = FFTools.ffmpeg(
 						arguments: args,
 						statisticsCallback: (packet) {
-							if (passedFirstEvent && outputDurationInMilliseconds != null) {
-								final completion = progress.value = (packet.time / outputDurationInMilliseconds).clamp(0, 1);
+							if (passedFirstEvent && outputDurationInSeconds != null) {
+								final seconds = packet.time / 1000;
+								final completion = progress.value = (seconds / outputDurationInSeconds).clamp(0, 1);
 								if (maximumSizeInBytes case final maxBytes? when packet.size > maxBytes) {
 									// We don't need to wait for full conversion
 									// Cancel it as soon as we exceed size limit
@@ -969,14 +970,14 @@ class MediaConversion {
 							return await _retryWithAdditionalScaleDownFactor(outputSize / maxSize);
 						}
 					}
-					if (soundSource != null && (outputDurationInMilliseconds ?? 0) > 0) {
+					if (soundSource != null && (outputDurationInSeconds ?? 0) > 0) {
 						// Sometimes soundpost is cut off short for some unknown reason
 						final duration = (await MediaScan.scan(convertedFile.uri)).duration;
-						if (duration != null && (duration.inMilliseconds / outputDurationInMilliseconds!) < 0.3) {
+						if (duration != null && (duration.inSecondsFloat / outputDurationInSeconds!) < 0.3) {
 							// Video is much shorter, try again with larger target duration
 							_durationArgumentFactor += 2;
 							if (_durationArgumentFactor < 8) {
-								print('Too short (${duration.inMilliseconds}ms < ${outputDurationInMilliseconds}ms)');
+								print('Too short (${duration.inSecondsFloat}s < ${outputDurationInSeconds}s)');
 								await convertedFile.delete();
 								return await start();
 							}

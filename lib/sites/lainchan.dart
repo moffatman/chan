@@ -484,7 +484,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 			board: board,
 			text: text,
 			name: data['name'] as String? ?? '',
-			time: DateTime.fromMillisecondsSinceEpoch((data['time'] as int) * 1000),
+			time: DateTimeConversion.fromSecondsSinceEpoch(data['time'] as int),
 			id: id,
 			threadId: threadId,
 			attachments_: _makeAttachments(board, threadId, data),
@@ -531,7 +531,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 			title: (firstPost['sub'] as String?)?.unescapeHtml,
 			attachmentDeleted: posts[0].attachmentDeleted,
 			attachments: posts[0].attachments_,
-			time: DateTime.fromMillisecondsSinceEpoch((firstPost['time'] as int) * 1000),
+			time: DateTimeConversion.fromSecondsSinceEpoch(firstPost['time'] as int),
 			replyCount: posts.length - 1,
 			imageCount: posts.skip(1).expand((p) => p.attachments).length,
 			posts_: posts,
@@ -572,7 +572,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 					replyCount: threadData['replies'] as int,
 					imageCount: ((threadData['images'] as int) + (threadData['omitted_images'] as int? ?? 0)),
 					isSticky: threadData['sticky'] == 1,
-					time: DateTime.fromMillisecondsSinceEpoch((threadData['time'] as int) * 1000),
+					time: DateTimeConversion.fromSecondsSinceEpoch(threadData['time'] as int),
 					currentPage: currentPage == null ? null : currentPage + 1
 					// Not fetching poll here, it will take too long. Just get it when the thread is opened
 				);
