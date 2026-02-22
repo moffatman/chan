@@ -634,7 +634,7 @@ class SiteReddit extends ImageboardSite {
 						thumbnailUrl: link.replaceFirstMapped(RegExp(r'\.([^.]+)$'), (m) {
 							return 'm.${m.group(1)}';
 						}),
-						type: AttachmentType.image,
+						type: AttachmentType.fromFilename(link),
 						ext: '.${link.afterLast('.')}'
 					)];
 				}
@@ -658,7 +658,7 @@ class SiteReddit extends ImageboardSite {
 							thumbnailUrl: link.replaceFirstMapped(RegExp(r'\.([^.]+)$'), (m) {
 								return 'm.${m.group(1)}';
 							}),
-							type: AttachmentType.image,
+							type: AttachmentType.fromFilename(link),
 							ext: '.${link.afterLast('.')}'
 						)];
 					}).toList();
