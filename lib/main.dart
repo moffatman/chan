@@ -1845,6 +1845,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								title: 'Close',
 								isDestructiveAction: true,
 								onPressed: Persistence.tabs.length == 1 ? null : () {
+									final previouslyActiveTab = _tabs.browseTabIndex;
 									final closedTab = Persistence.tabs[-1 * index];
 									_tabs.closeBrowseTab(-1 * index);
 									if (closedTab.board != null) {
@@ -1853,6 +1854,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 											message: 'Closed tab',
 											onUndo: () {
 												_tabs.insertInitializedTab(-1 * index, closedTab);
+												_tabs.browseTabIndex = previouslyActiveTab;
 											},
 											padding: const EdgeInsets.only(bottom: 50)
 										);
