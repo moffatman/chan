@@ -414,16 +414,13 @@ String formatDuration(Duration? d) {
 }
 
 String formatFilesize(int sizeInBytes) {
-	const kGB = 1e9;
 	if (sizeInBytes > kGB) {
 		return '${(sizeInBytes / kGB).toStringAsFixed(2)} GB';
 	}
-	const kMB = 1e6;
 	if (sizeInBytes > kMB) {
 		return '${(sizeInBytes / kMB).toStringAsFixed(1)} MB';
 	}
 	else {
-		const kKB = 1e3;
 		return '${(sizeInBytes / kKB).round()} KB';
 	}
 }

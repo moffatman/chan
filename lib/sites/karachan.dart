@@ -276,8 +276,8 @@ class SiteKarachan extends ImageboardSite with DecodeGenericUrlMixin {
 						width: int.parse(fileMatch.group(3)!),
 						height: int.parse(fileMatch.group(4)!),
 						sizeInBytes: (double.parse(fileMatch.group(1)!) * switch (fileMatch.group(2)) {
-							'K' => 1000,
-							'M' => 1000000,
+							'K' => kKB,
+							'M' => kMB,
 							'B' || _ => 1
 						}).round(),
 						filename: fileMatch.group(5)!,

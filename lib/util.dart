@@ -10,6 +10,10 @@ import 'package:mutex/mutex.dart';
 final lineSeparatorPattern = RegExp(r'\r?\n');
 final kInUnitTest = Platform.environment.containsKey('FLUTTER_TEST');
 
+const kKB = 1 << 10;
+const kMB = 1 << 20;
+const kGB = 1 << 30;
+
 /// Syntactic sugar
 extension If<T> on T {
 	T? tryIf(bool Function(T v) f) {

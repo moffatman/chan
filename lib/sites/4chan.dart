@@ -1336,9 +1336,9 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 				int multiplier = 1;
 				final fileSizePrefix = metadata.group(2)!.toLowerCase();
 				if (fileSizePrefix.startsWith('m')) {
-					multiplier = 1000 * 1000;
+					multiplier = kMB;
 				} else if (fileSizePrefix.startsWith('k')) {
-					multiplier = 1000;
+					multiplier = kKB;
 				}
 				attachment = Attachment(
 					board: board,

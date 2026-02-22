@@ -861,7 +861,7 @@ class Persistence extends ChangeNotifier {
 			}
 		}
 		if (deletedCount > 0) {
-			print('Deleted $deletedCount files totalling ${(deletedSize / 1000000).toStringAsFixed(1)} MB');
+			print('Deleted $deletedCount files totalling ${(deletedSize / kMB).toStringAsFixed(1)} MB');
 		}
 		if ((await FilePicker.platform.clearTemporaryFiles()) ?? false) {
 			print('Deleted FilePicker junk');

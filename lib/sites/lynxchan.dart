@@ -439,10 +439,10 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 			final fileSizeParts = (data['maxFileSize'] as String).split(' ');
 			double maxFileSize = double.parse(fileSizeParts.first);
 			if (fileSizeParts[1].toLowerCase().startsWith('m')) {
-				maxFileSize *= 1024 * 1024;
+				maxFileSize *= kMB;
 			}
 			else if (fileSizeParts[1].toLowerCase().startsWith('k')) {
-				maxFileSize *= 1024;
+				maxFileSize *= kKB;
 			}
 			else {
 				throw Exception('Unexpected file-size unit: ${fileSizeParts[1]}');

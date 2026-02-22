@@ -127,13 +127,13 @@ class FuukaArchive extends ImageboardSiteArchive {
 			}
 			int multiplier = 1;
 			if (fileDetailsMatch.group(2) == 'KB') {
-				multiplier = 1024;
+				multiplier = kKB;
 			}
 			else if (fileDetailsMatch.group(2) == 'MB') {
-				multiplier = 1024*1024;
+				multiplier = kMB;
 			}
 			else if (fileDetailsMatch.group(2) == 'GB') {
-				multiplier = 1024*1024*1024;
+				multiplier = kGB;
 			}
 			return Attachment(
 				board: urlMatch.group(1)!,

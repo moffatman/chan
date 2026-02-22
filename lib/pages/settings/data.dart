@@ -99,7 +99,7 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 												1: IntrinsicColumnWidth()
 											},
 											children: (folderSizes ?? {}).entries.map((entry) {
-												double megabytes = entry.value / 1000000;
+												double megabytes = entry.value / kMB;
 												return TableRow(
 													children: [
 														Padding(

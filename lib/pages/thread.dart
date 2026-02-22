@@ -2825,7 +2825,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 		}
 		final youIds = widget.persistentState.youIds;
 		final uncachedCount = widget.cachedAttachments.values.where((v) => !v.isCached).length;
-		final uncachedMB = (widget.cachedAttachments.entries.map((e) => e.value.isCached ? 0 : e.key.sizeInBytes ?? 0).fold(0, (a, b) => a + b) / (1024*1024));
+		final uncachedMB = (widget.cachedAttachments.entries.map((e) => e.value.isCached ? 0 : e.key.sizeInBytes ?? 0).fold(0, (a, b) => a + b) / kMB);
 		final uncachedMBIsUncertain = widget.cachedAttachments.entries.any((e) => !e.value.isCached && e.key.sizeInBytes == null);
 		final cachingButtonLabel = '${uncachedMB.ceil()}${uncachedMBIsUncertain ? '+' : ''} MB';
 		final showGalleryGridButton = Settings.showGalleryGridButtonSetting.watch(context);
