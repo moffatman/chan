@@ -420,6 +420,8 @@ class CloudflareInterceptor extends Interceptor {
 			}
 			void callback(AsyncSnapshot<T> value) {
 				if (callbackValue != null) {
+					print('Tried to callback with $value');
+					print('Already had $callbackValue');
 					Future.error(Exception('Tried to callback with $value, but already had $callbackValue'), StackTrace.current);
 					return;
 				}
