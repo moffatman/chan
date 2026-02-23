@@ -327,9 +327,13 @@ class SiteReddit extends ImageboardSite {
 						yield PostBoldSpan(PostTextSpan(node.text));
 					}
 					else if (node.localName == 'a') {
-						final href = node.attributes['href'];
+						String? href = node.attributes['href'];
 						if (href != null) {
 							if (!attachments.any((a) => a.url == href) && _inlineImagePattern.hasMatch(href)) {
+								if (href.startsWith('https://www.reddit.com/media?url=https://')) {
+									// This reddit.com/media thing is completely broken. strip it.
+									href = href.substring('https://www.reddit.com/media?url='.length);
+								}
 								yield PostAttachmentsSpan([
 									Attachment(
 										type: AttachmentType.image,
