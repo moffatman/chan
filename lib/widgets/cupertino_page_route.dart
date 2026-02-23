@@ -65,6 +65,7 @@ mixin CupertinoRouteTransitionMixin<T> on PageRoute<T> {
 	ValueNotifier<String?>? _previousTitle;
 
 	bool _userGesture = false;
+	CupertinoRouteTransitionMixin? nextRoute;
 
 	ValueListenable<String?> get previousTitle {
 		assert(
@@ -72,6 +73,16 @@ mixin CupertinoRouteTransitionMixin<T> on PageRoute<T> {
 			'Cannot read the previousTitle for a route that has not yet been installed',
 		);
 		return _previousTitle!;
+	}
+
+	@override
+	void didChangeNext(Route<dynamic>? nextRoute) {
+		super.didChangeNext(nextRoute);
+		if (nextRoute is CupertinoRouteTransitionMixin) {
+			// We never clear nextRoute. this is because [didPopNext] happens in the middle of animation
+			// Even for dead route, userGestureInProgress should be false. so still safe.
+			this.nextRoute = nextRoute;
+		}
 	}
 
 	@override
@@ -112,7 +123,7 @@ mixin CupertinoRouteTransitionMixin<T> on PageRoute<T> {
 	}
 
 	static bool isPopGestureInProgress(CupertinoRouteTransitionMixin<dynamic> route) {
-		return route._userGesture;
+		return (route.nextRoute?._userGesture ?? false) || route._userGesture;
 	}
 
 	@override
