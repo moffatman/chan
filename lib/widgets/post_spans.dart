@@ -772,7 +772,7 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 		), recognizer, enableUnconditionalInteraction);
 	}
 	(InlineSpan, TapGestureRecognizer) _build(BuildContext context, Post? post, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options) {
-		int? actualThreadId = options.showCrossThreadLabel ? null : threadId;
+		int? actualThreadId = threadId;
 		Post? thisPostLoaded = zone.crossThreadPostFromArchive(board, postId);
 		if (board == zone.board) {
 			thisPostLoaded ??= zone.findPost(postId);
@@ -780,8 +780,12 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 		if (thisPostLoaded != null) {
 			actualThreadId = thisPostLoaded.threadId;
 		}
-		if (actualThreadId == null) {
+		if (
 			// Dead links do not know their thread
+			actualThreadId == null ||
+			// We think the post should be in this (or cross-loaded) thread, but we can't find it
+			(thisPostLoaded == null && zone.findThread(actualThreadId) != null)
+		) {
 			return _buildDeadLink(context, zone, settings, theme, options);
 		}
 
