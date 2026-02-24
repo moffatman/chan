@@ -1031,15 +1031,20 @@ class AttachmentViewerController extends ChangeNotifier {
 		return '${position.inMinutes.toString()}:${(position.inSeconds % 60).toString().padLeft(2, '0')} / ${duration.inMinutes.toString()}:${(duration.inSeconds % 60).toString().padLeft(2, '0')}';
 	}
 
-	Future<void> onLongPressStart() async {
+	Future<void> onLongPressStart({required bool absolute}) async {
 		if (videoPlayerController == null) {
 			 return;
 		}
 		mediumHapticFeedback();
 		_playingBeforeLongPress = videoPlayerController!.player.state.playing;
-		_millisecondsBeforeLongPress = videoPlayerController!.player.state.position.inMilliseconds;
+		_millisecondsBeforeLongPress = absolute ? 0 : videoPlayerController!.player.state.position.inMilliseconds;
 		_currentlyWithinLongPress = true;
-		_overlayText = _formatPosition(videoPlayerController!.player.state.position, videoPlayerController!.player.state.duration);
+		Future.delayed(const Duration(milliseconds: 50), () {
+			if (_currentlyWithinLongPress) {
+				_overlayText = _formatPosition(videoPlayerController!.player.state.position, videoPlayerController!.player.state.duration);
+				notifyListeners();
+			}
+		});
 		notifyListeners();
 		await videoPlayerController!.player.pause();
 	}
@@ -1055,7 +1060,6 @@ class AttachmentViewerController extends ChangeNotifier {
 		if (_isDisposed) {
 			return;
 		}
-		final factor = _longPressFactor.value;
 		if (_currentlyWithinLongPress) {
 			final duration = videoPlayerController!.player.state.duration.inMilliseconds;
 			final newPosition = Duration(milliseconds: ((_millisecondsBeforeLongPress + (duration * factor)).clamp(0, duration)).round());
@@ -1578,7 +1582,7 @@ class AttachmentViewer extends StatelessWidget {
 						if (attachment.type.usesVideoPlayer && details.offsetFromOrigin.dx.abs() > details.offsetFromOrigin.dy.abs()) {
 							lightHapticFeedback();
 							controller._longPressMode = _LongPressMode.scrub;
-							controller.onLongPressStart();
+							controller.onLongPressStart(absolute: false);
 						}
 						else {
 							controller._longPressMode = _LongPressMode.zoom;

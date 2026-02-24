@@ -116,11 +116,11 @@ class _VideoControlsState extends State<VideoControls> {
 							padding: const EdgeInsets.all(8),
 							child: GestureDetector(
 								onTapUp: (x) async {
-									await widget.controller.onLongPressStart();
+									await widget.controller.onLongPressStart(absolute: true);
 									await widget.controller.onCoalescedLongPressUpdate(x.localPosition.dx / _calculateSliderWidth());
 									await widget.controller.onLongPressEnd();
 								},
-								onHorizontalDragStart: (x) => widget.controller.onLongPressStart(),
+								onHorizontalDragStart: (x) => widget.controller.onLongPressStart(absolute: true),
 								onHorizontalDragUpdate: (x) => widget.controller.onLongPressUpdate(x.localPosition.dx / _calculateSliderWidth()),
 								onHorizontalDragEnd: (x) => widget.controller.onLongPressEnd(),
 								child: ClipRRect(
