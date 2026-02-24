@@ -91,6 +91,101 @@ class Captcha4ChanCustomChallengeCooldownException extends Captcha4ChanCustomCha
 	String toString() => 'Failed to get 4chan captcha: $message';
 }
 
+Widget _buildQuestion(String raw) {
+	String ret = raw.replaceFirst('Use the scroll bar below to ', '');
+	ret = ret.replaceFirst(', then click Next.', '');
+	bool foundFirstText = false;
+	bool unparseable = false;
+	Iterable<InlineSpan> visit(Iterable<dom.Node> nodes) sync* {
+		for (final node in nodes) {
+			if (node is dom.Text) {
+				if (!foundFirstText && node.text.isNotEmpty) {
+					// recapitalize first letter
+					node.text = '${node.text[0].toUpperCase()}${node.text.substring(1)}';
+					foundFirstText = true;
+				}
+				yield TextSpan(text: node.text);
+			}
+			else if (node is dom.Element) {
+				// Don't edit DOM in case we need to throw to HTML renderer
+				final attributes = Map.of(node.attributes);
+				final Map<String, Expression> styles;
+				if (attributes.remove('style') case String style) {
+					styles = resolveInlineCss(style);
+				}
+				else {
+					styles = {};
+				}
+				final display = styles.remove('display')?.string;
+				if (display == 'none') {
+					// Skip it
+					continue;
+				}
+				final visibility = styles.remove('visibility')?.string;
+				if (visibility == 'hidden' || visibility == 'collapse') {
+					// Skip it
+					continue;
+				}
+				final opacity = styles.remove('opacity')?.scalar;
+				if ((opacity ?? 1) < 0.01) {
+					// Skip it
+					continue;
+				}
+				final width = styles.remove('width')?.string;
+				if (width == '1px') {
+					// Skip it
+					continue;
+				}
+				unparseable |= width != null; // If new width trick used
+				if (node.localName == 'b') {
+					yield TextSpan(children: visit(node.nodes).toList(), style: const TextStyle(
+						fontWeight: FontWeight.bold,
+						fontVariations: CommonFontVariations.bold
+					));
+				}
+				else if (attributes.remove('src') case String src when node.localName == 'img' && src.startsWith('data:image/')) {
+					styles.remove('float'); // TODO: PlaceholderFloating in forked_flutter_engine
+					final margin = styles.remove('margin');
+					final edges = margin?.edges ?? const CssEdgeSizes.all(CssEdgeSizePixels(0));
+					double resolvePadding(CssEdgeSize size) => switch (size) {
+						CssEdgeSizePixels(pixels: double px) => px,
+						CssEdgeSizeFractional(fraction: double f) => f * 100,
+						CssEdgeSizeAuto() => 0
+					};
+					yield WidgetSpan(
+						child: Padding(
+							padding: EdgeInsets.only(
+								left: resolvePadding(edges.left),
+								top: resolvePadding(edges.top),
+								right: resolvePadding(edges.right),
+								bottom: resolvePadding(edges.bottom)
+							),
+							child: Image(
+								image: Base64ImageProvider(src.afterLast(',')),
+								fit: BoxFit.contain
+							)
+						)
+					);
+				}
+				else {
+					// Give up
+					unparseable = true;
+					yield TextSpan(text: node.outerHtml);
+				}
+				unparseable |= attributes.isNotEmpty; // If new attributes are added
+				unparseable |= styles.isNotEmpty; // If new CSS is used
+			}
+		}
+	}
+	final fragment = parseFragment(ret);
+	final children = visit(fragment.nodes).toList();
+	if (unparseable) {
+		// The fragment tree has corrected capitalization
+		return HTMLWidget(html: fragment.outerHtml);
+	}
+	return Text.rich(TextSpan(children: children));
+}
+
 Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 	required ImageboardSite site,
 	required Chan4CustomCaptchaRequest request,
@@ -212,7 +307,21 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 					}));
 					choices.add(await completer.future);
 				}
-				tasks.add((choices: choices, text: rawTask['str'] as String));
+				if (rawTask['str'] case String str) {
+					tasks.add((choices: choices, question: _buildQuestion(str)));
+				}
+				else if (rawTask['img'] case String img) {
+					tasks.add((choices: choices, question: ConstrainedBox(
+						constraints: const BoxConstraints(
+							minWidth: 100,
+							minHeight: 100
+						),
+						child: Image(
+							image: Base64ImageProvider(img),
+							fit: BoxFit.contain
+						)
+					)));
+				}
 			}
 			return Captcha4ChanCustomChallengeTasks(
 				request: request,
@@ -831,7 +940,7 @@ class Captcha4ChanCustomChallengeText extends Captcha4ChanCustomChallenge {
 	}
 }
 
-typedef Captcha4ChanCustomChallengeTasksTask = ({List<ui.Image> choices, String text});
+typedef Captcha4ChanCustomChallengeTasksTask = ({List<ui.Image> choices, Widget question});
 
 class Captcha4ChanCustomChallengeTasks extends Captcha4ChanCustomChallenge {
 	final List<Captcha4ChanCustomChallengeTasksTask> tasks;
@@ -1331,101 +1440,6 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		);
 	}
 
-	Widget _buildTask(String raw) {
-		String ret = raw.replaceFirst('Use the scroll bar below to ', '');
-		ret = ret.replaceFirst(', then click Next.', '');
-		bool foundFirstText = false;
-		bool unparseable = false;
-		Iterable<InlineSpan> visit(Iterable<dom.Node> nodes) sync* {
-			for (final node in nodes) {
-				if (node is dom.Text) {
-					if (!foundFirstText && node.text.isNotEmpty) {
-						// recapitalize first letter
-						node.text = '${node.text[0].toUpperCase()}${node.text.substring(1)}';
-						foundFirstText = true;
-					}
-					yield TextSpan(text: node.text);
-				}
-				else if (node is dom.Element) {
-					// Don't edit DOM in case we need to throw to HTML renderer
-					final attributes = Map.of(node.attributes);
-					final Map<String, Expression> styles;
-					if (attributes.remove('style') case String style) {
-						styles = resolveInlineCss(style);
-					}
-					else {
-						styles = {};
-					}
-					final display = styles.remove('display')?.string;
-					if (display == 'none') {
-						// Skip it
-						continue;
-					}
-					final visibility = styles.remove('visibility')?.string;
-					if (visibility == 'hidden' || visibility == 'collapse') {
-						// Skip it
-						continue;
-					}
-					final opacity = styles.remove('opacity')?.scalar;
-					if ((opacity ?? 1) < 0.01) {
-						// Skip it
-						continue;
-					}
-					final width = styles.remove('width')?.string;
-					if (width == '1px') {
-						// Skip it
-						continue;
-					}
-					unparseable |= width != null; // If new width trick used
-					if (node.localName == 'b') {
-						yield TextSpan(children: visit(node.nodes).toList(), style: const TextStyle(
-							fontWeight: FontWeight.bold,
-							fontVariations: CommonFontVariations.bold
-						));
-					}
-					else if (attributes.remove('src') case String src when node.localName == 'img' && src.startsWith('data:image/')) {
-						styles.remove('float'); // TODO: PlaceholderFloating in forked_flutter_engine
-						final margin = styles.remove('margin');
-						final edges = margin?.edges ?? const CssEdgeSizes.all(CssEdgeSizePixels(0));
-						double resolvePadding(CssEdgeSize size) => switch (size) {
-							CssEdgeSizePixels(pixels: double px) => px,
-							CssEdgeSizeFractional(fraction: double f) => f * 100,
-							CssEdgeSizeAuto() => 0
-						};
-						yield WidgetSpan(
-							child: Padding(
-								padding: EdgeInsets.only(
-									left: resolvePadding(edges.left),
-									top: resolvePadding(edges.top),
-									right: resolvePadding(edges.right),
-									bottom: resolvePadding(edges.bottom)
-								),
-								child: Image(
-									image: Base64ImageProvider(src.afterLast(',')),
-									fit: BoxFit.contain
-								)
-							)
-						);
-					}
-					else {
-						// Give up
-						unparseable = true;
-						yield TextSpan(text: node.outerHtml);
-					}
-					unparseable |= attributes.isNotEmpty; // If new attributes are added
-					unparseable |= styles.isNotEmpty; // If new CSS is used
-				}
-			}
-		}
-		final fragment = parseFragment(ret);
-		final children = visit(fragment.nodes).toList();
-		if (unparseable) {
-			// The fragment tree has corrected capitalization
-			return HTMLWidget(html: fragment.outerHtml);
-		}
-		return Text.rich(TextSpan(children: children));
-	}
-
 	Widget _build(BuildContext context) {
 		if (error != null) {
 			return Center(
@@ -1909,7 +1923,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 											if ((maxTaskWidth + 16) < min(500, estimateWidth(context)) / 2) ...[
 												Padding(
 													padding: const EdgeInsets.all(8),
-													child: _buildTask(task.$2.text)
+													child: task.$2.question
 												),
 												Wrap(
 													children: task.$2.choices.indexed.map((choice) => CupertinoInkwell(
@@ -1938,9 +1952,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 												)
 											]
 											else ...[
-												Container(
+												Padding(
 													padding: const EdgeInsets.all(8),
-													child: _buildTask(task.$2.text)
+													child: task.$2.question
 												),
 												...task.$2.choices.indexed.map((choice) {
 													final collapseChoice = _collapseTasks[task.$1] && _taskChoices[task.$1] != choice.$1;
