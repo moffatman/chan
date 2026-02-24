@@ -1775,7 +1775,9 @@ abstract class ImageboardSiteArchive {
 						return '$existing; $extraCookie';
 					}, ifAbsent: () => extraCookie);
 					if (addIntrospectedHeaders) {
-						options.headers.addAll(await WebViewIntrospection.instance.getDefaultHeaders());
+						for (final entry in (await WebViewIntrospection.instance.getDefaultHeaders()).entries) {
+							options.headers[entry.key] ??= entry.value;
+						}
 					}
 					handler.next(options);
 				}
