@@ -268,7 +268,8 @@ class CloudflareInterceptor extends Interceptor {
 			'Verification Required',
 			'Un momento',
 			'Um momento'
-			'لحظة'
+			'لحظة',
+			'Managed challenge'
 		].any((snippet) => title.contains(snippet)) || [
 			'…',
 			'...'
@@ -277,7 +278,7 @@ class CloudflareInterceptor extends Interceptor {
 
 	Future<bool> _responseMatches(Response response) async {
 		if ([203, 403, 503].contains(response.statusCode) && (response.headers.value(Headers.contentTypeHeader)?.contains('text/html') ?? false)) {
-			if (response.headers.value('server') == 'cloudflare' && response.headers.value('cf-mitigated') == 'challenge') {
+			if (response.headers.value('cf-mitigated') == 'challenge') {
 				// Hopefully this catches the streamed ones
 				return true;
 			}
