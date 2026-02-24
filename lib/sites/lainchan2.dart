@@ -194,20 +194,20 @@ class SiteLainchan2 extends SiteLainchanOrg {
 	}
 
 	@override
-	Future<Catalog> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
-		final broken = await super.getCatalogImpl(board, priority: priority, cancelToken: cancelToken);
+	Future<List<Thread>> makeCatalog(String board, Response response, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+		final broken = await super.makeCatalog(board, response, variant: variant, priority: priority, cancelToken: cancelToken);
 		if (imageThumbnailExtension != '') {
 			return broken;
 		}
-		final response = await client.getUri(Uri.https(baseUrl, '$basePath/$board/catalog.html'), options: Options(
+		final response2 = await client.getUri(Uri.https(baseUrl, '$basePath/$board/catalog.html'), options: Options(
 			extra: {
 				kPriority: priority
 			},
 			responseType: ResponseType.plain
 		), cancelToken: cancelToken);
-		final document = parse(response.data);
+		final document = parse(response2.data);
 		final thumbnailUrls = document.querySelectorAll('img.thread-image').map((e) => e.attributes['src']).toList();
-		for (final attachment in broken.threads.values.expand((t) => t.attachments)) {
+		for (final attachment in broken.expand((t) => t.attachments)) {
 			final thumbnailUrl = thumbnailUrls.tryFirstWhere((u) => u?.contains(attachment.id.toString()) ?? false);
 			if (thumbnailUrl != null) {
 				attachment.thumbnailUrl =
