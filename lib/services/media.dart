@@ -144,7 +144,7 @@ class MediaScan {
 			if (_webScans[file] case MediaScan scan when !force) {
 				return scan;
 			}
-			return await _ffprobeLock.protect<MediaScan>(() async {
+			work() async {
 				// May be two simultaneous scans, so recheck after getting the lock
 				if (_webScans[file] case MediaScan scan when !force) {
 					return scan;
@@ -274,7 +274,17 @@ class MediaScan {
 					_webScans[file] = scan;
 				}
 				return scan;
-			});
+			}
+			return (await _ffprobeLock.protect<Wrapper<Future<MediaScan>>>(() async {
+				// Only start work within wrappper
+				final future = work();
+				final first = await Future.any([future, Future<MediaScan?>.delayed(const Duration(seconds: 3))]);
+				if (first != null) {
+					return Wrapper(Future.value(first));
+				}
+				// Break out of lock without killing the con
+				return Wrapper(future);
+			})).value;
 		}
 		on _TryForceFormatException catch (e) {
 			return _scan(file, headers: headers, extraCookie: extraCookie, tries: tries, force: force, forceFormat: e.forceFormat);
