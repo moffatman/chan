@@ -429,7 +429,8 @@ class PostTextSpan extends PostTerminalSpan {
 		return TextSpan(
 			children: children,
 			style: options.baseTextStyle.copyWith(
-				color: options.overrideTextColor
+				color: options.overrideTextColor,
+				decorationColor: options.overrideTextColor
 			),
 			recognizer: options.recognizer,
 			onEnter: options.onEnter,
@@ -451,7 +452,7 @@ class PostUnderlinedSpan extends PostSpanWithChild {
 		return child.build(context, post, zone, settings, theme, options.copyWith(
 			baseTextStyle: options.baseTextStyle.copyWith(
 				decoration: TextDecoration.underline,
-				decorationColor: options.overrideTextColor ?? options.baseTextStyle.color
+				decorationColor: options.baseTextStyle.color
 			)
 		));
 	}
@@ -465,7 +466,7 @@ class PostOverlinedSpan extends PostSpanWithChild {
 		return child.build(context, post, zone, settings, theme, options.copyWith(
 			baseTextStyle: options.baseTextStyle.copyWith(
 				decoration: TextDecoration.overline,
-				decorationColor: options.overrideTextColor ?? options.baseTextStyle.color
+				decorationColor: options.baseTextStyle.color
 			)
 		));
 	}
@@ -1487,6 +1488,7 @@ class PostLinkSpan extends PostTerminalSpan {
 		return PostTextSpan(name ?? url).build(context, post, zone, settings, theme, options.copyWith(
 			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer(debugOwner: this)..onTap = () => openBrowser(context, cleanedUri!)),
 			baseTextStyle: options.baseTextStyle.copyWith(
+				decorationColor: theme.linkColor,
 				decoration: TextDecoration.underline,
 				color: theme.linkColor
 			)
@@ -1679,7 +1681,7 @@ class PostStrikethroughSpan extends PostSpanWithChild {
 	@override
 	build(context, post, zone, settings, theme, options) {
 		return child.build(context, post, zone, settings, theme, options.copyWith(
-			baseTextStyle: options.baseTextStyle.copyWith(decoration: TextDecoration.lineThrough, decorationColor: options.overrideTextColor ?? options.baseTextStyle.color)
+			baseTextStyle: options.baseTextStyle.copyWith(decoration: TextDecoration.lineThrough, decorationColor: options.baseTextStyle.color)
 		));
 	}
 }
