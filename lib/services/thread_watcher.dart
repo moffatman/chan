@@ -180,7 +180,7 @@ class ThreadWatcher extends ChangeNotifier {
 			}
 		}
 		else {
-			await thread.preinit();
+			await threadState.preinitAndWriteSpanCache(thread);
 			cachedUnseenYous[watch.threadIdentifier] = threadState.unseenReplyIdsToYouCount() ?? 0;
 			if (!watch.localYousOnly) {
 				cachedUnseen[watch.threadIdentifier] = threadState.unseenReplyCount() ?? 0;

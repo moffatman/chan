@@ -1,11 +1,15 @@
+import 'dart:typed_data';
+
 import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
 import 'package:chan/models/intern.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/attachment.dart';
+import 'package:chan/services/bytes.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/post_spans.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:hive/hive.dart';
@@ -137,18 +141,57 @@ class Thread extends HiveObject implements Filterable {
 		return posts_;
 	}
 
+	void restoreSpans(ByteReader reader) {
+		int postIndex = 0;
+		while (!reader.done) {
+			final id = reader.takeIntVar();
+			Post? post = posts_[postIndex];
+			if (post.id != id) {
+				// Must be a newly inserted post like deleted restored (not cached on disk)
+				// Still need to read the rest of bytes to advance to next
+				// Don't move postIndex, we need to wait for matching post
+				post = null;
+			}
+			else {
+				// Got match, advance the index
+				postIndex++;
+			}
+			final hash = reader.takeUint32();
+			final length = reader.takeIntVar();
+			if (hash == post?.spanHash) {
+				final span = PostNodeSpan.read(reader);
+				post?.setSpan(span);
+			}
+			else {
+				reader.skipBytes(length);
+			}
+		}
+	}
+
+	void writeSpans(BytesBuilder builder) {
+		for (final post in posts_) {
+			builder.addIntVar(post.id);
+			builder.addUint32(post.spanHash);
+			final builder2 = BytesBuilder(copy: false);
+			post.span.dump(builder2, writeTypeId: false);
+			final bytes = builder2.takeBytes();
+			builder.addIntVar(bytes.length);
+			builder.add(bytes);
+		}
+	}
+
 	Future<void> _fullPreinit() async {
 		for (final post in posts_) {
 			await post.preinit();
 		}
 	}
 
-	Future<void> preinit({bool catalog = false}) async {
+	Future<bool> preinit({bool catalog = false}) async {
 		// mergePosts can leave the last post untouched.
 		// But many other posts may have been updated (upvote count).
 		// Decent solution - just check OP
 		if (posts_.last.isInitialized && posts_.first.isInitialized) {
-			return;
+			return false;
 		}
 		if (catalog) {
 			await posts_.first.preinit();
@@ -156,6 +199,7 @@ class Thread extends HiveObject implements Filterable {
 		else {
 			await SchedulerBinding.instance.scheduleTask(_fullPreinit, Priority.touch);
 		}
+		return true;
 	}
 
 	void _markNewIPs(Thread other) {

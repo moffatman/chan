@@ -1,5 +1,6 @@
 import 'dart:isolate';
 import 'dart:math' as math;
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:chan/main.dart';
@@ -13,6 +14,7 @@ import 'package:chan/pages/board.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/posts.dart';
 import 'package:chan/pages/thread.dart';
+import 'package:chan/services/bytes.dart';
 import 'package:chan/services/css.dart';
 import 'package:chan/services/embed.dart';
 import 'package:chan/services/filtering.dart';
@@ -47,6 +49,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/services.dart';
+import 'package:hive/hive.dart';
 import 'package:provider/provider.dart';
 import 'package:highlight/highlight.dart';
 import 'package:flutter_highlight/themes/atom-one-dark-reasonable.dart';
@@ -160,6 +163,20 @@ class PostSpanRenderOptions {
 	);
 }
 
+class PostSpanDumpException implements Exception {
+	final String message;
+	PostSpanDumpException(this.message);
+	@override
+	String toString() => 'PostSpanDumpException($message)';
+}
+
+class PostSpanReadException implements Exception {
+	final String message;
+	PostSpanReadException(this.message);
+	@override
+	String toString() => 'PostSpanReadException($message)';
+}
+
 @immutable
 sealed class PostSpan {
 	const PostSpan();
@@ -177,6 +194,52 @@ sealed class PostSpan {
 		return '$runtimeType(${buffer.toString()})';
 	}
 	Iterable<PostSpan> traverse(Post post);
+	void dump(BytesBuilder builder, {bool writeTypeId = true});
+	static PostSpan read(ByteReader buffer) {
+		return switch (buffer.takeUint8()) {
+			PostNodeSpan.kTypeId => PostNodeSpan.read(buffer),
+			PostNodeSpan.kTypeId0 => PostNodeSpan.readN(buffer, 0),
+			PostNodeSpan.kTypeId1 => PostNodeSpan.readN(buffer, 1),
+			PostNodeSpan.kTypeId2 => PostNodeSpan.readN(buffer, 2),
+			PostNodeSpan.kTypeId3 => PostNodeSpan.readN(buffer, 3),
+			PostNodeSpan.kTypeId4 => PostNodeSpan.readN(buffer, 4),
+			PostAttachmentsSpan.kTypeId => PostAttachmentsSpan.read(buffer),
+			PostTextSpan.kTypeId => PostTextSpan.read(buffer),
+			PostUnderlinedSpan.kTypeId => PostUnderlinedSpan.read(buffer),
+			PostOverlinedSpan.kTypeId => PostOverlinedSpan.read(buffer),
+			PostLineBreakSpan.kTypeId => PostLineBreakSpan.read(buffer),
+			PostWeakQuoteLinkSpan.kTypeId => PostWeakQuoteLinkSpan.read(buffer),
+			PostQuoteSpan.kTypeId => PostQuoteSpan.read(buffer),
+			PostPinkQuoteSpan.kTypeId => PostPinkQuoteSpan.read(buffer),
+			PostBlueQuoteSpan.kTypeId => PostBlueQuoteSpan.read(buffer),
+			PostQuoteLinkSpan.kTypeId => PostQuoteLinkSpan.read(buffer),
+			PostQuoteLinkWithContextSpan.kTypeId => PostQuoteLinkWithContextSpan.read(buffer),
+			PostBoardLinkSpan.kTypeId => PostBoardLinkSpan.read(buffer),
+			PostCodeSpan.kTypeId => PostCodeSpan.read(buffer),
+			PostSpoilerSpan.kTypeId => PostSpoilerSpan.read(buffer),
+			PostLinkSpan.kTypeId => PostLinkSpan.read(buffer),
+			PostCatalogSearchSpan.kTypeId => PostCatalogSearchSpan.read(buffer),
+			PostTeXSpan.kTypeId => PostTeXSpan.read(buffer),
+			PostInlineImageSpan.kTypeId => PostInlineImageSpan.read(buffer),
+			PostColorSpan.kTypeId => PostColorSpan.read(buffer),
+			PostSecondaryColorSpan.kTypeId => PostSecondaryColorSpan.read(buffer),
+			PostBoldSpan.kTypeId => PostBoldSpan.read(buffer),
+			PostItalicSpan.kTypeId => PostItalicSpan.read(buffer),
+			PostSuperscriptSpan.kTypeId => PostSuperscriptSpan.read(buffer),
+			PostSubscriptSpan.kTypeId => PostSubscriptSpan.read(buffer),
+			PostStrikethroughSpan.kTypeId => PostStrikethroughSpan.read(buffer),
+			PostMonospaceSpan.kTypeId => PostMonospaceSpan.read(buffer),
+			PostPopupSpan.kTypeId => PostPopupSpan.read(buffer),
+			PostTableSpan.kTypeId => PostTableSpan.read(buffer),
+			PostDividerSpan.kTypeId => PostDividerSpan.read(buffer),
+			PostShiftJISSpan.kTypeId => PostShiftJISSpan.read(buffer),
+			PostUserLinkSpan.kTypeId => PostUserLinkSpan.read(buffer),
+			PostCssSpan.kTypeId => PostCssSpan.read(buffer),
+			PostSmallTextSpan.kTypeId => PostSmallTextSpan.read(buffer),
+			PostBigTextSpan.kTypeId => PostBigTextSpan.read(buffer),
+			int other => throw PostSpanReadException('Unrecognized type id $other')
+		};
+	}
 }
 
 abstract class PostTerminalSpan extends PostSpan {
@@ -206,11 +269,53 @@ class _PostWrapperSpan extends PostTerminalSpan {
 	InlineSpan build(context, post, zone, settings, theme, options) => span;
 	@override
 	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) => buffer.write(span.toPlainText());
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) => throw PostSpanDumpException('Can\'t encode _PostWrapperSpan($span)');
 }
 
 class PostNodeSpan extends PostSpan {
 	final List<PostSpan> children;
 	const PostNodeSpan(this.children);
+
+	static const kTypeId = 1;
+	static const kTypeId0 = 36;
+	static const kTypeId1 = 37;
+	static const kTypeId2 = 38;
+	static const kTypeId3 = 39;
+	static const kTypeId4 = 40;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) {
+			switch (children.length) {
+				case 0:
+					builder.addByte(kTypeId0);
+				case 1:
+					builder.addByte(kTypeId1);
+				case 2:
+					builder.addByte(kTypeId2);
+				case 3:
+					builder.addByte(kTypeId3);
+				case 4:
+					builder.addByte(kTypeId4);
+				default:
+					builder.addByte(kTypeId);
+					builder.addIntVar(children.length);
+			}
+		}
+		else {
+			builder.addIntVar(children.length);
+		}
+		for (final child in children) {
+			child.dump(builder);
+		}
+	}
+	static PostNodeSpan read(ByteReader buffer) {
+		final length = buffer.takeIntVar();
+		return readN(buffer, length);
+	}
+	static PostNodeSpan readN(ByteReader buffer, int length) {
+		return PostNodeSpan(List.generate(length, (_) => PostSpan.read(buffer), growable: false));
+	}
 
 	@override
 	Iterable<PostSpan> traverse(Post post) sync* {
@@ -328,6 +433,29 @@ class PostAttachmentsSpan extends PostTerminalSpan {
 	final List<Attachment> attachments;
 	const PostAttachmentsSpan(this.attachments);
 
+	static const kTypeId = 2;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		builder.addIntVar(attachments.length);
+		for (final attachment in attachments) {
+			final bytes = Hive.encode(attachment);
+			builder.addIntVar(bytes.length);
+			builder.add(bytes);
+		}
+	}
+	static PostAttachmentsSpan read(ByteReader buffer) {
+		final length = buffer.takeIntVar();
+		return PostAttachmentsSpan(List.generate(length, (_) {
+			final length = buffer.takeIntVar();
+			final object = Hive.decode(buffer.takeBytes(length));
+			if (object is! Attachment) {
+				throw PostSpanReadException('Did not get Attachment as expected: $object');
+			}
+			return object;
+		}, growable: false));
+	}
+
 	@override
 	InlineSpan build(context, post, zone, settings, theme, options) {
 		if (options.showRawSource) {
@@ -408,6 +536,17 @@ class PostTextSpan extends PostTerminalSpan {
 	final String text;
 	const PostTextSpan(this.text);
 
+	static const kTypeId = 3;
+
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		builder.addString(text);
+	}
+	static PostTextSpan read(ByteReader buffer) {
+		return PostTextSpan(buffer.takeString());
+	}
+
 	@override
 	InlineSpan build(context, post, zone, settings, theme, options) {
 		final children = <TextSpan>[];
@@ -466,6 +605,16 @@ class PostTextSpan extends PostTerminalSpan {
 class PostUnderlinedSpan extends PostSpanWithChild {
 	const PostUnderlinedSpan(super.child);
 
+	static const kTypeId = 4;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		child.dump(builder);
+	}
+	static PostUnderlinedSpan read(ByteReader buffer) {
+		return PostUnderlinedSpan(PostSpan.read(buffer));
+	}
+
 	@override
 	InlineSpan build(context, post, zone, settings, theme, options) {
 		return child.build(context, post, zone, settings, theme, options.copyWith(
@@ -480,6 +629,16 @@ class PostUnderlinedSpan extends PostSpanWithChild {
 class PostOverlinedSpan extends PostSpanWithChild {
 	const PostOverlinedSpan(super.child);
 
+	static const kTypeId = 5;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		child.dump(builder);
+	}
+	static PostOverlinedSpan read(ByteReader buffer) {
+		return PostOverlinedSpan(PostSpan.read(buffer));
+	}
+
 	@override
 	InlineSpan build(context, post, zone, settings, theme, options) {
 		return child.build(context, post, zone, settings, theme, options.copyWith(
@@ -493,6 +652,15 @@ class PostOverlinedSpan extends PostSpanWithChild {
 
 class PostLineBreakSpan extends PostTerminalSpan {
 	const PostLineBreakSpan();
+
+	static const kTypeId = 6;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+	}
+	static PostLineBreakSpan read(ByteReader buffer) {
+		return const PostLineBreakSpan();
+	}
 
 	@override
 	InlineSpan build(context, post, zone, settings, theme, options) =>  const TextSpan(text: '\n');
@@ -515,6 +683,25 @@ class PostWeakQuoteLinkSpan extends PostSpan {
 		required this.quote,
 		this.author
 	});
+
+	static const kTypeId = 7;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		builder.addIntVar(id);
+		quote.dump(builder, writeTypeId: false);
+		builder.addStringNullable(author);
+	}
+	static PostWeakQuoteLinkSpan read(ByteReader buffer) {
+		final id = buffer.takeIntVar();
+		final quote = PostQuoteSpan.read(buffer);
+		final author = buffer.takeStringNullable();
+		return PostWeakQuoteLinkSpan(
+			id: id,
+			quote: quote,
+			author: author
+		);
+	}
 
 	/// Positive = exact quote (hide [this.quote])
 	/// Negative = partial quote (still show [this.quote])
@@ -575,6 +762,16 @@ class PostWeakQuoteLinkSpan extends PostSpan {
 class PostQuoteSpan extends PostSpanWithChild {
 	const PostQuoteSpan(super.child);
 
+	static const kTypeId = 8;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		child.dump(builder);
+	}
+	static PostQuoteSpan read(ByteReader buffer) {
+		return PostQuoteSpan(PostSpan.read(buffer));
+	}
+
 	@override
 	InlineSpan build(context, post, zone, settings, theme, options) {
 		return child.build(context, post, zone, settings, theme, options.copyWith(
@@ -599,6 +796,16 @@ class PostQuoteSpan extends PostSpanWithChild {
 class PostPinkQuoteSpan extends PostQuoteSpan {
 	const PostPinkQuoteSpan(super.child);
 
+	static const kTypeId = 9;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		child.dump(builder);
+	}
+	static PostPinkQuoteSpan read(ByteReader buffer) {
+		return PostPinkQuoteSpan(PostSpan.read(buffer));
+	}
+
 	static Color getColor(SavedTheme theme) => theme.quoteColor.shiftHue(-90);
 
 	@override
@@ -614,6 +821,16 @@ class PostPinkQuoteSpan extends PostQuoteSpan {
 
 class PostBlueQuoteSpan extends PostQuoteSpan {
 	const PostBlueQuoteSpan(super.child);
+
+	static const kTypeId = 10;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		child.dump(builder);
+	}
+	static PostBlueQuoteSpan read(ByteReader buffer) {
+		return PostBlueQuoteSpan(PostSpan.read(buffer));
+	}
 
 	static Color getColor(SavedTheme theme) => theme.quoteColor.shiftHue(135);
 
@@ -633,6 +850,27 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 	final int? threadId;
 	final int postId;
 	final Key? key;
+
+	static const kTypeId = 11;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (key != null) {
+			throw PostSpanDumpException('Encoding PostQuoteLinkSpan.key is not supported: $key');
+		}
+		if (writeTypeId) builder.addByte(kTypeId);
+		builder.addString(board);
+		builder.addIntVarNullable(threadId);
+		builder.addIntVar(postId);
+	}
+	static PostQuoteLinkSpan read(ByteReader buffer) {
+		final board = buffer.takeString();
+		final threadId = buffer.takeIntVarNullable();
+		final postId = buffer.takeIntVar();
+		if (threadId == null) {
+			return PostQuoteLinkSpan.dead(board: board, postId: postId);
+		}
+		return PostQuoteLinkSpan(board: board, threadId: threadId, postId: postId);
+	}
 
 	PostQuoteLinkSpan({
 		required String board,
@@ -990,6 +1228,19 @@ class PostQuoteLinkWithContextSpan extends PostSpan {
 		required this.context
 	});
 
+	static const kTypeId = 12;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		quoteLink.dump(builder, writeTypeId: false);
+		context.dump(builder, writeTypeId: false);
+	}
+	static PostQuoteLinkWithContextSpan read(ByteReader buffer) {
+		final quoteLink = PostQuoteLinkSpan.read(buffer);
+		final context = PostQuoteSpan.read(buffer);
+		return PostQuoteLinkWithContextSpan(quoteLink: quoteLink, context: context);
+	}
+
 	@override
 	build(context, post, zone, settings, theme, options) {
 		final thePost = zone.findPost(quoteLink.postId);
@@ -1037,6 +1288,17 @@ class PostQuoteLinkWithContextSpan extends PostSpan {
 class PostBoardLinkSpan extends PostTerminalSpan {
 	final String board;
 	PostBoardLinkSpan(String board) : board = intern(board);
+
+	static const kTypeId = 13;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		builder.addString(board);
+	}
+	static PostBoardLinkSpan read(ByteReader buffer) {
+		return PostBoardLinkSpan(buffer.takeString());
+	}
+
 	@override
 	build(context, post, zone, settings, theme, options) {
 		return TextSpan(
@@ -1088,6 +1350,16 @@ class PostCodeSpan extends PostTerminalSpan {
 	final String text;
 
 	const PostCodeSpan(this.text);
+
+	static const kTypeId = 14;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		builder.addString(text);
+	}
+	static PostCodeSpan read(ByteReader buffer) {
+		return PostCodeSpan(buffer.takeString());
+	}
 
 	static final _startsWithCapitalLetterPattern = RegExp(r'^[A-Z]');
 
@@ -1231,6 +1503,22 @@ class PostSpoilerSpan extends PostSpanWithChild {
 	final int id;
 	final bool forceReveal;
 	const PostSpoilerSpan(super.child, this.id, {this.forceReveal = false});
+
+	static const kTypeId = 15;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		child.dump(builder);
+		builder.addIntVar(id);
+		builder.addBool(forceReveal);
+	}
+	static PostSpoilerSpan read(ByteReader buffer) {
+		final child = PostSpan.read(buffer);
+		final id = buffer.takeIntVar();
+		final forceReveal = buffer.takeBool();
+		return PostSpoilerSpan(child, id, forceReveal: forceReveal);
+	}
+
 	@override
 	build(context, post, zone, settings, theme, options) {
 		final showSpoiler = options.imageShareMode || options.showRawSource || zone.shouldShowSpoiler(id) || forceReveal;
@@ -1278,6 +1566,48 @@ class PostLinkSpan extends PostTerminalSpan {
 	final String? name;
 	final EmbedData? embedData;
 	const PostLinkSpan(this.url, {this.name, this.embedData});
+
+	static const kTypeId = 16;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (embedData?.thumbnailWidget != null) {
+			throw PostSpanDumpException('embedData.thumbnailWidget ${embedData?.thumbnailWidget} not supported');
+		}
+		if (embedData?.imageboardTarget != null) {
+			throw PostSpanDumpException('embedData.imageboardTarget ${embedData?.imageboardTarget} not supported');
+		}
+		if (embedData?.attachments != null) {
+			throw PostSpanDumpException('embedData.attachments ${embedData?.attachments} not supported');
+		}
+		if (writeTypeId) builder.addByte(kTypeId);
+		builder.addString(url);
+		builder.addStringNullable(name);
+		builder.addBool(embedData != null);
+		if (embedData != null) {
+			builder.addStringNullable(embedData?.title);
+			builder.addStringNullable(embedData?.provider);
+			builder.addStringNullable(embedData?.author);
+			builder.addStringNullable(embedData?.thumbnailUrl);
+		}
+	}
+	static PostLinkSpan read(ByteReader buffer) {
+		final url = buffer.takeString();
+		final name = buffer.takeStringNullable();
+		EmbedData? embedData;
+		if (buffer.takeBool()) {
+			final title = buffer.takeStringNullable();
+			final provider = buffer.takeStringNullable();
+			final author = buffer.takeStringNullable();
+			final thumbnailUrl = buffer.takeStringNullable();
+			embedData = EmbedData(
+				title: title,
+				provider: provider,
+				author: author,
+				thumbnailUrl: thumbnailUrl
+			);
+		}
+		return PostLinkSpan(url, name: name, embedData: embedData);
+	}
 
 	static final _trailingJunkPattern = RegExp(r'(\.[A-Za-z0-9\-._~]+)[^A-Za-z0-9\-._~\.\/?]+$');
 
@@ -1568,6 +1898,20 @@ class PostCatalogSearchSpan extends PostTerminalSpan {
 		required String board,
 		required this.query
 	}) : board = intern(board);
+
+	static const kTypeId = 17;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		builder.addString(board);
+		builder.addString(query);
+	}
+	static PostCatalogSearchSpan read(ByteReader buffer) {
+		final board = buffer.takeString();
+		final query = buffer.takeString();
+		return PostCatalogSearchSpan(board: board, query: query);
+	}
+
 	@override
 	build(context, post, zone, settings, theme, options) {
 		return TextSpan(
@@ -1607,6 +1951,17 @@ class PostCatalogSearchSpan extends PostTerminalSpan {
 class PostTeXSpan extends PostTerminalSpan {
 	final String tex;
 	const PostTeXSpan(this.tex);
+
+	static const kTypeId = 18;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		builder.addString(tex);
+	}
+	static PostTeXSpan read(ByteReader buffer) {
+		return PostTeXSpan(buffer.takeString());
+	}
+
 	@override
 	build(context, post, zone, settings, theme, options) {
 		final child = TexWidget(
@@ -1647,6 +2002,22 @@ class PostInlineImageSpan extends PostTerminalSpan {
 		required this.width,
 		required this.height
 	});
+
+	static const kTypeId = 19;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		builder.addString(src);
+		builder.addIntVar(width);
+		builder.addIntVar(height);
+	}
+	static PostInlineImageSpan read(ByteReader buffer) {
+		final src = buffer.takeString();
+		final width = buffer.takeIntVar();
+		final height = buffer.takeIntVar();
+		return PostInlineImageSpan(src: src, width: width, height: height);
+	}
+
 	@override
 	build(context, post, zone, settings, theme, options) {
 		if (options.showRawSource) {
@@ -1681,6 +2052,20 @@ class PostColorSpan extends PostSpanWithChild {
 	final Color? color;
 	
 	const PostColorSpan(super.child, this.color);
+
+	static const kTypeId = 20;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		child.dump(builder);
+		builder.addIntVarNullable(color?.toARGB32());
+	}
+	static PostColorSpan read(ByteReader buffer) {
+		final child = PostSpan.read(buffer);
+		final argb32 = buffer.takeIntVarNullable();
+		return PostColorSpan(child, argb32 == null ? null : Color(argb32));
+	}
+
 	@override
 	build(context, post, zone, settings, theme, options) {
 		return child.build(context, post, zone, settings, theme, options.copyWith(
@@ -1691,6 +2076,17 @@ class PostColorSpan extends PostSpanWithChild {
 
 class PostSecondaryColorSpan extends PostSpanWithChild {
 	const PostSecondaryColorSpan(super.child);
+
+	static const kTypeId = 21;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		child.dump(builder);
+	}
+	static PostSecondaryColorSpan read(ByteReader buffer) {
+		return PostSecondaryColorSpan(PostSpan.read(buffer));
+	}
+
 	@override
 	build(context, post, zone, settings, theme, options) {
 		return child.build(context, post, zone, settings, theme, options.copyWith(
@@ -1701,6 +2097,17 @@ class PostSecondaryColorSpan extends PostSpanWithChild {
 
 class PostBoldSpan extends PostSpanWithChild {
 	const PostBoldSpan(super.child);
+
+	static const kTypeId = 22;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		child.dump(builder);
+	}
+	static PostBoldSpan read(ByteReader buffer) {
+		return PostBoldSpan(PostSpan.read(buffer));
+	}
+
 	@override
 	build(context, post, zone, settings, theme, options) {
 		return child.build(context, post, zone, settings, theme, options.copyWith(
@@ -1711,6 +2118,17 @@ class PostBoldSpan extends PostSpanWithChild {
 
 class PostItalicSpan extends PostSpanWithChild {
 	const PostItalicSpan(super.child);
+
+	static const kTypeId = 23;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		child.dump(builder);
+	}
+	static PostItalicSpan read(ByteReader buffer) {
+		return PostItalicSpan(PostSpan.read(buffer));
+	}
+
 	@override
 	build(context, post, zone, settings, theme, options) {
 		return child.build(context, post, zone, settings, theme, options.copyWith(
@@ -1721,6 +2139,17 @@ class PostItalicSpan extends PostSpanWithChild {
 
 class PostSuperscriptSpan extends PostSpanWithChild {
 	const PostSuperscriptSpan(super.child);
+
+	static const kTypeId = 24;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		child.dump(builder);
+	}
+	static PostSuperscriptSpan read(ByteReader buffer) {
+		return PostSuperscriptSpan(PostSpan.read(buffer));
+	}
+
 	@override
 	build(context, post, zone, settings, theme, options) {
 		return child.build(context, post, zone, settings, theme, options.copyWith(
@@ -1731,6 +2160,17 @@ class PostSuperscriptSpan extends PostSpanWithChild {
 
 class PostSubscriptSpan extends PostSpanWithChild {
 	const PostSubscriptSpan(super.child);
+
+	static const kTypeId = 25;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		child.dump(builder);
+	}
+	static PostSubscriptSpan read(ByteReader buffer) {
+		return PostSubscriptSpan(PostSpan.read(buffer));
+	}
+
 	@override
 	build(context, post, zone, settings, theme, options) {
 		return child.build(context, post, zone, settings, theme, options.copyWith(
@@ -1741,6 +2181,17 @@ class PostSubscriptSpan extends PostSpanWithChild {
 
 class PostStrikethroughSpan extends PostSpanWithChild {
 	const PostStrikethroughSpan(super.child);
+
+	static const kTypeId = 26;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		child.dump(builder);
+	}
+	static PostStrikethroughSpan read(ByteReader buffer) {
+		return PostStrikethroughSpan(PostSpan.read(buffer));
+	}
+
 	@override
 	build(context, post, zone, settings, theme, options) {
 		return child.build(context, post, zone, settings, theme, options.copyWith(
@@ -1751,6 +2202,17 @@ class PostStrikethroughSpan extends PostSpanWithChild {
 
 class PostMonospaceSpan extends PostSpanWithChild {
 	const PostMonospaceSpan(super.child);
+
+	static const kTypeId = 27;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		child.dump(builder);
+	}
+	static PostMonospaceSpan read(ByteReader buffer) {
+		return PostMonospaceSpan(PostSpan.read(buffer));
+	}
+
 	@override
 	build(context, post, zone, settings, theme, options) {
 		return child.build(context, post, zone, settings, theme, options.copyWith(
@@ -1766,6 +2228,20 @@ class PostPopupSpan extends PostSpanWithChild {
 		required PostSpan popup,
 		required this.title
 	}) : super(popup);
+
+	static const kTypeId = 28;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		child.dump(builder);
+		builder.addString(title);
+	}
+	static PostPopupSpan read(ByteReader buffer) {
+		final popup = PostSpan.read(buffer);
+		final title = buffer.takeString();
+		return PostPopupSpan(popup: popup, title: title);
+	}
+
 	@override
 	build(context, post, zone, settings, theme, options) {
 		return TextSpan(
@@ -1840,6 +2316,29 @@ class IntrinsicColumnWidthWithMaxWidth extends IntrinsicColumnWidth {
 class PostTableSpan extends PostSpan {
 	final List<List<PostSpan>> rows;
 	const PostTableSpan(this.rows);
+
+	static const kTypeId = 29;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		builder.addIntVar(rows.length);
+		for (final row in rows) {
+			builder.addIntVar(row.length);
+			for (final col in row) {
+				col.dump(builder);
+			}
+		}
+	}
+	static PostTableSpan read(ByteReader buffer) {
+		final length = buffer.takeIntVar();
+		return PostTableSpan(List.generate(length, (_) {
+			final length = buffer.takeIntVar();
+			return List.generate(length, (_) {
+				return PostSpan.read(buffer);
+			});
+		}));
+	}
+
 	@override
 	build(context, post, zone, settings, theme, options) {
 		if (options.showRawSource) {
@@ -1903,6 +2402,16 @@ class PostTableSpan extends PostSpan {
 
 class PostDividerSpan extends PostTerminalSpan {
 	const PostDividerSpan();
+
+	static const kTypeId = 30;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+	}
+	static PostDividerSpan read(ByteReader buffer) {
+		return const PostDividerSpan();
+	}
+
 	@override
 	build(context, post, zone, settings, theme, options) => const WidgetSpan(
 		child: ChanceDivider(height: 16)
@@ -1918,6 +2427,16 @@ class PostShiftJISSpan extends PostTerminalSpan {
 	final String text;
 
 	const PostShiftJISSpan(this.text);
+
+	static const kTypeId = 31;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		builder.addString(text);
+	}
+	static PostShiftJISSpan read(ByteReader buffer) {
+		return PostShiftJISSpan(buffer.takeString());
+	}
 
 	@override
 	build(context, post, zone, settings, theme, options) {
@@ -1965,6 +2484,16 @@ class PostUserLinkSpan extends PostTerminalSpan {
 
 	const PostUserLinkSpan(this.username);
 
+	static const kTypeId = 32;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		builder.addString(username);
+	}
+	static PostUserLinkSpan read(ByteReader buffer) {
+		return PostUserLinkSpan(buffer.takeString());
+	}
+
 	@override
 	build(context, post, zone, settings, theme, options) {
 		return TextSpan(
@@ -2003,6 +2532,19 @@ class PostCssSpan extends PostSpanWithChild {
 	final String css;
 
 	const PostCssSpan(super.child, this.css);
+
+	static const kTypeId = 33;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		child.dump(builder);
+		builder.addString(css);
+	}
+	static PostCssSpan read(ByteReader buffer) {
+		final child = PostSpan.read(buffer);
+		final css = buffer.takeString();
+		return PostCssSpan(child, css);
+	}
 
 	@override
 	build(context, post, zone, settings, theme, options) {
@@ -2107,6 +2649,17 @@ class PostCssSpan extends PostSpanWithChild {
 
 class PostSmallTextSpan extends PostSpanWithChild {
 	const PostSmallTextSpan(super.child);
+
+	static const kTypeId = 34;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		child.dump(builder);
+	}
+	static PostSmallTextSpan read(ByteReader buffer) {
+		return PostSmallTextSpan(PostSpan.read(buffer));
+	}
+
 	@override
 	build(context, post, zone, settings, theme, options) {
 		return child.build(context, post, zone, settings, theme, options.copyWith(
@@ -2117,6 +2670,17 @@ class PostSmallTextSpan extends PostSpanWithChild {
 
 class PostBigTextSpan extends PostSpanWithChild {
 	const PostBigTextSpan(super.child);
+
+	static const kTypeId = 35;
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		if (writeTypeId) builder.addByte(kTypeId);
+		child.dump(builder);
+	}
+	static PostBigTextSpan read(ByteReader buffer) {
+		return PostBigTextSpan(PostSpan.read(buffer));
+	}
+
 	@override
 	build(context, post, zone, settings, theme, options) {
 		return child.build(context, post, zone, settings, theme, options.copyWith(

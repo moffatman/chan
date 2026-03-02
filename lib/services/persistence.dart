@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:chan/main.dart';
 import 'package:chan/models/attachment.dart';
@@ -13,6 +14,7 @@ import 'package:chan/pages/board.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/pages/web_image_picker.dart';
+import 'package:chan/services/bytes.dart';
 import 'package:chan/services/cookies.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
@@ -411,9 +413,37 @@ class Persistence extends ChangeNotifier {
 		final key = '$imageboardKey/$b/$id';
 		return _loadThreadDebouncer.debounce(key, () async {
 			return await _threadsFileLock.protect(key, (_) async {
-				return await sharedThreadsBox.get(key, syncIO: syncIO);
+				final ret = await sharedThreadsBox.get(key, syncIO: syncIO);
+				if (ret != null) {
+					final file = Persistence.temporaryDirectory.dir('spancache').dir(imageboardKey).dir(b).file('$id.bin');
+					if (file.existsSync()) {
+						try {
+							final bytes = file.readAsBytesSync();
+							final reader = ByteReader(bytes);
+							ret.restoreSpans(reader);
+						}
+						catch (e, st) {
+							Future.error(e, st);
+						}
+					}
+				}
+				return ret;
 			});
 		});
+	}
+
+	static Future<void> _writeSpanCache(String imageboardKey, String b, int id, Thread thread) async {
+		try {
+			final dir = Persistence.temporaryDirectory.dir('spancache').dir(imageboardKey).dir(b);
+			dir.createSync(recursive: true);
+			final builder = BytesBuilder(copy: false);
+			thread.writeSpans(builder);
+			final file = dir.file('$id.bin');
+			await file.writeAsBytes(builder.takeBytes());
+		}
+		catch (e, st) {
+			Future.error(e, st);
+		}
 	}
 
 	static Future<void> setCachedThread(String imageboardKey, String board, int id, Thread? thread) async {
@@ -422,9 +452,11 @@ class Persistence extends ChangeNotifier {
 		return _threadsFileLock.protect(key, (_) async {
 			if (thread != null) {
 				await sharedThreadsBox.put(key, thread);
+				await _writeSpanCache(imageboardKey, b, id, thread);
 			}
 			else {
 				await sharedThreadsBox.delete(key);
+				await Persistence.temporaryDirectory.dir('spancache').dir(imageboardKey).dir(b).file('$id.bin').delete();
 			}
 		});
 	}
@@ -921,11 +953,26 @@ class Persistence extends ChangeNotifier {
 			print('Deleting ${toDelete.length} thread states');
 			await sharedThreadStateBox.deleteAll(toDelete);
 		}
+		final toPreserve2 = sharedThreadStateBox.keys.toSet();
 		final cachedThreadKeys = sharedThreadsBox.keys.toSet();
-		cachedThreadKeys.removeAll(sharedThreadStateBox.keys);
+		cachedThreadKeys.removeAll(toPreserve2);
 		if (cachedThreadKeys.isNotEmpty) {
 			print('Deleting ${cachedThreadKeys.length} cached threads');
 			await sharedThreadsBox.deleteAll(cachedThreadKeys);
+		}
+		final spanCacheDir = temporaryDirectory.dir('spancache');
+		final spanCacheDirPathLen = spanCacheDir.path.length;
+		if (spanCacheDir.existsSync()) {
+			for (final file in spanCacheDir.listSync(recursive: true)) {
+				if (file.statSync().type == FileSystemEntityType.file && file.path.endsWith('.bin')) {
+					// After spancache/, before .bin
+					final key = file.path.substring(spanCacheDirPathLen + 1, file.path.length - 4);
+					if (!toPreserve2.contains(key)) {
+						print('Deleting $key cached spans');
+						file.deleteSync();
+					}
+				}
+			}
 		}
 	}
 
@@ -1649,19 +1696,27 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 		_filteredPosts = null;
 	}
 
+	Future<void> preinitAndWriteSpanCache(Thread thread, {bool catalog = false}) async {
+		if (await thread.preinit(catalog: catalog)) {
+			if (!catalog) {
+				await Persistence._writeSpanCache(imageboardKey, boardKey.s, id, thread);
+			}
+		}
+	}
+
 	Future<Thread?> ensureThreadLoaded({bool preinit = true, bool catalog = false, bool syncIO = false}) => Persistence._ensureThreadLoadedDebouncer.debounce(this, () async {
 		Thread? thread = _thread;
 		if (thread != null) {
 			if (preinit) {
-				await thread.preinit(catalog: catalog);
+				await preinitAndWriteSpanCache(thread, catalog: catalog);
 			}
 			return thread;
 		}
 		// This is to do preinit before setting _thread (which will generate metafilter)
 		thread = await Persistence.getCachedThread(imageboardKey, board, id, syncIO: syncIO);
-		if (preinit) {
+		if (preinit && thread != null) {
 			try {
-				await thread?.preinit(catalog: catalog);
+				await preinitAndWriteSpanCache(thread, catalog: catalog);
 			}
 			catch (e, st) {
 				// The thread is corrupt or something

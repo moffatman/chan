@@ -95,6 +95,24 @@ enum PostSpanFormat {
 		_ => true
 	};
 	bool get hasWeakQuoteLinks => this == jForum;
+	/// Must update if any makeSpan function changes
+	int get _makeSpanVersion => switch (this) {
+		chan4 => 1,
+		foolFuuka => 1,
+		lainchan => 1,
+		fuuka => 1,
+		futaba => 1,
+		reddit => 1,
+		hackerNews => 1,
+		stub => 1,
+		lynxchan => 1,
+		chan4Search => 1,
+		xenforo => 1,
+		pageStub => 1,
+		karachan => 1,
+		jsChan => 1,
+		jForum => 1
+	};
 }
 
 void _readHookPostFields(List<dynamic> fields) {
@@ -175,6 +193,10 @@ class Post implements Filterable {
 				return SiteJForum.makeSpan(text);
 		}
 	}
+	void setSpan(PostNodeSpan newSpan) {
+		_span = newSpan;
+	}
+	int get spanHash => spanFormat.index ^ spanFormat._makeSpanVersion ^ text.hashCode;
 	PostNodeSpan get span {
 		_span ??= _makeSpan();
 		return _span!;
