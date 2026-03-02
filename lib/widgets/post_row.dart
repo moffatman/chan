@@ -60,10 +60,21 @@ class _PostHidingDialogState extends State<_PostHidingDialog> {
 		final theme = context.watch<SavedTheme>();
 		/// Assume this can't change from another source while the dialog is open
 		final lines = settings.filterConfiguration.split(lineSeparatorPattern);
+		String? subjectFilter;
 		String? nameFilter;
 		String? tripFilter;
 		String? flagFilter;
 		String? textFilter;
+		if (widget.post.id == widget.post.threadId) {
+			if (widget.threadState.thread?.title case String title when title.isNotEmpty) {
+				subjectFilter = CustomFilter(
+					pattern: RegExp('^${RegExp.escape(title)}\$', caseSensitive: false),
+					label: 'Subject "$title"',
+					boardsBySite: {imageboard.key: {widget.threadState.boardKey.s}},
+					patternFields: ['subject']
+				).toStringConfiguration();
+			}
+		}
 		if (widget.post.name.isNotEmpty && widget.post.name != imageboard.site.defaultUsername) {
 			nameFilter = CustomFilter(
 				pattern: RegExp('^${RegExp.escape(widget.post.name)}\$', caseSensitive: false),
@@ -152,6 +163,11 @@ class _PostHidingDialogState extends State<_PostHidingDialog> {
 						)
 					),
 					for (final filter in [
+						if (subjectFilter case final subjectFilter?) (
+							desc: 'Hide by subject',
+							span: TextSpan(text: widget.threadState.thread?.title ?? ''),
+							filter: subjectFilter
+						),
 						if (nameFilter case final nameFilter?) (
 							desc: 'Hide by name',
 							span: TextSpan(text: widget.post.name),
