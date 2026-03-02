@@ -352,6 +352,7 @@ class _ChanAppState extends State<ChanApp> {
 		SchedulerBinding.instance.addPostFrameCallback((_) async {
 			await precacheImage(ChanSplashPage._kImage, context);
 			await SchedulerBinding.instance.endOfFrame;
+			await SchedulerBinding.instance.endOfFrame;
 			ImageboardRegistry.instance.initializeDev();
 			ImageboardRegistry.instance.handleSites(
 				// ignore: use_build_context_synchronously
