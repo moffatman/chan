@@ -290,6 +290,10 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		if (!(await getBoards(priority: priority, cancelToken: cancelToken)).any((b) => b.name == board)) {
 			throw BoardNotFoundException(board);
 		}
+		if (id == 0) {
+			// FoolFuuka engine doesn't handle this properly
+			throw PostNotFoundException(board, id);
+		}
 		final response = await client.getUri(
 			Uri.https(baseUrl, '/_/api/chan/post', {
 				'board': board,
