@@ -39,6 +39,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/services/storage.dart';
 import 'package:chan/services/streaming_mp4.dart';
+import 'package:chan/services/taskgraph.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/services/translation.dart';
@@ -84,38 +85,69 @@ bool developerMode = false;
 
 Future<void> innerMain() async {
 	try {
-		await initializeRLimit();
+		final start = DateTime.now();
+		initializeRLimit();
 		WidgetsFlutterBinding.ensureInitialized();
 		GlobalPointerTracker.instance.initialize();
-		await initializeIsDevelopmentBuild();
-		await initializeIsOnMac();
-		await initializeHandoff();
-		await initializeAndroid();
+		final initializeIsDevelopmentBuildTask = Task('initializeIsDevelopmentBuildTask', initializeIsDevelopmentBuild);
+		final initializeIsOnMacTask = Task('initializeIsOnMac', initializeIsOnMac);
+		final initializeHandoffTask = Task('initializeHandoff', initializeHandoff);
+		final initializeAndroidTask = Task('initializeAndroid', initializeAndroid);
+		final initializeDefaultUserAgentTask = Task('initializeDefaultUserAgent', initializeDefaultUserAgent);
 		final imageHttpClient = (ExtendedNetworkImageProvider.httpClient as HttpClient);
 		imageHttpClient.connectionTimeout = const Duration(seconds: 10);
 		imageHttpClient.idleTimeout = const Duration(seconds: 10);
 		imageHttpClient.maxConnectionsPerHost = 10;
 		imageHttpClient.badCertificateCallback = badCertificateCallback;
-		if (Platform.isAndroid || Platform.isIOS) {
-			await Firebase.initializeApp(
-				options: DefaultFirebaseOptions.currentPlatform
-			);
-			FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
-		}
-		await Persistence.initializeStatic();
-		await LoggingInterceptor.instance.initialize();
-		VideoServer.initializeStatic(Persistence.webmCacheDirectory, Persistence.httpCacheDirectory);
-		await Notifications.initializeStatic();
-		await updateDynamicColors();
-		await initializeFonts();
-		await initializeNativeTranslation();
-		MediaKit.ensureInitialized();
-		await JsonCache.instance.initialize();
-		await MediaScan.initializeStatic();
-		if (kDebugMode) {
-			await resetAdditionalSafeAreaInsets();
-		}
-		await initializeDefaultUserAgent();
+		final firebaseTask = Task('firebase', () async {
+			if (Platform.isAndroid || Platform.isIOS) {
+				await Firebase.initializeApp(
+					options: DefaultFirebaseOptions.currentPlatform
+				);
+				FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+			}
+		});
+		final hiveTask = Task('hive', Persistence.initializeHive);
+		final directoriesTask = Task('directories', Persistence.initializeDirectories);
+		final persistenceTask = Task('persistence', Persistence.initializeStatic, [hiveTask, directoriesTask, firebaseTask]);
+		final networkLoggingTask = Task('networkLogging', LoggingInterceptor.instance.initialize, [directoriesTask]);
+		final videoServerTask = Task('videoServer', () async {
+			VideoServer.initializeStatic(Persistence.webmCacheDirectory, Persistence.httpCacheDirectory);
+		}, [directoriesTask]);
+		final notificationsTask = Task('notifications', Notifications.initializeStatic, [persistenceTask, networkLoggingTask, firebaseTask]);
+		final updateDynamicColorsTask = Task('updateDynamicColors', updateDynamicColors);
+		final initializeFontsTask = Task('initializeFonts', initializeFonts, [persistenceTask]);
+		final initializeNativeTranslationTask = Task('initializeNativeTranslation', initializeNativeTranslation);
+		final mediaKitTask = Task('mediaKit', MediaKit.ensureInitialized);
+		final jsonCacheTask = Task('jsonCache', JsonCache.instance.initialize, [
+			networkLoggingTask,
+			initializeIsDevelopmentBuildTask,
+			initializeDefaultUserAgentTask,
+			// Depends on Settings.instance
+			persistenceTask
+		]);
+		final mediaScanTask = Task('mediaScan', MediaScan.initializeStatic, [hiveTask]);
+		await executeTaskGraph([
+			initializeIsDevelopmentBuildTask,
+			initializeIsOnMacTask,
+			initializeHandoffTask,
+			initializeAndroidTask,
+			initializeDefaultUserAgentTask,
+			hiveTask,
+			persistenceTask,
+			networkLoggingTask,
+			videoServerTask,
+			notificationsTask,
+			updateDynamicColorsTask,
+			initializeFontsTask,
+			initializeNativeTranslationTask,
+			mediaKitTask,
+			jsonCacheTask,
+			mediaScanTask,
+			if (kDebugMode)
+				Task('resetAdditionalSafeAreaInsets', resetAdditionalSafeAreaInsets)
+		]);
+		print('before runApp: ${DateTime.now().difference(start)}');
 		runApp(const ChanApp());
 	}
 	catch (e, st) {

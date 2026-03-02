@@ -220,6 +220,7 @@ class Persistence extends ChangeNotifier {
 	static late final SavedSettings settings;
 	static late final Directory temporaryDirectory;
 	static late final Directory documentsDirectory;
+	static final Set<String> alreadyExistingBoxes = {};
 	static late final Directory webmCacheDirectory;
 	static late final Directory httpCacheDirectory;
 	static late final Directory shareCacheDirectory;
@@ -432,19 +433,17 @@ class Persistence extends ChangeNotifier {
 		return sharedThreadsBox.listenable(keys: ['$imageboardKey/${thread.board.toLowerCase()}/${thread.id}']);
 	}
 
-	static Future<void> ensureTemporaryDirectoriesExist() async {
-		await webmCacheDirectory.create(recursive: true);
+	static void ensureTemporaryDirectoriesExist() {
+		webmCacheDirectory.createSync(recursive: true);
 		final oldHttpCache = webmCacheDirectory.dir('httpcache');
 		if (oldHttpCache.statSync().type == FileSystemEntityType.directory) {
-			await oldHttpCache.rename(httpCacheDirectory.path);
+			oldHttpCache.renameSync(httpCacheDirectory.path);
 		}
-		await httpCacheDirectory.create(recursive: true);
-		await shareCacheDirectory.create(recursive: true);
-		await temporaryDirectory.dir(cacheImageFolderName).create(recursive: true);
-		await LoggingInterceptor.instance.initialize();
+		httpCacheDirectory.createSync(recursive: true);
+		shareCacheDirectory.createSync(recursive: true);
+		temporaryDirectory.dir(cacheImageFolderName).createSync(recursive: true);
 	}
 
-	@visibleForTesting
 	static Future<void> initializeHive({bool forTesting = false}) async {
 		if (forTesting) {
 			Hive.init(Directory.systemTemp.path);
@@ -534,13 +533,23 @@ class Persistence extends ChangeNotifier {
 		return FileStorage(newParent);
 	}
 
-	static Future<void> initializeStatic() async {
-		appLaunchTime = DateTime.now();
-		initializeHive();
+	static Future<void> initializeDirectories() async {
 		temporaryDirectory = (await getTemporaryDirectory()).absolute;
 		webmCacheDirectory = temporaryDirectory.dir('webmcache');
 		httpCacheDirectory = temporaryDirectory.dir('httpcache');
 		shareCacheDirectory = temporaryDirectory.dir('sharecache');
+		ensureTemporaryDirectoriesExist();
+		documentsDirectory = await getApplicationDocumentsDirectory();
+		for (final file in documentsDirectory.listSync()) {
+			if (file.path.endsWith('.hive')) {
+				alreadyExistingBoxes.add(FileBasename.get(file.path).toLowerCase());
+			}
+		}
+		savedAttachmentsDirectory = documentsDirectory.dir(savedAttachmentsDir);
+	}
+
+	static Future<void> initializeStatic() async {
+		appLaunchTime = DateTime.now();
 		try {
 			if (await shareCacheDirectory.exists()) {
 				// This data is always useless upon app relaunch
@@ -550,9 +559,6 @@ class Persistence extends ChangeNotifier {
 		catch (e, st) {
 			Future.error(e, st); // Just continue and report error
 		}
-		await ensureTemporaryDirectoriesExist();
-		documentsDirectory = await getApplicationDocumentsDirectory();
-		savedAttachmentsDirectory = documentsDirectory.dir(savedAttachmentsDir);
 		try {
 			// Boxes were always saved as lowercase, but backups may have been
 			// upper case in the past. Just correct all '*.hive*' to be lower case.
@@ -895,7 +901,9 @@ class Persistence extends ChangeNotifier {
 		if ((await FilePicker.platform.clearTemporaryFiles()) ?? false) {
 			print('Deleted FilePicker junk');
 		}
-		await ensureTemporaryDirectoriesExist();
+		ensureTemporaryDirectoriesExist();
+		// Needs to recreate its file
+		await LoggingInterceptor.instance.initialize();
 	}
 
 	static Future<void> cleanupThreads(List<Imageboard> imageboards, Duration olderThan) async {
@@ -934,14 +942,18 @@ class Persistence extends ChangeNotifier {
 	String get _deprecatedThreadStatesBoxName => '${_boxPrefix}threadStates_$imageboardKey';
 	String get _deprecatedThreadStatesBackupBoxName => '${_backupBoxPrefix}threadStates_$imageboardKey';
 
+	static bool _boxExists(String boxName) {
+		return alreadyExistingBoxes.contains(boxName.toLowerCase());
+	}
+
 	Future<void> initialize() async {
-		if (await Hive.boxExists(_deprecatedThreadStatesBoxName)) {
+		if (_boxExists(_deprecatedThreadStatesBoxName)) {
 			Box<PersistentThreadState>? deprecatedThreadStatesBox;
 			try {
 				deprecatedThreadStatesBox = await Hive.openBox(_deprecatedThreadStatesBoxName);
 			}
 			catch (e, st) {
-				if (await Hive.boxExists(_deprecatedThreadStatesBackupBoxName)) {
+				if (_boxExists(_deprecatedThreadStatesBackupBoxName)) {
 					try {
 						deprecatedThreadStatesBox = await Hive.openBox(_deprecatedThreadStatesBackupBoxName);
 					}
@@ -988,15 +1000,15 @@ class Persistence extends ChangeNotifier {
 					sharedThreadStateBox.put('$imageboardKey/$key', newTs);
 				}
 				await deprecatedThreadStatesBox.close();
-				if (await Hive.boxExists(_deprecatedThreadStatesBoxName)) {
+				if (_boxExists(_deprecatedThreadStatesBoxName)) {
 					await Hive.deleteBoxFromDisk(_deprecatedThreadStatesBoxName);
 				}
-				if (await Hive.boxExists(_deprecatedThreadStatesBackupBoxName)) {
+				if (_boxExists(_deprecatedThreadStatesBackupBoxName)) {
 					await Hive.deleteBoxFromDisk(_deprecatedThreadStatesBackupBoxName);
 				}
 			}
 		}
-		if (await Hive.boxExists('searches_$imageboardKey')) {
+		if (_boxExists('searches_$imageboardKey')) {
 			print('Migrating searches box');
 			final searchesBox = await Hive.openBox<PersistentRecentSearches>('${_boxPrefix}searches_$imageboardKey');
 			final existingRecentSearches = searchesBox.get('recentSearches');
@@ -1012,7 +1024,7 @@ class Persistence extends ChangeNotifier {
 			}
 		}
 		settings.deprecatedRecentSearchesBySite.remove(imageboardKey);
-		if (await Hive.boxExists('browserStates_$imageboardKey')) {
+		if (_boxExists('browserStates_$imageboardKey')) {
 			print('Migrating browser states box');
 			final browserStateBox = await Hive.openBox<PersistentBrowserState>('${_boxPrefix}browserStates_$imageboardKey');
 			final existingBrowserState = browserStateBox.get('browserState');
@@ -1055,7 +1067,7 @@ class Persistence extends ChangeNotifier {
 			browserState.deprecatedTabs.clear();
 			didUpdateBrowserState();
 		}
-		if (await Hive.boxExists('boards_$imageboardKey')) {
+		if (_boxExists('boards_$imageboardKey')) {
 			print('Migrating from site-specific boards box');
 			final boardBox = await Hive.openBox<ImageboardBoard>('${_boxPrefix}boards_$imageboardKey');
 			settings.deprecatedBoardsBySite[imageboardKey] = {
@@ -1070,7 +1082,7 @@ class Persistence extends ChangeNotifier {
 			}
 			settings.deprecatedBoardsBySite.remove(imageboardKey);
 		}
-		if (await Hive.boxExists('savedAttachments_$imageboardKey')) {
+		if (_boxExists('savedAttachments_$imageboardKey')) {
 			print('Migrating saved attachments box');
 			final savedAttachmentsBox = await Hive.openBox<SavedAttachment>('${_boxPrefix}savedAttachments_$imageboardKey');
 			settings.savedAttachmentsBySite[imageboardKey] = {
@@ -1079,7 +1091,7 @@ class Persistence extends ChangeNotifier {
 			await savedAttachmentsBox.deleteFromDisk();
 		}
 		settings.savedAttachmentsBySite.putIfAbsent(imageboardKey, () => {});
-		if (await Hive.boxExists('savedPosts_$imageboardKey')) {
+		if (_boxExists('savedPosts_$imageboardKey')) {
 			print('Migrating saved posts box');
 			final savedPostsBox = await Hive.openBox<SavedPost>('${_boxPrefix}savedPosts_$imageboardKey');
 			settings.savedPostsBySite[imageboardKey] = {

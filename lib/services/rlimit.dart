@@ -49,7 +49,7 @@ void setrlimit(int resource, RLimit rlimit) {
 	}
 }
 
-Future<void> initializeRLimit() async {
+void initializeRLimit() {
 	if (!Platform.isIOS) {
 		return;
 	}

@@ -12,7 +12,8 @@ import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:mutex/mutex.dart';
 
 class LoggingInterceptor extends Interceptor {
-	final fileObj = Persistence.temporaryDirectory.file('network.log');
+	/// Needs to be late to defer until initialize() actually runs
+	late final fileObj = Persistence.temporaryDirectory.file('network.log');
 	IOSink? file;
 	final lock = Mutex();
 	static final instance = LoggingInterceptor._();
