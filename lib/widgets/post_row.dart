@@ -392,7 +392,10 @@ class PostRow extends StatelessWidget {
 		final translatedPostSnapshot = parentZone.translatedPost(post.id);
 		final settings = context.watch<Settings>();
 		final theme = context.watch<SavedTheme>();
-		final parentZoneThreadState = parentZone.imageboard.persistence.getThreadStateIfExists(post.threadIdentifier);
+		final parentZoneThreadState =
+			(post.threadId == parentZone.primaryThreadId && post.board == parentZone.board)
+			? parentZone.primaryThreadState
+			: parentZone.imageboard.persistence.getThreadStateIfExists(post.threadIdentifier);
 		final receipt = parentZoneThreadState?.receipts.tryFirstWhere((r) => r.id == latestPost.id);
 		final isYourPost = revealYourPosts && (receipt?.markAsYou ?? false) || (parentZoneThreadState?.postsMarkedAsYou.contains(post.id) ?? false);
 		Border? border;
