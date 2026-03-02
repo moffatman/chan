@@ -130,8 +130,7 @@ class MediaScan {
 	});
 
 	static final _ffprobeLock = Mutex();
-	static LazyBox<MediaScan>? _mediaScanBox;
-	static final _boxLock = Mutex();
+	static late LazyBox<MediaScan> _mediaScanBox;
 
 	static Future<MediaScan> _scan(Uri file, {
 		Map<String, String> headers = const {},
@@ -299,19 +298,28 @@ class MediaScan {
 		}
 	}
 
-	static Future<void> _closeBox() async {
-		await _boxLock.protect(() async {
-			final box = _mediaScanBox;
-			_mediaScanBox = null;
-			await box?.close();
-		});
-	}
-
 	static String _makeKey(String path) {
 		if (path.length <= 255) {
 			return path;
 		}
 		return base64.encode(md5.convert(utf8.encode(path)).bytes);
+	}
+
+	static Future<MediaScan?> cachedFileScan(String path) async {
+		final key = _makeKey(path);
+		MediaScan? result = _fileScans[key];
+		if (result == null) {
+			final fromDisk = await _mediaScanBox.get(key);
+			if (fromDisk == null) {
+				return null;
+			}
+			result = _fileScans[key] = fromDisk;
+		}
+		final size = File(path).statSync().size;
+		if (size != result.sizeInBytes) {
+			return null;
+		}
+		return result;
 	}
 
 	static MediaScan? peekCachedFileScan(String path) {
@@ -332,20 +340,18 @@ class MediaScan {
 		bool force = false
 	}) async {
 		if (file.scheme == 'file') {
-			final peeked = peekCachedFileScan(file.path);
-			if (!force && peeked != null) {
-				return peeked;
+			if (!force) {
+				final cached = await cachedFileScan(file.path);
+				if (!force && cached != null) {
+					return cached;
+				}
 			}
 			// Not cached or file size doesn't match
-			return _boxLock.protect(() async {
-				runWhenIdle(const Duration(seconds: 1), _closeBox);
-				final mediaScanBox = _mediaScanBox ??= await Hive.openLazyBox<MediaScan>('mediaScans');
-				final scan = await _scan(file, force: force);
-				final key = _makeKey(file.path);
-				_fileScans[key] = scan;
-				await mediaScanBox.put(key, scan);
-				return scan;
-			});
+			final scan = await _scan(file, force: force);
+			final key = _makeKey(file.path);
+			_fileScans[key] = scan;
+			await _mediaScanBox.put(key, scan);
+			return scan;
 		}
 		else {
 			return _scan(file, headers: headers, extraCookie: extraCookie, force: force);
@@ -377,27 +383,12 @@ class MediaScan {
 
 	static Future<void> initializeStatic() async {
 		try {
-			// Fill up _fileScans from disk
-			await _boxLock.protect(() async {
-				runWhenIdle(const Duration(seconds: 1), _closeBox);
-				final mediaScanBox = _mediaScanBox ??= await Hive.openLazyBox<MediaScan>('mediaScans');
-				for (final key in mediaScanBox.keys) {
-					if (key is! String) {
-						continue;
-					}
-					final value = await mediaScanBox.get(key);
-					if (value != null) {
-						_fileScans[key] = value;
-					}
-				}
-			});
+			_mediaScanBox = await Hive.openLazyBox<MediaScan>('mediaScans');
 		}
 		catch (e, st) {
 			// Must be a corrupt box, delete it
-			_boxLock.protect(() async {
-				_mediaScanBox = null;
-				await Hive.deleteBoxFromDisk('mediaScans');
-			});
+			await Hive.deleteBoxFromDisk('mediaScans');
+			_mediaScanBox = await Hive.openLazyBox<MediaScan>('mediaScans');
 			// Don't block app startup
 			Future.error(e, st); // crashlytics
 		}
