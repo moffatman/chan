@@ -869,33 +869,27 @@ class Persistence extends ChangeNotifier {
 		await ensureTemporaryDirectoriesExist();
 	}
 
-	Future<void> _cleanupThreads(Duration olderThan) async {
+	static Future<void> cleanupThreads(List<Imageboard> imageboards, Duration olderThan) async {
 		final deadline = DateTime.now().subtract(olderThan);
-		final toPreserve = savedPosts.values.map((v) => '$imageboardKey/${v.post.board.toLowerCase()}/${v.post.threadId}').toSet();
-		toPreserve.addAll(browserState.threadWatches.keys.map((v) => '$imageboardKey/${v.board.toLowerCase()}/${v.id}'));
-		final toDelete = sharedThreadStateBox.keys.where((key) {
-			if (!(key as String).startsWith('$imageboardKey/')) {
-				// Not this Persistence
-				return false;
-			}
-			final ts = sharedThreadStateBox.get(key);
-			return (ts?.youIds.isEmpty ?? false) // no replies
-				  && (ts?.lastOpenedTime.isBefore(deadline) ?? false) // not opened recently
-					&& (ts?.savedTime == null) // not saved
-				  && (!toPreserve.contains(key)); // connect to a saved post or thread watch
-		});
+		final toPreserve = imageboards.expand((imageboard) => imageboard.persistence.savedPosts.values.map((v) => '${imageboard.key}/${v.post.board.toLowerCase()}/${v.post.threadId}')).toSet();
+		toPreserve.addAll(imageboards.expand((imageboard) => imageboard.persistence.browserState.threadWatches.keys.map((v) => '${imageboard.key}/${v.board.toLowerCase()}/${v.id}')));
+		final toDelete = sharedThreadStateBox.mapEntries.where((entry) {
+			final ts = entry.value;
+			return ts.youIds.isEmpty // no replies
+				  && ts.lastOpenedTime.isBefore(deadline) // not opened recently
+					&& (ts.savedTime == null) // not saved
+				  && (!toPreserve.contains(entry.key)); // connect to a saved post or thread watch
+		}).map((e) => e.key).toList();
 		if (toDelete.isNotEmpty) {
-			print('[$imageboardKey] Deleting ${toDelete.length} thread states');
+			print('Deleting ${toDelete.length} thread states');
+			await sharedThreadStateBox.deleteAll(toDelete);
 		}
-		await sharedThreadStateBox.deleteAll(toDelete);
-		final cachedThreadKeys = sharedThreadsBox.keys.where((k) => (k as String).startsWith('$imageboardKey/')).toSet();
-		for (final threadStateKey in sharedThreadStateBox.keys) {
-			cachedThreadKeys.remove(threadStateKey);
-		}
+		final cachedThreadKeys = sharedThreadsBox.keys.toSet();
+		cachedThreadKeys.removeAll(sharedThreadStateBox.keys);
 		if (cachedThreadKeys.isNotEmpty) {
-			print('[$imageboardKey] Deleting ${cachedThreadKeys.length} cached threads');
+			print('Deleting ${cachedThreadKeys.length} cached threads');
+			await sharedThreadsBox.deleteAll(cachedThreadKeys);
 		}
-		await sharedThreadsBox.deleteAll(cachedThreadKeys);
 	}
 
 	Future<void> deleteAllData() async {
@@ -1165,9 +1159,6 @@ class Persistence extends ChangeNotifier {
 				threadState.deprecatedDraftReply = null;
 				threadState.deprecatedReplyOptions = null;
 			}
-		}
-		if (settings.automaticCacheClearDays < 100000) {
-			await _cleanupThreads(Duration(days: settings.automaticCacheClearDays));
 		}
 		settings.save();
 	}

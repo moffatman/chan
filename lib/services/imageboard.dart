@@ -50,7 +50,8 @@ class Imageboard extends ChangeNotifier {
 	(Object, StackTrace)? setupError;
 	(Object, StackTrace)? boardFetchError;
 	bool boardsLoading = false;
-	bool initialized = false;
+	final _initializedCompleter = Completer<void>();
+	bool get initialized => _initializedCompleter.isCompleted;
 	bool _persistenceInitialized = false;
 	bool _threadWatcherInitialized = false;
 	bool _notificationsInitialized = false;
@@ -127,7 +128,7 @@ class Imageboard extends ChangeNotifier {
 				}
 			}
 			site.initState();
-			initialized = true;
+			_initializedCompleter.complete();
 			// submitPost might mutate the outbox
 			for (final draft in persistence.browserState.outbox.toList(growable: false)) {
 				final thread = draft.thread;
@@ -634,6 +635,10 @@ class ImageboardRegistry extends ChangeNotifier {
 					initializations.add(_sites[entry.key]!.initialize());
 				}
 				await Future.wait(initializations);
+				if (Persistence.settings.automaticCacheClearDays < 100000) {
+					await dev?._initializedCompleter.future;
+					await Persistence.cleanupThreads(imageboardsIncludingDev.toList(), Duration(days: Persistence.settings.automaticCacheClearDays));
+				}
 				final initialTabsLength = Persistence.tabs.length;
 				final initialTab = Persistence.tabs[Persistence.currentTabIndex];
 				final initialTabIndex = Persistence.currentTabIndex;
