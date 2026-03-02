@@ -655,11 +655,18 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 			text += '/';
 		}
 		text += '$postId';
-		if (options.showCrossThreadLabel) {
+		if (postId == actualThreadId) {
+			text += ' (OP)';
+		}
+		final isOldThread = actualThreadId != zone.primaryThreadId && zone.findThread(actualThreadId) != null;
+		if (isOldThread) {
+			text += ' (Old thread)';
+		}
+		else if (options.showCrossThreadLabel) {
 			text += ' (Cross-thread)';
 		}
 		final Color color;
-		if (actualThreadId != zone.primaryThreadId && zone.findThread(actualThreadId) != null) {
+		if (isOldThread) {
 			color = theme.secondaryColor.shiftHue(-20);
 		}
 		else {
