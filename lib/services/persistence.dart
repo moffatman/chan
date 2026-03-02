@@ -2331,17 +2331,16 @@ class PersistentBrowserState {
 }
 
 class EfficientlyStoredIntSet {
-	final Set<int> data;
-	EfficientlyStoredIntSet(this.data);
-
-	@override
-	bool operator ==(Object other) =>
-		identical(this, other) ||
-		other is EfficientlyStoredIntSet &&
-		setEquals(other.data, data);
-
-	@override
-	int get hashCode => data.hashCode;
+	Iterable<int> _data;
+	EfficientlyStoredIntSet(this._data);
+	
+	Set<int> get data {
+		if (_data case final Set<int> s) {
+			return s;
+		}
+		// Set.of is expensive, wait until it is needed
+		return _data = Set.of(_data);
+	}
 }
 
 class EfficientlyStoredIntSetFields {
@@ -2375,37 +2374,36 @@ class EfficientlyStoredIntSetAdapter extends TypeAdapter<EfficientlyStoredIntSet
 		}
 		final numDiffs = reader.readWord();
 		final diffBase = reader.readInt();
-		final diffs = <int>[];
+		final out = List.filled(numDiffs + 1, 0, growable: false);
+		out[numDiffs] = diffBase;
 		if (intWidth == 2) {
 			for (int i = 0; i < numDiffs; i++) {
-				diffs.add(reader.readWord());
+				out[i] = diffBase + reader.readWord();
 			}
 		}
 		else if (intWidth == 4) {
 			for (int i = 0; i < numDiffs; i++) {
-				diffs.add(reader.readUint32());
+				out[i] = diffBase + reader.readUint32();
 			}
 		}
 		else if (intWidth == 8) {
 			for (int i = 0; i < numDiffs; i++) {
-				diffs.add(reader.readInt());
+				out[i] = diffBase + reader.readInt();
 			}
 		}
 		else {
 			throw UnsupportedError('Set-int width $intWidth not allowed');
 		}
-		final out = <int>{diffBase};
-		out.addAll(diffs.map((d) => diffBase + d));
 		return EfficientlyStoredIntSet(out);
   }
 
   @override
   void write(BinaryWriter writer, EfficientlyStoredIntSet obj) {
-		if (obj.data.toList().isEmpty) {
+		if (obj._data.isEmpty) {
 			writer.writeByte(0);
 			return;
 		}
-		final sorted = obj.data.toList()..sort();
+		final sorted = obj._data.toList()..sort();
 		final diffs = List.generate(sorted.length - 1, (i) => sorted[i + 1] - sorted.first);
 		final int intWidth;
 		if ((diffs.tryLast ?? 0) < 0xFFFF) {
