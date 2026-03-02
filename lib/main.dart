@@ -317,12 +317,17 @@ class _ChanAppState extends State<ChanApp> {
 		_lastSites = Map.from(JsonCache.instance.sites.value ?? defaultSites);
 		_lastSiteKeys = Set.from(Settings.instance.settings.contentSettings.siteKeys);
 		ImageboardRegistry.instance.addListener(_onImageboardRegistryUpdate);
-		ImageboardRegistry.instance.initializeDev();
-		ImageboardRegistry.instance.handleSites(
-			context: context,
-			sites: _lastSites,
-			keys: _lastSiteKeys
-		).then(_precacheIcons);
+		SchedulerBinding.instance.addPostFrameCallback((_) async {
+			await precacheImage(ChanSplashPage._kImage, context);
+			await SchedulerBinding.instance.endOfFrame;
+			ImageboardRegistry.instance.initializeDev();
+			ImageboardRegistry.instance.handleSites(
+				// ignore: use_build_context_synchronously
+				context: context,
+				sites: _lastSites,
+				keys: _lastSiteKeys
+			).then(_precacheIcons);
+		});
 		Settings.instance.addListener(_onSettingsUpdate);
 		JsonCache.instance.sites.addListener(_onSitesUpdate);
 	}
@@ -546,6 +551,8 @@ class ChanSplashPage extends StatelessWidget {
 		super.key
 	});
 
+	static const _kImage = AssetImage('assets/splash.png');
+
 	@override
 	Widget build(BuildContext context) {
 		return Container(
@@ -568,7 +575,7 @@ class ChanSplashPage extends StatelessWidget {
 								BlendMode.srcATop
 							),
 							child: const Image(
-								image: AssetImage('assets/splash.png')
+								image: _kImage
 							)
 						)
 					),

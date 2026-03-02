@@ -12,16 +12,11 @@ import 'package:hive/hive.dart';
 
 part 'thread.g.dart';
 
-void _readHookThreadFields(Map<int, dynamic> fields) {
-	fields.update(ThreadFields.attachments.fieldNumber, (attachments) {
-		return (attachments as List?)?.toList(growable: false);
-	}, ifAbsent: () {
-		final deprecatedAttachment = fields[7] as Attachment?;
-		if (deprecatedAttachment != null) {
-			return [deprecatedAttachment].toList(growable: false);
-		}
-		return const <Attachment>[];
-	});
+void _readHookThreadFields(List<dynamic> fields) {
+	fields[ThreadFields.kAttachments] ??= switch (fields[7]) {
+		Attachment deprecatedAttachment => [deprecatedAttachment],
+		_ => const []
+	};
 }
 
 @HiveType(typeId: 15, isOptimized: true, readHook: _readHookThreadFields)

@@ -8,23 +8,26 @@ part of 'imageboard_site.dart';
 
 class ImageboardBoardFlagFields {
   static String getCode(ImageboardBoardFlag x) => x.code;
+  static const int kCode = 0;
   static const code = ReadOnlyHiveFieldAdapter<ImageboardBoardFlag, String>(
     getter: getCode,
-    fieldNumber: 0,
+    fieldNumber: kCode,
     fieldName: 'code',
     merger: PrimitiveMerger(),
   );
   static String getName(ImageboardBoardFlag x) => x.name;
+  static const int kName = 1;
   static const name = ReadOnlyHiveFieldAdapter<ImageboardBoardFlag, String>(
     getter: getName,
-    fieldNumber: 1,
+    fieldNumber: kName,
     fieldName: 'name',
     merger: PrimitiveMerger(),
   );
   static String getImageUrl(ImageboardBoardFlag x) => x.imageUrl;
+  static const int kImageUrl = 2;
   static const imageUrl = ReadOnlyHiveFieldAdapter<ImageboardBoardFlag, String>(
     getter: getImageUrl,
-    fieldNumber: 2,
+    fieldNumber: kImageUrl,
     fieldName: 'imageUrl',
     merger: PrimitiveMerger(),
   );
@@ -49,9 +52,14 @@ class ImageboardBoardFlagAdapter extends TypeAdapter<ImageboardBoardFlag> {
   @override
   ImageboardBoardFlag read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-    };
+    final List<dynamic> fields = List.filled(3, null);
+    for (int i = 0; i < numOfFields; i++) {
+      final int fieldId = reader.readByte();
+      final dynamic value = reader.read();
+      if (fieldId < fields.length) {
+        fields[fieldId] = value;
+      }
+    }
     return ImageboardBoardFlag(
       code: fields[0] as String,
       name: fields[1] as String,
@@ -84,89 +92,100 @@ class ImageboardBoardFlagAdapter extends TypeAdapter<ImageboardBoardFlag> {
 
 class DraftPostFields {
   static String getBoard(DraftPost x) => x.board;
+  static const int kBoard = 0;
   static const board = ReadOnlyHiveFieldAdapter<DraftPost, String>(
     getter: getBoard,
-    fieldNumber: 0,
+    fieldNumber: kBoard,
     fieldName: 'board',
     merger: PrimitiveMerger(),
   );
   static int? getThreadId(DraftPost x) => x.threadId;
+  static const int kThreadId = 1;
   static const threadId = ReadOnlyHiveFieldAdapter<DraftPost, int?>(
     getter: getThreadId,
-    fieldNumber: 1,
+    fieldNumber: kThreadId,
     fieldName: 'threadId',
     merger: PrimitiveMerger(),
   );
   static String? getName(DraftPost x) => x.name;
   static void setName(DraftPost x, String? v) => x.name = v;
+  static const int kName = 2;
   static const name = HiveFieldAdapter<DraftPost, String?>(
     getter: getName,
     setter: setName,
-    fieldNumber: 2,
+    fieldNumber: kName,
     fieldName: 'name',
     merger: PrimitiveMerger(),
   );
   static String? getOptions(DraftPost x) => x.options;
+  static const int kOptions = 3;
   static const options = ReadOnlyHiveFieldAdapter<DraftPost, String?>(
     getter: getOptions,
-    fieldNumber: 3,
+    fieldNumber: kOptions,
     fieldName: 'options',
     merger: PrimitiveMerger(),
   );
   static String? getSubject(DraftPost x) => x.subject;
+  static const int kSubject = 4;
   static const subject = ReadOnlyHiveFieldAdapter<DraftPost, String?>(
     getter: getSubject,
-    fieldNumber: 4,
+    fieldNumber: kSubject,
     fieldName: 'subject',
     merger: PrimitiveMerger(),
   );
   static String getText(DraftPost x) => x.text;
+  static const int kText = 5;
   static const text = ReadOnlyHiveFieldAdapter<DraftPost, String>(
     getter: getText,
-    fieldNumber: 5,
+    fieldNumber: kText,
     fieldName: 'text',
     merger: PrimitiveMerger(),
   );
   static String? getFile(DraftPost x) => x.file;
   static void setFile(DraftPost x, String? v) => x.file = v;
+  static const int kFile = 6;
   static const file = HiveFieldAdapter<DraftPost, String?>(
     getter: getFile,
     setter: setFile,
-    fieldNumber: 6,
+    fieldNumber: kFile,
     fieldName: 'file',
     merger: PrimitiveMerger(),
   );
   static bool? getSpoiler(DraftPost x) => x.spoiler;
+  static const int kSpoiler = 7;
   static const spoiler = ReadOnlyHiveFieldAdapter<DraftPost, bool?>(
     getter: getSpoiler,
-    fieldNumber: 7,
+    fieldNumber: kSpoiler,
     fieldName: 'spoiler',
     merger: PrimitiveMerger(),
   );
   static String? getOverrideFilenameWithoutExtension(DraftPost x) =>
       x.overrideFilenameWithoutExtension;
+  static const int kOverrideFilenameWithoutExtension = 8;
   static const overrideFilenameWithoutExtension =
       ReadOnlyHiveFieldAdapter<DraftPost, String?>(
     getter: getOverrideFilenameWithoutExtension,
-    fieldNumber: 8,
+    fieldNumber: kOverrideFilenameWithoutExtension,
     fieldName: 'overrideFilenameWithoutExtension',
     merger: PrimitiveMerger(),
   );
   static ImageboardBoardFlag? getFlag(DraftPost x) => x.flag;
   static void setFlag(DraftPost x, ImageboardBoardFlag? v) => x.flag = v;
+  static const int kFlag = 9;
   static const flag = HiveFieldAdapter<DraftPost, ImageboardBoardFlag?>(
     getter: getFlag,
     setter: setFlag,
-    fieldNumber: 9,
+    fieldNumber: kFlag,
     fieldName: 'flag',
     merger: NullableMerger(AdaptedMerger(ImageboardBoardFlagAdapter.kTypeId)),
   );
   static bool? getUseLoginSystem(DraftPost x) => x.useLoginSystem;
   static void setUseLoginSystem(DraftPost x, bool? v) => x.useLoginSystem = v;
+  static const int kUseLoginSystem = 10;
   static const useLoginSystem = HiveFieldAdapter<DraftPost, bool?>(
     getter: getUseLoginSystem,
     setter: setUseLoginSystem,
-    fieldNumber: 10,
+    fieldNumber: kUseLoginSystem,
     fieldName: 'useLoginSystem',
     merger: PrimitiveMerger(),
   );
@@ -174,10 +193,11 @@ class DraftPostFields {
       x.overrideRandomizeFilenames;
   static void setOverrideRandomizeFilenames(DraftPost x, bool v) =>
       x.overrideRandomizeFilenames = v;
+  static const int kOverrideRandomizeFilenames = 11;
   static const overrideRandomizeFilenames = HiveFieldAdapter<DraftPost, bool>(
     getter: getOverrideRandomizeFilenames,
     setter: setOverrideRandomizeFilenames,
-    fieldNumber: 11,
+    fieldNumber: kOverrideRandomizeFilenames,
     fieldName: 'overrideRandomizeFilenames',
     merger: PrimitiveMerger(),
   );
@@ -210,9 +230,14 @@ class DraftPostAdapter extends TypeAdapter<DraftPost> {
   @override
   DraftPost read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-    };
+    final List<dynamic> fields = List.filled(12, null);
+    for (int i = 0; i < numOfFields; i++) {
+      final int fieldId = reader.readByte();
+      final dynamic value = reader.read();
+      if (fieldId < fields.length) {
+        fields[fieldId] = value;
+      }
+    }
     return DraftPost(
       board: fields[0] as String,
       threadId: fields[1] as int?,
@@ -273,23 +298,26 @@ class DraftPostAdapter extends TypeAdapter<DraftPost> {
 
 class ImageboardPollRowFields {
   static String getName(ImageboardPollRow x) => x.name;
+  static const int kName = 0;
   static const name = ReadOnlyHiveFieldAdapter<ImageboardPollRow, String>(
     getter: getName,
-    fieldNumber: 0,
+    fieldNumber: kName,
     fieldName: 'name',
     merger: PrimitiveMerger(),
   );
   static int getVotes(ImageboardPollRow x) => x.votes;
+  static const int kVotes = 1;
   static const votes = ReadOnlyHiveFieldAdapter<ImageboardPollRow, int>(
     getter: getVotes,
-    fieldNumber: 1,
+    fieldNumber: kVotes,
     fieldName: 'votes',
     merger: PrimitiveMerger(),
   );
   static Color? getColor(ImageboardPollRow x) => x.color;
+  static const int kColor = 2;
   static const color = ReadOnlyHiveFieldAdapter<ImageboardPollRow, Color?>(
     getter: getColor,
-    fieldNumber: 2,
+    fieldNumber: kColor,
     fieldName: 'color',
     merger: NullableMerger(AdaptedMerger(ColorAdapter.kTypeId)),
   );
@@ -314,9 +342,14 @@ class ImageboardPollRowAdapter extends TypeAdapter<ImageboardPollRow> {
   @override
   ImageboardPollRow read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-    };
+    final List<dynamic> fields = List.filled(3, null);
+    for (int i = 0; i < numOfFields; i++) {
+      final int fieldId = reader.readByte();
+      final dynamic value = reader.read();
+      if (fieldId < fields.length) {
+        fields[fieldId] = value;
+      }
+    }
     return ImageboardPollRow(
       name: fields[0] as String,
       votes: fields[1] as int,
@@ -349,17 +382,19 @@ class ImageboardPollRowAdapter extends TypeAdapter<ImageboardPollRow> {
 
 class ImageboardPollFields {
   static String? getTitle(ImageboardPoll x) => x.title;
+  static const int kTitle = 1;
   static const title = ReadOnlyHiveFieldAdapter<ImageboardPoll, String?>(
     getter: getTitle,
-    fieldNumber: 1,
+    fieldNumber: kTitle,
     fieldName: 'title',
     merger: PrimitiveMerger(),
   );
   static List<ImageboardPollRow> getRows(ImageboardPoll x) => x.rows;
+  static const int kRows = 2;
   static const rows =
       ReadOnlyHiveFieldAdapter<ImageboardPoll, List<ImageboardPollRow>>(
     getter: getRows,
-    fieldNumber: 2,
+    fieldNumber: kRows,
     fieldName: 'rows',
     merger: ListEqualsMerger<ImageboardPollRow>(),
   );
@@ -380,9 +415,14 @@ class ImageboardPollAdapter extends TypeAdapter<ImageboardPoll> {
   @override
   ImageboardPoll read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-    };
+    final List<dynamic> fields = List.filled(3, null);
+    for (int i = 0; i < numOfFields; i++) {
+      final int fieldId = reader.readByte();
+      final dynamic value = reader.read();
+      if (fieldId < fields.length) {
+        fields[fieldId] = value;
+      }
+    }
     return ImageboardPoll(
       title: fields[1] as String?,
       rows: (fields[2] as List).cast<ImageboardPollRow>(),

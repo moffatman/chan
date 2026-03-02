@@ -8,30 +8,34 @@ part of 'flag.dart';
 
 class ImageboardFlagFields {
   static String getName(ImageboardFlag x) => x.name;
+  static const int kName = 0;
   static const name = ReadOnlyHiveFieldAdapter<ImageboardFlag, String>(
     getter: getName,
-    fieldNumber: 0,
+    fieldNumber: kName,
     fieldName: 'name',
     merger: PrimitiveMerger(),
   );
   static String getImageUrl(ImageboardFlag x) => x.imageUrl;
+  static const int kImageUrl = 1;
   static const imageUrl = ReadOnlyHiveFieldAdapter<ImageboardFlag, String>(
     getter: getImageUrl,
-    fieldNumber: 1,
+    fieldNumber: kImageUrl,
     fieldName: 'imageUrl',
     merger: PrimitiveMerger(),
   );
   static double getImageWidth(ImageboardFlag x) => x.imageWidth;
+  static const int kImageWidth = 2;
   static const imageWidth = ReadOnlyHiveFieldAdapter<ImageboardFlag, double>(
     getter: getImageWidth,
-    fieldNumber: 2,
+    fieldNumber: kImageWidth,
     fieldName: 'imageWidth',
     merger: PrimitiveMerger(),
   );
   static double getImageHeight(ImageboardFlag x) => x.imageHeight;
+  static const int kImageHeight = 3;
   static const imageHeight = ReadOnlyHiveFieldAdapter<ImageboardFlag, double>(
     getter: getImageHeight,
-    fieldNumber: 3,
+    fieldNumber: kImageHeight,
     fieldName: 'imageHeight',
     merger: PrimitiveMerger(),
   );
@@ -57,9 +61,14 @@ class ImageboardFlagAdapter extends TypeAdapter<ImageboardFlag> {
   @override
   ImageboardFlag read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-    };
+    final List<dynamic> fields = List.filled(4, null);
+    for (int i = 0; i < numOfFields; i++) {
+      final int fieldId = reader.readByte();
+      final dynamic value = reader.read();
+      if (fieldId < fields.length) {
+        fields[fieldId] = value;
+      }
+    }
     return ImageboardFlag(
       name: fields[0] as String,
       imageUrl: fields[1] as String,
@@ -95,10 +104,11 @@ class ImageboardFlagAdapter extends TypeAdapter<ImageboardFlag> {
 
 class ImageboardMultiFlagFields {
   static List<ImageboardFlag> getParts(ImageboardMultiFlag x) => x.parts;
+  static const int kParts = 0;
   static const parts =
       ReadOnlyHiveFieldAdapter<ImageboardMultiFlag, List<ImageboardFlag>>(
     getter: getParts,
-    fieldNumber: 0,
+    fieldNumber: kParts,
     fieldName: 'parts',
     merger: ListEqualsMerger<ImageboardFlag>(),
   );
@@ -119,9 +129,14 @@ class ImageboardMultiFlagAdapter extends TypeAdapter<ImageboardMultiFlag> {
   @override
   ImageboardMultiFlag read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-    };
+    final List<dynamic> fields = List.filled(1, null);
+    for (int i = 0; i < numOfFields; i++) {
+      final int fieldId = reader.readByte();
+      final dynamic value = reader.read();
+      if (fieldId < fields.length) {
+        fields[fieldId] = value;
+      }
+    }
     return ImageboardMultiFlag(
       parts: (fields[0] as List).cast<ImageboardFlag>(),
     );

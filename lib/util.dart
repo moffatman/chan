@@ -836,19 +836,46 @@ extension DateTimeConversion on DateTime {
 	}
 }
 
-final Map<String, Mutex> _ephemeralLocks = {};
-Future<T> runEphemerallyLocked<T>(String key, Future<T> Function(bool) criticalSection) async {
-	final lock = _ephemeralLocks.putIfAbsent(key, () {
-		return Mutex();
-	});
-	try {
-		final wasLocked = lock.isLocked;
-		return await lock.protect(() => criticalSection(wasLocked));
+class EphemeralLockOwner<K> {
+	final Map<K, Mutex> _ephemeralLocks = {};
+	EphemeralLockOwner();
+	Future<T> protect<T>(K key, Future<T> Function(bool) criticalSection) async {
+		final lock = _ephemeralLocks.putIfAbsent(key, () {
+			return Mutex();
+		});
+		try {
+			final wasLocked = lock.isLocked;
+			return await lock.protect(() => criticalSection(wasLocked));
+		}
+		finally {
+			if (!(_ephemeralLocks[key]?.isLocked ?? false)) {
+				// No one else waiting
+				_ephemeralLocks.remove(key);
+			}
+		}
 	}
-	finally {
-		if (!(_ephemeralLocks[key]?.isLocked ?? false)) {
-			// No one else waiting
-			_ephemeralLocks.remove(key);
+}
+
+final _globalLocks = EphemeralLockOwner<String>();
+Future<T> runEphemerallyLocked<T>(String key, Future<T> Function(bool) criticalSection) async {
+	return _globalLocks.protect(key, criticalSection);
+}
+
+class EasyDebouncer<K, T> {
+	final Map<K, Future<T>> _futures = {};
+	EasyDebouncer();
+
+	Future<T> debounce(K arg, Future<T> Function() function) async {
+		final existingFuture = _futures[arg];
+		if (existingFuture != null) {
+			return existingFuture;
+		}
+		final future = _futures[arg] = function();
+		try {
+			return await future;
+		}
+		finally {
+			_futures.remove(arg);
 		}
 	}
 }

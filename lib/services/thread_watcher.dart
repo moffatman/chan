@@ -37,9 +37,9 @@ abstract class Watch {
 	bool get push => true;
 }
 
-void _readHookThreadWatchFields(Map<int, dynamic> fields) {
+void _readHookThreadWatchFields(List<dynamic> fields) {
 	// The field may be in the map with value [false]. So putIfAbsent is not appropriate
-	fields[ThreadWatchFields.watchTime.fieldNumber] ??= DateTime.now();
+	fields[ThreadWatchFields.kWatchTime] ??= DateTime.now();
 }
 
 @HiveType(typeId: 28, readHook: _readHookThreadWatchFields)
@@ -164,7 +164,6 @@ class ThreadWatcher extends ChangeNotifier {
 	}) {
 		controller.registerWatcher(this);
 		_boxSubscription = Persistence.sharedThreadStateStream.listen(_threadUpdated);
-		setInitialCounts();
 		Settings.instance.filterListenable.addListener(_didUpdateFilter);
 	}
 
@@ -190,26 +189,28 @@ class ThreadWatcher extends ChangeNotifier {
 	}
 
 	/// Exposed to allow re-initialize after importing
-	Future<void> setInitialCounts() async {
+	Future<void> setInitialCounts({bool syncIO = false}) async {
 		// Could be concurrently-modified
-		for (final watch in persistence.browserState.threadWatches.values.toList()) {
+		final futures = <Future<void>>[];
+		futures.addAll(persistence.browserState.threadWatches.values.toList().map((watch) async {
 			final ts = persistence.getThreadStateIfExists(watch.threadIdentifier);
-			final thread = await ts?.ensureThreadLoaded(preinit: false);
+			final thread = await ts?.ensureThreadLoaded(preinit: false, syncIO: syncIO);
 			if (ts != null && thread != null) {
 				await _updateThreadCounts(ts, watch, thread);
 			}
-		}
-		for (final tab in Persistence.tabs.toList()) {
+		}));
+		futures.addAll(Persistence.tabs.toList().map((tab) async {
 			if (tab.imageboardKey == imageboardKey && tab.threadPageState == null && tab.thread != null) {
 				// Thread page widget hasn't yet been instantiated
 				final threadState = persistence.getThreadStateIfExists(tab.thread!);
-				if (threadState != null && threadState.unseenPostIds.data.isNotEmpty) {
-					await threadState.ensureThreadLoaded(preinit: false);
+				if (threadState != null && threadState.unseenPostIds.data.isNotEmpty && threadState.threadWatch == null) {
+					await threadState.ensureThreadLoaded(preinit: true, syncIO: syncIO);
 					tab.unseen.value = threadState.unseenReplyCount() ?? tab.unseen.value;
 					tab.unseenYous.value = threadState.unseenReplyIdsToYouCount() ?? tab.unseenYous.value;
 				}
 			}
-		}
+		}));
+		await Future.wait(futures);
 		_updateCounts();
 		if (!_initialCountsDone.isCompleted) {
 			_initialCountsDone.complete();

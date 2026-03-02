@@ -97,13 +97,13 @@ enum PostSpanFormat {
 	bool get hasWeakQuoteLinks => this == jForum;
 }
 
-void _readHookPostFields(Map<int, dynamic> fields) {
+void _readHookPostFields(List<dynamic> fields) {
 	final deprecatedAttachment = fields[6] as Attachment?;
 	List<Attachment> fallbackAttachments = const [];
 	if (deprecatedAttachment != null) {
 		fallbackAttachments = [deprecatedAttachment].toList(growable: false);
 	}
-	fields[PostFields.attachments_.fieldNumber] ??= fallbackAttachments;
+	fields[PostFields.kAttachments_] ??= fallbackAttachments;
 }
 
 @HiveType(typeId: 11, isOptimized: true, readHook: _readHookPostFields)

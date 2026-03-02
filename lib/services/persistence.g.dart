@@ -13,11 +13,12 @@ class PersistentRecentSearchesFields {
   static void setEntries(
           PersistentRecentSearches x, List<ImageboardArchiveSearchQuery> v) =>
       x.entries = v;
+  static const int kEntries = 0;
   static const entries = HiveFieldAdapter<PersistentRecentSearches,
       List<ImageboardArchiveSearchQuery>>(
     getter: getEntries,
     setter: setEntries,
-    fieldNumber: 0,
+    fieldNumber: kEntries,
     fieldName: 'entries',
     merger: OrderedSetLikePrimitiveListMerger<ImageboardArchiveSearchQuery>(),
   );
@@ -39,9 +40,14 @@ class PersistentRecentSearchesAdapter
   @override
   PersistentRecentSearches read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-    };
+    final List<dynamic> fields = List.filled(1, null);
+    for (int i = 0; i < numOfFields; i++) {
+      final int fieldId = reader.readByte();
+      final dynamic value = reader.read();
+      if (fieldId < fields.length) {
+        fields[fieldId] = value;
+      }
+    }
     return PersistentRecentSearches()
       ..entries = (fields[0] as List).cast<ImageboardArchiveSearchQuery>();
   }
@@ -69,10 +75,11 @@ class PersistentThreadStateFields {
   static int? getLastSeenPostId(PersistentThreadState x) => x.lastSeenPostId;
   static void setLastSeenPostId(PersistentThreadState x, int? v) =>
       x.lastSeenPostId = v;
+  static const int kLastSeenPostId = 0;
   static const lastSeenPostId = HiveFieldAdapter<PersistentThreadState, int?>(
     getter: getLastSeenPostId,
     setter: setLastSeenPostId,
-    fieldNumber: 0,
+    fieldNumber: kLastSeenPostId,
     fieldName: 'lastSeenPostId',
     merger: PrimitiveMerger(),
   );
@@ -80,32 +87,35 @@ class PersistentThreadStateFields {
       x.lastOpenedTime;
   static void setLastOpenedTime(PersistentThreadState x, DateTime v) =>
       x.lastOpenedTime = v;
+  static const int kLastOpenedTime = 1;
   static const lastOpenedTime =
       HiveFieldAdapter<PersistentThreadState, DateTime>(
     getter: getLastOpenedTime,
     setter: setLastOpenedTime,
-    fieldNumber: 1,
+    fieldNumber: kLastOpenedTime,
     fieldName: 'lastOpenedTime',
     merger: PrimitiveMerger(),
   );
   static DateTime? getSavedTime(PersistentThreadState x) => x.savedTime;
   static void setSavedTime(PersistentThreadState x, DateTime? v) =>
       x.savedTime = v;
+  static const int kSavedTime = 6;
   static const savedTime = HiveFieldAdapter<PersistentThreadState, DateTime?>(
     getter: getSavedTime,
     setter: setSavedTime,
-    fieldNumber: 6,
+    fieldNumber: kSavedTime,
     fieldName: 'savedTime',
     merger: PrimitiveMerger(),
   );
   static List<PostReceipt> getReceipts(PersistentThreadState x) => x.receipts;
   static void setReceipts(PersistentThreadState x, List<PostReceipt> v) =>
       x.receipts = v;
+  static const int kReceipts = 3;
   static const receipts =
       HiveFieldAdapter<PersistentThreadState, List<PostReceipt>>(
     getter: getReceipts,
     setter: setReceipts,
-    fieldNumber: 3,
+    fieldNumber: kReceipts,
     fieldName: 'receipts',
     merger: MapLikeListMerger<PostReceipt, int>(
         childMerger: AdaptedMerger(PostReceiptAdapter.kTypeId),
@@ -115,21 +125,23 @@ class PersistentThreadStateFields {
       x._deprecatedThread;
   static void _setDeprecatedThread(PersistentThreadState x, Thread? v) =>
       x._deprecatedThread = v;
+  static const int _kDeprecatedThread = 4;
   static const _deprecatedThread =
       HiveFieldAdapter<PersistentThreadState, Thread?>(
     getter: _getDeprecatedThread,
     setter: _setDeprecatedThread,
-    fieldNumber: 4,
+    fieldNumber: _kDeprecatedThread,
     fieldName: '_deprecatedThread',
     merger: NullableMerger(AdaptedMerger(ThreadAdapter.kTypeId)),
   );
   static bool getUseArchive(PersistentThreadState x) => x.useArchive;
   static void setUseArchive(PersistentThreadState x, bool v) =>
       x.useArchive = v;
+  static const int kUseArchive = 5;
   static const useArchive = HiveFieldAdapter<PersistentThreadState, bool>(
     getter: getUseArchive,
     setter: setUseArchive,
-    fieldNumber: 5,
+    fieldNumber: kUseArchive,
     fieldName: 'useArchive',
     merger: PrimitiveMerger(),
   );
@@ -137,22 +149,24 @@ class PersistentThreadStateFields {
       x.postsMarkedAsYou;
   static void setPostsMarkedAsYou(PersistentThreadState x, List<int> v) =>
       x.postsMarkedAsYou = v;
+  static const int kPostsMarkedAsYou = 7;
   static const postsMarkedAsYou =
       HiveFieldAdapter<PersistentThreadState, List<int>>(
     getter: getPostsMarkedAsYou,
     setter: setPostsMarkedAsYou,
-    fieldNumber: 7,
+    fieldNumber: kPostsMarkedAsYou,
     fieldName: 'postsMarkedAsYou',
     merger: SetLikePrimitiveListMerger<int>(),
   );
   static List<int> getHiddenPostIds(PersistentThreadState x) => x.hiddenPostIds;
   static void setHiddenPostIds(PersistentThreadState x, List<int> v) =>
       x.hiddenPostIds = v;
+  static const int kHiddenPostIds = 8;
   static const hiddenPostIds =
       HiveFieldAdapter<PersistentThreadState, List<int>>(
     getter: getHiddenPostIds,
     setter: setHiddenPostIds,
-    fieldNumber: 8,
+    fieldNumber: kHiddenPostIds,
     fieldName: 'hiddenPostIds',
     merger: SetLikePrimitiveListMerger<int>(),
   );
@@ -160,11 +174,12 @@ class PersistentThreadStateFields {
       x.deprecatedDraftReply;
   static void setDeprecatedDraftReply(PersistentThreadState x, String? v) =>
       x.deprecatedDraftReply = v;
+  static const int kDeprecatedDraftReply = 9;
   static const deprecatedDraftReply =
       HiveFieldAdapter<PersistentThreadState, String?>(
     getter: getDeprecatedDraftReply,
     setter: setDeprecatedDraftReply,
-    fieldNumber: 9,
+    fieldNumber: kDeprecatedDraftReply,
     fieldName: 'deprecatedDraftReply',
     merger: PrimitiveMerger(),
   );
@@ -172,11 +187,12 @@ class PersistentThreadStateFields {
       x.treeHiddenPostIds;
   static void setTreeHiddenPostIds(PersistentThreadState x, List<int> v) =>
       x.treeHiddenPostIds = v;
+  static const int kTreeHiddenPostIds = 10;
   static const treeHiddenPostIds =
       HiveFieldAdapter<PersistentThreadState, List<int>>(
     getter: getTreeHiddenPostIds,
     setter: setTreeHiddenPostIds,
-    fieldNumber: 10,
+    fieldNumber: kTreeHiddenPostIds,
     fieldName: 'treeHiddenPostIds',
     merger: SetLikePrimitiveListMerger<int>(),
   );
@@ -184,11 +200,12 @@ class PersistentThreadStateFields {
       x.hiddenPosterIds;
   static void setHiddenPosterIds(PersistentThreadState x, List<String> v) =>
       x.hiddenPosterIds = v;
+  static const int kHiddenPosterIds = 11;
   static const hiddenPosterIds =
       HiveFieldAdapter<PersistentThreadState, List<String>>(
     getter: getHiddenPosterIds,
     setter: setHiddenPosterIds,
-    fieldNumber: 11,
+    fieldNumber: kHiddenPosterIds,
     fieldName: 'hiddenPosterIds',
     merger: SetLikePrimitiveListMerger<String>(),
   );
@@ -196,41 +213,45 @@ class PersistentThreadStateFields {
       x.translatedPosts;
   static void setTranslatedPosts(PersistentThreadState x, Map<int, Post> v) =>
       x.translatedPosts = v;
+  static const int kTranslatedPosts = 12;
   static const translatedPosts =
       HiveFieldAdapter<PersistentThreadState, Map<int, Post>>(
     getter: getTranslatedPosts,
     setter: setTranslatedPosts,
-    fieldNumber: 12,
+    fieldNumber: kTranslatedPosts,
     fieldName: 'translatedPosts',
     merger: MapMerger(AdaptedMerger(PostAdapter.kTypeId)),
   );
   static bool getAutoTranslate(PersistentThreadState x) => x.autoTranslate;
   static void setAutoTranslate(PersistentThreadState x, bool v) =>
       x.autoTranslate = v;
+  static const int kAutoTranslate = 13;
   static const autoTranslate = HiveFieldAdapter<PersistentThreadState, bool>(
     getter: getAutoTranslate,
     setter: setAutoTranslate,
-    fieldNumber: 13,
+    fieldNumber: kAutoTranslate,
     fieldName: 'autoTranslate',
     merger: PrimitiveMerger(),
   );
   static bool? getUseTree(PersistentThreadState x) => x.useTree;
   static void setUseTree(PersistentThreadState x, bool? v) => x.useTree = v;
+  static const int kUseTree = 14;
   static const useTree = HiveFieldAdapter<PersistentThreadState, bool?>(
     getter: getUseTree,
     setter: setUseTree,
-    fieldNumber: 14,
+    fieldNumber: kUseTree,
     fieldName: 'useTree',
     merger: PrimitiveMerger(),
   );
   static ThreadVariant? getVariant(PersistentThreadState x) => x.variant;
   static void setVariant(PersistentThreadState x, ThreadVariant? v) =>
       x.variant = v;
+  static const int kVariant = 15;
   static const variant =
       HiveFieldAdapter<PersistentThreadState, ThreadVariant?>(
     getter: getVariant,
     setter: setVariant,
-    fieldNumber: 15,
+    fieldNumber: kVariant,
     fieldName: 'variant',
     merger: PrimitiveMerger(),
   );
@@ -238,11 +259,12 @@ class PersistentThreadStateFields {
       x.collapsedItems;
   static void setCollapsedItems(PersistentThreadState x, List<List<int>> v) =>
       x.collapsedItems = v;
+  static const int kCollapsedItems = 16;
   static const collapsedItems =
       HiveFieldAdapter<PersistentThreadState, List<List<int>>>(
     getter: getCollapsedItems,
     setter: setCollapsedItems,
-    fieldNumber: 16,
+    fieldNumber: kCollapsedItems,
     fieldName: 'collapsedItems',
     merger: TreePathListMerger(),
   );
@@ -251,21 +273,23 @@ class PersistentThreadStateFields {
   static void setDownloadedAttachmentIds(
           PersistentThreadState x, List<String> v) =>
       x.downloadedAttachmentIds = v;
+  static const int kDownloadedAttachmentIds = 17;
   static const downloadedAttachmentIds =
       HiveFieldAdapter<PersistentThreadState, List<String>>(
     getter: getDownloadedAttachmentIds,
     setter: setDownloadedAttachmentIds,
-    fieldNumber: 17,
+    fieldNumber: kDownloadedAttachmentIds,
     fieldName: 'downloadedAttachmentIds',
     merger: SetLikePrimitiveListMerger<String>(),
   );
   static String getImageboardKey(PersistentThreadState x) => x.imageboardKey;
   static void setImageboardKey(PersistentThreadState x, String v) =>
       x.imageboardKey = v;
+  static const int kImageboardKey = 18;
   static const imageboardKey = HiveFieldAdapter<PersistentThreadState, String>(
     getter: getImageboardKey,
     setter: setImageboardKey,
-    fieldNumber: 18,
+    fieldNumber: kImageboardKey,
     fieldName: 'imageboardKey',
     merger: PrimitiveMerger(),
   );
@@ -274,21 +298,23 @@ class PersistentThreadStateFields {
   static void setPrimarySubtreeParents(
           PersistentThreadState x, Map<int, int> v) =>
       x.primarySubtreeParents = v;
+  static const int kPrimarySubtreeParents = 21;
   static const primarySubtreeParents =
       HiveFieldAdapter<PersistentThreadState, Map<int, int>>(
     getter: getPrimarySubtreeParents,
     setter: setPrimarySubtreeParents,
-    fieldNumber: 21,
+    fieldNumber: kPrimarySubtreeParents,
     fieldName: 'primarySubtreeParents',
     merger: MapMerger(PrimitiveMerger()),
   );
   static bool? getShowInHistory(PersistentThreadState x) => x.showInHistory;
   static void setShowInHistory(PersistentThreadState x, bool? v) =>
       x.showInHistory = v;
+  static const int kShowInHistory = 22;
   static const showInHistory = HiveFieldAdapter<PersistentThreadState, bool?>(
     getter: getShowInHistory,
     setter: setShowInHistory,
-    fieldNumber: 22,
+    fieldNumber: kShowInHistory,
     fieldName: 'showInHistory',
     merger: PrimitiveMerger(),
   );
@@ -296,20 +322,22 @@ class PersistentThreadStateFields {
       x.firstVisiblePostId;
   static void setFirstVisiblePostId(PersistentThreadState x, int? v) =>
       x.firstVisiblePostId = v;
+  static const int kFirstVisiblePostId = 23;
   static const firstVisiblePostId =
       HiveFieldAdapter<PersistentThreadState, int?>(
     getter: getFirstVisiblePostId,
     setter: setFirstVisiblePostId,
-    fieldNumber: 23,
+    fieldNumber: kFirstVisiblePostId,
     fieldName: 'firstVisiblePostId',
     merger: PrimitiveMerger(),
   );
   static EfficientlyStoredIntSet getUnseenPostIds(PersistentThreadState x) =>
       x.unseenPostIds;
+  static const int kUnseenPostIds = 24;
   static const unseenPostIds =
       ReadOnlyHiveFieldAdapter<PersistentThreadState, EfficientlyStoredIntSet>(
     getter: getUnseenPostIds,
-    fieldNumber: 24,
+    fieldNumber: kUnseenPostIds,
     fieldName: 'unseenPostIds',
     merger: AdaptedMerger(EfficientlyStoredIntSetAdapter.kTypeId),
   );
@@ -318,11 +346,12 @@ class PersistentThreadStateFields {
   static void setFirstVisiblePostAlignment(
           PersistentThreadState x, double? v) =>
       x.firstVisiblePostAlignment = v;
+  static const int kFirstVisiblePostAlignment = 25;
   static const firstVisiblePostAlignment =
       HiveFieldAdapter<PersistentThreadState, double?>(
     getter: getFirstVisiblePostAlignment,
     setter: setFirstVisiblePostAlignment,
-    fieldNumber: 25,
+    fieldNumber: kFirstVisiblePostAlignment,
     fieldName: 'firstVisiblePostAlignment',
     merger: PrimitiveMerger(),
   );
@@ -331,21 +360,23 @@ class PersistentThreadStateFields {
   static void setPostSortingMethod(
           PersistentThreadState x, PostSortingMethod? v) =>
       x.postSortingMethod = v;
+  static const int kPostSortingMethod = 26;
   static const postSortingMethod =
       HiveFieldAdapter<PersistentThreadState, PostSortingMethod?>(
     getter: getPostSortingMethod,
     setter: setPostSortingMethod,
-    fieldNumber: 26,
+    fieldNumber: kPostSortingMethod,
     fieldName: 'postSortingMethod',
     merger: PrimitiveMerger(),
   );
   static EfficientlyStoredIntSet getPostIdsToStartRepliesAtBottom(
           PersistentThreadState x) =>
       x.postIdsToStartRepliesAtBottom;
+  static const int kPostIdsToStartRepliesAtBottom = 27;
   static const postIdsToStartRepliesAtBottom =
       ReadOnlyHiveFieldAdapter<PersistentThreadState, EfficientlyStoredIntSet>(
     getter: getPostIdsToStartRepliesAtBottom,
-    fieldNumber: 27,
+    fieldNumber: kPostIdsToStartRepliesAtBottom,
     fieldName: 'postIdsToStartRepliesAtBottom',
     merger: AdaptedMerger(EfficientlyStoredIntSetAdapter.kTypeId),
   );
@@ -353,11 +384,12 @@ class PersistentThreadStateFields {
       x.overrideShowPostIds;
   static void setOverrideShowPostIds(PersistentThreadState x, List<int> v) =>
       x.overrideShowPostIds = v;
+  static const int kOverrideShowPostIds = 28;
   static const overrideShowPostIds =
       HiveFieldAdapter<PersistentThreadState, List<int>>(
     getter: getOverrideShowPostIds,
     setter: setOverrideShowPostIds,
-    fieldNumber: 28,
+    fieldNumber: kOverrideShowPostIds,
     fieldName: 'overrideShowPostIds',
     merger: SetLikePrimitiveListMerger<int>(),
   );
@@ -365,30 +397,33 @@ class PersistentThreadStateFields {
       x.deprecatedReplyOptions;
   static void setDeprecatedReplyOptions(PersistentThreadState x, String? v) =>
       x.deprecatedReplyOptions = v;
+  static const int kDeprecatedReplyOptions = 29;
   static const deprecatedReplyOptions =
       HiveFieldAdapter<PersistentThreadState, String?>(
     getter: getDeprecatedReplyOptions,
     setter: setDeprecatedReplyOptions,
-    fieldNumber: 29,
+    fieldNumber: kDeprecatedReplyOptions,
     fieldName: 'deprecatedReplyOptions',
     merger: PrimitiveMerger(),
   );
   static int? getTreeSplitId(PersistentThreadState x) => x.treeSplitId;
   static void setTreeSplitId(PersistentThreadState x, int? v) =>
       x.treeSplitId = v;
+  static const int kTreeSplitId = 30;
   static const treeSplitId = HiveFieldAdapter<PersistentThreadState, int?>(
     getter: getTreeSplitId,
     setter: setTreeSplitId,
-    fieldNumber: 30,
+    fieldNumber: kTreeSplitId,
     fieldName: 'treeSplitId',
     merger: PrimitiveMerger(),
   );
   static DraftPost? getDraft(PersistentThreadState x) => x.draft;
   static void setDraft(PersistentThreadState x, DraftPost? v) => x.draft = v;
+  static const int kDraft = 31;
   static const draft = HiveFieldAdapter<PersistentThreadState, DraftPost?>(
     getter: getDraft,
     setter: setDraft,
-    fieldNumber: 31,
+    fieldNumber: kDraft,
     fieldName: 'draft',
     merger: NullableMerger(AdaptedMerger(DraftPostAdapter.kTypeId)),
   );
@@ -396,29 +431,32 @@ class PersistentThreadStateFields {
       x.translatedTitle;
   static void setTranslatedTitle(PersistentThreadState x, String? v) =>
       x.translatedTitle = v;
+  static const int kTranslatedTitle = 32;
   static const translatedTitle =
       HiveFieldAdapter<PersistentThreadState, String?>(
     getter: getTranslatedTitle,
     setter: setTranslatedTitle,
-    fieldNumber: 32,
+    fieldNumber: kTranslatedTitle,
     fieldName: 'translatedTitle',
     merger: PrimitiveMerger(),
   );
   static String getBoard(PersistentThreadState x) => x.board;
   static void setBoard(PersistentThreadState x, String v) => x.board = v;
+  static const int kBoard = 19;
   static const board = HiveFieldAdapter<PersistentThreadState, String>(
     getter: getBoard,
     setter: setBoard,
-    fieldNumber: 19,
+    fieldNumber: kBoard,
     fieldName: 'board',
     merger: PrimitiveMerger(),
   );
   static int getId(PersistentThreadState x) => x.id;
   static void setId(PersistentThreadState x, int v) => x.id = v;
+  static const int kId = 20;
   static const id = HiveFieldAdapter<PersistentThreadState, int>(
     getter: getId,
     setter: setId,
-    fieldNumber: 20,
+    fieldNumber: kId,
     fieldName: 'id',
     merger: PrimitiveMerger(),
   );
@@ -472,9 +510,14 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
   @override
   PersistentThreadState read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-    };
+    final List<dynamic> fields = List.filled(33, null);
+    for (int i = 0; i < numOfFields; i++) {
+      final int fieldId = reader.readByte();
+      final dynamic value = reader.read();
+      if (fieldId < fields.length) {
+        fields[fieldId] = value;
+      }
+    }
     return PersistentThreadState(
       imageboardKey: fields[18] == null ? '' : fields[18] as String,
       board: fields[19] == null ? '' : fields[19] as String,
@@ -605,73 +648,82 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
 
 class PostReceiptFields {
   static String getPassword(PostReceipt x) => x.password;
+  static const int kPassword = 0;
   static const password = ReadOnlyHiveFieldAdapter<PostReceipt, String>(
     getter: getPassword,
-    fieldNumber: 0,
+    fieldNumber: kPassword,
     fieldName: 'password',
     merger: PrimitiveMerger(),
   );
   static int getId(PostReceipt x) => x.id;
+  static const int kId = 1;
   static const id = ReadOnlyHiveFieldAdapter<PostReceipt, int>(
     getter: getId,
-    fieldNumber: 1,
+    fieldNumber: kId,
     fieldName: 'id',
     merger: PrimitiveMerger(),
   );
   static String getName(PostReceipt x) => x.name;
+  static const int kName = 2;
   static const name = ReadOnlyHiveFieldAdapter<PostReceipt, String>(
     getter: getName,
-    fieldNumber: 2,
+    fieldNumber: kName,
     fieldName: 'name',
     merger: PrimitiveMerger(),
   );
   static String getOptions(PostReceipt x) => x.options;
+  static const int kOptions = 3;
   static const options = ReadOnlyHiveFieldAdapter<PostReceipt, String>(
     getter: getOptions,
-    fieldNumber: 3,
+    fieldNumber: kOptions,
     fieldName: 'options',
     merger: PrimitiveMerger(),
   );
   static DateTime? getTime(PostReceipt x) => x.time;
+  static const int kTime = 4;
   static const time = ReadOnlyHiveFieldAdapter<PostReceipt, DateTime?>(
     getter: getTime,
-    fieldNumber: 4,
+    fieldNumber: kTime,
     fieldName: 'time',
     merger: PrimitiveMerger(),
   );
   static bool getMarkAsYou(PostReceipt x) => x.markAsYou;
   static void setMarkAsYou(PostReceipt x, bool v) => x.markAsYou = v;
+  static const int kMarkAsYou = 5;
   static const markAsYou = HiveFieldAdapter<PostReceipt, bool>(
     getter: getMarkAsYou,
     setter: setMarkAsYou,
-    fieldNumber: 5,
+    fieldNumber: kMarkAsYou,
     fieldName: 'markAsYou',
     merger: PrimitiveMerger(),
   );
   static bool getSpamFiltered(PostReceipt x) => x.spamFiltered;
   static void setSpamFiltered(PostReceipt x, bool v) => x.spamFiltered = v;
+  static const int kSpamFiltered = 6;
   static const spamFiltered = HiveFieldAdapter<PostReceipt, bool>(
     getter: getSpamFiltered,
     setter: setSpamFiltered,
-    fieldNumber: 6,
+    fieldNumber: kSpamFiltered,
     fieldName: 'spamFiltered',
     merger: PrimitiveMerger(),
   );
   static String? getIp(PostReceipt x) => x.ip;
   static void setIp(PostReceipt x, String? v) => x.ip = v;
+  static const int kIp = 7;
   static const ip = HiveFieldAdapter<PostReceipt, String?>(
     getter: getIp,
     setter: setIp,
-    fieldNumber: 7,
+    fieldNumber: kIp,
     fieldName: 'ip',
     merger: PrimitiveMerger(),
   );
   static DraftPost? getPost(PostReceipt x) => x.post;
   static void setPost(PostReceipt x, DraftPost? v) => x.post = v;
+  static const int kPost = 8;
   static const post = HiveFieldAdapter<PostReceipt, DraftPost?>(
     getter: getPost,
     setter: setPost,
-    fieldNumber: 8,
+    fieldNumber: kPost,
     fieldName: 'post',
     merger: NullableMerger(AdaptedMerger(DraftPostAdapter.kTypeId)),
   );
@@ -702,9 +754,14 @@ class PostReceiptAdapter extends TypeAdapter<PostReceipt> {
   @override
   PostReceipt read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-    };
+    final List<dynamic> fields = List.filled(9, null);
+    for (int i = 0; i < numOfFields; i++) {
+      final int fieldId = reader.readByte();
+      final dynamic value = reader.read();
+      if (fieldId < fields.length) {
+        fields[fieldId] = value;
+      }
+    }
     return PostReceipt(
       password: fields[0] as String,
       id: fields[1] as int,
@@ -755,33 +812,37 @@ class PostReceiptAdapter extends TypeAdapter<PostReceipt> {
 
 class SavedAttachmentFields {
   static Attachment getAttachment(SavedAttachment x) => x.attachment;
+  static const int kAttachment = 0;
   static const attachment =
       ReadOnlyHiveFieldAdapter<SavedAttachment, Attachment>(
     getter: getAttachment,
-    fieldNumber: 0,
+    fieldNumber: kAttachment,
     fieldName: 'attachment',
     merger: AdaptedMerger(AttachmentAdapter.kTypeId),
   );
   static DateTime getSavedTime(SavedAttachment x) => x.savedTime;
+  static const int kSavedTime = 1;
   static const savedTime = ReadOnlyHiveFieldAdapter<SavedAttachment, DateTime>(
     getter: getSavedTime,
-    fieldNumber: 1,
+    fieldNumber: kSavedTime,
     fieldName: 'savedTime',
     merger: PrimitiveMerger(),
   );
   static List<int> getTags(SavedAttachment x) => x.tags;
+  static const int kTags = 2;
   static const tags = ReadOnlyHiveFieldAdapter<SavedAttachment, List<int>>(
     getter: getTags,
-    fieldNumber: 2,
+    fieldNumber: kTags,
     fieldName: 'tags',
     merger: SetLikePrimitiveListMerger<int>(),
   );
   static String? getSavedExt(SavedAttachment x) => x.savedExt;
   static void setSavedExt(SavedAttachment x, String? v) => x.savedExt = v;
+  static const int kSavedExt = 3;
   static const savedExt = HiveFieldAdapter<SavedAttachment, String?>(
     getter: getSavedExt,
     setter: setSavedExt,
-    fieldNumber: 3,
+    fieldNumber: kSavedExt,
     fieldName: 'savedExt',
     merger: PrimitiveMerger(),
   );
@@ -807,9 +868,14 @@ class SavedAttachmentAdapter extends TypeAdapter<SavedAttachment> {
   @override
   SavedAttachment read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-    };
+    final List<dynamic> fields = List.filled(4, null);
+    for (int i = 0; i < numOfFields; i++) {
+      final int fieldId = reader.readByte();
+      final dynamic value = reader.read();
+      if (fieldId < fields.length) {
+        fields[fieldId] = value;
+      }
+    }
     return SavedAttachment(
       attachment: fields[0] as Attachment,
       savedTime: fields[1] as DateTime,
@@ -846,17 +912,19 @@ class SavedAttachmentAdapter extends TypeAdapter<SavedAttachment> {
 class SavedPostFields {
   static Post getPost(SavedPost x) => x.post;
   static void setPost(SavedPost x, Post v) => x.post = v;
+  static const int kPost = 0;
   static const post = HiveFieldAdapter<SavedPost, Post>(
     getter: getPost,
     setter: setPost,
-    fieldNumber: 0,
+    fieldNumber: kPost,
     fieldName: 'post',
     merger: AdaptedMerger(PostAdapter.kTypeId),
   );
   static DateTime getSavedTime(SavedPost x) => x.savedTime;
+  static const int kSavedTime = 1;
   static const savedTime = ReadOnlyHiveFieldAdapter<SavedPost, DateTime>(
     getter: getSavedTime,
-    fieldNumber: 1,
+    fieldNumber: kSavedTime,
     fieldName: 'savedTime',
     merger: PrimitiveMerger(),
   );
@@ -879,9 +947,14 @@ class SavedPostAdapter extends TypeAdapter<SavedPost> {
   @override
   SavedPost read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-    };
+    final List<dynamic> fields = List.filled(3, null);
+    for (int i = 0; i < numOfFields; i++) {
+      final int fieldId = reader.readByte();
+      final dynamic value = reader.read();
+      if (fieldId < fields.length) {
+        fields[fieldId] = value;
+      }
+    }
     return SavedPost(
       post: fields[0] as Post,
       savedTime: fields[1] as DateTime,
@@ -912,21 +985,23 @@ class SavedPostAdapter extends TypeAdapter<SavedPost> {
 class PersistentBrowserTabFields {
   static String? getBoard(PersistentBrowserTab x) => x.board;
   static void setBoard(PersistentBrowserTab x, String? v) => x.board = v;
+  static const int kBoard = 0;
   static const board = HiveFieldAdapter<PersistentBrowserTab, String?>(
     getter: getBoard,
     setter: setBoard,
-    fieldNumber: 0,
+    fieldNumber: kBoard,
     fieldName: 'board',
     merger: PrimitiveMerger(),
   );
   static ThreadIdentifier? getThread(PersistentBrowserTab x) => x.thread;
   static void setThread(PersistentBrowserTab x, ThreadIdentifier? v) =>
       x.thread = v;
+  static const int kThread = 1;
   static const thread =
       HiveFieldAdapter<PersistentBrowserTab, ThreadIdentifier?>(
     getter: getThread,
     setter: setThread,
-    fieldNumber: 1,
+    fieldNumber: kThread,
     fieldName: 'thread',
     merger: NullableMerger(AdaptedMerger(ThreadIdentifierAdapter.kTypeId)),
   );
@@ -934,11 +1009,12 @@ class PersistentBrowserTabFields {
       x.deprecatedDraftThread;
   static void setDeprecatedDraftThread(PersistentBrowserTab x, String? v) =>
       x.deprecatedDraftThread = v;
+  static const int kDeprecatedDraftThread = 2;
   static const deprecatedDraftThread =
       HiveFieldAdapter<PersistentBrowserTab, String?>(
     getter: getDeprecatedDraftThread,
     setter: setDeprecatedDraftThread,
-    fieldNumber: 2,
+    fieldNumber: kDeprecatedDraftThread,
     fieldName: 'deprecatedDraftThread',
     merger: PrimitiveMerger(),
   );
@@ -946,21 +1022,23 @@ class PersistentBrowserTabFields {
       x.deprecatedDraftSubject;
   static void setDeprecatedDraftSubject(PersistentBrowserTab x, String? v) =>
       x.deprecatedDraftSubject = v;
+  static const int kDeprecatedDraftSubject = 3;
   static const deprecatedDraftSubject =
       HiveFieldAdapter<PersistentBrowserTab, String?>(
     getter: getDeprecatedDraftSubject,
     setter: setDeprecatedDraftSubject,
-    fieldNumber: 3,
+    fieldNumber: kDeprecatedDraftSubject,
     fieldName: 'deprecatedDraftSubject',
     merger: PrimitiveMerger(),
   );
   static String? getImageboardKey(PersistentBrowserTab x) => x.imageboardKey;
   static void setImageboardKey(PersistentBrowserTab x, String? v) =>
       x.imageboardKey = v;
+  static const int kImageboardKey = 4;
   static const imageboardKey = HiveFieldAdapter<PersistentBrowserTab, String?>(
     getter: getImageboardKey,
     setter: setImageboardKey,
-    fieldNumber: 4,
+    fieldNumber: kImageboardKey,
     fieldName: 'imageboardKey',
     merger: PrimitiveMerger(),
   );
@@ -968,11 +1046,12 @@ class PersistentBrowserTabFields {
       x.deprecatedDraftOptions;
   static void setDeprecatedDraftOptions(PersistentBrowserTab x, String? v) =>
       x.deprecatedDraftOptions = v;
+  static const int kDeprecatedDraftOptions = 5;
   static const deprecatedDraftOptions =
       HiveFieldAdapter<PersistentBrowserTab, String?>(
     getter: getDeprecatedDraftOptions,
     setter: setDeprecatedDraftOptions,
-    fieldNumber: 5,
+    fieldNumber: kDeprecatedDraftOptions,
     fieldName: 'deprecatedDraftOptions',
     merger: PrimitiveMerger(),
   );
@@ -980,21 +1059,23 @@ class PersistentBrowserTabFields {
       x.deprecatedDraftFilePath;
   static void setDeprecatedDraftFilePath(PersistentBrowserTab x, String? v) =>
       x.deprecatedDraftFilePath = v;
+  static const int kDeprecatedDraftFilePath = 6;
   static const deprecatedDraftFilePath =
       HiveFieldAdapter<PersistentBrowserTab, String?>(
     getter: getDeprecatedDraftFilePath,
     setter: setDeprecatedDraftFilePath,
-    fieldNumber: 6,
+    fieldNumber: kDeprecatedDraftFilePath,
     fieldName: 'deprecatedDraftFilePath',
     merger: PrimitiveMerger(),
   );
   static String? getInitialSearch(PersistentBrowserTab x) => x.initialSearch;
   static void setInitialSearch(PersistentBrowserTab x, String? v) =>
       x.initialSearch = v;
+  static const int kInitialSearch = 7;
   static const initialSearch = HiveFieldAdapter<PersistentBrowserTab, String?>(
     getter: getInitialSearch,
     setter: setInitialSearch,
-    fieldNumber: 7,
+    fieldNumber: kInitialSearch,
     fieldName: 'initialSearch',
     merger: PrimitiveMerger(),
   );
@@ -1002,38 +1083,42 @@ class PersistentBrowserTabFields {
       x.catalogVariant;
   static void setCatalogVariant(PersistentBrowserTab x, CatalogVariant? v) =>
       x.catalogVariant = v;
+  static const int kCatalogVariant = 8;
   static const catalogVariant =
       HiveFieldAdapter<PersistentBrowserTab, CatalogVariant?>(
     getter: getCatalogVariant,
     setter: setCatalogVariant,
-    fieldNumber: 8,
+    fieldNumber: kCatalogVariant,
     fieldName: 'catalogVariant',
     merger: PrimitiveMerger(),
   );
   static bool getIncognito(PersistentBrowserTab x) => x.incognito;
   static void setIncognito(PersistentBrowserTab x, bool v) => x.incognito = v;
+  static const int kIncognito = 9;
   static const incognito = HiveFieldAdapter<PersistentBrowserTab, bool>(
     getter: getIncognito,
     setter: setIncognito,
-    fieldNumber: 9,
+    fieldNumber: kIncognito,
     fieldName: 'incognito',
     merger: PrimitiveMerger(),
   );
   static String getId(PersistentBrowserTab x) => x.id;
   static void setId(PersistentBrowserTab x, String v) => x.id = v;
+  static const int kId = 10;
   static const id = HiveFieldAdapter<PersistentBrowserTab, String>(
     getter: getId,
     setter: setId,
-    fieldNumber: 10,
+    fieldNumber: kId,
     fieldName: 'id',
     merger: PrimitiveMerger(),
   );
   static DraftPost? getDraft(PersistentBrowserTab x) => x.draft;
   static void setDraft(PersistentBrowserTab x, DraftPost? v) => x.draft = v;
+  static const int kDraft = 11;
   static const draft = HiveFieldAdapter<PersistentBrowserTab, DraftPost?>(
     getter: getDraft,
     setter: setDraft,
-    fieldNumber: 11,
+    fieldNumber: kDraft,
     fieldName: 'draft',
     merger: NullableMerger(AdaptedMerger(DraftPostAdapter.kTypeId)),
   );
@@ -1067,9 +1152,14 @@ class PersistentBrowserTabAdapter extends TypeAdapter<PersistentBrowserTab> {
   @override
   PersistentBrowserTab read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-    };
+    final List<dynamic> fields = List.filled(12, null);
+    for (int i = 0; i < numOfFields; i++) {
+      final int fieldId = reader.readByte();
+      final dynamic value = reader.read();
+      if (fieldId < fields.length) {
+        fields[fieldId] = value;
+      }
+    }
     _readHookPersistentBrowserTabFields(fields);
     return PersistentBrowserTab(
       board: fields[0] as String?,
@@ -1135,38 +1225,42 @@ class PersistentBrowserStateFields {
   static void setDeprecatedTabs(
           PersistentBrowserState x, List<PersistentBrowserTab> v) =>
       x.deprecatedTabs = v;
+  static const int kDeprecatedTabs = 0;
   static const deprecatedTabs =
       HiveFieldAdapter<PersistentBrowserState, List<PersistentBrowserTab>>(
     getter: getDeprecatedTabs,
     setter: setDeprecatedTabs,
-    fieldNumber: 0,
+    fieldNumber: kDeprecatedTabs,
     fieldName: 'deprecatedTabs',
     merger: PersistentBrowserTab.listMerger,
   );
   static Map<BoardKey, List<int>> getHiddenIds(PersistentBrowserState x) =>
       x.hiddenIds;
+  static const int kHiddenIds = 2;
   static const hiddenIds = ReadOnlyHiveFieldAdapter<PersistentBrowserState,
       Map<BoardKey, List<int>>>(
     getter: getHiddenIds,
-    fieldNumber: 2,
+    fieldNumber: kHiddenIds,
     fieldName: 'hiddenIds',
     merger: MapMerger<BoardKey, List<int>>(SetLikePrimitiveListMerger()),
   );
   static List<BoardKey> getFavouriteBoards(PersistentBrowserState x) =>
       x.favouriteBoards;
+  static const int kFavouriteBoards = 3;
   static const favouriteBoards =
       ReadOnlyHiveFieldAdapter<PersistentBrowserState, List<BoardKey>>(
     getter: getFavouriteBoards,
-    fieldNumber: 3,
+    fieldNumber: kFavouriteBoards,
     fieldName: 'favouriteBoards',
     merger: OrderedSetLikePrimitiveListMerger<BoardKey>(),
   );
   static Map<BoardKey, List<int>> getAutosavedIds(PersistentBrowserState x) =>
       x.autosavedIds;
+  static const int kAutosavedIds = 5;
   static const autosavedIds = ReadOnlyHiveFieldAdapter<PersistentBrowserState,
       Map<BoardKey, List<int>>>(
     getter: getAutosavedIds,
-    fieldNumber: 5,
+    fieldNumber: kAutosavedIds,
     fieldName: 'autosavedIds',
     merger: MapMerger<BoardKey, List<int>>(SetLikePrimitiveListMerger()),
   );
@@ -1174,11 +1268,12 @@ class PersistentBrowserStateFields {
       x.loginFields;
   static void setLoginFields(PersistentBrowserState x, Map<String, String> v) =>
       x.loginFields = v;
+  static const int kLoginFields = 7;
   static const loginFields =
       HiveFieldAdapter<PersistentBrowserState, Map<String, String>>(
     getter: getLoginFields,
     setter: setLoginFields,
-    fieldNumber: 7,
+    fieldNumber: kLoginFields,
     fieldName: 'loginFields',
     merger: MapMerger(PrimitiveMerger()),
   );
@@ -1186,11 +1281,12 @@ class PersistentBrowserStateFields {
       x.notificationsId;
   static void setNotificationsId(PersistentBrowserState x, String v) =>
       x.notificationsId = v;
+  static const int kNotificationsId = 8;
   static const notificationsId =
       HiveFieldAdapter<PersistentBrowserState, String>(
     getter: getNotificationsId,
     setter: setNotificationsId,
-    fieldNumber: 8,
+    fieldNumber: kNotificationsId,
     fieldName: 'notificationsId',
     merger: PrimitiveMerger(),
   );
@@ -1198,11 +1294,12 @@ class PersistentBrowserStateFields {
       x.boardWatches;
   static void setBoardWatches(PersistentBrowserState x, List<BoardWatch> v) =>
       x.boardWatches = v;
+  static const int kBoardWatches = 11;
   static const boardWatches =
       HiveFieldAdapter<PersistentBrowserState, List<BoardWatch>>(
     getter: getBoardWatches,
     setter: setBoardWatches,
-    fieldNumber: 11,
+    fieldNumber: kBoardWatches,
     fieldName: 'boardWatches',
     merger: MapLikeListMerger<BoardWatch, String>(
         childMerger: AdaptedMerger(BoardWatchAdapter.kTypeId),
@@ -1212,39 +1309,43 @@ class PersistentBrowserStateFields {
       x.notificationsMigrated;
   static void setNotificationsMigrated(PersistentBrowserState x, bool v) =>
       x.notificationsMigrated = v;
+  static const int kNotificationsMigrated = 12;
   static const notificationsMigrated =
       HiveFieldAdapter<PersistentBrowserState, bool>(
     getter: getNotificationsMigrated,
     setter: setNotificationsMigrated,
-    fieldNumber: 12,
+    fieldNumber: kNotificationsMigrated,
     fieldName: 'notificationsMigrated',
     merger: PrimitiveMerger(),
   );
   static bool? getUseTree(PersistentBrowserState x) => x.useTree;
   static void setUseTree(PersistentBrowserState x, bool? v) => x.useTree = v;
+  static const int kUseTree = 16;
   static const useTree = HiveFieldAdapter<PersistentBrowserState, bool?>(
     getter: getUseTree,
     setter: setUseTree,
-    fieldNumber: 16,
+    fieldNumber: kUseTree,
     fieldName: 'useTree',
     merger: PrimitiveMerger(),
   );
   static Map<BoardKey, CatalogVariant> getCatalogVariants(
           PersistentBrowserState x) =>
       x.catalogVariants;
+  static const int kCatalogVariants = 17;
   static const catalogVariants = ReadOnlyHiveFieldAdapter<
       PersistentBrowserState, Map<BoardKey, CatalogVariant>>(
     getter: getCatalogVariants,
-    fieldNumber: 17,
+    fieldNumber: kCatalogVariants,
     fieldName: 'catalogVariants',
     merger: MapMerger(PrimitiveMerger()),
   );
   static Map<BoardKey, String> getPostingNames(PersistentBrowserState x) =>
       x.postingNames;
+  static const int kPostingNames = 18;
   static const postingNames =
       ReadOnlyHiveFieldAdapter<PersistentBrowserState, Map<BoardKey, String>>(
     getter: getPostingNames,
-    fieldNumber: 18,
+    fieldNumber: kPostingNames,
     fieldName: 'postingNames',
     merger: MapMerger(PrimitiveMerger()),
   );
@@ -1254,11 +1355,12 @@ class PersistentBrowserStateFields {
   static void setTreeModeInitiallyCollapseSecondLevelReplies(
           PersistentBrowserState x, bool v) =>
       x.treeModeInitiallyCollapseSecondLevelReplies = v;
+  static const int kTreeModeInitiallyCollapseSecondLevelReplies = 19;
   static const treeModeInitiallyCollapseSecondLevelReplies =
       HiveFieldAdapter<PersistentBrowserState, bool>(
     getter: getTreeModeInitiallyCollapseSecondLevelReplies,
     setter: setTreeModeInitiallyCollapseSecondLevelReplies,
-    fieldNumber: 19,
+    fieldNumber: kTreeModeInitiallyCollapseSecondLevelReplies,
     fieldName: 'treeModeInitiallyCollapseSecondLevelReplies',
     merger: PrimitiveMerger(),
   );
@@ -1267,31 +1369,34 @@ class PersistentBrowserStateFields {
   static void setTreeModeCollapsedPostsShowBody(
           PersistentBrowserState x, bool v) =>
       x.treeModeCollapsedPostsShowBody = v;
+  static const int kTreeModeCollapsedPostsShowBody = 20;
   static const treeModeCollapsedPostsShowBody =
       HiveFieldAdapter<PersistentBrowserState, bool>(
     getter: getTreeModeCollapsedPostsShowBody,
     setter: setTreeModeCollapsedPostsShowBody,
-    fieldNumber: 20,
+    fieldNumber: kTreeModeCollapsedPostsShowBody,
     fieldName: 'treeModeCollapsedPostsShowBody',
     merger: PrimitiveMerger(),
   );
   static bool? getUseCatalogGrid(PersistentBrowserState x) => x.useCatalogGrid;
   static void setUseCatalogGrid(PersistentBrowserState x, bool? v) =>
       x.useCatalogGrid = v;
+  static const int kUseCatalogGrid = 21;
   static const useCatalogGrid = HiveFieldAdapter<PersistentBrowserState, bool?>(
     getter: getUseCatalogGrid,
     setter: setUseCatalogGrid,
-    fieldNumber: 21,
+    fieldNumber: kUseCatalogGrid,
     fieldName: 'useCatalogGrid',
     merger: PrimitiveMerger(),
   );
   static Map<BoardKey, bool> getUseCatalogGridPerBoard(
           PersistentBrowserState x) =>
       x.useCatalogGridPerBoard;
+  static const int kUseCatalogGridPerBoard = 22;
   static const useCatalogGridPerBoard =
       ReadOnlyHiveFieldAdapter<PersistentBrowserState, Map<BoardKey, bool>>(
     getter: getUseCatalogGridPerBoard,
-    fieldNumber: 22,
+    fieldNumber: kUseCatalogGridPerBoard,
     fieldName: 'useCatalogGridPerBoard',
     merger: MapMerger(PrimitiveMerger()),
   );
@@ -1301,11 +1406,12 @@ class PersistentBrowserStateFields {
   static void setThreadWatches(
           PersistentBrowserState x, Map<ThreadIdentifier, ThreadWatch> v) =>
       x.threadWatches = v;
+  static const int kThreadWatches = 23;
   static const threadWatches = HiveFieldAdapter<PersistentBrowserState,
       Map<ThreadIdentifier, ThreadWatch>>(
     getter: getThreadWatches,
     setter: setThreadWatches,
-    fieldNumber: 23,
+    fieldNumber: kThreadWatches,
     fieldName: 'threadWatches',
     merger: MapMerger(AdaptedMerger(ThreadWatchAdapter.kTypeId)),
   );
@@ -1314,21 +1420,23 @@ class PersistentBrowserStateFields {
   static void setTreeModeRepliesToOPAreTopLevel(
           PersistentBrowserState x, bool v) =>
       x.treeModeRepliesToOPAreTopLevel = v;
+  static const int kTreeModeRepliesToOPAreTopLevel = 24;
   static const treeModeRepliesToOPAreTopLevel =
       HiveFieldAdapter<PersistentBrowserState, bool>(
     getter: getTreeModeRepliesToOPAreTopLevel,
     setter: setTreeModeRepliesToOPAreTopLevel,
-    fieldNumber: 24,
+    fieldNumber: kTreeModeRepliesToOPAreTopLevel,
     fieldName: 'treeModeRepliesToOPAreTopLevel',
     merger: PrimitiveMerger(),
   );
   static Map<BoardKey, List<int>> getOverrideShowIds(
           PersistentBrowserState x) =>
       x.overrideShowIds;
+  static const int kOverrideShowIds = 25;
   static const overrideShowIds = ReadOnlyHiveFieldAdapter<
       PersistentBrowserState, Map<BoardKey, List<int>>>(
     getter: getOverrideShowIds,
-    fieldNumber: 25,
+    fieldNumber: kOverrideShowIds,
     fieldName: 'overrideShowIds',
     merger: MapMerger<BoardKey, List<int>>(SetLikePrimitiveListMerger()),
   );
@@ -1337,37 +1445,41 @@ class PersistentBrowserStateFields {
   static void setTreeModeNewRepliesAreLinear(
           PersistentBrowserState x, bool v) =>
       x.treeModeNewRepliesAreLinear = v;
+  static const int kTreeModeNewRepliesAreLinear = 26;
   static const treeModeNewRepliesAreLinear =
       HiveFieldAdapter<PersistentBrowserState, bool>(
     getter: getTreeModeNewRepliesAreLinear,
     setter: setTreeModeNewRepliesAreLinear,
-    fieldNumber: 26,
+    fieldNumber: kTreeModeNewRepliesAreLinear,
     fieldName: 'treeModeNewRepliesAreLinear',
     merger: PrimitiveMerger(),
   );
   static Map<BoardKey, List<int>> getAutowatchedIds(PersistentBrowserState x) =>
       x.autowatchedIds;
+  static const int kAutowatchedIds = 27;
   static const autowatchedIds = ReadOnlyHiveFieldAdapter<PersistentBrowserState,
       Map<BoardKey, List<int>>>(
     getter: getAutowatchedIds,
-    fieldNumber: 27,
+    fieldNumber: kAutowatchedIds,
     fieldName: 'autowatchedIds',
     merger: MapMerger<BoardKey, List<int>>(SetLikePrimitiveListMerger()),
   );
   static List<DraftPost> getOutbox(PersistentBrowserState x) => x.outbox;
+  static const int kOutbox = 28;
   static const outbox =
       ReadOnlyHiveFieldAdapter<PersistentBrowserState, List<DraftPost>>(
     getter: getOutbox,
-    fieldNumber: 28,
+    fieldNumber: kOutbox,
     fieldName: 'outbox',
     merger: OrderedSetLikePrimitiveListMerger(),
   );
   static Set<String> getDisabledArchiveNames(PersistentBrowserState x) =>
       x.disabledArchiveNames;
+  static const int kDisabledArchiveNames = 29;
   static const disabledArchiveNames =
       ReadOnlyHiveFieldAdapter<PersistentBrowserState, Set<String>>(
     getter: getDisabledArchiveNames,
-    fieldNumber: 29,
+    fieldNumber: kDisabledArchiveNames,
     fieldName: 'disabledArchiveNames',
     merger: PrimitiveSetMerger(),
   );
@@ -1376,41 +1488,45 @@ class PersistentBrowserStateFields {
   static void setPostSortingMethod(
           PersistentBrowserState x, PostSortingMethod? v) =>
       x.postSortingMethod = v;
+  static const int kPostSortingMethod = 30;
   static const postSortingMethod =
       HiveFieldAdapter<PersistentBrowserState, PostSortingMethod?>(
     getter: getPostSortingMethod,
     setter: setPostSortingMethod,
-    fieldNumber: 30,
+    fieldNumber: kPostSortingMethod,
     fieldName: 'postSortingMethod',
     merger: PrimitiveMerger(),
   );
   static Map<BoardKey, PostSortingMethod> getPostSortingMethodPerBoard(
           PersistentBrowserState x) =>
       x.postSortingMethodPerBoard;
+  static const int kPostSortingMethodPerBoard = 31;
   static const postSortingMethodPerBoard = ReadOnlyHiveFieldAdapter<
       PersistentBrowserState, Map<BoardKey, PostSortingMethod>>(
     getter: getPostSortingMethodPerBoard,
-    fieldNumber: 31,
+    fieldNumber: kPostSortingMethodPerBoard,
     fieldName: 'postSortingMethodPerBoard',
     merger: MapMerger(PrimitiveMerger()),
   );
   static Map<BoardKey, String> getDownloadSubfoldersPerBoard(
           PersistentBrowserState x) =>
       x.downloadSubfoldersPerBoard;
+  static const int kDownloadSubfoldersPerBoard = 32;
   static const downloadSubfoldersPerBoard =
       ReadOnlyHiveFieldAdapter<PersistentBrowserState, Map<BoardKey, String>>(
     getter: getDownloadSubfoldersPerBoard,
-    fieldNumber: 32,
+    fieldNumber: kDownloadSubfoldersPerBoard,
     fieldName: 'downloadSubfoldersPerBoard',
     merger: MapMerger(PrimitiveMerger()),
   );
   static Map<BoardKey, ImageboardBoardFlag> getPostingFlags(
           PersistentBrowserState x) =>
       x.postingFlags;
+  static const int kPostingFlags = 33;
   static const postingFlags = ReadOnlyHiveFieldAdapter<PersistentBrowserState,
       Map<BoardKey, ImageboardBoardFlag>>(
     getter: getPostingFlags,
-    fieldNumber: 33,
+    fieldNumber: kPostingFlags,
     fieldName: 'postingFlags',
     merger: MapMerger(AdaptedMerger(ImageboardBoardFlagAdapter.kTypeId)),
   );
@@ -1460,9 +1576,14 @@ class PersistentBrowserStateAdapter
   @override
   PersistentBrowserState read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-    };
+    final List<dynamic> fields = List.filled(34, null);
+    for (int i = 0; i < numOfFields; i++) {
+      final int fieldId = reader.readByte();
+      final dynamic value = reader.read();
+      if (fieldId < fields.length) {
+        fields[fieldId] = value;
+      }
+    }
     _readHookPersistentBrowserStateFields(fields);
     return PersistentBrowserState(
       deprecatedTabs: (fields[0] as List).cast<PersistentBrowserTab>(),

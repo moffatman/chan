@@ -8,9 +8,10 @@ part of 'thread.dart';
 
 class ThreadFields {
   static List<Post> getPosts_(Thread x) => x.posts_;
+  static const int kPosts_ = 0;
   static const posts_ = ReadOnlyHiveFieldAdapter<Thread, List<Post>>(
     getter: getPosts_,
-    fieldNumber: 0,
+    fieldNumber: kPosts_,
     fieldName: 'posts_',
     merger: MapLikeListMerger<Post, int>(
         childMerger: AdaptedMerger(PostAdapter.kTypeId),
@@ -19,187 +20,209 @@ class ThreadFields {
   );
   static bool getIsArchived(Thread x) => x.isArchived;
   static void setIsArchived(Thread x, bool v) => x.isArchived = v;
+  static const int kIsArchived = 1;
   static const isArchived = HiveFieldAdapter<Thread, bool>(
     getter: getIsArchived,
     setter: setIsArchived,
-    fieldNumber: 1,
+    fieldNumber: kIsArchived,
     fieldName: 'isArchived',
     merger: PrimitiveMerger(),
   );
   static bool getIsDeleted(Thread x) => x.isDeleted;
   static void setIsDeleted(Thread x, bool v) => x.isDeleted = v;
+  static const int kIsDeleted = 2;
   static const isDeleted = HiveFieldAdapter<Thread, bool>(
     getter: getIsDeleted,
     setter: setIsDeleted,
-    fieldNumber: 2,
+    fieldNumber: kIsDeleted,
     fieldName: 'isDeleted',
     merger: PrimitiveMerger(),
   );
   static int getReplyCount(Thread x) => x.replyCount;
+  static const int kReplyCount = 3;
   static const replyCount = ReadOnlyHiveFieldAdapter<Thread, int>(
     getter: getReplyCount,
-    fieldNumber: 3,
+    fieldNumber: kReplyCount,
     fieldName: 'replyCount',
     merger: PrimitiveMerger(),
   );
   static int getImageCount(Thread x) => x.imageCount;
+  static const int kImageCount = 4;
   static const imageCount = ReadOnlyHiveFieldAdapter<Thread, int>(
     getter: getImageCount,
-    fieldNumber: 4,
+    fieldNumber: kImageCount,
     fieldName: 'imageCount',
     merger: PrimitiveMerger(),
   );
   static int getId(Thread x) => x.id;
+  static const int kId = 5;
   static const id = ReadOnlyHiveFieldAdapter<Thread, int>(
     getter: getId,
-    fieldNumber: 5,
+    fieldNumber: kId,
     fieldName: 'id',
     merger: PrimitiveMerger(),
   );
   static String getBoard(Thread x) => x.board;
+  static const int kBoard = 6;
   static const board = ReadOnlyHiveFieldAdapter<Thread, String>(
     getter: getBoard,
-    fieldNumber: 6,
+    fieldNumber: kBoard,
     fieldName: 'board',
     merger: PrimitiveMerger(),
   );
   static String? getTitle(Thread x) => x.title;
+  static const int kTitle = 8;
   static const title = ReadOnlyHiveFieldAdapter<Thread, String?>(
     getter: getTitle,
-    fieldNumber: 8,
+    fieldNumber: kTitle,
     fieldName: 'title',
     merger: PrimitiveMerger(),
   );
   static bool getIsSticky(Thread x) => x.isSticky;
   static void setIsSticky(Thread x, bool v) => x.isSticky = v;
+  static const int kIsSticky = 9;
   static const isSticky = HiveFieldAdapter<Thread, bool>(
     getter: getIsSticky,
     setter: setIsSticky,
-    fieldNumber: 9,
+    fieldNumber: kIsSticky,
     fieldName: 'isSticky',
     merger: PrimitiveMerger(),
   );
   static DateTime getTime(Thread x) => x.time;
+  static const int kTime = 10;
   static const time = ReadOnlyHiveFieldAdapter<Thread, DateTime>(
     getter: getTime,
-    fieldNumber: 10,
+    fieldNumber: kTime,
     fieldName: 'time',
     merger: PrimitiveMerger(),
   );
   static Flag? getFlair(Thread x) => x.flair;
+  static const int kFlair = 11;
   static const flair = ReadOnlyHiveFieldAdapter<Thread, Flag?>(
     getter: getFlair,
-    fieldNumber: 11,
+    fieldNumber: kFlair,
     fieldName: 'flair',
     merger: PrimitiveMerger(),
   );
   static int? getCurrentPage(Thread x) => x.currentPage;
   static void setCurrentPage(Thread x, int? v) => x.currentPage = v;
+  static const int kCurrentPage = 12;
   static const currentPage = HiveFieldAdapter<Thread, int?>(
     getter: getCurrentPage,
     setter: setCurrentPage,
-    fieldNumber: 12,
+    fieldNumber: kCurrentPage,
     fieldName: 'currentPage',
     merger: PrimitiveMerger(),
   );
   static int? getUniqueIPCount(Thread x) => x.uniqueIPCount;
   static void setUniqueIPCount(Thread x, int? v) => x.uniqueIPCount = v;
+  static const int kUniqueIPCount = 13;
   static const uniqueIPCount = HiveFieldAdapter<Thread, int?>(
     getter: getUniqueIPCount,
     setter: setUniqueIPCount,
-    fieldNumber: 13,
+    fieldNumber: kUniqueIPCount,
     fieldName: 'uniqueIPCount',
     merger: PrimitiveMerger(),
   );
   static int? getCustomSpoilerId(Thread x) => x.customSpoilerId;
   static void setCustomSpoilerId(Thread x, int? v) => x.customSpoilerId = v;
+  static const int kCustomSpoilerId = 14;
   static const customSpoilerId = HiveFieldAdapter<Thread, int?>(
     getter: getCustomSpoilerId,
     setter: setCustomSpoilerId,
-    fieldNumber: 14,
+    fieldNumber: kCustomSpoilerId,
     fieldName: 'customSpoilerId',
     merger: PrimitiveMerger(),
   );
   static bool getAttachmentDeleted(Thread x) => x.attachmentDeleted;
   static void setAttachmentDeleted(Thread x, bool v) => x.attachmentDeleted = v;
+  static const int kAttachmentDeleted = 15;
   static const attachmentDeleted = HiveFieldAdapter<Thread, bool>(
     getter: getAttachmentDeleted,
     setter: setAttachmentDeleted,
-    fieldNumber: 15,
+    fieldNumber: kAttachmentDeleted,
     fieldName: 'attachmentDeleted',
     merger: PrimitiveMerger(),
   );
   static List<Attachment> getAttachments(Thread x) => x.attachments;
   static void setAttachments(Thread x, List<Attachment> v) => x.attachments = v;
+  static const int kAttachments = 16;
   static const attachments = HiveFieldAdapter<Thread, List<Attachment>>(
     getter: getAttachments,
     setter: setAttachments,
-    fieldNumber: 16,
+    fieldNumber: kAttachments,
     fieldName: 'attachments',
     merger: Attachment.unmodifiableListMerger,
   );
   static ThreadVariant? getSuggestedVariant(Thread x) => x.suggestedVariant;
   static void setSuggestedVariant(Thread x, ThreadVariant? v) =>
       x.suggestedVariant = v;
+  static const int kSuggestedVariant = 17;
   static const suggestedVariant = HiveFieldAdapter<Thread, ThreadVariant?>(
     getter: getSuggestedVariant,
     setter: setSuggestedVariant,
-    fieldNumber: 17,
+    fieldNumber: kSuggestedVariant,
     fieldName: 'suggestedVariant',
     merger: PrimitiveMerger(),
   );
   static String? getArchiveName(Thread x) => x.archiveName;
   static void setArchiveName(Thread x, String? v) => x.archiveName = v;
+  static const int kArchiveName = 18;
   static const archiveName = HiveFieldAdapter<Thread, String?>(
     getter: getArchiveName,
     setter: setArchiveName,
-    fieldNumber: 18,
+    fieldNumber: kArchiveName,
     fieldName: 'archiveName',
     merger: PrimitiveMerger(),
   );
   static ImageboardPoll? getPoll(Thread x) => x.poll;
   static void setPoll(Thread x, ImageboardPoll? v) => x.poll = v;
+  static const int kPoll = 19;
   static const poll = HiveFieldAdapter<Thread, ImageboardPoll?>(
     getter: getPoll,
     setter: setPoll,
-    fieldNumber: 19,
+    fieldNumber: kPoll,
     fieldName: 'poll',
     merger: NullableMerger(AdaptedMerger(ImageboardPollAdapter.kTypeId)),
   );
   static bool getIsEndless(Thread x) => x.isEndless;
   static void setIsEndless(Thread x, bool v) => x.isEndless = v;
+  static const int kIsEndless = 20;
   static const isEndless = HiveFieldAdapter<Thread, bool>(
     getter: getIsEndless,
     setter: setIsEndless,
-    fieldNumber: 20,
+    fieldNumber: kIsEndless,
     fieldName: 'isEndless',
     merger: PrimitiveMerger(),
   );
   static DateTime? getLastUpdatedTime(Thread x) => x.lastUpdatedTime;
   static void setLastUpdatedTime(Thread x, DateTime? v) =>
       x.lastUpdatedTime = v;
+  static const int kLastUpdatedTime = 21;
   static const lastUpdatedTime = HiveFieldAdapter<Thread, DateTime?>(
     getter: getLastUpdatedTime,
     setter: setLastUpdatedTime,
-    fieldNumber: 21,
+    fieldNumber: kLastUpdatedTime,
     fieldName: 'lastUpdatedTime',
     merger: PrimitiveMerger(),
   );
   static bool getIsLocked(Thread x) => x.isLocked;
   static void setIsLocked(Thread x, bool v) => x.isLocked = v;
+  static const int kIsLocked = 22;
   static const isLocked = HiveFieldAdapter<Thread, bool>(
     getter: getIsLocked,
     setter: setIsLocked,
-    fieldNumber: 22,
+    fieldNumber: kIsLocked,
     fieldName: 'isLocked',
     merger: PrimitiveMerger(),
   );
   static bool getIsNsfw(Thread x) => x.isNsfw;
   static void setIsNsfw(Thread x, bool v) => x.isNsfw = v;
+  static const int kIsNsfw = 23;
   static const isNsfw = HiveFieldAdapter<Thread, bool>(
     getter: getIsNsfw,
     setter: setIsNsfw,
-    fieldNumber: 23,
+    fieldNumber: kIsNsfw,
     fieldName: 'isNsfw',
     merger: PrimitiveMerger(),
   );
@@ -243,21 +266,27 @@ class ThreadAdapter extends TypeAdapter<Thread> {
   @override
   Thread read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final Map<int, dynamic> fields;
+    final List<dynamic> fields = List.filled(24, null);
     if (numOfFields == 255) {
       // Dynamic number of fields
-      fields = {};
       while (true) {
         final int fieldId = reader.readByte();
-        fields[fieldId] = reader.read();
+        final dynamic value = reader.read();
+        if (fieldId < fields.length) {
+          fields[fieldId] = value;
+        }
         if (fieldId == 0) {
           break;
         }
       }
     } else {
-      fields = <int, dynamic>{
-        for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-      };
+      for (int i = 0; i < numOfFields; i++) {
+        final int fieldId = reader.readByte();
+        final dynamic value = reader.read();
+        if (fieldId < fields.length) {
+          fields[fieldId] = value;
+        }
+      }
     }
     _readHookThreadFields(fields);
     return Thread(
@@ -335,16 +364,18 @@ class ThreadAdapter extends TypeAdapter<Thread> {
 
 class ThreadIdentifierFields {
   static String getBoard(ThreadIdentifier x) => x.board;
+  static const int kBoard = 0;
   static const board = ReadOnlyHiveFieldAdapter<ThreadIdentifier, String>(
     getter: getBoard,
-    fieldNumber: 0,
+    fieldNumber: kBoard,
     fieldName: 'board',
     merger: PrimitiveMerger(),
   );
   static int getId(ThreadIdentifier x) => x.id;
+  static const int kId = 1;
   static const id = ReadOnlyHiveFieldAdapter<ThreadIdentifier, int>(
     getter: getId,
-    fieldNumber: 1,
+    fieldNumber: kId,
     fieldName: 'id',
     merger: PrimitiveMerger(),
   );
@@ -365,9 +396,14 @@ class ThreadIdentifierAdapter extends TypeAdapter<ThreadIdentifier> {
   @override
   ThreadIdentifier read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-    };
+    final List<dynamic> fields = List.filled(2, null);
+    for (int i = 0; i < numOfFields; i++) {
+      final int fieldId = reader.readByte();
+      final dynamic value = reader.read();
+      if (fieldId < fields.length) {
+        fields[fieldId] = value;
+      }
+    }
     return ThreadIdentifier(
       fields[0] as String,
       fields[1] as int,

@@ -8,117 +8,132 @@ part of 'attachment.dart';
 
 class AttachmentFields {
   static String getBoard(Attachment x) => x.board;
+  static const int kBoard = 0;
   static const board = ReadOnlyHiveFieldAdapter<Attachment, String>(
     getter: getBoard,
-    fieldNumber: 0,
+    fieldNumber: kBoard,
     fieldName: 'board',
     merger: PrimitiveMerger(),
   );
   static String getExt(Attachment x) => x.ext;
+  static const int kExt = 2;
   static const ext = ReadOnlyHiveFieldAdapter<Attachment, String>(
     getter: getExt,
-    fieldNumber: 2,
+    fieldNumber: kExt,
     fieldName: 'ext',
     merger: PrimitiveMerger(),
   );
   static String getFilename(Attachment x) => x.filename;
   static void setFilename(Attachment x, String v) => x.filename = v;
+  static const int kFilename = 3;
   static const filename = HiveFieldAdapter<Attachment, String>(
     getter: getFilename,
     setter: setFilename,
-    fieldNumber: 3,
+    fieldNumber: kFilename,
     fieldName: 'filename',
     merger: PrimitiveMerger(),
   );
   static AttachmentType getType(Attachment x) => x.type;
+  static const int kType = 4;
   static const type = ReadOnlyHiveFieldAdapter<Attachment, AttachmentType>(
     getter: getType,
-    fieldNumber: 4,
+    fieldNumber: kType,
     fieldName: 'type',
     merger: PrimitiveMerger(),
   );
   static String getUrl(Attachment x) => x.url;
+  static const int kUrl = 5;
   static const url = ReadOnlyHiveFieldAdapter<Attachment, String>(
     getter: getUrl,
-    fieldNumber: 5,
+    fieldNumber: kUrl,
     fieldName: 'url',
     merger: PrimitiveMerger(),
   );
   static String getThumbnailUrl(Attachment x) => x.thumbnailUrl;
   static void setThumbnailUrl(Attachment x, String v) => x.thumbnailUrl = v;
+  static const int kThumbnailUrl = 6;
   static const thumbnailUrl = HiveFieldAdapter<Attachment, String>(
     getter: getThumbnailUrl,
     setter: setThumbnailUrl,
-    fieldNumber: 6,
+    fieldNumber: kThumbnailUrl,
     fieldName: 'thumbnailUrl',
     merger: PrimitiveMerger(),
   );
   static String getMd5(Attachment x) => x.md5;
+  static const int kMd5 = 7;
   static const md5 = ReadOnlyHiveFieldAdapter<Attachment, String>(
     getter: getMd5,
-    fieldNumber: 7,
+    fieldNumber: kMd5,
     fieldName: 'md5',
     merger: PrimitiveMerger(),
   );
   static bool getSpoiler(Attachment x) => x.spoiler;
+  static const int kSpoiler = 8;
   static const spoiler = ReadOnlyHiveFieldAdapter<Attachment, bool>(
     getter: getSpoiler,
-    fieldNumber: 8,
+    fieldNumber: kSpoiler,
     fieldName: 'spoiler',
     merger: PrimitiveMerger(),
   );
   static int? getWidth(Attachment x) => x.width;
   static void setWidth(Attachment x, int? v) => x.width = v;
+  static const int kWidth = 9;
   static const width = HiveFieldAdapter<Attachment, int?>(
     getter: getWidth,
     setter: setWidth,
-    fieldNumber: 9,
+    fieldNumber: kWidth,
     fieldName: 'width',
     merger: PrimitiveMerger(),
   );
   static int? getHeight(Attachment x) => x.height;
   static void setHeight(Attachment x, int? v) => x.height = v;
+  static const int kHeight = 10;
   static const height = HiveFieldAdapter<Attachment, int?>(
     getter: getHeight,
     setter: setHeight,
-    fieldNumber: 10,
+    fieldNumber: kHeight,
     fieldName: 'height',
     merger: PrimitiveMerger(),
   );
   static int? getThreadId(Attachment x) => x.threadId;
+  static const int kThreadId = 11;
   static const threadId = ReadOnlyHiveFieldAdapter<Attachment, int?>(
     getter: getThreadId,
-    fieldNumber: 11,
+    fieldNumber: kThreadId,
     fieldName: 'threadId',
     merger: PrimitiveMerger(),
   );
   static int? getSizeInBytes(Attachment x) => x.sizeInBytes;
   static void setSizeInBytes(Attachment x, int? v) => x.sizeInBytes = v;
+  static const int kSizeInBytes = 12;
   static const sizeInBytes = HiveFieldAdapter<Attachment, int?>(
     getter: getSizeInBytes,
     setter: setSizeInBytes,
-    fieldNumber: 12,
+    fieldNumber: kSizeInBytes,
     fieldName: 'sizeInBytes',
     merger: PrimitiveMerger(),
   );
   static String getId(Attachment x) => x.id;
+  static const int kId = 13;
   static const id = ReadOnlyHiveFieldAdapter<Attachment, String>(
     getter: getId,
-    fieldNumber: 13,
+    fieldNumber: kId,
     fieldName: 'id',
     merger: PrimitiveMerger(),
   );
   static bool getUseRandomUseragent(Attachment x) => x.useRandomUseragent;
+  static const int kUseRandomUseragent = 14;
   static const useRandomUseragent = ReadOnlyHiveFieldAdapter<Attachment, bool>(
     getter: getUseRandomUseragent,
-    fieldNumber: 14,
+    fieldNumber: kUseRandomUseragent,
     fieldName: 'useRandomUseragent',
     merger: PrimitiveMerger(),
   );
   static bool getIsRateLimited(Attachment x) => x.isRateLimited;
+  static const int kIsRateLimited = 15;
   static const isRateLimited = ReadOnlyHiveFieldAdapter<Attachment, bool>(
     getter: getIsRateLimited,
-    fieldNumber: 15,
+    fieldNumber: kIsRateLimited,
     fieldName: 'isRateLimited',
     merger: PrimitiveMerger(),
   );
@@ -154,21 +169,27 @@ class AttachmentAdapter extends TypeAdapter<Attachment> {
   @override
   Attachment read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final Map<int, dynamic> fields;
+    final List<dynamic> fields = List.filled(16, null);
     if (numOfFields == 255) {
       // Dynamic number of fields
-      fields = {};
       while (true) {
         final int fieldId = reader.readByte();
-        fields[fieldId] = reader.read();
+        final dynamic value = reader.read();
+        if (fieldId < fields.length) {
+          fields[fieldId] = value;
+        }
         if (fieldId == 0) {
           break;
         }
       }
     } else {
-      fields = <int, dynamic>{
-        for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-      };
+      for (int i = 0; i < numOfFields; i++) {
+        final int fieldId = reader.readByte();
+        final dynamic value = reader.read();
+        if (fieldId < fields.length) {
+          fields[fieldId] = value;
+        }
+      }
     }
     _readHookAttachmentFields(fields);
     return Attachment(

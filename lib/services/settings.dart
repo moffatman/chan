@@ -828,18 +828,13 @@ class _LaunchCountMerger extends FieldMerger<int> {
 
 }
 
-void _readHookSavedSettingsFields(Map<int, dynamic> fields) {
+void _readHookSavedSettingsFields(List<dynamic> fields) {
 	// Migrate List<String> to Set<String>
-	fields.update(SavedSettingsFields.hiddenImageMD5s.fieldNumber, (hiddenImageMD5s) {
-		if (hiddenImageMD5s is List) {
-			return hiddenImageMD5s.toSet();
-		}
-		return hiddenImageMD5s;
-	}, ifAbsent: () => <String>{});
-	fields.putIfAbsent(SavedSettingsFields.watchThreadAutomaticallyWhenCreating.fieldNumber, () {
-		// Default when-creating to same as old when-replying
-		return fields[SavedSettingsFields.watchThreadAutomaticallyWhenReplying.fieldNumber] ?? true;
-	});
+	if (fields[SavedSettingsFields.kHiddenImageMD5s] case List list) {
+		fields[SavedSettingsFields.kHiddenImageMD5s] = list.toSet();
+	}
+	// Default when-creating to same as old when-replying
+	fields[SavedSettingsFields.kWatchThreadAutomaticallyWhenCreating] ??= fields[SavedSettingsFields.kWatchThreadAutomaticallyWhenReplying] ?? true;
 }
 
 @HiveType(typeId: 0, readHook: _readHookSavedSettingsFields)

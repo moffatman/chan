@@ -203,6 +203,9 @@ class Persistence extends ChangeNotifier {
 	static Stream<PersistentThreadState> get sharedThreadStateStream => _sharedThreadStateStream.stream;
 	static late final Box<ImageboardBoard> sharedBoardsBox;
 	static late final LazyBox<Thread> sharedThreadsBox;
+	static final _threadsFileLock = EphemeralLockOwner<String>();
+	static final _loadThreadDebouncer = EasyDebouncer<String, Thread?>();
+	static final _ensureThreadLoadedDebouncer = EasyDebouncer<PersistentThreadState, Thread?>();
 	Map<String, SavedAttachment> get savedAttachments => settings.savedAttachmentsBySite[imageboardKey]!;
 	Map<String, SavedPost> get savedPosts => settings.savedPostsBySite[imageboardKey]!;
 	static PersistentRecentSearches get recentSearches => settings.recentSearches;
@@ -249,6 +252,7 @@ class Persistence extends ChangeNotifier {
 
 	static Future<Box<T>> _openBoxWithBackup<T>(String name, {
 		CompactionStrategy compactionStrategy = defaultCompactionStrategy,
+		bool syncIO = false
 	}) async {
 		final boxName = '$_boxPrefix$name';
 		final boxPath = documentsDirectory.child('$boxName.hive');
@@ -256,9 +260,11 @@ class Persistence extends ChangeNotifier {
 		final backupBoxPath = documentsDirectory.child('$backupBoxName.hive');
 		Box<T> box;
 		try {
-			box = await Hive.openBox<T>(boxName, compactionStrategy: compactionStrategy, crashRecovery: false);
+			box = await Hive.openBox<T>(boxName, compactionStrategy: compactionStrategy, crashRecovery: false, syncIO: syncIO);
 			if (await File(boxPath).exists()) {
-				await File(boxPath).copy(backupBoxPath);
+				box.protectWrite(() async {
+					await File(boxPath).copy(backupBoxPath);
+				});
 			}
 		}
 		catch (e, st) {
@@ -284,7 +290,8 @@ class Persistence extends ChangeNotifier {
 
 	static Future<LazyBox<T>> _openLazyBoxWithBackup<T>(String name, {
 		CompactionStrategy compactionStrategy = defaultCompactionStrategy,
-		bool gzip = false
+		bool gzip = false,
+		bool syncIO = false
 	}) async {
 		final boxName = '$_boxPrefix$name';
 		final boxPath = documentsDirectory.child('$boxName.hive');
@@ -293,7 +300,7 @@ class Persistence extends ChangeNotifier {
 		LazyBox<T> box;
 		bool backupCorrupted = false;
 		try {
-			box = await Hive.openLazyBox<T>(boxName, compactionStrategy: compactionStrategy, crashRecovery: false);
+			box = await Hive.openLazyBox<T>(boxName, compactionStrategy: compactionStrategy, crashRecovery: false, syncIO: syncIO);
 			_backupBox(box, backupBoxPath, gzip: gzip);
 		}
 		catch (e, st) {
@@ -398,17 +405,27 @@ class Persistence extends ChangeNotifier {
 		return sharedThreadsBox.containsKey('$imageboardKey/${board.toLowerCase()}/$id');
 	}
 
-	static Future<Thread?> getCachedThread(String imageboardKey, String board, int id) async {
-		return await sharedThreadsBox.get('$imageboardKey/${board.toLowerCase()}/$id');
+	static Future<Thread?> getCachedThread(String imageboardKey, String board, int id, {bool syncIO = false}) {
+		final b = board.toLowerCase();
+		final key = '$imageboardKey/$b/$id';
+		return _loadThreadDebouncer.debounce(key, () async {
+			return await _threadsFileLock.protect(key, (_) async {
+				return await sharedThreadsBox.get(key, syncIO: syncIO);
+			});
+		});
 	}
 
 	static Future<void> setCachedThread(String imageboardKey, String board, int id, Thread? thread) async {
-		if (thread != null) {
-			await sharedThreadsBox.put('$imageboardKey/${board.toLowerCase()}/$id', thread);
-		}
-		else {
-			await sharedThreadsBox.delete('$imageboardKey/${board.toLowerCase()}/$id');
-		}
+		final b = board.toLowerCase();
+		final key = '$imageboardKey/$b/$id';
+		return _threadsFileLock.protect(key, (_) async {
+			if (thread != null) {
+				await sharedThreadsBox.put(key, thread);
+			}
+			else {
+				await sharedThreadsBox.delete(key);
+			}
+		});
 	}
 
 	Listenable listenForThreadChanges(ThreadIdentifier thread) {
@@ -565,7 +582,7 @@ class Persistence extends ChangeNotifier {
 		await savedAttachmentsDirectory.create(recursive: true);
 		final settingsBox = await _openBoxWithBackup<SavedSettings>(settingsBoxName, compactionStrategy: (int entries, int deletedEntries) {
 			return deletedEntries > 5;
-		});
+		}, syncIO: true);
 		settings = settingsBox.get(settingsBoxKey, defaultValue: SavedSettings(
 			useInternalBrowser: true
 		))!;
@@ -579,7 +596,21 @@ class Persistence extends ChangeNotifier {
 		_clearOrphanedSavedAttachments(); // Don't await
 		settings.launchCount++;
 		_startBoxBackupTimer(settingsBox, settingsBoxName);
-		sharedThreadStateBox = await _openBoxWithBackup<PersistentThreadState>(sharedThreadStatesBoxName);
+		final sharedThreadStateFuture = () async {
+			sharedThreadStateBox = await _openBoxWithBackup<PersistentThreadState>(sharedThreadStatesBoxName, syncIO: true);
+		}();
+		final sharedBoardsFuture = () async {
+			sharedBoardsBox = await _openBoxWithBackup<ImageboardBoard>(sharedBoardsBoxName, syncIO: true);
+		}();
+		final sharedThreadsFuture = () async {
+			sharedThreadsBox = await _openLazyBoxWithBackup<Thread>(sharedThreadsBoxName, gzip: true, syncIO: true);
+		}();
+		// Open in parallel
+		await Future.wait([
+			sharedThreadStateFuture,
+			sharedBoardsFuture,
+			sharedThreadsFuture
+		]);
 		// Don't need to manage subscription, this is static
 		sharedThreadStateBox.watch().listen((e) {
 			_sharedThreadStateListenable.didUpdate();
@@ -588,13 +619,11 @@ class Persistence extends ChangeNotifier {
 			}
 		});
 		_startBoxBackupTimer(sharedThreadStateBox, sharedThreadStatesBoxName);
-		sharedBoardsBox = await _openBoxWithBackup<ImageboardBoard>(sharedBoardsBoxName);
 		_startBoxBackupTimer(sharedBoardsBox, sharedBoardsBoxName);
 		if (sharedBoardsBox.isEmpty) {
 			// First launch on new version
 			Future.delayed(const Duration(milliseconds: 50), () => splashStage.value = 'Migrating...');
 		}
-		sharedThreadsBox = await _openLazyBoxWithBackup<Thread>(sharedThreadsBoxName, gzip: true);
 		_startBoxBackupTimer(sharedThreadsBox, sharedThreadsBoxName, gzip: true);
 		for (final tab in tabs) {
 			final board = tab.board;
@@ -1608,7 +1637,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 		_filteredPosts = null;
 	}
 
-	Future<Thread?> ensureThreadLoaded({bool preinit = true, bool catalog = false}) async {
+	Future<Thread?> ensureThreadLoaded({bool preinit = true, bool catalog = false, bool syncIO = false}) => Persistence._ensureThreadLoadedDebouncer.debounce(this, () async {
 		Thread? thread = _thread;
 		if (thread != null) {
 			if (preinit) {
@@ -1617,7 +1646,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 			return thread;
 		}
 		// This is to do preinit before setting _thread (which will generate metafilter)
-		thread = await Persistence.getCachedThread(imageboardKey, board, id);
+		thread = await Persistence.getCachedThread(imageboardKey, board, id, syncIO: syncIO);
 		if (preinit) {
 			try {
 				await thread?.preinit(catalog: catalog);
@@ -1635,10 +1664,10 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 			Persistence._sharedThreadStateStream.add(this);
 		}
 		return _thread;
-	}
+	});
 
-	Future<Thread?> getThread() async {
-		return _thread ?? (await Persistence.getCachedThread(imageboardKey, board, id));
+	Future<Thread?> getThread({bool syncIO = false}) async {
+		return _thread ?? (await Persistence.getCachedThread(imageboardKey, board, id, syncIO: syncIO));
 	}
 
 	bool get isThreadCached => Persistence.isThreadCached(imageboardKey, board, id);
@@ -2041,14 +2070,11 @@ class SavedPost {
 	});
 }
 
-void _readHookPersistentBrowserTabFields(Map<int, dynamic> fields) {
+void _readHookPersistentBrowserTabFields(List<dynamic> fields) {
 	// Migrate .board from ImageboardBoard? -> String?
-	fields.update(PersistentBrowserTabFields.board.fieldNumber, (board) {
-		if (board is ImageboardBoard) {
-			return board.name;
-		}
-		return board;
-	}, ifAbsent: () => null);
+	if (fields[PersistentBrowserTabFields.kBoard] case final ImageboardBoard board) {
+		fields[PersistentBrowserTabFields.kBoard] = board.name;
+	}
 }
 
 @HiveType(typeId: 21, readHook: _readHookPersistentBrowserTabFields)
@@ -2130,7 +2156,7 @@ class PersistentBrowserTab extends EasyListenable {
 			}
 		}
 		else if (thread != null) {
-			await persistence?.getThreadStateIfExists(thread!)?.ensureThreadLoaded(preinit: false);
+			await persistence?.getThreadStateIfExists(thread!)?.ensureThreadLoaded(preinit: false, syncIO: true);
 		}
 	}
 
@@ -2162,13 +2188,14 @@ class PersistentBrowserTab extends EasyListenable {
 	);
 }
 
-void _readHookPersistentBrowserStateFields(Map<int, dynamic> fields) {
-	fields.update(6 /* no field generated */, (deprecatedHiddenImageMD5s) {
-		if (deprecatedHiddenImageMD5s is List) {
-			return deprecatedHiddenImageMD5s.toSet();
-		}
-		return deprecatedHiddenImageMD5s;
-	}, ifAbsent: () => <String>{});
+void _readHookPersistentBrowserStateFields(List<dynamic> fields) {
+	// deprecatedHiddenImageMD5s (no generated metadata)
+	if (fields[6] case List list) {
+		fields[6] = list.toSet();
+	}
+	else if (fields[6] == null) {
+		fields[6] = <String>{};
+	}
 }
 
 @HiveType(typeId: 22, readHook: _readHookPersistentBrowserStateFields)

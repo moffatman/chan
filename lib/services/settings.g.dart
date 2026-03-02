@@ -9,46 +9,51 @@ part of 'settings.dart';
 class ContentSettingsFields {
   static bool getImages(ContentSettings x) => x.images;
   static void setImages(ContentSettings x, bool v) => x.images = v;
+  static const int kImages = 0;
   static const images = HiveFieldAdapter<ContentSettings, bool>(
     getter: getImages,
     setter: setImages,
-    fieldNumber: 0,
+    fieldNumber: kImages,
     fieldName: 'images',
     merger: PrimitiveMerger(),
   );
   static bool getNsfwBoards(ContentSettings x) => x.nsfwBoards;
   static void setNsfwBoards(ContentSettings x, bool v) => x.nsfwBoards = v;
+  static const int kNsfwBoards = 1;
   static const nsfwBoards = HiveFieldAdapter<ContentSettings, bool>(
     getter: getNsfwBoards,
     setter: setNsfwBoards,
-    fieldNumber: 1,
+    fieldNumber: kNsfwBoards,
     fieldName: 'nsfwBoards',
     merger: PrimitiveMerger(),
   );
   static bool getNsfwImages(ContentSettings x) => x.nsfwImages;
   static void setNsfwImages(ContentSettings x, bool v) => x.nsfwImages = v;
+  static const int kNsfwImages = 2;
   static const nsfwImages = HiveFieldAdapter<ContentSettings, bool>(
     getter: getNsfwImages,
     setter: setNsfwImages,
-    fieldNumber: 2,
+    fieldNumber: kNsfwImages,
     fieldName: 'nsfwImages',
     merger: PrimitiveMerger(),
   );
   static bool getNsfwText(ContentSettings x) => x.nsfwText;
   static void setNsfwText(ContentSettings x, bool v) => x.nsfwText = v;
+  static const int kNsfwText = 3;
   static const nsfwText = HiveFieldAdapter<ContentSettings, bool>(
     getter: getNsfwText,
     setter: setNsfwText,
-    fieldNumber: 3,
+    fieldNumber: kNsfwText,
     fieldName: 'nsfwText',
     merger: PrimitiveMerger(),
   );
   static Set<String> getSiteKeys(ContentSettings x) => x.siteKeys;
   static void setSiteKeys(ContentSettings x, Set<String> v) => x.siteKeys = v;
+  static const int kSiteKeys = 6;
   static const siteKeys = HiveFieldAdapter<ContentSettings, Set<String>>(
     getter: getSiteKeys,
     setter: setSiteKeys,
-    fieldNumber: 6,
+    fieldNumber: kSiteKeys,
     fieldName: 'siteKeys',
     merger: SetMerger<String>(PrimitiveMerger()),
   );
@@ -75,9 +80,14 @@ class ContentSettingsAdapter extends TypeAdapter<ContentSettings> {
   @override
   ContentSettings read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-    };
+    final List<dynamic> fields = List.filled(7, null);
+    for (int i = 0; i < numOfFields; i++) {
+      final int fieldId = reader.readByte();
+      final dynamic value = reader.read();
+      if (fieldId < fields.length) {
+        fields[fieldId] = value;
+      }
+    }
     return ContentSettings(
       images: fields[0] as bool,
       nsfwBoards: fields[1] as bool,
@@ -120,91 +130,101 @@ class SavedThemeFields {
   static Color getBackgroundColor(SavedTheme x) => x.backgroundColor;
   static void setBackgroundColor(SavedTheme x, Color v) =>
       x.backgroundColor = v;
+  static const int kBackgroundColor = 0;
   static const backgroundColor = HiveFieldAdapter<SavedTheme, Color>(
     getter: getBackgroundColor,
     setter: setBackgroundColor,
-    fieldNumber: 0,
+    fieldNumber: kBackgroundColor,
     fieldName: 'backgroundColor',
     merger: AdaptedMerger(ColorAdapter.kTypeId),
   );
   static Color getBarColor(SavedTheme x) => x.barColor;
   static void setBarColor(SavedTheme x, Color v) => x.barColor = v;
+  static const int kBarColor = 1;
   static const barColor = HiveFieldAdapter<SavedTheme, Color>(
     getter: getBarColor,
     setter: setBarColor,
-    fieldNumber: 1,
+    fieldNumber: kBarColor,
     fieldName: 'barColor',
     merger: AdaptedMerger(ColorAdapter.kTypeId),
   );
   static Color getPrimaryColor(SavedTheme x) => x.primaryColor;
   static void setPrimaryColor(SavedTheme x, Color v) => x.primaryColor = v;
+  static const int kPrimaryColor = 2;
   static const primaryColor = HiveFieldAdapter<SavedTheme, Color>(
     getter: getPrimaryColor,
     setter: setPrimaryColor,
-    fieldNumber: 2,
+    fieldNumber: kPrimaryColor,
     fieldName: 'primaryColor',
     merger: AdaptedMerger(ColorAdapter.kTypeId),
   );
   static Color getSecondaryColor(SavedTheme x) => x.secondaryColor;
   static void setSecondaryColor(SavedTheme x, Color v) => x.secondaryColor = v;
+  static const int kSecondaryColor = 3;
   static const secondaryColor = HiveFieldAdapter<SavedTheme, Color>(
     getter: getSecondaryColor,
     setter: setSecondaryColor,
-    fieldNumber: 3,
+    fieldNumber: kSecondaryColor,
     fieldName: 'secondaryColor',
     merger: AdaptedMerger(ColorAdapter.kTypeId),
   );
   static Color getQuoteColor(SavedTheme x) => x.quoteColor;
   static void setQuoteColor(SavedTheme x, Color v) => x.quoteColor = v;
+  static const int kQuoteColor = 4;
   static const quoteColor = HiveFieldAdapter<SavedTheme, Color>(
     getter: getQuoteColor,
     setter: setQuoteColor,
-    fieldNumber: 4,
+    fieldNumber: kQuoteColor,
     fieldName: 'quoteColor',
     merger: AdaptedMerger(ColorAdapter.kTypeId),
   );
   static SavedTheme? getCopiedFrom(SavedTheme x) => x.copiedFrom;
   static void setCopiedFrom(SavedTheme x, SavedTheme? v) => x.copiedFrom = v;
+  static const int kCopiedFrom = 5;
   static const copiedFrom = HiveFieldAdapter<SavedTheme, SavedTheme?>(
     getter: getCopiedFrom,
     setter: setCopiedFrom,
-    fieldNumber: 5,
+    fieldNumber: kCopiedFrom,
     fieldName: 'copiedFrom',
     merger: NullableMerger(AdaptedMerger(SavedThemeAdapter.kTypeId)),
   );
   static bool getLocked(SavedTheme x) => x.locked;
   static void setLocked(SavedTheme x, bool v) => x.locked = v;
+  static const int kLocked = 6;
   static const locked = HiveFieldAdapter<SavedTheme, bool>(
     getter: getLocked,
     setter: setLocked,
-    fieldNumber: 6,
+    fieldNumber: kLocked,
     fieldName: 'locked',
     merger: PrimitiveMerger(),
   );
   static Color getTitleColor(SavedTheme x) => x.titleColor;
   static void setTitleColor(SavedTheme x, Color v) => x.titleColor = v;
+  static const int kTitleColor = 7;
   static const titleColor = HiveFieldAdapter<SavedTheme, Color>(
     getter: getTitleColor,
     setter: setTitleColor,
-    fieldNumber: 7,
+    fieldNumber: kTitleColor,
     fieldName: 'titleColor',
     merger: AdaptedMerger(ColorAdapter.kTypeId),
   );
   static Color getTextFieldColor(SavedTheme x) => x.textFieldColor;
   static void setTextFieldColor(SavedTheme x, Color v) => x.textFieldColor = v;
+  static const int kTextFieldColor = 8;
   static const textFieldColor = HiveFieldAdapter<SavedTheme, Color>(
     getter: getTextFieldColor,
     setter: setTextFieldColor,
-    fieldNumber: 8,
+    fieldNumber: kTextFieldColor,
     fieldName: 'textFieldColor',
     merger: AdaptedMerger(ColorAdapter.kTypeId),
   );
   static Color getLinkColor(SavedTheme x) => x.linkColor;
   static void setLinkColor(SavedTheme x, Color v) => x.linkColor = v;
+  static const int kLinkColor = 9;
   static const linkColor = HiveFieldAdapter<SavedTheme, Color>(
     getter: getLinkColor,
     setter: setLinkColor,
-    fieldNumber: 9,
+    fieldNumber: kLinkColor,
     fieldName: 'linkColor',
     merger: AdaptedMerger(ColorAdapter.kTypeId),
   );
@@ -235,9 +255,14 @@ class SavedThemeAdapter extends TypeAdapter<SavedTheme> {
   @override
   SavedTheme read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-    };
+    final List<dynamic> fields = List.filled(10, null);
+    for (int i = 0; i < numOfFields; i++) {
+      final int fieldId = reader.readByte();
+      final dynamic value = reader.read();
+      if (fieldId < fields.length) {
+        fields[fieldId] = value;
+      }
+    }
     return SavedTheme(
       backgroundColor: fields[0] as Color,
       barColor: fields[1] as Color,
@@ -299,20 +324,22 @@ class SavedSettingsFields {
   static void setAutoloadAttachments(
           SavedSettings x, AutoloadAttachmentsSetting v) =>
       x.autoloadAttachments = v;
+  static const int kAutoloadAttachments = 0;
   static const autoloadAttachments =
       HiveFieldAdapter<SavedSettings, AutoloadAttachmentsSetting>(
     getter: getAutoloadAttachments,
     setter: setAutoloadAttachments,
-    fieldNumber: 0,
+    fieldNumber: kAutoloadAttachments,
     fieldName: 'autoloadAttachments',
     merger: PrimitiveMerger(),
   );
   static TristateSystemSetting getTheme(SavedSettings x) => x.theme;
   static void setTheme(SavedSettings x, TristateSystemSetting v) => x.theme = v;
+  static const int kTheme = 1;
   static const theme = HiveFieldAdapter<SavedSettings, TristateSystemSetting>(
     getter: getTheme,
     setter: setTheme,
-    fieldNumber: 1,
+    fieldNumber: kTheme,
     fieldName: 'theme',
     merger: PrimitiveMerger(),
   );
@@ -320,10 +347,11 @@ class SavedSettingsFields {
       x.hideOldStickiedThreads;
   static void setHideOldStickiedThreads(SavedSettings x, bool v) =>
       x.hideOldStickiedThreads = v;
+  static const int kHideOldStickiedThreads = 2;
   static const hideOldStickiedThreads = HiveFieldAdapter<SavedSettings, bool>(
     getter: getHideOldStickiedThreads,
     setter: setHideOldStickiedThreads,
-    fieldNumber: 2,
+    fieldNumber: kHideOldStickiedThreads,
     fieldName: 'hideOldStickiedThreads',
     merger: PrimitiveMerger(),
   );
@@ -332,40 +360,44 @@ class SavedSettingsFields {
   static void setSavedThreadsSortingMethod(
           SavedSettings x, ThreadSortingMethod v) =>
       x.savedThreadsSortingMethod = v;
+  static const int kSavedThreadsSortingMethod = 5;
   static const savedThreadsSortingMethod =
       HiveFieldAdapter<SavedSettings, ThreadSortingMethod>(
     getter: getSavedThreadsSortingMethod,
     setter: setSavedThreadsSortingMethod,
-    fieldNumber: 5,
+    fieldNumber: kSavedThreadsSortingMethod,
     fieldName: 'savedThreadsSortingMethod',
     merger: PrimitiveMerger(),
   );
   static bool getAutoRotateInGallery(SavedSettings x) => x.autoRotateInGallery;
   static void setAutoRotateInGallery(SavedSettings x, bool v) =>
       x.autoRotateInGallery = v;
+  static const int kAutoRotateInGallery = 6;
   static const autoRotateInGallery = HiveFieldAdapter<SavedSettings, bool>(
     getter: getAutoRotateInGallery,
     setter: setAutoRotateInGallery,
-    fieldNumber: 6,
+    fieldNumber: kAutoRotateInGallery,
     fieldName: 'autoRotateInGallery',
     merger: PrimitiveMerger(),
   );
   static bool getUseTouchLayout(SavedSettings x) => x.useTouchLayout;
   static void setUseTouchLayout(SavedSettings x, bool v) =>
       x.useTouchLayout = v;
+  static const int kUseTouchLayout = 9;
   static const useTouchLayout = HiveFieldAdapter<SavedSettings, bool>(
     getter: getUseTouchLayout,
     setter: setUseTouchLayout,
-    fieldNumber: 9,
+    fieldNumber: kUseTouchLayout,
     fieldName: 'useTouchLayout',
     merger: PrimitiveMerger(),
   );
   static String getUserId(SavedSettings x) => x.userId;
   static void setUserId(SavedSettings x, String v) => x.userId = v;
+  static const int kUserId = 10;
   static const userId = HiveFieldAdapter<SavedSettings, String>(
     getter: getUserId,
     setter: setUserId,
-    fieldNumber: 10,
+    fieldNumber: kUserId,
     fieldName: 'userId',
     merger: PrimitiveMerger(),
   );
@@ -373,11 +405,12 @@ class SavedSettingsFields {
       x.contentSettings;
   static void setContentSettings(SavedSettings x, ContentSettings v) =>
       x.contentSettings = v;
+  static const int kContentSettings = 11;
   static const contentSettings =
       HiveFieldAdapter<SavedSettings, ContentSettings>(
     getter: getContentSettings,
     setter: setContentSettings,
-    fieldNumber: 11,
+    fieldNumber: kContentSettings,
     fieldName: 'contentSettings',
     merger: AdaptedMerger(ContentSettingsAdapter.kTypeId),
   );
@@ -385,10 +418,11 @@ class SavedSettingsFields {
       x.filterConfiguration;
   static void setFilterConfiguration(SavedSettings x, String v) =>
       x.filterConfiguration = v;
+  static const int kFilterConfiguration = 13;
   static const filterConfiguration = HiveFieldAdapter<SavedSettings, String>(
     getter: getFilterConfiguration,
     setter: setFilterConfiguration,
-    fieldNumber: 13,
+    fieldNumber: kFilterConfiguration,
     fieldName: 'filterConfiguration',
     merger: PrimitiveMerger(),
   );
@@ -396,11 +430,12 @@ class SavedSettingsFields {
       x.boardSwitcherHasKeyboardFocus;
   static void setBoardSwitcherHasKeyboardFocus(SavedSettings x, bool v) =>
       x.boardSwitcherHasKeyboardFocus = v;
+  static const int kBoardSwitcherHasKeyboardFocus = 14;
   static const boardSwitcherHasKeyboardFocus =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getBoardSwitcherHasKeyboardFocus,
     setter: setBoardSwitcherHasKeyboardFocus,
-    fieldNumber: 14,
+    fieldNumber: kBoardSwitcherHasKeyboardFocus,
     fieldName: 'boardSwitcherHasKeyboardFocus',
     merger: PrimitiveMerger(),
   );
@@ -410,11 +445,12 @@ class SavedSettingsFields {
   static void setBrowserStateBySite(
           SavedSettings x, Map<String, PersistentBrowserState> v) =>
       x.browserStateBySite = v;
+  static const int kBrowserStateBySite = 18;
   static const browserStateBySite =
       HiveFieldAdapter<SavedSettings, Map<String, PersistentBrowserState>>(
     getter: getBrowserStateBySite,
     setter: setBrowserStateBySite,
-    fieldNumber: 18,
+    fieldNumber: kBrowserStateBySite,
     fieldName: 'browserStateBySite',
     merger: MapMerger(AdaptedMerger(PersistentBrowserStateAdapter.kTypeId)),
   );
@@ -424,11 +460,12 @@ class SavedSettingsFields {
   static void setSavedPostsBySite(
           SavedSettings x, Map<String, Map<String, SavedPost>> v) =>
       x.savedPostsBySite = v;
+  static const int kSavedPostsBySite = 19;
   static const savedPostsBySite =
       HiveFieldAdapter<SavedSettings, Map<String, Map<String, SavedPost>>>(
     getter: getSavedPostsBySite,
     setter: setSavedPostsBySite,
-    fieldNumber: 19,
+    fieldNumber: kSavedPostsBySite,
     fieldName: 'savedPostsBySite',
     merger: MapMerger(MapMerger(AdaptedMerger(SavedPostAdapter.kTypeId))),
   );
@@ -438,60 +475,66 @@ class SavedSettingsFields {
   static void setSavedAttachmentsBySite(
           SavedSettings x, Map<String, Map<String, SavedAttachment>> v) =>
       x.savedAttachmentsBySite = v;
+  static const int kSavedAttachmentsBySite = 20;
   static const savedAttachmentsBySite = HiveFieldAdapter<SavedSettings,
       Map<String, Map<String, SavedAttachment>>>(
     getter: getSavedAttachmentsBySite,
     setter: setSavedAttachmentsBySite,
-    fieldNumber: 20,
+    fieldNumber: kSavedAttachmentsBySite,
     fieldName: 'savedAttachmentsBySite',
     merger: MapMerger(MapMerger(AdaptedMerger(SavedAttachmentAdapter.kTypeId))),
   );
   static double getTwoPaneBreakpoint(SavedSettings x) => x.twoPaneBreakpoint;
   static void setTwoPaneBreakpoint(SavedSettings x, double v) =>
       x.twoPaneBreakpoint = v;
+  static const int kTwoPaneBreakpoint = 22;
   static const twoPaneBreakpoint = HiveFieldAdapter<SavedSettings, double>(
     getter: getTwoPaneBreakpoint,
     setter: setTwoPaneBreakpoint,
-    fieldNumber: 22,
+    fieldNumber: kTwoPaneBreakpoint,
     fieldName: 'twoPaneBreakpoint',
     merger: PrimitiveMerger(),
   );
   static int getTwoPaneSplit(SavedSettings x) => x.twoPaneSplit;
   static void setTwoPaneSplit(SavedSettings x, int v) => x.twoPaneSplit = v;
+  static const int kTwoPaneSplit = 23;
   static const twoPaneSplit = HiveFieldAdapter<SavedSettings, int>(
     getter: getTwoPaneSplit,
     setter: setTwoPaneSplit,
-    fieldNumber: 23,
+    fieldNumber: kTwoPaneSplit,
     fieldName: 'twoPaneSplit',
     merger: PrimitiveMerger(),
   );
   static bool getUseCatalogGrid(SavedSettings x) => x.useCatalogGrid;
   static void setUseCatalogGrid(SavedSettings x, bool v) =>
       x.useCatalogGrid = v;
+  static const int kUseCatalogGrid = 24;
   static const useCatalogGrid = HiveFieldAdapter<SavedSettings, bool>(
     getter: getUseCatalogGrid,
     setter: setUseCatalogGrid,
-    fieldNumber: 24,
+    fieldNumber: kUseCatalogGrid,
     fieldName: 'useCatalogGrid',
     merger: PrimitiveMerger(),
   );
   static double getCatalogGridWidth(SavedSettings x) => x.catalogGridWidth;
   static void setCatalogGridWidth(SavedSettings x, double v) =>
       x.catalogGridWidth = v;
+  static const int kCatalogGridWidth = 25;
   static const catalogGridWidth = HiveFieldAdapter<SavedSettings, double>(
     getter: getCatalogGridWidth,
     setter: setCatalogGridWidth,
-    fieldNumber: 25,
+    fieldNumber: kCatalogGridWidth,
     fieldName: 'catalogGridWidth',
     merger: PrimitiveMerger(),
   );
   static double getCatalogGridHeight(SavedSettings x) => x.catalogGridHeight;
   static void setCatalogGridHeight(SavedSettings x, double v) =>
       x.catalogGridHeight = v;
+  static const int kCatalogGridHeight = 26;
   static const catalogGridHeight = HiveFieldAdapter<SavedSettings, double>(
     getter: getCatalogGridHeight,
     setter: setCatalogGridHeight,
-    fieldNumber: 26,
+    fieldNumber: kCatalogGridHeight,
     fieldName: 'catalogGridHeight',
     merger: PrimitiveMerger(),
   );
@@ -499,10 +542,11 @@ class SavedSettingsFields {
       x.showImageCountInCatalog;
   static void setShowImageCountInCatalog(SavedSettings x, bool v) =>
       x.showImageCountInCatalog = v;
+  static const int kShowImageCountInCatalog = 27;
   static const showImageCountInCatalog = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowImageCountInCatalog,
     setter: setShowImageCountInCatalog,
-    fieldNumber: 27,
+    fieldNumber: kShowImageCountInCatalog,
     fieldName: 'showImageCountInCatalog',
     merger: PrimitiveMerger(),
   );
@@ -510,10 +554,11 @@ class SavedSettingsFields {
       x.showClockIconInCatalog;
   static void setShowClockIconInCatalog(SavedSettings x, bool v) =>
       x.showClockIconInCatalog = v;
+  static const int kShowClockIconInCatalog = 28;
   static const showClockIconInCatalog = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowClockIconInCatalog,
     setter: setShowClockIconInCatalog,
-    fieldNumber: 28,
+    fieldNumber: kShowClockIconInCatalog,
     fieldName: 'showClockIconInCatalog',
     merger: PrimitiveMerger(),
   );
@@ -521,60 +566,66 @@ class SavedSettingsFields {
       x.supportMouse;
   static void setSupportMouse(SavedSettings x, TristateSystemSetting v) =>
       x.supportMouse = v;
+  static const int kSupportMouse = 30;
   static const supportMouse =
       HiveFieldAdapter<SavedSettings, TristateSystemSetting>(
     getter: getSupportMouse,
     setter: setSupportMouse,
-    fieldNumber: 30,
+    fieldNumber: kSupportMouse,
     fieldName: 'supportMouse',
     merger: PrimitiveMerger(),
   );
   static bool getShowNameInCatalog(SavedSettings x) => x.showNameInCatalog;
   static void setShowNameInCatalog(SavedSettings x, bool v) =>
       x.showNameInCatalog = v;
+  static const int kShowNameInCatalog = 31;
   static const showNameInCatalog = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowNameInCatalog,
     setter: setShowNameInCatalog,
-    fieldNumber: 31,
+    fieldNumber: kShowNameInCatalog,
     fieldName: 'showNameInCatalog',
     merger: PrimitiveMerger(),
   );
   static double getInterfaceScale(SavedSettings x) => x.interfaceScale;
   static void setInterfaceScale(SavedSettings x, double v) =>
       x.interfaceScale = v;
+  static const int kInterfaceScale = 32;
   static const interfaceScale = HiveFieldAdapter<SavedSettings, double>(
     getter: getInterfaceScale,
     setter: setInterfaceScale,
-    fieldNumber: 32,
+    fieldNumber: kInterfaceScale,
     fieldName: 'interfaceScale',
     merger: PrimitiveMerger(),
   );
   static bool getShowAnimations(SavedSettings x) => x.showAnimations;
   static void setShowAnimations(SavedSettings x, bool v) =>
       x.showAnimations = v;
+  static const int kShowAnimations = 33;
   static const showAnimations = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowAnimations,
     setter: setShowAnimations,
-    fieldNumber: 33,
+    fieldNumber: kShowAnimations,
     fieldName: 'showAnimations',
     merger: PrimitiveMerger(),
   );
   static bool getImagesOnRight(SavedSettings x) => x.imagesOnRight;
   static void setImagesOnRight(SavedSettings x, bool v) => x.imagesOnRight = v;
+  static const int kImagesOnRight = 34;
   static const imagesOnRight = HiveFieldAdapter<SavedSettings, bool>(
     getter: getImagesOnRight,
     setter: setImagesOnRight,
-    fieldNumber: 34,
+    fieldNumber: kImagesOnRight,
     fieldName: 'imagesOnRight',
     merger: PrimitiveMerger(),
   );
   static String? getGallerySavePath(SavedSettings x) => x.gallerySavePath;
   static void setGallerySavePath(SavedSettings x, String? v) =>
       x.gallerySavePath = v;
+  static const int kGallerySavePath = 35;
   static const gallerySavePath = HiveFieldAdapter<SavedSettings, String?>(
     getter: getGallerySavePath,
     setter: setGallerySavePath,
-    fieldNumber: 35,
+    fieldNumber: kGallerySavePath,
     fieldName: 'gallerySavePath',
     merger: PrimitiveMerger(),
   );
@@ -582,20 +633,22 @@ class SavedSettingsFields {
       x.replyBoxHeightOffset;
   static void setReplyBoxHeightOffset(SavedSettings x, double v) =>
       x.replyBoxHeightOffset = v;
+  static const int kReplyBoxHeightOffset = 36;
   static const replyBoxHeightOffset = HiveFieldAdapter<SavedSettings, double>(
     getter: getReplyBoxHeightOffset,
     setter: setReplyBoxHeightOffset,
-    fieldNumber: 36,
+    fieldNumber: kReplyBoxHeightOffset,
     fieldName: 'replyBoxHeightOffset',
     merger: PrimitiveMerger(),
   );
   static bool getBlurThumbnails(SavedSettings x) => x.blurThumbnails;
   static void setBlurThumbnails(SavedSettings x, bool v) =>
       x.blurThumbnails = v;
+  static const int kBlurThumbnails = 37;
   static const blurThumbnails = HiveFieldAdapter<SavedSettings, bool>(
     getter: getBlurThumbnails,
     setter: setBlurThumbnails,
-    fieldNumber: 37,
+    fieldNumber: kBlurThumbnails,
     fieldName: 'blurThumbnails',
     merger: PrimitiveMerger(),
   );
@@ -603,10 +656,11 @@ class SavedSettingsFields {
       x.showTimeInCatalogHeader;
   static void setShowTimeInCatalogHeader(SavedSettings x, bool v) =>
       x.showTimeInCatalogHeader = v;
+  static const int kShowTimeInCatalogHeader = 38;
   static const showTimeInCatalogHeader = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowTimeInCatalogHeader,
     setter: setShowTimeInCatalogHeader,
-    fieldNumber: 38,
+    fieldNumber: kShowTimeInCatalogHeader,
     fieldName: 'showTimeInCatalogHeader',
     merger: PrimitiveMerger(),
   );
@@ -614,10 +668,11 @@ class SavedSettingsFields {
       x.showTimeInCatalogStats;
   static void setShowTimeInCatalogStats(SavedSettings x, bool v) =>
       x.showTimeInCatalogStats = v;
+  static const int kShowTimeInCatalogStats = 39;
   static const showTimeInCatalogStats = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowTimeInCatalogStats,
     setter: setShowTimeInCatalogStats,
-    fieldNumber: 39,
+    fieldNumber: kShowTimeInCatalogStats,
     fieldName: 'showTimeInCatalogStats',
     merger: PrimitiveMerger(),
   );
@@ -625,10 +680,11 @@ class SavedSettingsFields {
       x.showIdInCatalogHeader;
   static void setShowIdInCatalogHeader(SavedSettings x, bool v) =>
       x.showIdInCatalogHeader = v;
+  static const int kShowIdInCatalogHeader = 40;
   static const showIdInCatalogHeader = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowIdInCatalogHeader,
     setter: setShowIdInCatalogHeader,
-    fieldNumber: 40,
+    fieldNumber: kShowIdInCatalogHeader,
     fieldName: 'showIdInCatalogHeader',
     merger: PrimitiveMerger(),
   );
@@ -636,10 +692,11 @@ class SavedSettingsFields {
       x.showFlagInCatalogHeader;
   static void setShowFlagInCatalogHeader(SavedSettings x, bool v) =>
       x.showFlagInCatalogHeader = v;
+  static const int kShowFlagInCatalogHeader = 41;
   static const showFlagInCatalogHeader = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowFlagInCatalogHeader,
     setter: setShowFlagInCatalogHeader,
-    fieldNumber: 41,
+    fieldNumber: kShowFlagInCatalogHeader,
     fieldName: 'showFlagInCatalogHeader',
     merger: PrimitiveMerger(),
   );
@@ -647,11 +704,12 @@ class SavedSettingsFields {
       x.onlyShowFavouriteBoardsInSwitcher;
   static void setOnlyShowFavouriteBoardsInSwitcher(SavedSettings x, bool v) =>
       x.onlyShowFavouriteBoardsInSwitcher = v;
+  static const int kOnlyShowFavouriteBoardsInSwitcher = 42;
   static const onlyShowFavouriteBoardsInSwitcher =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getOnlyShowFavouriteBoardsInSwitcher,
     setter: setOnlyShowFavouriteBoardsInSwitcher,
-    fieldNumber: 42,
+    fieldNumber: kOnlyShowFavouriteBoardsInSwitcher,
     fieldName: 'onlyShowFavouriteBoardsInSwitcher',
     merger: PrimitiveMerger(),
   );
@@ -659,20 +717,22 @@ class SavedSettingsFields {
       x.useBoardSwitcherList;
   static void setUseBoardSwitcherList(SavedSettings x, bool v) =>
       x.useBoardSwitcherList = v;
+  static const int kUseBoardSwitcherList = 43;
   static const useBoardSwitcherList = HiveFieldAdapter<SavedSettings, bool>(
     getter: getUseBoardSwitcherList,
     setter: setUseBoardSwitcherList,
-    fieldNumber: 43,
+    fieldNumber: kUseBoardSwitcherList,
     fieldName: 'useBoardSwitcherList',
     merger: PrimitiveMerger(),
   );
   static bool? getContributeCaptchas(SavedSettings x) => x.contributeCaptchas;
   static void setContributeCaptchas(SavedSettings x, bool? v) =>
       x.contributeCaptchas = v;
+  static const int kContributeCaptchas = 44;
   static const contributeCaptchas = HiveFieldAdapter<SavedSettings, bool?>(
     getter: getContributeCaptchas,
     setter: setContributeCaptchas,
-    fieldNumber: 44,
+    fieldNumber: kContributeCaptchas,
     fieldName: 'contributeCaptchas',
     merger: PrimitiveMerger(),
   );
@@ -680,20 +740,22 @@ class SavedSettingsFields {
       x.showReplyCountsInGallery;
   static void setShowReplyCountsInGallery(SavedSettings x, bool v) =>
       x.showReplyCountsInGallery = v;
+  static const int kShowReplyCountsInGallery = 45;
   static const showReplyCountsInGallery = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowReplyCountsInGallery,
     setter: setShowReplyCountsInGallery,
-    fieldNumber: 45,
+    fieldNumber: kShowReplyCountsInGallery,
     fieldName: 'showReplyCountsInGallery',
     merger: PrimitiveMerger(),
   );
   static bool getUseNewCaptchaForm(SavedSettings x) => x.useNewCaptchaForm;
   static void setUseNewCaptchaForm(SavedSettings x, bool v) =>
       x.useNewCaptchaForm = v;
+  static const int kUseNewCaptchaForm = 46;
   static const useNewCaptchaForm = HiveFieldAdapter<SavedSettings, bool>(
     getter: getUseNewCaptchaForm,
     setter: setUseNewCaptchaForm,
-    fieldNumber: 46,
+    fieldNumber: kUseNewCaptchaForm,
     fieldName: 'useNewCaptchaForm',
     merger: PrimitiveMerger(),
   );
@@ -701,51 +763,56 @@ class SavedSettingsFields {
       x.autoLoginOnMobileNetwork;
   static void setAutoLoginOnMobileNetwork(SavedSettings x, bool? v) =>
       x.autoLoginOnMobileNetwork = v;
+  static const int kAutoLoginOnMobileNetwork = 47;
   static const autoLoginOnMobileNetwork =
       HiveFieldAdapter<SavedSettings, bool?>(
     getter: getAutoLoginOnMobileNetwork,
     setter: setAutoLoginOnMobileNetwork,
-    fieldNumber: 47,
+    fieldNumber: kAutoLoginOnMobileNetwork,
     fieldName: 'autoLoginOnMobileNetwork',
     merger: PrimitiveMerger(),
   );
   static bool getShowScrollbars(SavedSettings x) => x.showScrollbars;
   static void setShowScrollbars(SavedSettings x, bool v) =>
       x.showScrollbars = v;
+  static const int kShowScrollbars = 48;
   static const showScrollbars = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowScrollbars,
     setter: setShowScrollbars,
-    fieldNumber: 48,
+    fieldNumber: kShowScrollbars,
     fieldName: 'showScrollbars',
     merger: PrimitiveMerger(),
   );
   static bool getRandomizeFilenames(SavedSettings x) => x.randomizeFilenames;
   static void setRandomizeFilenames(SavedSettings x, bool v) =>
       x.randomizeFilenames = v;
+  static const int kRandomizeFilenames = 49;
   static const randomizeFilenames = HiveFieldAdapter<SavedSettings, bool>(
     getter: getRandomizeFilenames,
     setter: setRandomizeFilenames,
-    fieldNumber: 49,
+    fieldNumber: kRandomizeFilenames,
     fieldName: 'randomizeFilenames',
     merger: PrimitiveMerger(),
   );
   static bool getShowNameOnPosts(SavedSettings x) => x.showNameOnPosts;
   static void setShowNameOnPosts(SavedSettings x, bool v) =>
       x.showNameOnPosts = v;
+  static const int kShowNameOnPosts = 50;
   static const showNameOnPosts = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowNameOnPosts,
     setter: setShowNameOnPosts,
-    fieldNumber: 50,
+    fieldNumber: kShowNameOnPosts,
     fieldName: 'showNameOnPosts',
     merger: PrimitiveMerger(),
   );
   static bool getShowTripOnPosts(SavedSettings x) => x.showTripOnPosts;
   static void setShowTripOnPosts(SavedSettings x, bool v) =>
       x.showTripOnPosts = v;
+  static const int kShowTripOnPosts = 51;
   static const showTripOnPosts = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowTripOnPosts,
     setter: setShowTripOnPosts,
-    fieldNumber: 51,
+    fieldNumber: kShowTripOnPosts,
     fieldName: 'showTripOnPosts',
     merger: PrimitiveMerger(),
   );
@@ -753,10 +820,11 @@ class SavedSettingsFields {
       x.showAbsoluteTimeOnPosts;
   static void setShowAbsoluteTimeOnPosts(SavedSettings x, bool v) =>
       x.showAbsoluteTimeOnPosts = v;
+  static const int kShowAbsoluteTimeOnPosts = 52;
   static const showAbsoluteTimeOnPosts = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowAbsoluteTimeOnPosts,
     setter: setShowAbsoluteTimeOnPosts,
-    fieldNumber: 52,
+    fieldNumber: kShowAbsoluteTimeOnPosts,
     fieldName: 'showAbsoluteTimeOnPosts',
     merger: PrimitiveMerger(),
   );
@@ -764,10 +832,11 @@ class SavedSettingsFields {
       x.showRelativeTimeOnPosts;
   static void setShowRelativeTimeOnPosts(SavedSettings x, bool v) =>
       x.showRelativeTimeOnPosts = v;
+  static const int kShowRelativeTimeOnPosts = 53;
   static const showRelativeTimeOnPosts = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowRelativeTimeOnPosts,
     setter: setShowRelativeTimeOnPosts,
-    fieldNumber: 53,
+    fieldNumber: kShowRelativeTimeOnPosts,
     fieldName: 'showRelativeTimeOnPosts',
     merger: PrimitiveMerger(),
   );
@@ -775,40 +844,44 @@ class SavedSettingsFields {
       x.showCountryNameOnPosts;
   static void setShowCountryNameOnPosts(SavedSettings x, bool v) =>
       x.showCountryNameOnPosts = v;
+  static const int kShowCountryNameOnPosts = 54;
   static const showCountryNameOnPosts = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowCountryNameOnPosts,
     setter: setShowCountryNameOnPosts,
-    fieldNumber: 54,
+    fieldNumber: kShowCountryNameOnPosts,
     fieldName: 'showCountryNameOnPosts',
     merger: PrimitiveMerger(),
   );
   static bool getShowPassOnPosts(SavedSettings x) => x.showPassOnPosts;
   static void setShowPassOnPosts(SavedSettings x, bool v) =>
       x.showPassOnPosts = v;
+  static const int kShowPassOnPosts = 55;
   static const showPassOnPosts = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowPassOnPosts,
     setter: setShowPassOnPosts,
-    fieldNumber: 55,
+    fieldNumber: kShowPassOnPosts,
     fieldName: 'showPassOnPosts',
     merger: PrimitiveMerger(),
   );
   static bool getShowFilenameOnPosts(SavedSettings x) => x.showFilenameOnPosts;
   static void setShowFilenameOnPosts(SavedSettings x, bool v) =>
       x.showFilenameOnPosts = v;
+  static const int kShowFilenameOnPosts = 56;
   static const showFilenameOnPosts = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowFilenameOnPosts,
     setter: setShowFilenameOnPosts,
-    fieldNumber: 56,
+    fieldNumber: kShowFilenameOnPosts,
     fieldName: 'showFilenameOnPosts',
     merger: PrimitiveMerger(),
   );
   static bool getShowFilesizeOnPosts(SavedSettings x) => x.showFilesizeOnPosts;
   static void setShowFilesizeOnPosts(SavedSettings x, bool v) =>
       x.showFilesizeOnPosts = v;
+  static const int kShowFilesizeOnPosts = 57;
   static const showFilesizeOnPosts = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowFilesizeOnPosts,
     setter: setShowFilesizeOnPosts,
-    fieldNumber: 57,
+    fieldNumber: kShowFilesizeOnPosts,
     fieldName: 'showFilesizeOnPosts',
     merger: PrimitiveMerger(),
   );
@@ -816,40 +889,44 @@ class SavedSettingsFields {
       x.showFileDimensionsOnPosts;
   static void setShowFileDimensionsOnPosts(SavedSettings x, bool v) =>
       x.showFileDimensionsOnPosts = v;
+  static const int kShowFileDimensionsOnPosts = 58;
   static const showFileDimensionsOnPosts =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowFileDimensionsOnPosts,
     setter: setShowFileDimensionsOnPosts,
-    fieldNumber: 58,
+    fieldNumber: kShowFileDimensionsOnPosts,
     fieldName: 'showFileDimensionsOnPosts',
     merger: PrimitiveMerger(),
   );
   static bool getShowFlagOnPosts(SavedSettings x) => x.showFlagOnPosts;
   static void setShowFlagOnPosts(SavedSettings x, bool v) =>
       x.showFlagOnPosts = v;
+  static const int kShowFlagOnPosts = 59;
   static const showFlagOnPosts = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowFlagOnPosts,
     setter: setShowFlagOnPosts,
-    fieldNumber: 59,
+    fieldNumber: kShowFlagOnPosts,
     fieldName: 'showFlagOnPosts',
     merger: PrimitiveMerger(),
   );
   static double getThumbnailSize(SavedSettings x) => x.thumbnailSize;
   static void setThumbnailSize(SavedSettings x, double v) =>
       x.thumbnailSize = v;
+  static const int kThumbnailSize = 60;
   static const thumbnailSize = HiveFieldAdapter<SavedSettings, double>(
     getter: getThumbnailSize,
     setter: setThumbnailSize,
-    fieldNumber: 60,
+    fieldNumber: kThumbnailSize,
     fieldName: 'thumbnailSize',
     merger: PrimitiveMerger(),
   );
   static bool getMuteAudio(SavedSettings x) => x.muteAudio;
   static void setMuteAudio(SavedSettings x, bool v) => x.muteAudio = v;
+  static const int kMuteAudio = 61;
   static const muteAudio = HiveFieldAdapter<SavedSettings, bool>(
     getter: getMuteAudio,
     setter: setMuteAudio,
-    fieldNumber: 61,
+    fieldNumber: kMuteAudio,
     fieldName: 'muteAudio',
     merger: PrimitiveMerger(),
   );
@@ -857,29 +934,32 @@ class SavedSettingsFields {
       x.usePushNotifications;
   static void setUsePushNotifications(SavedSettings x, bool? v) =>
       x.usePushNotifications = v;
+  static const int kUsePushNotifications = 62;
   static const usePushNotifications = HiveFieldAdapter<SavedSettings, bool?>(
     getter: getUsePushNotifications,
     setter: setUsePushNotifications,
-    fieldNumber: 62,
+    fieldNumber: kUsePushNotifications,
     fieldName: 'usePushNotifications',
     merger: PrimitiveMerger(),
   );
   static bool getUseEmbeds(SavedSettings x) => x.useEmbeds;
   static void setUseEmbeds(SavedSettings x, bool v) => x.useEmbeds = v;
+  static const int kUseEmbeds = 63;
   static const useEmbeds = HiveFieldAdapter<SavedSettings, bool>(
     getter: getUseEmbeds,
     setter: setUseEmbeds,
-    fieldNumber: 63,
+    fieldNumber: kUseEmbeds,
     fieldName: 'useEmbeds',
     merger: PrimitiveMerger(),
   );
   static bool? getUseInternalBrowser(SavedSettings x) => x.useInternalBrowser;
   static void setUseInternalBrowser(SavedSettings x, bool? v) =>
       x.useInternalBrowser = v;
+  static const int kUseInternalBrowser = 64;
   static const useInternalBrowser = HiveFieldAdapter<SavedSettings, bool?>(
     getter: getUseInternalBrowser,
     setter: setUseInternalBrowser,
-    fieldNumber: 64,
+    fieldNumber: kUseInternalBrowser,
     fieldName: 'useInternalBrowser',
     merger: PrimitiveMerger(),
   );
@@ -887,10 +967,11 @@ class SavedSettingsFields {
       x.automaticCacheClearDays;
   static void setAutomaticCacheClearDays(SavedSettings x, int v) =>
       x.automaticCacheClearDays = v;
+  static const int kAutomaticCacheClearDays = 65;
   static const automaticCacheClearDays = HiveFieldAdapter<SavedSettings, int>(
     getter: getAutomaticCacheClearDays,
     setter: setAutomaticCacheClearDays,
-    fieldNumber: 65,
+    fieldNumber: kAutomaticCacheClearDays,
     fieldName: 'automaticCacheClearDays',
     merger: PrimitiveMerger(),
   );
@@ -898,11 +979,12 @@ class SavedSettingsFields {
       x.alwaysAutoloadTappedAttachment;
   static void setAlwaysAutoloadTappedAttachment(SavedSettings x, bool v) =>
       x.alwaysAutoloadTappedAttachment = v;
+  static const int kAlwaysAutoloadTappedAttachment = 66;
   static const alwaysAutoloadTappedAttachment =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getAlwaysAutoloadTappedAttachment,
     setter: setAlwaysAutoloadTappedAttachment,
-    fieldNumber: 66,
+    fieldNumber: kAlwaysAutoloadTappedAttachment,
     fieldName: 'alwaysAutoloadTappedAttachment',
     merger: PrimitiveMerger(),
   );
@@ -911,11 +993,12 @@ class SavedSettingsFields {
   static void setPostDisplayFieldOrder(
           SavedSettings x, List<PostDisplayField> v) =>
       x.postDisplayFieldOrder = v;
+  static const int kPostDisplayFieldOrder = 67;
   static const postDisplayFieldOrder =
       HiveFieldAdapter<SavedSettings, List<PostDisplayField>>(
     getter: getPostDisplayFieldOrder,
     setter: setPostDisplayFieldOrder,
-    fieldNumber: 67,
+    fieldNumber: kPostDisplayFieldOrder,
     fieldName: 'postDisplayFieldOrder',
     merger: OrderedSetLikePrimitiveListMerger<PostDisplayField>(),
   );
@@ -923,32 +1006,35 @@ class SavedSettingsFields {
       x.maximumImageUploadDimension;
   static void setMaximumImageUploadDimension(SavedSettings x, int? v) =>
       x.maximumImageUploadDimension = v;
+  static const int kMaximumImageUploadDimension = 68;
   static const maximumImageUploadDimension =
       HiveFieldAdapter<SavedSettings, int?>(
     getter: getMaximumImageUploadDimension,
     setter: setMaximumImageUploadDimension,
-    fieldNumber: 68,
+    fieldNumber: kMaximumImageUploadDimension,
     fieldName: 'maximumImageUploadDimension',
     merger: PrimitiveMerger(),
   );
   static List<PersistentBrowserTab> getTabs(SavedSettings x) => x.tabs;
   static void setTabs(SavedSettings x, List<PersistentBrowserTab> v) =>
       x.tabs = v;
+  static const int kTabs = 69;
   static const tabs =
       HiveFieldAdapter<SavedSettings, List<PersistentBrowserTab>>(
     getter: getTabs,
     setter: setTabs,
-    fieldNumber: 69,
+    fieldNumber: kTabs,
     fieldName: 'tabs',
     merger: PersistentBrowserTab.listMerger,
   );
   static int getCurrentTabIndex(SavedSettings x) => x.currentTabIndex;
   static void setCurrentTabIndex(SavedSettings x, int v) =>
       x.currentTabIndex = v;
+  static const int kCurrentTabIndex = 70;
   static const currentTabIndex = HiveFieldAdapter<SavedSettings, int>(
     getter: getCurrentTabIndex,
     setter: setCurrentTabIndex,
-    fieldNumber: 70,
+    fieldNumber: kCurrentTabIndex,
     fieldName: 'currentTabIndex',
     merger: PrimitiveMerger(),
   );
@@ -956,11 +1042,12 @@ class SavedSettingsFields {
       x.recentSearches;
   static void setRecentSearches(SavedSettings x, PersistentRecentSearches v) =>
       x.recentSearches = v;
+  static const int kRecentSearches = 71;
   static const recentSearches =
       HiveFieldAdapter<SavedSettings, PersistentRecentSearches>(
     getter: getRecentSearches,
     setter: setRecentSearches,
-    fieldNumber: 71,
+    fieldNumber: kRecentSearches,
     fieldName: 'recentSearches',
     merger: AdaptedMerger(PersistentRecentSearchesAdapter.kTypeId),
   );
@@ -968,10 +1055,11 @@ class SavedSettingsFields {
       x.hideDefaultNamesOnPosts;
   static void setHideDefaultNamesOnPosts(SavedSettings x, bool v) =>
       x.hideDefaultNamesOnPosts = v;
+  static const int kHideDefaultNamesOnPosts = 72;
   static const hideDefaultNamesOnPosts = HiveFieldAdapter<SavedSettings, bool>(
     getter: getHideDefaultNamesOnPosts,
     setter: setHideDefaultNamesOnPosts,
-    fieldNumber: 72,
+    fieldNumber: kHideDefaultNamesOnPosts,
     fieldName: 'hideDefaultNamesOnPosts',
     merger: PrimitiveMerger(),
   );
@@ -979,10 +1067,11 @@ class SavedSettingsFields {
       x.showThumbnailsInGallery;
   static void setShowThumbnailsInGallery(SavedSettings x, bool v) =>
       x.showThumbnailsInGallery = v;
+  static const int kShowThumbnailsInGallery = 73;
   static const showThumbnailsInGallery = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowThumbnailsInGallery,
     setter: setShowThumbnailsInGallery,
-    fieldNumber: 73,
+    fieldNumber: kShowThumbnailsInGallery,
     fieldName: 'showThumbnailsInGallery',
     merger: PrimitiveMerger(),
   );
@@ -991,11 +1080,12 @@ class SavedSettingsFields {
   static void setWatchedThreadsSortingMethod(
           SavedSettings x, ThreadSortingMethod v) =>
       x.watchedThreadsSortingMethod = v;
+  static const int kWatchedThreadsSortingMethod = 74;
   static const watchedThreadsSortingMethod =
       HiveFieldAdapter<SavedSettings, ThreadSortingMethod>(
     getter: getWatchedThreadsSortingMethod,
     setter: setWatchedThreadsSortingMethod,
-    fieldNumber: 74,
+    fieldNumber: kWatchedThreadsSortingMethod,
     fieldName: 'watchedThreadsSortingMethod',
     merger: PrimitiveMerger(),
   );
@@ -1003,19 +1093,21 @@ class SavedSettingsFields {
       x.closeTabSwitcherAfterUse;
   static void setCloseTabSwitcherAfterUse(SavedSettings x, bool v) =>
       x.closeTabSwitcherAfterUse = v;
+  static const int kCloseTabSwitcherAfterUse = 75;
   static const closeTabSwitcherAfterUse = HiveFieldAdapter<SavedSettings, bool>(
     getter: getCloseTabSwitcherAfterUse,
     setter: setCloseTabSwitcherAfterUse,
-    fieldNumber: 75,
+    fieldNumber: kCloseTabSwitcherAfterUse,
     fieldName: 'closeTabSwitcherAfterUse',
     merger: PrimitiveMerger(),
   );
   static double getTextScale(SavedSettings x) => x.textScale;
   static void setTextScale(SavedSettings x, double v) => x.textScale = v;
+  static const int kTextScale = 76;
   static const textScale = HiveFieldAdapter<SavedSettings, double>(
     getter: getTextScale,
     setter: setTextScale,
-    fieldNumber: 76,
+    fieldNumber: kTextScale,
     fieldName: 'textScale',
     merger: PrimitiveMerger(),
   );
@@ -1023,11 +1115,12 @@ class SavedSettingsFields {
       x.catalogGridModeTextLinesLimit;
   static void setCatalogGridModeTextLinesLimit(SavedSettings x, int? v) =>
       x.catalogGridModeTextLinesLimit = v;
+  static const int kCatalogGridModeTextLinesLimit = 77;
   static const catalogGridModeTextLinesLimit =
       HiveFieldAdapter<SavedSettings, int?>(
     getter: getCatalogGridModeTextLinesLimit,
     setter: setCatalogGridModeTextLinesLimit,
-    fieldNumber: 77,
+    fieldNumber: kCatalogGridModeTextLinesLimit,
     fieldName: 'catalogGridModeTextLinesLimit',
     merger: PrimitiveMerger(),
   );
@@ -1036,11 +1129,12 @@ class SavedSettingsFields {
   static void setCatalogGridModeAttachmentInBackground(
           SavedSettings x, bool v) =>
       x.catalogGridModeAttachmentInBackground = v;
+  static const int kCatalogGridModeAttachmentInBackground = 78;
   static const catalogGridModeAttachmentInBackground =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getCatalogGridModeAttachmentInBackground,
     setter: setCatalogGridModeAttachmentInBackground,
-    fieldNumber: 78,
+    fieldNumber: kCatalogGridModeAttachmentInBackground,
     fieldName: 'catalogGridModeAttachmentInBackground',
     merger: PrimitiveMerger(),
   );
@@ -1048,40 +1142,44 @@ class SavedSettingsFields {
       x.maxCatalogRowHeight;
   static void setMaxCatalogRowHeight(SavedSettings x, double? v) =>
       x.maxCatalogRowHeight = v;
+  static const int kMaxCatalogRowHeight = 79;
   static const maxCatalogRowHeight = HiveFieldAdapter<SavedSettings, double?>(
     getter: getMaxCatalogRowHeight,
     setter: setMaxCatalogRowHeight,
-    fieldNumber: 79,
+    fieldNumber: kMaxCatalogRowHeight,
     fieldName: 'maxCatalogRowHeight',
     merger: PrimitiveMerger(),
   );
   static Map<String, SavedTheme> getThemes(SavedSettings x) => x.themes;
   static void setThemes(SavedSettings x, Map<String, SavedTheme> v) =>
       x.themes = v;
+  static const int kThemes = 80;
   static const themes =
       HiveFieldAdapter<SavedSettings, Map<String, SavedTheme>>(
     getter: getThemes,
     setter: setThemes,
-    fieldNumber: 80,
+    fieldNumber: kThemes,
     fieldName: 'themes',
     merger: MapMerger(AdaptedMerger(SavedThemeAdapter.kTypeId)),
   );
   static String getLightThemeKey(SavedSettings x) => x.lightThemeKey;
   static void setLightThemeKey(SavedSettings x, String v) =>
       x.lightThemeKey = v;
+  static const int kLightThemeKey = 81;
   static const lightThemeKey = HiveFieldAdapter<SavedSettings, String>(
     getter: getLightThemeKey,
     setter: setLightThemeKey,
-    fieldNumber: 81,
+    fieldNumber: kLightThemeKey,
     fieldName: 'lightThemeKey',
     merger: PrimitiveMerger(),
   );
   static String getDarkThemeKey(SavedSettings x) => x.darkThemeKey;
   static void setDarkThemeKey(SavedSettings x, String v) => x.darkThemeKey = v;
+  static const int kDarkThemeKey = 83;
   static const darkThemeKey = HiveFieldAdapter<SavedSettings, String>(
     getter: getDarkThemeKey,
     setter: setDarkThemeKey,
-    fieldNumber: 83,
+    fieldNumber: kDarkThemeKey,
     fieldName: 'darkThemeKey',
     merger: PrimitiveMerger(),
   );
@@ -1089,11 +1187,12 @@ class SavedSettingsFields {
       x.hostsToOpenExternally;
   static void setHostsToOpenExternally(SavedSettings x, List<String> v) =>
       x.hostsToOpenExternally = v;
+  static const int kHostsToOpenExternally = 84;
   static const hostsToOpenExternally =
       HiveFieldAdapter<SavedSettings, List<String>>(
     getter: getHostsToOpenExternally,
     setter: setHostsToOpenExternally,
-    fieldNumber: 84,
+    fieldNumber: kHostsToOpenExternally,
     fieldName: 'hostsToOpenExternally',
     merger: SetLikePrimitiveListMerger<String>(),
   );
@@ -1101,11 +1200,12 @@ class SavedSettingsFields {
       x.useFullWidthForCatalogCounters;
   static void setUseFullWidthForCatalogCounters(SavedSettings x, bool v) =>
       x.useFullWidthForCatalogCounters = v;
+  static const int kUseFullWidthForCatalogCounters = 85;
   static const useFullWidthForCatalogCounters =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getUseFullWidthForCatalogCounters,
     setter: setUseFullWidthForCatalogCounters,
-    fieldNumber: 85,
+    fieldNumber: kUseFullWidthForCatalogCounters,
     fieldName: 'useFullWidthForCatalogCounters',
     merger: PrimitiveMerger(),
   );
@@ -1113,10 +1213,11 @@ class SavedSettingsFields {
       x.allowSwipingInGallery;
   static void setAllowSwipingInGallery(SavedSettings x, bool v) =>
       x.allowSwipingInGallery = v;
+  static const int kAllowSwipingInGallery = 87;
   static const allowSwipingInGallery = HiveFieldAdapter<SavedSettings, bool>(
     getter: getAllowSwipingInGallery,
     setter: setAllowSwipingInGallery,
-    fieldNumber: 87,
+    fieldNumber: kAllowSwipingInGallery,
     fieldName: 'allowSwipingInGallery',
     merger: PrimitiveMerger(),
   );
@@ -1124,21 +1225,23 @@ class SavedSettingsFields {
       x.settingsQuickAction;
   static void setSettingsQuickAction(SavedSettings x, SettingsQuickAction? v) =>
       x.settingsQuickAction = v;
+  static const int kSettingsQuickAction = 88;
   static const settingsQuickAction =
       HiveFieldAdapter<SavedSettings, SettingsQuickAction?>(
     getter: getSettingsQuickAction,
     setter: setSettingsQuickAction,
-    fieldNumber: 88,
+    fieldNumber: kSettingsQuickAction,
     fieldName: 'settingsQuickAction',
     merger: PrimitiveMerger(),
   );
   static bool getUseHapticFeedback(SavedSettings x) => x.useHapticFeedback;
   static void setUseHapticFeedback(SavedSettings x, bool v) =>
       x.useHapticFeedback = v;
+  static const int kUseHapticFeedback = 89;
   static const useHapticFeedback = HiveFieldAdapter<SavedSettings, bool>(
     getter: getUseHapticFeedback,
     setter: setUseHapticFeedback,
-    fieldNumber: 89,
+    fieldNumber: kUseHapticFeedback,
     fieldName: 'useHapticFeedback',
     merger: PrimitiveMerger(),
   );
@@ -1146,10 +1249,11 @@ class SavedSettingsFields {
       x.promptedAboutCrashlytics;
   static void setPromptedAboutCrashlytics(SavedSettings x, bool v) =>
       x.promptedAboutCrashlytics = v;
+  static const int kPromptedAboutCrashlytics = 90;
   static const promptedAboutCrashlytics = HiveFieldAdapter<SavedSettings, bool>(
     getter: getPromptedAboutCrashlytics,
     setter: setPromptedAboutCrashlytics,
-    fieldNumber: 90,
+    fieldNumber: kPromptedAboutCrashlytics,
     fieldName: 'promptedAboutCrashlytics',
     merger: PrimitiveMerger(),
   );
@@ -1157,11 +1261,12 @@ class SavedSettingsFields {
       x.showCountryNameInCatalogHeader;
   static void setShowCountryNameInCatalogHeader(SavedSettings x, bool v) =>
       x.showCountryNameInCatalogHeader = v;
+  static const int kShowCountryNameInCatalogHeader = 91;
   static const showCountryNameInCatalogHeader =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowCountryNameInCatalogHeader,
     setter: setShowCountryNameInCatalogHeader,
-    fieldNumber: 91,
+    fieldNumber: kShowCountryNameInCatalogHeader,
     fieldName: 'showCountryNameInCatalogHeader',
     merger: PrimitiveMerger(),
   );
@@ -1169,11 +1274,12 @@ class SavedSettingsFields {
       x.webmTranscoding;
   static void setWebmTranscoding(SavedSettings x, WebmTranscodingSetting v) =>
       x.webmTranscoding = v;
+  static const int kWebmTranscoding = 92;
   static const webmTranscoding =
       HiveFieldAdapter<SavedSettings, WebmTranscodingSetting>(
     getter: getWebmTranscoding,
     setter: setWebmTranscoding,
-    fieldNumber: 92,
+    fieldNumber: kWebmTranscoding,
     fieldName: 'webmTranscoding',
     merger: PrimitiveMerger(),
   );
@@ -1181,11 +1287,12 @@ class SavedSettingsFields {
       x.showListPositionIndicatorsOnLeft;
   static void setShowListPositionIndicatorsOnLeft(SavedSettings x, bool v) =>
       x.showListPositionIndicatorsOnLeft = v;
+  static const int kShowListPositionIndicatorsOnLeft = 93;
   static const showListPositionIndicatorsOnLeft =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowListPositionIndicatorsOnLeft,
     setter: setShowListPositionIndicatorsOnLeft,
-    fieldNumber: 93,
+    fieldNumber: kShowListPositionIndicatorsOnLeft,
     fieldName: 'showListPositionIndicatorsOnLeft',
     merger: PrimitiveMerger(),
   );
@@ -1193,11 +1300,12 @@ class SavedSettingsFields {
       x.appliedMigrations;
   static void setAppliedMigrations(SavedSettings x, List<String> v) =>
       x.appliedMigrations = v;
+  static const int kAppliedMigrations = 94;
   static const appliedMigrations =
       HiveFieldAdapter<SavedSettings, List<String>>(
     getter: getAppliedMigrations,
     setter: setAppliedMigrations,
-    fieldNumber: 94,
+    fieldNumber: kAppliedMigrations,
     fieldName: 'appliedMigrations',
     merger: SetLikePrimitiveListMerger<String>(),
   );
@@ -1205,10 +1313,11 @@ class SavedSettingsFields {
       x.useStatusBarWorkaround;
   static void setUseStatusBarWorkaround(SavedSettings x, bool? v) =>
       x.useStatusBarWorkaround = v;
+  static const int kUseStatusBarWorkaround = 95;
   static const useStatusBarWorkaround = HiveFieldAdapter<SavedSettings, bool?>(
     getter: getUseStatusBarWorkaround,
     setter: setUseStatusBarWorkaround,
-    fieldNumber: 95,
+    fieldNumber: kUseStatusBarWorkaround,
     fieldName: 'useStatusBarWorkaround',
     merger: PrimitiveMerger(),
   );
@@ -1216,21 +1325,23 @@ class SavedSettingsFields {
       x.enableIMEPersonalizedLearning;
   static void setEnableIMEPersonalizedLearning(SavedSettings x, bool v) =>
       x.enableIMEPersonalizedLearning = v;
+  static const int kEnableIMEPersonalizedLearning = 96;
   static const enableIMEPersonalizedLearning =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getEnableIMEPersonalizedLearning,
     setter: setEnableIMEPersonalizedLearning,
-    fieldNumber: 96,
+    fieldNumber: kEnableIMEPersonalizedLearning,
     fieldName: 'enableIMEPersonalizedLearning',
     merger: PrimitiveMerger(),
   );
   static CatalogVariant getCatalogVariant(SavedSettings x) => x.catalogVariant;
   static void setCatalogVariant(SavedSettings x, CatalogVariant v) =>
       x.catalogVariant = v;
+  static const int kCatalogVariant = 97;
   static const catalogVariant = HiveFieldAdapter<SavedSettings, CatalogVariant>(
     getter: getCatalogVariant,
     setter: setCatalogVariant,
-    fieldNumber: 97,
+    fieldNumber: kCatalogVariant,
     fieldName: 'catalogVariant',
     merger: PrimitiveMerger(),
   );
@@ -1238,21 +1349,23 @@ class SavedSettingsFields {
       x.redditCatalogVariant;
   static void setRedditCatalogVariant(SavedSettings x, CatalogVariant v) =>
       x.redditCatalogVariant = v;
+  static const int kRedditCatalogVariant = 98;
   static const redditCatalogVariant =
       HiveFieldAdapter<SavedSettings, CatalogVariant>(
     getter: getRedditCatalogVariant,
     setter: setRedditCatalogVariant,
-    fieldNumber: 98,
+    fieldNumber: kRedditCatalogVariant,
     fieldName: 'redditCatalogVariant',
     merger: PrimitiveMerger(),
   );
   static bool getDimReadThreads(SavedSettings x) => x.dimReadThreads;
   static void setDimReadThreads(SavedSettings x, bool v) =>
       x.dimReadThreads = v;
+  static const int kDimReadThreads = 99;
   static const dimReadThreads = HiveFieldAdapter<SavedSettings, bool>(
     getter: getDimReadThreads,
     setter: setDimReadThreads,
-    fieldNumber: 99,
+    fieldNumber: kDimReadThreads,
     fieldName: 'dimReadThreads',
     merger: PrimitiveMerger(),
   );
@@ -1260,11 +1373,12 @@ class SavedSettingsFields {
       x.hackerNewsCatalogVariant;
   static void setHackerNewsCatalogVariant(SavedSettings x, CatalogVariant v) =>
       x.hackerNewsCatalogVariant = v;
+  static const int kHackerNewsCatalogVariant = 100;
   static const hackerNewsCatalogVariant =
       HiveFieldAdapter<SavedSettings, CatalogVariant>(
     getter: getHackerNewsCatalogVariant,
     setter: setHackerNewsCatalogVariant,
-    fieldNumber: 100,
+    fieldNumber: kHackerNewsCatalogVariant,
     fieldName: 'hackerNewsCatalogVariant',
     merger: PrimitiveMerger(),
   );
@@ -1272,29 +1386,32 @@ class SavedSettingsFields {
       x.hideDefaultNamesInCatalog;
   static void setHideDefaultNamesInCatalog(SavedSettings x, bool v) =>
       x.hideDefaultNamesInCatalog = v;
+  static const int kHideDefaultNamesInCatalog = 101;
   static const hideDefaultNamesInCatalog =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getHideDefaultNamesInCatalog,
     setter: setHideDefaultNamesInCatalog,
-    fieldNumber: 101,
+    fieldNumber: kHideDefaultNamesInCatalog,
     fieldName: 'hideDefaultNamesInCatalog',
     merger: PrimitiveMerger(),
   );
   static int getLaunchCount(SavedSettings x) => x.launchCount;
   static void setLaunchCount(SavedSettings x, int v) => x.launchCount = v;
+  static const int kLaunchCount = 102;
   static const launchCount = HiveFieldAdapter<SavedSettings, int>(
     getter: getLaunchCount,
     setter: setLaunchCount,
-    fieldNumber: 102,
+    fieldNumber: kLaunchCount,
     fieldName: 'launchCount',
     merger: _LaunchCountMerger(),
   );
   static String? getUserAgent(SavedSettings x) => x.userAgent;
   static void setUserAgent(SavedSettings x, String? v) => x.userAgent = v;
+  static const int kUserAgent = 103;
   static const userAgent = HiveFieldAdapter<SavedSettings, String?>(
     getter: getUserAgent,
     setter: setUserAgent,
-    fieldNumber: 103,
+    fieldNumber: kUserAgent,
     fieldName: 'userAgent',
     merger: PrimitiveMerger(),
   );
@@ -1302,11 +1419,12 @@ class SavedSettingsFields {
       x.captcha4ChanCustomNumLetters;
   static void setCaptcha4ChanCustomNumLetters(SavedSettings x, int v) =>
       x.captcha4ChanCustomNumLetters = v;
+  static const int kCaptcha4ChanCustomNumLetters = 104;
   static const captcha4ChanCustomNumLetters =
       HiveFieldAdapter<SavedSettings, int>(
     getter: getCaptcha4ChanCustomNumLetters,
     setter: setCaptcha4ChanCustomNumLetters,
-    fieldNumber: 104,
+    fieldNumber: kCaptcha4ChanCustomNumLetters,
     fieldName: 'captcha4ChanCustomNumLetters',
     merger: PrimitiveMerger(),
   );
@@ -1314,11 +1432,12 @@ class SavedSettingsFields {
       x.tabMenuHidesWhenScrollingDown;
   static void setTabMenuHidesWhenScrollingDown(SavedSettings x, bool v) =>
       x.tabMenuHidesWhenScrollingDown = v;
+  static const int kTabMenuHidesWhenScrollingDown = 105;
   static const tabMenuHidesWhenScrollingDown =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getTabMenuHidesWhenScrollingDown,
     setter: setTabMenuHidesWhenScrollingDown,
-    fieldNumber: 105,
+    fieldNumber: kTabMenuHidesWhenScrollingDown,
     fieldName: 'tabMenuHidesWhenScrollingDown',
     merger: PrimitiveMerger(),
   );
@@ -1326,10 +1445,11 @@ class SavedSettingsFields {
       x.doubleTapScrollToReplies;
   static void setDoubleTapScrollToReplies(SavedSettings x, bool v) =>
       x.doubleTapScrollToReplies = v;
+  static const int kDoubleTapScrollToReplies = 106;
   static const doubleTapScrollToReplies = HiveFieldAdapter<SavedSettings, bool>(
     getter: getDoubleTapScrollToReplies,
     setter: setDoubleTapScrollToReplies,
-    fieldNumber: 106,
+    fieldNumber: kDoubleTapScrollToReplies,
     fieldName: 'doubleTapScrollToReplies',
     merger: PrimitiveMerger(),
   );
@@ -1337,11 +1457,12 @@ class SavedSettingsFields {
       x.lastUnifiedPushEndpoint;
   static void setLastUnifiedPushEndpoint(SavedSettings x, String? v) =>
       x.lastUnifiedPushEndpoint = v;
+  static const int kLastUnifiedPushEndpoint = 107;
   static const lastUnifiedPushEndpoint =
       HiveFieldAdapter<SavedSettings, String?>(
     getter: getLastUnifiedPushEndpoint,
     setter: setLastUnifiedPushEndpoint,
-    fieldNumber: 107,
+    fieldNumber: kLastUnifiedPushEndpoint,
     fieldName: 'lastUnifiedPushEndpoint',
     merger: PrimitiveMerger(),
   );
@@ -1350,21 +1471,23 @@ class SavedSettingsFields {
   static void setWebImageSearchMethod(
           SavedSettings x, WebImageSearchMethod v) =>
       x.webImageSearchMethod = v;
+  static const int kWebImageSearchMethod = 108;
   static const webImageSearchMethod =
       HiveFieldAdapter<SavedSettings, WebImageSearchMethod>(
     getter: getWebImageSearchMethod,
     setter: setWebImageSearchMethod,
-    fieldNumber: 108,
+    fieldNumber: kWebImageSearchMethod,
     fieldName: 'webImageSearchMethod',
     merger: PrimitiveMerger(),
   );
   static bool getShowIPNumberOnPosts(SavedSettings x) => x.showIPNumberOnPosts;
   static void setShowIPNumberOnPosts(SavedSettings x, bool v) =>
       x.showIPNumberOnPosts = v;
+  static const int kShowIPNumberOnPosts = 109;
   static const showIPNumberOnPosts = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowIPNumberOnPosts,
     setter: setShowIPNumberOnPosts,
-    fieldNumber: 109,
+    fieldNumber: kShowIPNumberOnPosts,
     fieldName: 'showIPNumberOnPosts',
     merger: PrimitiveMerger(),
   );
@@ -1372,29 +1495,32 @@ class SavedSettingsFields {
       x.showNoBeforeIdOnPosts;
   static void setShowNoBeforeIdOnPosts(SavedSettings x, bool v) =>
       x.showNoBeforeIdOnPosts = v;
+  static const int kShowNoBeforeIdOnPosts = 110;
   static const showNoBeforeIdOnPosts = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowNoBeforeIdOnPosts,
     setter: setShowNoBeforeIdOnPosts,
-    fieldNumber: 110,
+    fieldNumber: kShowNoBeforeIdOnPosts,
     fieldName: 'showNoBeforeIdOnPosts',
     merger: PrimitiveMerger(),
   );
   static bool getBlurEffects(SavedSettings x) => x.blurEffects;
   static void setBlurEffects(SavedSettings x, bool v) => x.blurEffects = v;
+  static const int kBlurEffects = 111;
   static const blurEffects = HiveFieldAdapter<SavedSettings, bool>(
     getter: getBlurEffects,
     setter: setBlurEffects,
-    fieldNumber: 111,
+    fieldNumber: kBlurEffects,
     fieldName: 'blurEffects',
     merger: PrimitiveMerger(),
   );
   static bool getScrollbarsOnLeft(SavedSettings x) => x.scrollbarsOnLeft;
   static void setScrollbarsOnLeft(SavedSettings x, bool v) =>
       x.scrollbarsOnLeft = v;
+  static const int kScrollbarsOnLeft = 112;
   static const scrollbarsOnLeft = HiveFieldAdapter<SavedSettings, bool>(
     getter: getScrollbarsOnLeft,
     setter: setScrollbarsOnLeft,
-    fieldNumber: 112,
+    fieldNumber: kScrollbarsOnLeft,
     fieldName: 'scrollbarsOnLeft',
     merger: PrimitiveMerger(),
   );
@@ -1402,10 +1528,11 @@ class SavedSettingsFields {
       x.exactTimeIsTwelveHour;
   static void setExactTimeIsTwelveHour(SavedSettings x, bool v) =>
       x.exactTimeIsTwelveHour = v;
+  static const int kExactTimeIsTwelveHour = 113;
   static const exactTimeIsTwelveHour = HiveFieldAdapter<SavedSettings, bool>(
     getter: getExactTimeIsTwelveHour,
     setter: setExactTimeIsTwelveHour,
-    fieldNumber: 113,
+    fieldNumber: kExactTimeIsTwelveHour,
     fieldName: 'exactTimeIsTwelveHour',
     merger: PrimitiveMerger(),
   );
@@ -1413,11 +1540,12 @@ class SavedSettingsFields {
       x.exactTimeShowsDateForToday;
   static void setExactTimeShowsDateForToday(SavedSettings x, bool v) =>
       x.exactTimeShowsDateForToday = v;
+  static const int kExactTimeShowsDateForToday = 114;
   static const exactTimeShowsDateForToday =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getExactTimeShowsDateForToday,
     setter: setExactTimeShowsDateForToday,
-    fieldNumber: 114,
+    fieldNumber: kExactTimeShowsDateForToday,
     fieldName: 'exactTimeShowsDateForToday',
     merger: PrimitiveMerger(),
   );
@@ -1425,11 +1553,12 @@ class SavedSettingsFields {
       x.attachmentsPageMaxCrossAxisExtent;
   static void setAttachmentsPageMaxCrossAxisExtent(SavedSettings x, double v) =>
       x.attachmentsPageMaxCrossAxisExtent = v;
+  static const int kAttachmentsPageMaxCrossAxisExtent = 115;
   static const attachmentsPageMaxCrossAxisExtent =
       HiveFieldAdapter<SavedSettings, double>(
     getter: getAttachmentsPageMaxCrossAxisExtent,
     setter: setAttachmentsPageMaxCrossAxisExtent,
-    fieldNumber: 115,
+    fieldNumber: kAttachmentsPageMaxCrossAxisExtent,
     fieldName: 'attachmentsPageMaxCrossAxisExtent',
     merger: PrimitiveMerger(),
   );
@@ -1438,11 +1567,12 @@ class SavedSettingsFields {
   static void setCatalogGridModeCellBorderRadiusAndMargin(
           SavedSettings x, bool v) =>
       x.catalogGridModeCellBorderRadiusAndMargin = v;
+  static const int kCatalogGridModeCellBorderRadiusAndMargin = 116;
   static const catalogGridModeCellBorderRadiusAndMargin =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getCatalogGridModeCellBorderRadiusAndMargin,
     setter: setCatalogGridModeCellBorderRadiusAndMargin,
-    fieldNumber: 116,
+    fieldNumber: kCatalogGridModeCellBorderRadiusAndMargin,
     fieldName: 'catalogGridModeCellBorderRadiusAndMargin',
     merger: PrimitiveMerger(),
   );
@@ -1451,11 +1581,12 @@ class SavedSettingsFields {
   static void setCatalogGridModeShowMoreImageIfLessText(
           SavedSettings x, bool v) =>
       x.catalogGridModeShowMoreImageIfLessText = v;
+  static const int kCatalogGridModeShowMoreImageIfLessText = 117;
   static const catalogGridModeShowMoreImageIfLessText =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getCatalogGridModeShowMoreImageIfLessText,
     setter: setCatalogGridModeShowMoreImageIfLessText,
-    fieldNumber: 117,
+    fieldNumber: kCatalogGridModeShowMoreImageIfLessText,
     fieldName: 'catalogGridModeShowMoreImageIfLessText',
     merger: PrimitiveMerger(),
   );
@@ -1463,10 +1594,11 @@ class SavedSettingsFields {
       x.showPostNumberOnPosts;
   static void setShowPostNumberOnPosts(SavedSettings x, bool v) =>
       x.showPostNumberOnPosts = v;
+  static const int kShowPostNumberOnPosts = 118;
   static const showPostNumberOnPosts = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowPostNumberOnPosts,
     setter: setShowPostNumberOnPosts,
-    fieldNumber: 118,
+    fieldNumber: kShowPostNumberOnPosts,
     fieldName: 'showPostNumberOnPosts',
     merger: PrimitiveMerger(),
   );
@@ -1474,31 +1606,34 @@ class SavedSettingsFields {
       x.overscrollModalTapPopsAll;
   static void setOverscrollModalTapPopsAll(SavedSettings x, bool v) =>
       x.overscrollModalTapPopsAll = v;
+  static const int kOverscrollModalTapPopsAll = 119;
   static const overscrollModalTapPopsAll =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getOverscrollModalTapPopsAll,
     setter: setOverscrollModalTapPopsAll,
-    fieldNumber: 119,
+    fieldNumber: kOverscrollModalTapPopsAll,
     fieldName: 'overscrollModalTapPopsAll',
     merger: PrimitiveMerger(),
   );
   static bool getSquareThumbnails(SavedSettings x) => x.squareThumbnails;
   static void setSquareThumbnails(SavedSettings x, bool v) =>
       x.squareThumbnails = v;
+  static const int kSquareThumbnails = 120;
   static const squareThumbnails = HiveFieldAdapter<SavedSettings, bool>(
     getter: getSquareThumbnails,
     setter: setSquareThumbnails,
-    fieldNumber: 120,
+    fieldNumber: kSquareThumbnails,
     fieldName: 'squareThumbnails',
     merger: PrimitiveMerger(),
   );
   static bool getAlwaysShowSpoilers(SavedSettings x) => x.alwaysShowSpoilers;
   static void setAlwaysShowSpoilers(SavedSettings x, bool v) =>
       x.alwaysShowSpoilers = v;
+  static const int kAlwaysShowSpoilers = 121;
   static const alwaysShowSpoilers = HiveFieldAdapter<SavedSettings, bool>(
     getter: getAlwaysShowSpoilers,
     setter: setAlwaysShowSpoilers,
-    fieldNumber: 121,
+    fieldNumber: kAlwaysShowSpoilers,
     fieldName: 'alwaysShowSpoilers',
     merger: PrimitiveMerger(),
   );
@@ -1508,11 +1643,12 @@ class SavedSettingsFields {
   static void setGallerySavePathOrganizing(
           SavedSettings x, GallerySavePathOrganizing v) =>
       x.gallerySavePathOrganizing = v;
+  static const int kGallerySavePathOrganizing = 122;
   static const gallerySavePathOrganizing =
       HiveFieldAdapter<SavedSettings, GallerySavePathOrganizing>(
     getter: getGallerySavePathOrganizing,
     setter: setGallerySavePathOrganizing,
-    fieldNumber: 122,
+    fieldNumber: kGallerySavePathOrganizing,
     fieldName: 'gallerySavePathOrganizing',
     merger: PrimitiveMerger(),
   );
@@ -1521,11 +1657,12 @@ class SavedSettingsFields {
   static void setFullQualityThumbnails(
           SavedSettings x, AutoloadAttachmentsSetting v) =>
       x.fullQualityThumbnails = v;
+  static const int kFullQualityThumbnails = 123;
   static const fullQualityThumbnails =
       HiveFieldAdapter<SavedSettings, AutoloadAttachmentsSetting>(
     getter: getFullQualityThumbnails,
     setter: setFullQualityThumbnails,
-    fieldNumber: 123,
+    fieldNumber: kFullQualityThumbnails,
     fieldName: 'fullQualityThumbnails',
     merger: PrimitiveMerger(),
   );
@@ -1533,19 +1670,21 @@ class SavedSettingsFields {
       x.recordThreadsInHistory;
   static void setRecordThreadsInHistory(SavedSettings x, bool v) =>
       x.recordThreadsInHistory = v;
+  static const int kRecordThreadsInHistory = 124;
   static const recordThreadsInHistory = HiveFieldAdapter<SavedSettings, bool>(
     getter: getRecordThreadsInHistory,
     setter: setRecordThreadsInHistory,
-    fieldNumber: 124,
+    fieldNumber: kRecordThreadsInHistory,
     fieldName: 'recordThreadsInHistory',
     merger: PrimitiveMerger(),
   );
   static String? getFontFamily(SavedSettings x) => x.fontFamily;
   static void setFontFamily(SavedSettings x, String? v) => x.fontFamily = v;
+  static const int kFontFamily = 125;
   static const fontFamily = HiveFieldAdapter<SavedSettings, String?>(
     getter: getFontFamily,
     setter: setFontFamily,
-    fieldNumber: 125,
+    fieldNumber: kFontFamily,
     fieldName: 'fontFamily',
     merger: PrimitiveMerger(),
   );
@@ -1554,11 +1693,12 @@ class SavedSettingsFields {
   static void setAutoCacheAttachments(
           SavedSettings x, AutoloadAttachmentsSetting v) =>
       x.autoCacheAttachments = v;
+  static const int kAutoCacheAttachments = 126;
   static const autoCacheAttachments =
       HiveFieldAdapter<SavedSettings, AutoloadAttachmentsSetting>(
     getter: getAutoCacheAttachments,
     setter: setAutoCacheAttachments,
-    fieldNumber: 126,
+    fieldNumber: kAutoCacheAttachments,
     fieldName: 'autoCacheAttachments',
     merger: PrimitiveMerger(),
   );
@@ -1566,11 +1706,12 @@ class SavedSettingsFields {
       x.exactTimeUsesCustomDateFormat;
   static void setExactTimeUsesCustomDateFormat(SavedSettings x, bool v) =>
       x.exactTimeUsesCustomDateFormat = v;
+  static const int kExactTimeUsesCustomDateFormat = 127;
   static const exactTimeUsesCustomDateFormat =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getExactTimeUsesCustomDateFormat,
     setter: setExactTimeUsesCustomDateFormat,
-    fieldNumber: 127,
+    fieldNumber: kExactTimeUsesCustomDateFormat,
     fieldName: 'exactTimeUsesCustomDateFormat',
     merger: PrimitiveMerger(),
   );
@@ -1578,10 +1719,11 @@ class SavedSettingsFields {
       x.showOverlaysInGallery;
   static void setShowOverlaysInGallery(SavedSettings x, bool v) =>
       x.showOverlaysInGallery = v;
+  static const int kShowOverlaysInGallery = 129;
   static const showOverlaysInGallery = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowOverlaysInGallery,
     setter: setShowOverlaysInGallery,
-    fieldNumber: 129,
+    fieldNumber: kShowOverlaysInGallery,
     fieldName: 'showOverlaysInGallery',
     merger: PrimitiveMerger(),
   );
@@ -1589,21 +1731,23 @@ class SavedSettingsFields {
       x.verticalTwoPaneMinimumPaneSize;
   static void setVerticalTwoPaneMinimumPaneSize(SavedSettings x, double v) =>
       x.verticalTwoPaneMinimumPaneSize = v;
+  static const int kVerticalTwoPaneMinimumPaneSize = 130;
   static const verticalTwoPaneMinimumPaneSize =
       HiveFieldAdapter<SavedSettings, double>(
     getter: getVerticalTwoPaneMinimumPaneSize,
     setter: setVerticalTwoPaneMinimumPaneSize,
-    fieldNumber: 130,
+    fieldNumber: kVerticalTwoPaneMinimumPaneSize,
     fieldName: 'verticalTwoPaneMinimumPaneSize',
     merger: PrimitiveMerger(),
   );
   static Set<String> getHiddenImageMD5s(SavedSettings x) => x.hiddenImageMD5s;
   static void setHiddenImageMD5s(SavedSettings x, Set<String> v) =>
       x.hiddenImageMD5s = v;
+  static const int kHiddenImageMD5s = 131;
   static const hiddenImageMD5s = HiveFieldAdapter<SavedSettings, Set<String>>(
     getter: getHiddenImageMD5s,
     setter: setHiddenImageMD5s,
-    fieldNumber: 131,
+    fieldNumber: kHiddenImageMD5s,
     fieldName: 'hiddenImageMD5s',
     merger: PrimitiveSetMerger(),
   );
@@ -1611,10 +1755,11 @@ class SavedSettingsFields {
       x.showLastRepliesInCatalog;
   static void setShowLastRepliesInCatalog(SavedSettings x, bool v) =>
       x.showLastRepliesInCatalog = v;
+  static const int kShowLastRepliesInCatalog = 132;
   static const showLastRepliesInCatalog = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowLastRepliesInCatalog,
     setter: setShowLastRepliesInCatalog,
-    fieldNumber: 132,
+    fieldNumber: kShowLastRepliesInCatalog,
     fieldName: 'showLastRepliesInCatalog',
     merger: PrimitiveMerger(),
   );
@@ -1623,11 +1768,12 @@ class SavedSettingsFields {
   static void setLoadThumbnails(
           SavedSettings x, AutoloadAttachmentsSetting v) =>
       x.loadThumbnails = v;
+  static const int kLoadThumbnails = 133;
   static const loadThumbnails =
       HiveFieldAdapter<SavedSettings, AutoloadAttachmentsSetting>(
     getter: getLoadThumbnails,
     setter: setLoadThumbnails,
-    fieldNumber: 133,
+    fieldNumber: kLoadThumbnails,
     fieldName: 'loadThumbnails',
     merger: PrimitiveMerger(),
   );
@@ -1635,11 +1781,12 @@ class SavedSettingsFields {
       x.applyImageFilterToThreads;
   static void setApplyImageFilterToThreads(SavedSettings x, bool v) =>
       x.applyImageFilterToThreads = v;
+  static const int kApplyImageFilterToThreads = 134;
   static const applyImageFilterToThreads =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getApplyImageFilterToThreads,
     setter: setApplyImageFilterToThreads,
-    fieldNumber: 134,
+    fieldNumber: kApplyImageFilterToThreads,
     fieldName: 'applyImageFilterToThreads',
     merger: PrimitiveMerger(),
   );
@@ -1647,21 +1794,23 @@ class SavedSettingsFields {
       x.askForAuthenticationOnLaunch;
   static void setAskForAuthenticationOnLaunch(SavedSettings x, bool v) =>
       x.askForAuthenticationOnLaunch = v;
+  static const int kAskForAuthenticationOnLaunch = 135;
   static const askForAuthenticationOnLaunch =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getAskForAuthenticationOnLaunch,
     setter: setAskForAuthenticationOnLaunch,
-    fieldNumber: 135,
+    fieldNumber: kAskForAuthenticationOnLaunch,
     fieldName: 'askForAuthenticationOnLaunch',
     merger: PrimitiveMerger(),
   );
   static bool getEnableSpellCheck(SavedSettings x) => x.enableSpellCheck;
   static void setEnableSpellCheck(SavedSettings x, bool v) =>
       x.enableSpellCheck = v;
+  static const int kEnableSpellCheck = 136;
   static const enableSpellCheck = HiveFieldAdapter<SavedSettings, bool>(
     getter: getEnableSpellCheck,
     setter: setEnableSpellCheck,
-    fieldNumber: 136,
+    fieldNumber: kEnableSpellCheck,
     fieldName: 'enableSpellCheck',
     merger: PrimitiveMerger(),
   );
@@ -1669,11 +1818,12 @@ class SavedSettingsFields {
       x.openCrossThreadLinksInNewTab;
   static void setOpenCrossThreadLinksInNewTab(SavedSettings x, bool v) =>
       x.openCrossThreadLinksInNewTab = v;
+  static const int kOpenCrossThreadLinksInNewTab = 137;
   static const openCrossThreadLinksInNewTab =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getOpenCrossThreadLinksInNewTab,
     setter: setOpenCrossThreadLinksInNewTab,
-    fieldNumber: 137,
+    fieldNumber: kOpenCrossThreadLinksInNewTab,
     fieldName: 'openCrossThreadLinksInNewTab',
     merger: PrimitiveMerger(),
   );
@@ -1682,11 +1832,12 @@ class SavedSettingsFields {
   static void setBackgroundThreadAutoUpdatePeriodSeconds(
           SavedSettings x, int v) =>
       x.backgroundThreadAutoUpdatePeriodSeconds = v;
+  static const int kBackgroundThreadAutoUpdatePeriodSeconds = 138;
   static const backgroundThreadAutoUpdatePeriodSeconds =
       HiveFieldAdapter<SavedSettings, int>(
     getter: getBackgroundThreadAutoUpdatePeriodSeconds,
     setter: setBackgroundThreadAutoUpdatePeriodSeconds,
-    fieldNumber: 138,
+    fieldNumber: kBackgroundThreadAutoUpdatePeriodSeconds,
     fieldName: 'backgroundThreadAutoUpdatePeriodSeconds',
     merger: PrimitiveMerger(),
   );
@@ -1694,11 +1845,12 @@ class SavedSettingsFields {
       x.currentThreadAutoUpdatePeriodSeconds;
   static void setCurrentThreadAutoUpdatePeriodSeconds(SavedSettings x, int v) =>
       x.currentThreadAutoUpdatePeriodSeconds = v;
+  static const int kCurrentThreadAutoUpdatePeriodSeconds = 139;
   static const currentThreadAutoUpdatePeriodSeconds =
       HiveFieldAdapter<SavedSettings, int>(
     getter: getCurrentThreadAutoUpdatePeriodSeconds,
     setter: setCurrentThreadAutoUpdatePeriodSeconds,
-    fieldNumber: 139,
+    fieldNumber: kCurrentThreadAutoUpdatePeriodSeconds,
     fieldName: 'currentThreadAutoUpdatePeriodSeconds',
     merger: PrimitiveMerger(),
   );
@@ -1707,11 +1859,12 @@ class SavedSettingsFields {
   static void setLastShareablePostsStyle(
           SavedSettings x, ShareablePostsStyle v) =>
       x.lastShareablePostsStyle = v;
+  static const int kLastShareablePostsStyle = 140;
   static const lastShareablePostsStyle =
       HiveFieldAdapter<SavedSettings, ShareablePostsStyle>(
     getter: getLastShareablePostsStyle,
     setter: setLastShareablePostsStyle,
-    fieldNumber: 140,
+    fieldNumber: kLastShareablePostsStyle,
     fieldName: 'lastShareablePostsStyle',
     merger: AdaptedMerger(ShareablePostsStyleAdapter.kTypeId),
   );
@@ -1719,11 +1872,12 @@ class SavedSettingsFields {
       x.defaultThreadWatch;
   static void setDefaultThreadWatch(SavedSettings x, ThreadWatch? v) =>
       x.defaultThreadWatch = v;
+  static const int kDefaultThreadWatch = 141;
   static const defaultThreadWatch =
       HiveFieldAdapter<SavedSettings, ThreadWatch?>(
     getter: getDefaultThreadWatch,
     setter: setDefaultThreadWatch,
-    fieldNumber: 141,
+    fieldNumber: kDefaultThreadWatch,
     fieldName: 'defaultThreadWatch',
     merger: NullableMerger(AdaptedMerger(ThreadWatchAdapter.kTypeId)),
   );
@@ -1731,11 +1885,12 @@ class SavedSettingsFields {
       x.highlightRepeatingDigitsInPostIds;
   static void setHighlightRepeatingDigitsInPostIds(SavedSettings x, bool v) =>
       x.highlightRepeatingDigitsInPostIds = v;
+  static const int kHighlightRepeatingDigitsInPostIds = 142;
   static const highlightRepeatingDigitsInPostIds =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getHighlightRepeatingDigitsInPostIds,
     setter: setHighlightRepeatingDigitsInPostIds,
-    fieldNumber: 142,
+    fieldNumber: kHighlightRepeatingDigitsInPostIds,
     fieldName: 'highlightRepeatingDigitsInPostIds',
     merger: PrimitiveMerger(),
   );
@@ -1745,11 +1900,12 @@ class SavedSettingsFields {
   static void setIncludeThreadsYouRepliedToWhenDeletingHistory(
           SavedSettings x, bool v) =>
       x.includeThreadsYouRepliedToWhenDeletingHistory = v;
+  static const int kIncludeThreadsYouRepliedToWhenDeletingHistory = 143;
   static const includeThreadsYouRepliedToWhenDeletingHistory =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getIncludeThreadsYouRepliedToWhenDeletingHistory,
     setter: setIncludeThreadsYouRepliedToWhenDeletingHistory,
-    fieldNumber: 143,
+    fieldNumber: kIncludeThreadsYouRepliedToWhenDeletingHistory,
     fieldName: 'includeThreadsYouRepliedToWhenDeletingHistory',
     merger: PrimitiveMerger(),
   );
@@ -1757,52 +1913,57 @@ class SavedSettingsFields {
       x.newPostHighlightBrightness;
   static void setNewPostHighlightBrightness(SavedSettings x, double v) =>
       x.newPostHighlightBrightness = v;
+  static const int kNewPostHighlightBrightness = 144;
   static const newPostHighlightBrightness =
       HiveFieldAdapter<SavedSettings, double>(
     getter: getNewPostHighlightBrightness,
     setter: setNewPostHighlightBrightness,
-    fieldNumber: 144,
+    fieldNumber: kNewPostHighlightBrightness,
     fieldName: 'newPostHighlightBrightness',
     merger: PrimitiveMerger(),
   );
   static ImagePeekingSetting getImagePeeking(SavedSettings x) => x.imagePeeking;
   static void setImagePeeking(SavedSettings x, ImagePeekingSetting v) =>
       x.imagePeeking = v;
+  static const int kImagePeeking = 145;
   static const imagePeeking =
       HiveFieldAdapter<SavedSettings, ImagePeekingSetting>(
     getter: getImagePeeking,
     setter: setImagePeeking,
-    fieldNumber: 145,
+    fieldNumber: kImagePeeking,
     fieldName: 'imagePeeking',
     merger: PrimitiveMerger(),
   );
   static bool? getUseMaterialStyle(SavedSettings x) => x.useMaterialStyle;
   static void setUseMaterialStyle(SavedSettings x, bool? v) =>
       x.useMaterialStyle = v;
+  static const int kUseMaterialStyle = 146;
   static const useMaterialStyle = HiveFieldAdapter<SavedSettings, bool?>(
     getter: getUseMaterialStyle,
     setter: setUseMaterialStyle,
-    fieldNumber: 146,
+    fieldNumber: kUseMaterialStyle,
     fieldName: 'useMaterialStyle',
     merger: PrimitiveMerger(),
   );
   static bool? getUseAndroidDrawer(SavedSettings x) => x.useAndroidDrawer;
   static void setUseAndroidDrawer(SavedSettings x, bool? v) =>
       x.useAndroidDrawer = v;
+  static const int kUseAndroidDrawer = 147;
   static const useAndroidDrawer = HiveFieldAdapter<SavedSettings, bool?>(
     getter: getUseAndroidDrawer,
     setter: setUseAndroidDrawer,
-    fieldNumber: 147,
+    fieldNumber: kUseAndroidDrawer,
     fieldName: 'useAndroidDrawer',
     merger: PrimitiveMerger(),
   );
   static bool? getUseMaterialRoutes(SavedSettings x) => x.useMaterialRoutes;
   static void setUseMaterialRoutes(SavedSettings x, bool? v) =>
       x.useMaterialRoutes = v;
+  static const int kUseMaterialRoutes = 148;
   static const useMaterialRoutes = HiveFieldAdapter<SavedSettings, bool?>(
     getter: getUseMaterialRoutes,
     setter: setUseMaterialRoutes,
-    fieldNumber: 148,
+    fieldNumber: kUseMaterialRoutes,
     fieldName: 'useMaterialRoutes',
     merger: PrimitiveMerger(),
   );
@@ -1810,11 +1971,12 @@ class SavedSettingsFields {
       x.hideBarsWhenScrollingDown;
   static void setHideBarsWhenScrollingDown(SavedSettings x, bool v) =>
       x.hideBarsWhenScrollingDown = v;
+  static const int kHideBarsWhenScrollingDown = 149;
   static const hideBarsWhenScrollingDown =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getHideBarsWhenScrollingDown,
     setter: setHideBarsWhenScrollingDown,
-    fieldNumber: 149,
+    fieldNumber: kHideBarsWhenScrollingDown,
     fieldName: 'hideBarsWhenScrollingDown',
     merger: PrimitiveMerger(),
   );
@@ -1822,20 +1984,22 @@ class SavedSettingsFields {
       x.showPerformanceOverlay;
   static void setShowPerformanceOverlay(SavedSettings x, bool v) =>
       x.showPerformanceOverlay = v;
+  static const int kShowPerformanceOverlay = 150;
   static const showPerformanceOverlay = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowPerformanceOverlay,
     setter: setShowPerformanceOverlay,
-    fieldNumber: 150,
+    fieldNumber: kShowPerformanceOverlay,
     fieldName: 'showPerformanceOverlay',
     merger: PrimitiveMerger(),
   );
   static String getCustomDateFormat(SavedSettings x) => x.customDateFormat;
   static void setCustomDateFormat(SavedSettings x, String v) =>
       x.customDateFormat = v;
+  static const int kCustomDateFormat = 151;
   static const customDateFormat = HiveFieldAdapter<SavedSettings, String>(
     getter: getCustomDateFormat,
     setter: setCustomDateFormat,
-    fieldNumber: 151,
+    fieldNumber: kCustomDateFormat,
     fieldName: 'customDateFormat',
     merger: PrimitiveMerger(),
   );
@@ -1843,11 +2007,12 @@ class SavedSettingsFields {
       x.hoverPopupDelayMilliseconds;
   static void setHoverPopupDelayMilliseconds(SavedSettings x, int v) =>
       x.hoverPopupDelayMilliseconds = v;
+  static const int kHoverPopupDelayMilliseconds = 152;
   static const hoverPopupDelayMilliseconds =
       HiveFieldAdapter<SavedSettings, int>(
     getter: getHoverPopupDelayMilliseconds,
     setter: setHoverPopupDelayMilliseconds,
-    fieldNumber: 152,
+    fieldNumber: kHoverPopupDelayMilliseconds,
     fieldName: 'hoverPopupDelayMilliseconds',
     merger: PrimitiveMerger(),
   );
@@ -1857,20 +2022,22 @@ class SavedSettingsFields {
   static void setMouseModeQuoteLinkBehavior(
           SavedSettings x, MouseModeQuoteLinkBehavior v) =>
       x.mouseModeQuoteLinkBehavior = v;
+  static const int kMouseModeQuoteLinkBehavior = 153;
   static const mouseModeQuoteLinkBehavior =
       HiveFieldAdapter<SavedSettings, MouseModeQuoteLinkBehavior>(
     getter: getMouseModeQuoteLinkBehavior,
     setter: setMouseModeQuoteLinkBehavior,
-    fieldNumber: 153,
+    fieldNumber: kMouseModeQuoteLinkBehavior,
     fieldName: 'mouseModeQuoteLinkBehavior',
     merger: PrimitiveMerger(),
   );
   static DrawerMode getDrawerMode(SavedSettings x) => x.drawerMode;
   static void setDrawerMode(SavedSettings x, DrawerMode v) => x.drawerMode = v;
+  static const int kDrawerMode = 154;
   static const drawerMode = HiveFieldAdapter<SavedSettings, DrawerMode>(
     getter: getDrawerMode,
     setter: setDrawerMode,
-    fieldNumber: 154,
+    fieldNumber: kDrawerMode,
     fieldName: 'drawerMode',
     merger: PrimitiveMerger(),
   );
@@ -1878,11 +2045,12 @@ class SavedSettingsFields {
       x.showLineBreak1InPostInfoRow;
   static void setShowLineBreak1InPostInfoRow(SavedSettings x, bool v) =>
       x.showLineBreak1InPostInfoRow = v;
+  static const int kShowLineBreak1InPostInfoRow = 155;
   static const showLineBreak1InPostInfoRow =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowLineBreak1InPostInfoRow,
     setter: setShowLineBreak1InPostInfoRow,
-    fieldNumber: 155,
+    fieldNumber: kShowLineBreak1InPostInfoRow,
     fieldName: 'showLineBreak1InPostInfoRow',
     merger: PrimitiveMerger(),
   );
@@ -1890,10 +2058,11 @@ class SavedSettingsFields {
       x.useCloudCaptchaSolver;
   static void setUseCloudCaptchaSolver(SavedSettings x, bool? v) =>
       x.useCloudCaptchaSolver = v;
+  static const int kUseCloudCaptchaSolver = 156;
   static const useCloudCaptchaSolver = HiveFieldAdapter<SavedSettings, bool?>(
     getter: getUseCloudCaptchaSolver,
     setter: setUseCloudCaptchaSolver,
-    fieldNumber: 156,
+    fieldNumber: kUseCloudCaptchaSolver,
     fieldName: 'useCloudCaptchaSolver',
     merger: PrimitiveMerger(),
   );
@@ -1901,11 +2070,12 @@ class SavedSettingsFields {
       x.useHeadlessCloudCaptchaSolver;
   static void setUseHeadlessCloudCaptchaSolver(SavedSettings x, bool? v) =>
       x.useHeadlessCloudCaptchaSolver = v;
+  static const int kUseHeadlessCloudCaptchaSolver = 157;
   static const useHeadlessCloudCaptchaSolver =
       HiveFieldAdapter<SavedSettings, bool?>(
     getter: getUseHeadlessCloudCaptchaSolver,
     setter: setUseHeadlessCloudCaptchaSolver,
-    fieldNumber: 157,
+    fieldNumber: kUseHeadlessCloudCaptchaSolver,
     fieldName: 'useHeadlessCloudCaptchaSolver',
     merger: PrimitiveMerger(),
   );
@@ -1913,11 +2083,12 @@ class SavedSettingsFields {
       x.removeMetadataOnUploadedFiles;
   static void setRemoveMetadataOnUploadedFiles(SavedSettings x, bool v) =>
       x.removeMetadataOnUploadedFiles = v;
+  static const int kRemoveMetadataOnUploadedFiles = 158;
   static const removeMetadataOnUploadedFiles =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getRemoveMetadataOnUploadedFiles,
     setter: setRemoveMetadataOnUploadedFiles,
-    fieldNumber: 158,
+    fieldNumber: kRemoveMetadataOnUploadedFiles,
     fieldName: 'removeMetadataOnUploadedFiles',
     merger: PrimitiveMerger(),
   );
@@ -1925,11 +2096,12 @@ class SavedSettingsFields {
       x.randomizeChecksumOnUploadedFiles;
   static void setRandomizeChecksumOnUploadedFiles(SavedSettings x, bool v) =>
       x.randomizeChecksumOnUploadedFiles = v;
+  static const int kRandomizeChecksumOnUploadedFiles = 159;
   static const randomizeChecksumOnUploadedFiles =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getRandomizeChecksumOnUploadedFiles,
     setter: setRandomizeChecksumOnUploadedFiles,
-    fieldNumber: 159,
+    fieldNumber: kRandomizeChecksumOnUploadedFiles,
     fieldName: 'randomizeChecksumOnUploadedFiles',
     merger: PrimitiveMerger(),
   );
@@ -1937,11 +2109,12 @@ class SavedSettingsFields {
       x.recentWebImageSearches;
   static void setRecentWebImageSearches(SavedSettings x, List<String> v) =>
       x.recentWebImageSearches = v;
+  static const int kRecentWebImageSearches = 160;
   static const recentWebImageSearches =
       HiveFieldAdapter<SavedSettings, List<String>>(
     getter: getRecentWebImageSearches,
     setter: setRecentWebImageSearches,
-    fieldNumber: 160,
+    fieldNumber: kRecentWebImageSearches,
     fieldName: 'recentWebImageSearches',
     merger: OrderedSetLikePrimitiveListMerger<String>(),
   );
@@ -1949,10 +2122,11 @@ class SavedSettingsFields {
       x.cloverStyleRepliesButton;
   static void setCloverStyleRepliesButton(SavedSettings x, bool v) =>
       x.cloverStyleRepliesButton = v;
+  static const int kCloverStyleRepliesButton = 161;
   static const cloverStyleRepliesButton = HiveFieldAdapter<SavedSettings, bool>(
     getter: getCloverStyleRepliesButton,
     setter: setCloverStyleRepliesButton,
-    fieldNumber: 161,
+    fieldNumber: kCloverStyleRepliesButton,
     fieldName: 'cloverStyleRepliesButton',
     merger: PrimitiveMerger(),
   );
@@ -1961,11 +2135,12 @@ class SavedSettingsFields {
   static void setWatchThreadAutomaticallyWhenReplying(
           SavedSettings x, bool v) =>
       x.watchThreadAutomaticallyWhenReplying = v;
+  static const int kWatchThreadAutomaticallyWhenReplying = 162;
   static const watchThreadAutomaticallyWhenReplying =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getWatchThreadAutomaticallyWhenReplying,
     setter: setWatchThreadAutomaticallyWhenReplying,
-    fieldNumber: 162,
+    fieldNumber: kWatchThreadAutomaticallyWhenReplying,
     fieldName: 'watchThreadAutomaticallyWhenReplying',
     merger: PrimitiveMerger(),
   );
@@ -1973,11 +2148,12 @@ class SavedSettingsFields {
       x.saveThreadAutomaticallyWhenReplying;
   static void setSaveThreadAutomaticallyWhenReplying(SavedSettings x, bool v) =>
       x.saveThreadAutomaticallyWhenReplying = v;
+  static const int kSaveThreadAutomaticallyWhenReplying = 163;
   static const saveThreadAutomaticallyWhenReplying =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getSaveThreadAutomaticallyWhenReplying,
     setter: setSaveThreadAutomaticallyWhenReplying,
-    fieldNumber: 163,
+    fieldNumber: kSaveThreadAutomaticallyWhenReplying,
     fieldName: 'saveThreadAutomaticallyWhenReplying',
     merger: PrimitiveMerger(),
   );
@@ -1985,11 +2161,12 @@ class SavedSettingsFields {
       x.cancellableRepliesSlideGesture;
   static void setCancellableRepliesSlideGesture(SavedSettings x, bool v) =>
       x.cancellableRepliesSlideGesture = v;
+  static const int kCancellableRepliesSlideGesture = 164;
   static const cancellableRepliesSlideGesture =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getCancellableRepliesSlideGesture,
     setter: setCancellableRepliesSlideGesture,
-    fieldNumber: 164,
+    fieldNumber: kCancellableRepliesSlideGesture,
     fieldName: 'cancellableRepliesSlideGesture',
     merger: PrimitiveMerger(),
   );
@@ -1997,21 +2174,23 @@ class SavedSettingsFields {
       x.openBoardSwitcherSlideGesture;
   static void setOpenBoardSwitcherSlideGesture(SavedSettings x, bool v) =>
       x.openBoardSwitcherSlideGesture = v;
+  static const int kOpenBoardSwitcherSlideGesture = 165;
   static const openBoardSwitcherSlideGesture =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getOpenBoardSwitcherSlideGesture,
     setter: setOpenBoardSwitcherSlideGesture,
-    fieldNumber: 165,
+    fieldNumber: kOpenBoardSwitcherSlideGesture,
     fieldName: 'openBoardSwitcherSlideGesture',
     merger: PrimitiveMerger(),
   );
   static bool getPersistentDrawer(SavedSettings x) => x.persistentDrawer;
   static void setPersistentDrawer(SavedSettings x, bool v) =>
       x.persistentDrawer = v;
+  static const int kPersistentDrawer = 166;
   static const persistentDrawer = HiveFieldAdapter<SavedSettings, bool>(
     getter: getPersistentDrawer,
     setter: setPersistentDrawer,
-    fieldNumber: 166,
+    fieldNumber: kPersistentDrawer,
     fieldName: 'persistentDrawer',
     merger: PrimitiveMerger(),
   );
@@ -2019,10 +2198,11 @@ class SavedSettingsFields {
       x.showGalleryGridButton;
   static void setShowGalleryGridButton(SavedSettings x, bool v) =>
       x.showGalleryGridButton = v;
+  static const int kShowGalleryGridButton = 167;
   static const showGalleryGridButton = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowGalleryGridButton,
     setter: setShowGalleryGridButton,
-    fieldNumber: 167,
+    fieldNumber: kShowGalleryGridButton,
     fieldName: 'showGalleryGridButton',
     merger: PrimitiveMerger(),
   );
@@ -2030,11 +2210,12 @@ class SavedSettingsFields {
       x.centeredPostThumbnailSize;
   static void setCenteredPostThumbnailSize(SavedSettings x, double v) =>
       x.centeredPostThumbnailSize = v;
+  static const int kCenteredPostThumbnailSize = 168;
   static const centeredPostThumbnailSize =
       HiveFieldAdapter<SavedSettings, double>(
     getter: getCenteredPostThumbnailSize,
     setter: setCenteredPostThumbnailSize,
-    fieldNumber: 168,
+    fieldNumber: kCenteredPostThumbnailSize,
     fieldName: 'centeredPostThumbnailSize',
     merger: PrimitiveMerger(),
   );
@@ -2042,11 +2223,12 @@ class SavedSettingsFields {
       x.ellipsizeLongFilenamesOnPosts;
   static void setEllipsizeLongFilenamesOnPosts(SavedSettings x, bool v) =>
       x.ellipsizeLongFilenamesOnPosts = v;
+  static const int kEllipsizeLongFilenamesOnPosts = 169;
   static const ellipsizeLongFilenamesOnPosts =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getEllipsizeLongFilenamesOnPosts,
     setter: setEllipsizeLongFilenamesOnPosts,
-    fieldNumber: 169,
+    fieldNumber: kEllipsizeLongFilenamesOnPosts,
     fieldName: 'ellipsizeLongFilenamesOnPosts',
     merger: PrimitiveMerger(),
   );
@@ -2056,11 +2238,12 @@ class SavedSettingsFields {
   static void setMuteAudioWhenOpeningGallery(
           SavedSettings x, TristateSystemSetting v) =>
       x.muteAudioWhenOpeningGallery = v;
+  static const int kMuteAudioWhenOpeningGallery = 170;
   static const muteAudioWhenOpeningGallery =
       HiveFieldAdapter<SavedSettings, TristateSystemSetting>(
     getter: getMuteAudioWhenOpeningGallery,
     setter: setMuteAudioWhenOpeningGallery,
-    fieldNumber: 170,
+    fieldNumber: kMuteAudioWhenOpeningGallery,
     fieldName: 'muteAudioWhenOpeningGallery',
     merger: PrimitiveMerger(),
   );
@@ -2068,41 +2251,45 @@ class SavedSettingsFields {
       x.translationTargetLanguage;
   static void setTranslationTargetLanguage(SavedSettings x, String v) =>
       x.translationTargetLanguage = v;
+  static const int kTranslationTargetLanguage = 171;
   static const translationTargetLanguage =
       HiveFieldAdapter<SavedSettings, String>(
     getter: getTranslationTargetLanguage,
     setter: setTranslationTargetLanguage,
-    fieldNumber: 171,
+    fieldNumber: kTranslationTargetLanguage,
     fieldName: 'translationTargetLanguage',
     merger: PrimitiveMerger(),
   );
   static String? getHomeImageboardKey(SavedSettings x) => x.homeImageboardKey;
   static void setHomeImageboardKey(SavedSettings x, String? v) =>
       x.homeImageboardKey = v;
+  static const int kHomeImageboardKey = 172;
   static const homeImageboardKey = HiveFieldAdapter<SavedSettings, String?>(
     getter: getHomeImageboardKey,
     setter: setHomeImageboardKey,
-    fieldNumber: 172,
+    fieldNumber: kHomeImageboardKey,
     fieldName: 'homeImageboardKey',
     merger: PrimitiveMerger(),
   );
   static String getHomeBoardName(SavedSettings x) => x.homeBoardName;
   static void setHomeBoardName(SavedSettings x, String v) =>
       x.homeBoardName = v;
+  static const int kHomeBoardName = 173;
   static const homeBoardName = HiveFieldAdapter<SavedSettings, String>(
     getter: getHomeBoardName,
     setter: setHomeBoardName,
-    fieldNumber: 173,
+    fieldNumber: kHomeBoardName,
     fieldName: 'homeBoardName',
     merger: PrimitiveMerger(),
   );
   static bool getTapPostIdToReply(SavedSettings x) => x.tapPostIdToReply;
   static void setTapPostIdToReply(SavedSettings x, bool v) =>
       x.tapPostIdToReply = v;
+  static const int kTapPostIdToReply = 174;
   static const tapPostIdToReply = HiveFieldAdapter<SavedSettings, bool>(
     getter: getTapPostIdToReply,
     setter: setTapPostIdToReply,
-    fieldNumber: 174,
+    fieldNumber: kTapPostIdToReply,
     fieldName: 'tapPostIdToReply',
     merger: PrimitiveMerger(),
   );
@@ -2110,11 +2297,12 @@ class SavedSettingsFields {
       x.downloadUsingServerSideFilenames;
   static void setDownloadUsingServerSideFilenames(SavedSettings x, bool v) =>
       x.downloadUsingServerSideFilenames = v;
+  static const int kDownloadUsingServerSideFilenames = 175;
   static const downloadUsingServerSideFilenames =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getDownloadUsingServerSideFilenames,
     setter: setDownloadUsingServerSideFilenames,
-    fieldNumber: 175,
+    fieldNumber: kDownloadUsingServerSideFilenames,
     fieldName: 'downloadUsingServerSideFilenames',
     merger: PrimitiveMerger(),
   );
@@ -2122,11 +2310,12 @@ class SavedSettingsFields {
       x.catalogGridModeTextScale;
   static void setCatalogGridModeTextScale(SavedSettings x, double v) =>
       x.catalogGridModeTextScale = v;
+  static const int kCatalogGridModeTextScale = 176;
   static const catalogGridModeTextScale =
       HiveFieldAdapter<SavedSettings, double>(
     getter: getCatalogGridModeTextScale,
     setter: setCatalogGridModeTextScale,
-    fieldNumber: 176,
+    fieldNumber: kCatalogGridModeTextScale,
     fieldName: 'catalogGridModeTextScale',
     merger: PrimitiveMerger(),
   );
@@ -2134,11 +2323,12 @@ class SavedSettingsFields {
       x.catalogGridModeCropThumbnails;
   static void setCatalogGridModeCropThumbnails(SavedSettings x, bool v) =>
       x.catalogGridModeCropThumbnails = v;
+  static const int kCatalogGridModeCropThumbnails = 177;
   static const catalogGridModeCropThumbnails =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getCatalogGridModeCropThumbnails,
     setter: setCatalogGridModeCropThumbnails,
-    fieldNumber: 177,
+    fieldNumber: kCatalogGridModeCropThumbnails,
     fieldName: 'catalogGridModeCropThumbnails',
     merger: PrimitiveMerger(),
   );
@@ -2146,30 +2336,33 @@ class SavedSettingsFields {
       x.useSpamFilterWorkarounds;
   static void setUseSpamFilterWorkarounds(SavedSettings x, bool v) =>
       x.useSpamFilterWorkarounds = v;
+  static const int kUseSpamFilterWorkarounds = 178;
   static const useSpamFilterWorkarounds = HiveFieldAdapter<SavedSettings, bool>(
     getter: getUseSpamFilterWorkarounds,
     setter: setUseSpamFilterWorkarounds,
-    fieldNumber: 178,
+    fieldNumber: kUseSpamFilterWorkarounds,
     fieldName: 'useSpamFilterWorkarounds',
     merger: PrimitiveMerger(),
   );
   static double getScrollbarThickness(SavedSettings x) => x.scrollbarThickness;
   static void setScrollbarThickness(SavedSettings x, double v) =>
       x.scrollbarThickness = v;
+  static const int kScrollbarThickness = 179;
   static const scrollbarThickness = HiveFieldAdapter<SavedSettings, double>(
     getter: getScrollbarThickness,
     setter: setScrollbarThickness,
-    fieldNumber: 179,
+    fieldNumber: kScrollbarThickness,
     fieldName: 'scrollbarThickness',
     merger: PrimitiveMerger(),
   );
   static int getThumbnailPixelation(SavedSettings x) => x.thumbnailPixelation;
   static void setThumbnailPixelation(SavedSettings x, int v) =>
       x.thumbnailPixelation = v;
+  static const int kThumbnailPixelation = 180;
   static const thumbnailPixelation = HiveFieldAdapter<SavedSettings, int>(
     getter: getThumbnailPixelation,
     setter: setThumbnailPixelation,
-    fieldNumber: 180,
+    fieldNumber: kThumbnailPixelation,
     fieldName: 'thumbnailPixelation',
     merger: PrimitiveMerger(),
   );
@@ -2177,11 +2370,12 @@ class SavedSettingsFields {
       x.catalogGridModeTextAboveAttachment;
   static void setCatalogGridModeTextAboveAttachment(SavedSettings x, bool v) =>
       x.catalogGridModeTextAboveAttachment = v;
+  static const int kCatalogGridModeTextAboveAttachment = 181;
   static const catalogGridModeTextAboveAttachment =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getCatalogGridModeTextAboveAttachment,
     setter: setCatalogGridModeTextAboveAttachment,
-    fieldNumber: 181,
+    fieldNumber: kCatalogGridModeTextAboveAttachment,
     fieldName: 'catalogGridModeTextAboveAttachment',
     merger: PrimitiveMerger(),
   );
@@ -2189,21 +2383,23 @@ class SavedSettingsFields {
       x.swipeGesturesOnBottomBar;
   static void setSwipeGesturesOnBottomBar(SavedSettings x, bool v) =>
       x.swipeGesturesOnBottomBar = v;
+  static const int kSwipeGesturesOnBottomBar = 182;
   static const swipeGesturesOnBottomBar = HiveFieldAdapter<SavedSettings, bool>(
     getter: getSwipeGesturesOnBottomBar,
     setter: setSwipeGesturesOnBottomBar,
-    fieldNumber: 182,
+    fieldNumber: kSwipeGesturesOnBottomBar,
     fieldName: 'swipeGesturesOnBottomBar',
     merger: PrimitiveMerger(),
   );
   static Map<String, String> getMpvOptions(SavedSettings x) => x.mpvOptions;
   static void setMpvOptions(SavedSettings x, Map<String, String> v) =>
       x.mpvOptions = v;
+  static const int kMpvOptions = 183;
   static const mpvOptions =
       HiveFieldAdapter<SavedSettings, Map<String, String>>(
     getter: getMpvOptions,
     setter: setMpvOptions,
-    fieldNumber: 183,
+    fieldNumber: kMpvOptions,
     fieldName: 'mpvOptions',
     merger: MapMerger(PrimitiveMerger()),
   );
@@ -2211,11 +2407,12 @@ class SavedSettingsFields {
       x.dynamicIPKeepAlivePeriodSeconds;
   static void setDynamicIPKeepAlivePeriodSeconds(SavedSettings x, int v) =>
       x.dynamicIPKeepAlivePeriodSeconds = v;
+  static const int kDynamicIPKeepAlivePeriodSeconds = 184;
   static const dynamicIPKeepAlivePeriodSeconds =
       HiveFieldAdapter<SavedSettings, int>(
     getter: getDynamicIPKeepAlivePeriodSeconds,
     setter: setDynamicIPKeepAlivePeriodSeconds,
-    fieldNumber: 184,
+    fieldNumber: kDynamicIPKeepAlivePeriodSeconds,
     fieldName: 'dynamicIPKeepAlivePeriodSeconds',
     merger: PrimitiveMerger(),
   );
@@ -2223,10 +2420,11 @@ class SavedSettingsFields {
       x.postingRegretDelaySeconds;
   static void setPostingRegretDelaySeconds(SavedSettings x, int v) =>
       x.postingRegretDelaySeconds = v;
+  static const int kPostingRegretDelaySeconds = 185;
   static const postingRegretDelaySeconds = HiveFieldAdapter<SavedSettings, int>(
     getter: getPostingRegretDelaySeconds,
     setter: setPostingRegretDelaySeconds,
-    fieldNumber: 185,
+    fieldNumber: kPostingRegretDelaySeconds,
     fieldName: 'postingRegretDelaySeconds',
     merger: PrimitiveMerger(),
   );
@@ -2234,10 +2432,11 @@ class SavedSettingsFields {
       x.showHiddenItemsFooter;
   static void setShowHiddenItemsFooter(SavedSettings x, bool v) =>
       x.showHiddenItemsFooter = v;
+  static const int kShowHiddenItemsFooter = 186;
   static const showHiddenItemsFooter = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowHiddenItemsFooter,
     setter: setShowHiddenItemsFooter,
-    fieldNumber: 186,
+    fieldNumber: kShowHiddenItemsFooter,
     fieldName: 'showHiddenItemsFooter',
     merger: PrimitiveMerger(),
   );
@@ -2245,11 +2444,12 @@ class SavedSettingsFields {
       x.attachmentsPageUsePageView;
   static void setAttachmentsPageUsePageView(SavedSettings x, bool v) =>
       x.attachmentsPageUsePageView = v;
+  static const int kAttachmentsPageUsePageView = 187;
   static const attachmentsPageUsePageView =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getAttachmentsPageUsePageView,
     setter: setAttachmentsPageUsePageView,
-    fieldNumber: 187,
+    fieldNumber: kAttachmentsPageUsePageView,
     fieldName: 'attachmentsPageUsePageView',
     merger: PrimitiveMerger(),
   );
@@ -2257,10 +2457,11 @@ class SavedSettingsFields {
       x.showReplyCountInCatalog;
   static void setShowReplyCountInCatalog(SavedSettings x, bool v) =>
       x.showReplyCountInCatalog = v;
+  static const int kShowReplyCountInCatalog = 188;
   static const showReplyCountInCatalog = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowReplyCountInCatalog,
     setter: setShowReplyCountInCatalog,
-    fieldNumber: 188,
+    fieldNumber: kShowReplyCountInCatalog,
     fieldName: 'showReplyCountInCatalog',
     merger: PrimitiveMerger(),
   );
@@ -2269,21 +2470,23 @@ class SavedSettingsFields {
   static void setWatchThreadAutomaticallyWhenCreating(
           SavedSettings x, bool v) =>
       x.watchThreadAutomaticallyWhenCreating = v;
+  static const int kWatchThreadAutomaticallyWhenCreating = 189;
   static const watchThreadAutomaticallyWhenCreating =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getWatchThreadAutomaticallyWhenCreating,
     setter: setWatchThreadAutomaticallyWhenCreating,
-    fieldNumber: 189,
+    fieldNumber: kWatchThreadAutomaticallyWhenCreating,
     fieldName: 'watchThreadAutomaticallyWhenCreating',
     merger: PrimitiveMerger(),
   );
   static int getImageMetaFilterDepth(SavedSettings x) => x.imageMetaFilterDepth;
   static void setImageMetaFilterDepth(SavedSettings x, int v) =>
       x.imageMetaFilterDepth = v;
+  static const int kImageMetaFilterDepth = 190;
   static const imageMetaFilterDepth = HiveFieldAdapter<SavedSettings, int>(
     getter: getImageMetaFilterDepth,
     setter: setImageMetaFilterDepth,
-    fieldNumber: 190,
+    fieldNumber: kImageMetaFilterDepth,
     fieldName: 'imageMetaFilterDepth',
     merger: PrimitiveMerger(),
   );
@@ -2291,10 +2494,11 @@ class SavedSettingsFields {
       x.useStaggeredCatalogGrid;
   static void setUseStaggeredCatalogGrid(SavedSettings x, bool v) =>
       x.useStaggeredCatalogGrid = v;
+  static const int kUseStaggeredCatalogGrid = 191;
   static const useStaggeredCatalogGrid = HiveFieldAdapter<SavedSettings, bool>(
     getter: getUseStaggeredCatalogGrid,
     setter: setUseStaggeredCatalogGrid,
-    fieldNumber: 191,
+    fieldNumber: kUseStaggeredCatalogGrid,
     fieldName: 'useStaggeredCatalogGrid',
     merger: PrimitiveMerger(),
   );
@@ -2302,10 +2506,11 @@ class SavedSettingsFields {
       x.doubleTapToHidePosts;
   static void setDoubleTapToHidePosts(SavedSettings x, bool v) =>
       x.doubleTapToHidePosts = v;
+  static const int kDoubleTapToHidePosts = 192;
   static const doubleTapToHidePosts = HiveFieldAdapter<SavedSettings, bool>(
     getter: getDoubleTapToHidePosts,
     setter: setDoubleTapToHidePosts,
-    fieldNumber: 192,
+    fieldNumber: kDoubleTapToHidePosts,
     fieldName: 'doubleTapToHidePosts',
     merger: PrimitiveMerger(),
   );
@@ -2313,10 +2518,11 @@ class SavedSettingsFields {
       x.doubleTapToHideThreads;
   static void setDoubleTapToHideThreads(SavedSettings x, bool v) =>
       x.doubleTapToHideThreads = v;
+  static const int kDoubleTapToHideThreads = 193;
   static const doubleTapToHideThreads = HiveFieldAdapter<SavedSettings, bool>(
     getter: getDoubleTapToHideThreads,
     setter: setDoubleTapToHideThreads,
-    fieldNumber: 193,
+    fieldNumber: kDoubleTapToHideThreads,
     fieldName: 'doubleTapToHideThreads',
     merger: PrimitiveMerger(),
   );
@@ -2324,11 +2530,12 @@ class SavedSettingsFields {
       x.cloverStyleCatalogCounters;
   static void setCloverStyleCatalogCounters(SavedSettings x, bool v) =>
       x.cloverStyleCatalogCounters = v;
+  static const int kCloverStyleCatalogCounters = 194;
   static const cloverStyleCatalogCounters =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getCloverStyleCatalogCounters,
     setter: setCloverStyleCatalogCounters,
-    fieldNumber: 194,
+    fieldNumber: kCloverStyleCatalogCounters,
     fieldName: 'cloverStyleCatalogCounters',
     merger: PrimitiveMerger(),
   );
@@ -2336,11 +2543,12 @@ class SavedSettingsFields {
       x.alwaysUseWideDrawerGesture;
   static void setAlwaysUseWideDrawerGesture(SavedSettings x, bool v) =>
       x.alwaysUseWideDrawerGesture = v;
+  static const int kAlwaysUseWideDrawerGesture = 195;
   static const alwaysUseWideDrawerGesture =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getAlwaysUseWideDrawerGesture,
     setter: setAlwaysUseWideDrawerGesture,
-    fieldNumber: 195,
+    fieldNumber: kAlwaysUseWideDrawerGesture,
     fieldName: 'alwaysUseWideDrawerGesture',
     merger: PrimitiveMerger(),
   );
@@ -2348,11 +2556,12 @@ class SavedSettingsFields {
       x.openDrawerThreadsInNewTabs;
   static void setOpenDrawerThreadsInNewTabs(SavedSettings x, bool v) =>
       x.openDrawerThreadsInNewTabs = v;
+  static const int kOpenDrawerThreadsInNewTabs = 196;
   static const openDrawerThreadsInNewTabs =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getOpenDrawerThreadsInNewTabs,
     setter: setOpenDrawerThreadsInNewTabs,
-    fieldNumber: 196,
+    fieldNumber: kOpenDrawerThreadsInNewTabs,
     fieldName: 'openDrawerThreadsInNewTabs',
     merger: PrimitiveMerger(),
   );
@@ -2360,11 +2569,12 @@ class SavedSettingsFields {
       x.closeReplyBoxAfterSubmitting;
   static void setCloseReplyBoxAfterSubmitting(SavedSettings x, bool v) =>
       x.closeReplyBoxAfterSubmitting = v;
+  static const int kCloseReplyBoxAfterSubmitting = 197;
   static const closeReplyBoxAfterSubmitting =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getCloseReplyBoxAfterSubmitting,
     setter: setCloseReplyBoxAfterSubmitting,
-    fieldNumber: 197,
+    fieldNumber: kCloseReplyBoxAfterSubmitting,
     fieldName: 'closeReplyBoxAfterSubmitting',
     merger: PrimitiveMerger(),
   );
@@ -2372,10 +2582,11 @@ class SavedSettingsFields {
       x.androidGalleryPicker;
   static void setAndroidGalleryPicker(SavedSettings x, String? v) =>
       x.androidGalleryPicker = v;
+  static const int kAndroidGalleryPicker = 198;
   static const androidGalleryPicker = HiveFieldAdapter<SavedSettings, String?>(
     getter: getAndroidGalleryPicker,
     setter: setAndroidGalleryPicker,
-    fieldNumber: 198,
+    fieldNumber: kAndroidGalleryPicker,
     fieldName: 'androidGalleryPicker',
     merger: PrimitiveMerger(),
   );
@@ -2383,30 +2594,33 @@ class SavedSettingsFields {
       x.onlyShowUnreadWatches;
   static void setOnlyShowUnreadWatches(SavedSettings x, bool v) =>
       x.onlyShowUnreadWatches = v;
+  static const int kOnlyShowUnreadWatches = 199;
   static const onlyShowUnreadWatches = HiveFieldAdapter<SavedSettings, bool>(
     getter: getOnlyShowUnreadWatches,
     setter: setOnlyShowUnreadWatches,
-    fieldNumber: 199,
+    fieldNumber: kOnlyShowUnreadWatches,
     fieldName: 'onlyShowUnreadWatches',
     merger: PrimitiveMerger(),
   );
   static String? getFontFamilyFallback(SavedSettings x) => x.fontFamilyFallback;
   static void setFontFamilyFallback(SavedSettings x, String? v) =>
       x.fontFamilyFallback = v;
+  static const int kFontFamilyFallback = 200;
   static const fontFamilyFallback = HiveFieldAdapter<SavedSettings, String?>(
     getter: getFontFamilyFallback,
     setter: setFontFamilyFallback,
-    fieldNumber: 200,
+    fieldNumber: kFontFamilyFallback,
     fieldName: 'fontFamilyFallback',
     merger: PrimitiveMerger(),
   );
   static bool getShowYousInScrollbar(SavedSettings x) => x.showYousInScrollbar;
   static void setShowYousInScrollbar(SavedSettings x, bool v) =>
       x.showYousInScrollbar = v;
+  static const int kShowYousInScrollbar = 201;
   static const showYousInScrollbar = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowYousInScrollbar,
     setter: setShowYousInScrollbar,
-    fieldNumber: 201,
+    fieldNumber: kShowYousInScrollbar,
     fieldName: 'showYousInScrollbar',
     merger: PrimitiveMerger(),
   );
@@ -2414,11 +2628,12 @@ class SavedSettingsFields {
       x.separateWiFiAndCellularCookies;
   static void setSeparateWiFiAndCellularCookies(SavedSettings x, bool v) =>
       x.separateWiFiAndCellularCookies = v;
+  static const int kSeparateWiFiAndCellularCookies = 202;
   static const separateWiFiAndCellularCookies =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getSeparateWiFiAndCellularCookies,
     setter: setSeparateWiFiAndCellularCookies,
-    fieldNumber: 202,
+    fieldNumber: kSeparateWiFiAndCellularCookies,
     fieldName: 'separateWiFiAndCellularCookies',
     merger: PrimitiveMerger(),
   );
@@ -2426,11 +2641,12 @@ class SavedSettingsFields {
       x.showActiveWatchesAboveZombieWatches;
   static void setShowActiveWatchesAboveZombieWatches(SavedSettings x, bool v) =>
       x.showActiveWatchesAboveZombieWatches = v;
+  static const int kShowActiveWatchesAboveZombieWatches = 203;
   static const showActiveWatchesAboveZombieWatches =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowActiveWatchesAboveZombieWatches,
     setter: setShowActiveWatchesAboveZombieWatches,
-    fieldNumber: 203,
+    fieldNumber: kShowActiveWatchesAboveZombieWatches,
     fieldName: 'showActiveWatchesAboveZombieWatches',
     merger: PrimitiveMerger(),
   );
@@ -2438,11 +2654,12 @@ class SavedSettingsFields {
       x.showLineBreak2InPostInfoRow;
   static void setShowLineBreak2InPostInfoRow(SavedSettings x, bool v) =>
       x.showLineBreak2InPostInfoRow = v;
+  static const int kShowLineBreak2InPostInfoRow = 204;
   static const showLineBreak2InPostInfoRow =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowLineBreak2InPostInfoRow,
     setter: setShowLineBreak2InPostInfoRow,
-    fieldNumber: 204,
+    fieldNumber: kShowLineBreak2InPostInfoRow,
     fieldName: 'showLineBreak2InPostInfoRow',
     merger: PrimitiveMerger(),
   );
@@ -2450,11 +2667,12 @@ class SavedSettingsFields {
       x.reverseSavedThreadsSorting;
   static void setReverseSavedThreadsSorting(SavedSettings x, bool v) =>
       x.reverseSavedThreadsSorting = v;
+  static const int kReverseSavedThreadsSorting = 205;
   static const reverseSavedThreadsSorting =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getReverseSavedThreadsSorting,
     setter: setReverseSavedThreadsSorting,
-    fieldNumber: 205,
+    fieldNumber: kReverseSavedThreadsSorting,
     fieldName: 'reverseSavedThreadsSorting',
     merger: PrimitiveMerger(),
   );
@@ -2462,31 +2680,34 @@ class SavedSettingsFields {
       x.reverseWatchedThreadsSorting;
   static void setReverseWatchedThreadsSorting(SavedSettings x, bool v) =>
       x.reverseWatchedThreadsSorting = v;
+  static const int kReverseWatchedThreadsSorting = 206;
   static const reverseWatchedThreadsSorting =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getReverseWatchedThreadsSorting,
     setter: setReverseWatchedThreadsSorting,
-    fieldNumber: 206,
+    fieldNumber: kReverseWatchedThreadsSorting,
     fieldName: 'reverseWatchedThreadsSorting',
     merger: PrimitiveMerger(),
   );
   static double getThumbnailOpacity(SavedSettings x) => x.thumbnailOpacity;
   static void setThumbnailOpacity(SavedSettings x, double v) =>
       x.thumbnailOpacity = v;
+  static const int kThumbnailOpacity = 207;
   static const thumbnailOpacity = HiveFieldAdapter<SavedSettings, double>(
     getter: getThumbnailOpacity,
     setter: setThumbnailOpacity,
-    fieldNumber: 207,
+    fieldNumber: kThumbnailOpacity,
     fieldName: 'thumbnailOpacity',
     merger: PrimitiveMerger(),
   );
   static bool getReplyButtonAtBottom(SavedSettings x) => x.replyButtonAtBottom;
   static void setReplyButtonAtBottom(SavedSettings x, bool v) =>
       x.replyButtonAtBottom = v;
+  static const int kReplyButtonAtBottom = 208;
   static const replyButtonAtBottom = HiveFieldAdapter<SavedSettings, bool>(
     getter: getReplyButtonAtBottom,
     setter: setReplyButtonAtBottom,
-    fieldNumber: 208,
+    fieldNumber: kReplyButtonAtBottom,
     fieldName: 'replyButtonAtBottom',
     merger: PrimitiveMerger(),
   );
@@ -2494,11 +2715,12 @@ class SavedSettingsFields {
       x.videoContextMenuInGallery;
   static void setVideoContextMenuInGallery(SavedSettings x, bool v) =>
       x.videoContextMenuInGallery = v;
+  static const int kVideoContextMenuInGallery = 209;
   static const videoContextMenuInGallery =
       HiveFieldAdapter<SavedSettings, bool>(
     getter: getVideoContextMenuInGallery,
     setter: setVideoContextMenuInGallery,
-    fieldNumber: 209,
+    fieldNumber: kVideoContextMenuInGallery,
     fieldName: 'videoContextMenuInGallery',
     merger: PrimitiveMerger(),
   );
@@ -2506,10 +2728,11 @@ class SavedSettingsFields {
       x.doubleTapToSeekVideo;
   static void setDoubleTapToSeekVideo(SavedSettings x, bool v) =>
       x.doubleTapToSeekVideo = v;
+  static const int kDoubleTapToSeekVideo = 210;
   static const doubleTapToSeekVideo = HiveFieldAdapter<SavedSettings, bool>(
     getter: getDoubleTapToSeekVideo,
     setter: setDoubleTapToSeekVideo,
-    fieldNumber: 210,
+    fieldNumber: kDoubleTapToSeekVideo,
     fieldName: 'doubleTapToSeekVideo',
     merger: PrimitiveMerger(),
   );
@@ -2517,10 +2740,11 @@ class SavedSettingsFields {
       x.showHotPostsInScrollbar;
   static void setShowHotPostsInScrollbar(SavedSettings x, bool v) =>
       x.showHotPostsInScrollbar = v;
+  static const int kShowHotPostsInScrollbar = 211;
   static const showHotPostsInScrollbar = HiveFieldAdapter<SavedSettings, bool>(
     getter: getShowHotPostsInScrollbar,
     setter: setShowHotPostsInScrollbar,
-    fieldNumber: 211,
+    fieldNumber: kShowHotPostsInScrollbar,
     fieldName: 'showHotPostsInScrollbar',
     merger: PrimitiveMerger(),
   );
@@ -2741,9 +2965,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
   @override
   SavedSettings read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-    };
+    final List<dynamic> fields = List.filled(212, null);
+    for (int i = 0; i < numOfFields; i++) {
+      final int fieldId = reader.readByte();
+      final dynamic value = reader.read();
+      if (fieldId < fields.length) {
+        fields[fieldId] = value;
+      }
+    }
     _readHookSavedSettingsFields(fields);
     return SavedSettings(
       autoloadAttachments: fields[0] as AutoloadAttachmentsSetting?,

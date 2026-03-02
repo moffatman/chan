@@ -8,60 +8,67 @@ part of 'board.dart';
 
 class ImageboardBoardFields {
   static String getName(ImageboardBoard x) => x.name;
+  static const int kName = 0;
   static const name = ReadOnlyHiveFieldAdapter<ImageboardBoard, String>(
     getter: getName,
-    fieldNumber: 0,
+    fieldNumber: kName,
     fieldName: 'name',
     merger: PrimitiveMerger(),
   );
   static String getTitle(ImageboardBoard x) => x.title;
+  static const int kTitle = 1;
   static const title = ReadOnlyHiveFieldAdapter<ImageboardBoard, String>(
     getter: getTitle,
-    fieldNumber: 1,
+    fieldNumber: kTitle,
     fieldName: 'title',
     merger: PrimitiveMerger(),
   );
   static bool getIsWorksafe(ImageboardBoard x) => x.isWorksafe;
+  static const int kIsWorksafe = 2;
   static const isWorksafe = ReadOnlyHiveFieldAdapter<ImageboardBoard, bool>(
     getter: getIsWorksafe,
-    fieldNumber: 2,
+    fieldNumber: kIsWorksafe,
     fieldName: 'isWorksafe',
     merger: PrimitiveMerger(),
   );
   static bool getWebmAudioAllowed(ImageboardBoard x) => x.webmAudioAllowed;
+  static const int kWebmAudioAllowed = 3;
   static const webmAudioAllowed =
       ReadOnlyHiveFieldAdapter<ImageboardBoard, bool>(
     getter: getWebmAudioAllowed,
-    fieldNumber: 3,
+    fieldNumber: kWebmAudioAllowed,
     fieldName: 'webmAudioAllowed',
     merger: PrimitiveMerger(),
   );
   static int? getMaxImageSizeBytes(ImageboardBoard x) => x.maxImageSizeBytes;
   static void setMaxImageSizeBytes(ImageboardBoard x, int? v) =>
       x.maxImageSizeBytes = v;
+  static const int kMaxImageSizeBytes = 4;
   static const maxImageSizeBytes = HiveFieldAdapter<ImageboardBoard, int?>(
     getter: getMaxImageSizeBytes,
     setter: setMaxImageSizeBytes,
-    fieldNumber: 4,
+    fieldNumber: kMaxImageSizeBytes,
     fieldName: 'maxImageSizeBytes',
     merger: PrimitiveMerger(),
   );
   static int? getMaxWebmSizeBytes(ImageboardBoard x) => x.maxWebmSizeBytes;
   static void setMaxWebmSizeBytes(ImageboardBoard x, int? v) =>
       x.maxWebmSizeBytes = v;
+  static const int kMaxWebmSizeBytes = 5;
   static const maxWebmSizeBytes = HiveFieldAdapter<ImageboardBoard, int?>(
     getter: getMaxWebmSizeBytes,
     setter: setMaxWebmSizeBytes,
-    fieldNumber: 5,
+    fieldNumber: kMaxWebmSizeBytes,
     fieldName: 'maxWebmSizeBytes',
     merger: PrimitiveMerger(),
   );
   static int? getMaxWebmDurationSeconds(ImageboardBoard x) =>
       x.maxWebmDurationSeconds;
+  static const int kMaxWebmDurationSeconds = 6;
   static const maxWebmDurationSeconds =
       ReadOnlyHiveFieldAdapter<ImageboardBoard, int?>(
     getter: getMaxWebmDurationSeconds,
-    fieldNumber: 6,
+    fieldNumber: kMaxWebmDurationSeconds,
     fieldName: 'maxWebmDurationSeconds',
     merger: PrimitiveMerger(),
   );
@@ -69,65 +76,73 @@ class ImageboardBoardFields {
       x.maxCommentCharacters;
   static void setMaxCommentCharacters(ImageboardBoard x, int? v) =>
       x.maxCommentCharacters = v;
+  static const int kMaxCommentCharacters = 7;
   static const maxCommentCharacters = HiveFieldAdapter<ImageboardBoard, int?>(
     getter: getMaxCommentCharacters,
     setter: setMaxCommentCharacters,
-    fieldNumber: 7,
+    fieldNumber: kMaxCommentCharacters,
     fieldName: 'maxCommentCharacters',
     merger: PrimitiveMerger(),
   );
   static int? getThreadCommentLimit(ImageboardBoard x) => x.threadCommentLimit;
   static void setThreadCommentLimit(ImageboardBoard x, int? v) =>
       x.threadCommentLimit = v;
+  static const int kThreadCommentLimit = 8;
   static const threadCommentLimit = HiveFieldAdapter<ImageboardBoard, int?>(
     getter: getThreadCommentLimit,
     setter: setThreadCommentLimit,
-    fieldNumber: 8,
+    fieldNumber: kThreadCommentLimit,
     fieldName: 'threadCommentLimit',
     merger: PrimitiveMerger(),
   );
   static int? getThreadImageLimit(ImageboardBoard x) => x.threadImageLimit;
+  static const int kThreadImageLimit = 9;
   static const threadImageLimit =
       ReadOnlyHiveFieldAdapter<ImageboardBoard, int?>(
     getter: getThreadImageLimit,
-    fieldNumber: 9,
+    fieldNumber: kThreadImageLimit,
     fieldName: 'threadImageLimit',
     merger: PrimitiveMerger(),
   );
   static int? getPageCount(ImageboardBoard x) => x.pageCount;
   static void setPageCount(ImageboardBoard x, int? v) => x.pageCount = v;
+  static const int kPageCount = 10;
   static const pageCount = HiveFieldAdapter<ImageboardBoard, int?>(
     getter: getPageCount,
     setter: setPageCount,
-    fieldNumber: 10,
+    fieldNumber: kPageCount,
     fieldName: 'pageCount',
     merger: PrimitiveMerger(),
   );
   static int? getThreadCooldown(ImageboardBoard x) => x.threadCooldown;
+  static const int kThreadCooldown = 11;
   static const threadCooldown = ReadOnlyHiveFieldAdapter<ImageboardBoard, int?>(
     getter: getThreadCooldown,
-    fieldNumber: 11,
+    fieldNumber: kThreadCooldown,
     fieldName: 'threadCooldown',
     merger: PrimitiveMerger(),
   );
   static int? getReplyCooldown(ImageboardBoard x) => x.replyCooldown;
+  static const int kReplyCooldown = 12;
   static const replyCooldown = ReadOnlyHiveFieldAdapter<ImageboardBoard, int?>(
     getter: getReplyCooldown,
-    fieldNumber: 12,
+    fieldNumber: kReplyCooldown,
     fieldName: 'replyCooldown',
     merger: PrimitiveMerger(),
   );
   static int? getImageCooldown(ImageboardBoard x) => x.imageCooldown;
+  static const int kImageCooldown = 13;
   static const imageCooldown = ReadOnlyHiveFieldAdapter<ImageboardBoard, int?>(
     getter: getImageCooldown,
-    fieldNumber: 13,
+    fieldNumber: kImageCooldown,
     fieldName: 'imageCooldown',
     merger: PrimitiveMerger(),
   );
   static bool? getSpoilers(ImageboardBoard x) => x.spoilers;
+  static const int kSpoilers = 14;
   static const spoilers = ReadOnlyHiveFieldAdapter<ImageboardBoard, bool?>(
     getter: getSpoilers,
-    fieldNumber: 14,
+    fieldNumber: kSpoilers,
     fieldName: 'spoilers',
     merger: PrimitiveMerger(),
   );
@@ -135,41 +150,46 @@ class ImageboardBoardFields {
       x.additionalDataTime;
   static void setAdditionalDataTime(ImageboardBoard x, DateTime? v) =>
       x.additionalDataTime = v;
+  static const int kAdditionalDataTime = 15;
   static const additionalDataTime =
       HiveFieldAdapter<ImageboardBoard, DateTime?>(
     getter: getAdditionalDataTime,
     setter: setAdditionalDataTime,
-    fieldNumber: 15,
+    fieldNumber: kAdditionalDataTime,
     fieldName: 'additionalDataTime',
     merger: PrimitiveMerger(),
   );
   static String? getSubdomain(ImageboardBoard x) => x.subdomain;
+  static const int kSubdomain = 16;
   static const subdomain = ReadOnlyHiveFieldAdapter<ImageboardBoard, String?>(
     getter: getSubdomain,
-    fieldNumber: 16,
+    fieldNumber: kSubdomain,
     fieldName: 'subdomain',
     merger: PrimitiveMerger(),
   );
   static Uri? getIcon(ImageboardBoard x) => x.icon;
+  static const int kIcon = 17;
   static const icon = ReadOnlyHiveFieldAdapter<ImageboardBoard, Uri?>(
     getter: getIcon,
-    fieldNumber: 17,
+    fieldNumber: kIcon,
     fieldName: 'icon',
     merger: NullableMerger(AdaptedMerger(UriAdapter.kTypeId)),
   );
   static int? getCaptchaMode(ImageboardBoard x) => x.captchaMode;
   static void setCaptchaMode(ImageboardBoard x, int? v) => x.captchaMode = v;
+  static const int kCaptchaMode = 18;
   static const captchaMode = HiveFieldAdapter<ImageboardBoard, int?>(
     getter: getCaptchaMode,
     setter: setCaptchaMode,
-    fieldNumber: 18,
+    fieldNumber: kCaptchaMode,
     fieldName: 'captchaMode',
     merger: PrimitiveMerger(),
   );
   static int? getPopularity(ImageboardBoard x) => x.popularity;
+  static const int kPopularity = 19;
   static const popularity = ReadOnlyHiveFieldAdapter<ImageboardBoard, int?>(
     getter: getPopularity,
-    fieldNumber: 19,
+    fieldNumber: kPopularity,
     fieldName: 'popularity',
     merger: PrimitiveMerger(),
   );
@@ -211,21 +231,27 @@ class ImageboardBoardAdapter extends TypeAdapter<ImageboardBoard> {
   @override
   ImageboardBoard read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final Map<int, dynamic> fields;
+    final List<dynamic> fields = List.filled(20, null);
     if (numOfFields == 255) {
       // Dynamic number of fields
-      fields = {};
       while (true) {
         final int fieldId = reader.readByte();
-        fields[fieldId] = reader.read();
+        final dynamic value = reader.read();
+        if (fieldId < fields.length) {
+          fields[fieldId] = value;
+        }
         if (fieldId == 0) {
           break;
         }
       }
     } else {
-      fields = <int, dynamic>{
-        for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-      };
+      for (int i = 0; i < numOfFields; i++) {
+        final int fieldId = reader.readByte();
+        final dynamic value = reader.read();
+        if (fieldId < fields.length) {
+          fields[fieldId] = value;
+        }
+      }
     }
     return ImageboardBoard(
       name: fields[0] as String,

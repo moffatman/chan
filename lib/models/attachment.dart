@@ -58,25 +58,17 @@ enum AttachmentType {
 	};
 }
 
-void _readHookAttachmentFields(Map<int, dynamic> fields) {
-	fields.update(AttachmentFields.url.fieldNumber, (url) {
-		if (url is Uri) {
-			return url.toString();
-		}
-		return url;
-	}, ifAbsent: () => '');
-	fields.update(AttachmentFields.thumbnailUrl.fieldNumber, (url) {
-		if (url is Uri) {
-			return url.toString();
-		}
-		return url;
-	}, ifAbsent: () => '');
-	fields.putIfAbsent(AttachmentFields.id.fieldNumber, () {
-		// This attachment was written a very long time ago
-		// fields[1] is probably "int deprecatedId"
-		// Or I guess it could be null, in that case it still works to fix launching
-		return '${fields[1]}';
-	});
+void _readHookAttachmentFields(List<dynamic> fields) {
+	if (fields[AttachmentFields.kUrl] case Uri uri) {
+		fields[AttachmentFields.kUrl] = uri.toString();
+	}
+	if (fields[AttachmentFields.kThumbnailUrl] case Uri uri) {
+		fields[AttachmentFields.kThumbnailUrl] = uri.toString();
+	}
+	// This attachment was written a very long time ago
+	// fields[1] is probably "int deprecatedId"
+	// Or I guess it could be null, in that case it still works to fix launching
+	fields[AttachmentFields.kId] ??= '${fields[1]}';
 }
 
 @HiveType(typeId: 9, isOptimized: true, readHook: _readHookAttachmentFields)

@@ -8,81 +8,91 @@ part of 'shareable_posts.dart';
 
 class ShareablePostsStyleFields {
   static bool getUseTree(ShareablePostsStyle x) => x.useTree;
+  static const int kUseTree = 0;
   static const useTree = ReadOnlyHiveFieldAdapter<ShareablePostsStyle, bool>(
     getter: getUseTree,
-    fieldNumber: 0,
+    fieldNumber: kUseTree,
     fieldName: 'useTree',
     merger: PrimitiveMerger(),
   );
   static int getParentDepth(ShareablePostsStyle x) => x.parentDepth;
+  static const int kParentDepth = 1;
   static const parentDepth = ReadOnlyHiveFieldAdapter<ShareablePostsStyle, int>(
     getter: getParentDepth,
-    fieldNumber: 1,
+    fieldNumber: kParentDepth,
     fieldName: 'parentDepth',
     merger: PrimitiveMerger(),
   );
   static int getChildDepth(ShareablePostsStyle x) => x.childDepth;
+  static const int kChildDepth = 2;
   static const childDepth = ReadOnlyHiveFieldAdapter<ShareablePostsStyle, int>(
     getter: getChildDepth,
-    fieldNumber: 2,
+    fieldNumber: kChildDepth,
     fieldName: 'childDepth',
     merger: PrimitiveMerger(),
   );
   static double getWidth(ShareablePostsStyle x) => x.width;
+  static const int kWidth = 3;
   static const width = ReadOnlyHiveFieldAdapter<ShareablePostsStyle, double>(
     getter: getWidth,
-    fieldNumber: 3,
+    fieldNumber: kWidth,
     fieldName: 'width',
     merger: PrimitiveMerger(),
   );
   static String? getOverrideThemeKey(ShareablePostsStyle x) =>
       x.overrideThemeKey;
+  static const int kOverrideThemeKey = 4;
   static const overrideThemeKey =
       ReadOnlyHiveFieldAdapter<ShareablePostsStyle, String?>(
     getter: getOverrideThemeKey,
-    fieldNumber: 4,
+    fieldNumber: kOverrideThemeKey,
     fieldName: 'overrideThemeKey',
     merger: PrimitiveMerger(),
   );
   static bool getExpandPrimaryImage(ShareablePostsStyle x) =>
       x.expandPrimaryImage;
+  static const int kExpandPrimaryImage = 5;
   static const expandPrimaryImage =
       ReadOnlyHiveFieldAdapter<ShareablePostsStyle, bool>(
     getter: getExpandPrimaryImage,
-    fieldNumber: 5,
+    fieldNumber: kExpandPrimaryImage,
     fieldName: 'expandPrimaryImage',
     merger: PrimitiveMerger(),
   );
   static bool getRevealYourPosts(ShareablePostsStyle x) => x.revealYourPosts;
+  static const int kRevealYourPosts = 6;
   static const revealYourPosts =
       ReadOnlyHiveFieldAdapter<ShareablePostsStyle, bool>(
     getter: getRevealYourPosts,
-    fieldNumber: 6,
+    fieldNumber: kRevealYourPosts,
     fieldName: 'revealYourPosts',
     merger: PrimitiveMerger(),
   );
   static bool getIncludeFooter(ShareablePostsStyle x) => x.includeFooter;
+  static const int kIncludeFooter = 7;
   static const includeFooter =
       ReadOnlyHiveFieldAdapter<ShareablePostsStyle, bool>(
     getter: getIncludeFooter,
-    fieldNumber: 7,
+    fieldNumber: kIncludeFooter,
     fieldName: 'includeFooter',
     merger: PrimitiveMerger(),
   );
   static bool getShowReplyCounts(ShareablePostsStyle x) => x.showReplyCounts;
+  static const int kShowReplyCounts = 8;
   static const showReplyCounts =
       ReadOnlyHiveFieldAdapter<ShareablePostsStyle, bool>(
     getter: getShowReplyCounts,
-    fieldNumber: 8,
+    fieldNumber: kShowReplyCounts,
     fieldName: 'showReplyCounts',
     merger: PrimitiveMerger(),
   );
   static bool getHighlightPrimaryPost(ShareablePostsStyle x) =>
       x.highlightPrimaryPost;
+  static const int kHighlightPrimaryPost = 9;
   static const highlightPrimaryPost =
       ReadOnlyHiveFieldAdapter<ShareablePostsStyle, bool>(
     getter: getHighlightPrimaryPost,
-    fieldNumber: 9,
+    fieldNumber: kHighlightPrimaryPost,
     fieldName: 'highlightPrimaryPost',
     merger: PrimitiveMerger(),
   );
@@ -114,9 +124,14 @@ class ShareablePostsStyleAdapter extends TypeAdapter<ShareablePostsStyle> {
   @override
   ShareablePostsStyle read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-    };
+    final List<dynamic> fields = List.filled(10, null);
+    for (int i = 0; i < numOfFields; i++) {
+      final int fieldId = reader.readByte();
+      final dynamic value = reader.read();
+      if (fieldId < fields.length) {
+        fields[fieldId] = value;
+      }
+    }
     return ShareablePostsStyle(
       useTree: fields[0] as bool,
       parentDepth: fields[1] as int,

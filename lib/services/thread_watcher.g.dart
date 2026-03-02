@@ -8,89 +8,99 @@ part of 'thread_watcher.dart';
 
 class ThreadWatchFields {
   static String getBoard(ThreadWatch x) => x.board;
+  static const int kBoard = 0;
   static const board = ReadOnlyHiveFieldAdapter<ThreadWatch, String>(
     getter: getBoard,
-    fieldNumber: 0,
+    fieldNumber: kBoard,
     fieldName: 'board',
     merger: PrimitiveMerger(),
   );
   static int getThreadId(ThreadWatch x) => x.threadId;
+  static const int kThreadId = 1;
   static const threadId = ReadOnlyHiveFieldAdapter<ThreadWatch, int>(
     getter: getThreadId,
-    fieldNumber: 1,
+    fieldNumber: kThreadId,
     fieldName: 'threadId',
     merger: PrimitiveMerger(),
   );
   static int getLastSeenId(ThreadWatch x) => x.lastSeenId;
   static void setLastSeenId(ThreadWatch x, int v) => x.lastSeenId = v;
+  static const int kLastSeenId = 2;
   static const lastSeenId = HiveFieldAdapter<ThreadWatch, int>(
     getter: getLastSeenId,
     setter: setLastSeenId,
-    fieldNumber: 2,
+    fieldNumber: kLastSeenId,
     fieldName: 'lastSeenId',
     merger: PrimitiveMerger(),
   );
   static bool getLocalYousOnly(ThreadWatch x) => x.localYousOnly;
   static void setLocalYousOnly(ThreadWatch x, bool v) => x.localYousOnly = v;
+  static const int kLocalYousOnly = 3;
   static const localYousOnly = HiveFieldAdapter<ThreadWatch, bool>(
     getter: getLocalYousOnly,
     setter: setLocalYousOnly,
-    fieldNumber: 3,
+    fieldNumber: kLocalYousOnly,
     fieldName: 'localYousOnly',
     merger: PrimitiveMerger(),
   );
   static List<int> getYouIds(ThreadWatch x) => x.youIds;
   static void setYouIds(ThreadWatch x, List<int> v) => x.youIds = v;
+  static const int kYouIds = 4;
   static const youIds = HiveFieldAdapter<ThreadWatch, List<int>>(
     getter: getYouIds,
     setter: setYouIds,
-    fieldNumber: 4,
+    fieldNumber: kYouIds,
     fieldName: 'youIds',
     merger: SetLikePrimitiveListMerger<int>(),
   );
   static bool getZombie(ThreadWatch x) => x.zombie;
   static void setZombie(ThreadWatch x, bool v) => x.zombie = v;
+  static const int kZombie = 5;
   static const zombie = HiveFieldAdapter<ThreadWatch, bool>(
     getter: getZombie,
     setter: setZombie,
-    fieldNumber: 5,
+    fieldNumber: kZombie,
     fieldName: 'zombie',
     merger: PrimitiveMerger(),
   );
   static bool getPushYousOnly(ThreadWatch x) => x.pushYousOnly;
   static void setPushYousOnly(ThreadWatch x, bool v) => x.pushYousOnly = v;
+  static const int kPushYousOnly = 6;
   static const pushYousOnly = HiveFieldAdapter<ThreadWatch, bool>(
     getter: getPushYousOnly,
     setter: setPushYousOnly,
-    fieldNumber: 6,
+    fieldNumber: kPushYousOnly,
     fieldName: 'pushYousOnly',
     merger: PrimitiveMerger(),
   );
   static bool getPush(ThreadWatch x) => x.push;
   static void setPush(ThreadWatch x, bool v) => x.push = v;
+  static const int kPush = 7;
   static const push = HiveFieldAdapter<ThreadWatch, bool>(
     getter: getPush,
     setter: setPush,
-    fieldNumber: 7,
+    fieldNumber: kPush,
     fieldName: 'push',
     merger: PrimitiveMerger(),
   );
   static bool getForegroundMuted(ThreadWatch x) => x.foregroundMuted;
   static void setForegroundMuted(ThreadWatch x, bool v) =>
       x.foregroundMuted = v;
+  static const int kForegroundMuted = 8;
   static const foregroundMuted = HiveFieldAdapter<ThreadWatch, bool>(
     getter: getForegroundMuted,
     setter: setForegroundMuted,
-    fieldNumber: 8,
+    fieldNumber: kForegroundMuted,
     fieldName: 'foregroundMuted',
     merger: PrimitiveMerger(),
   );
   static DateTime getWatchTime(ThreadWatch x) => x.watchTime;
   static void setWatchTime(ThreadWatch x, DateTime v) => x.watchTime = v;
+  static const int kWatchTime = 9;
   static const watchTime = HiveFieldAdapter<ThreadWatch, DateTime>(
     getter: getWatchTime,
     setter: setWatchTime,
-    fieldNumber: 9,
+    fieldNumber: kWatchTime,
     fieldName: 'watchTime',
     merger: PrimitiveMerger(),
   );
@@ -98,29 +108,32 @@ class ThreadWatchFields {
       x.notifyOnSecondLastPage;
   static void setNotifyOnSecondLastPage(ThreadWatch x, bool v) =>
       x.notifyOnSecondLastPage = v;
+  static const int kNotifyOnSecondLastPage = 10;
   static const notifyOnSecondLastPage = HiveFieldAdapter<ThreadWatch, bool>(
     getter: getNotifyOnSecondLastPage,
     setter: setNotifyOnSecondLastPage,
-    fieldNumber: 10,
+    fieldNumber: kNotifyOnSecondLastPage,
     fieldName: 'notifyOnSecondLastPage',
     merger: PrimitiveMerger(),
   );
   static bool getNotifyOnLastPage(ThreadWatch x) => x.notifyOnLastPage;
   static void setNotifyOnLastPage(ThreadWatch x, bool v) =>
       x.notifyOnLastPage = v;
+  static const int kNotifyOnLastPage = 11;
   static const notifyOnLastPage = HiveFieldAdapter<ThreadWatch, bool>(
     getter: getNotifyOnLastPage,
     setter: setNotifyOnLastPage,
-    fieldNumber: 11,
+    fieldNumber: kNotifyOnLastPage,
     fieldName: 'notifyOnLastPage',
     merger: PrimitiveMerger(),
   );
   static bool getNotifyOnDead(ThreadWatch x) => x.notifyOnDead;
   static void setNotifyOnDead(ThreadWatch x, bool v) => x.notifyOnDead = v;
+  static const int kNotifyOnDead = 12;
   static const notifyOnDead = HiveFieldAdapter<ThreadWatch, bool>(
     getter: getNotifyOnDead,
     setter: setNotifyOnDead,
-    fieldNumber: 12,
+    fieldNumber: kNotifyOnDead,
     fieldName: 'notifyOnDead',
     merger: PrimitiveMerger(),
   );
@@ -155,9 +168,14 @@ class ThreadWatchAdapter extends TypeAdapter<ThreadWatch> {
   @override
   ThreadWatch read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-    };
+    final List<dynamic> fields = List.filled(13, null);
+    for (int i = 0; i < numOfFields; i++) {
+      final int fieldId = reader.readByte();
+      final dynamic value = reader.read();
+      if (fieldId < fields.length) {
+        fields[fieldId] = value;
+      }
+    }
     _readHookThreadWatchFields(fields);
     return ThreadWatch(
       board: fields[0] as String,
@@ -222,19 +240,21 @@ class ThreadWatchAdapter extends TypeAdapter<ThreadWatch> {
 class BoardWatchFields {
   static String getBoard(BoardWatch x) => x.board;
   static void setBoard(BoardWatch x, String v) => x.board = v;
+  static const int kBoard = 0;
   static const board = HiveFieldAdapter<BoardWatch, String>(
     getter: getBoard,
     setter: setBoard,
-    fieldNumber: 0,
+    fieldNumber: kBoard,
     fieldName: 'board',
     merger: PrimitiveMerger(),
   );
   static bool getThreadsOnly(BoardWatch x) => x.threadsOnly;
   static void setThreadsOnly(BoardWatch x, bool v) => x.threadsOnly = v;
+  static const int kThreadsOnly = 3;
   static const threadsOnly = HiveFieldAdapter<BoardWatch, bool>(
     getter: getThreadsOnly,
     setter: setThreadsOnly,
-    fieldNumber: 3,
+    fieldNumber: kThreadsOnly,
     fieldName: 'threadsOnly',
     merger: PrimitiveMerger(),
   );
@@ -257,9 +277,14 @@ class BoardWatchAdapter extends TypeAdapter<BoardWatch> {
   @override
   BoardWatch read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-    };
+    final List<dynamic> fields = List.filled(4, null);
+    for (int i = 0; i < numOfFields; i++) {
+      final int fieldId = reader.readByte();
+      final dynamic value = reader.read();
+      if (fieldId < fields.length) {
+        fields[fieldId] = value;
+      }
+    }
     return BoardWatch(
       board: fields[0] as String,
       threadsOnly: fields[3] as bool,

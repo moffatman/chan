@@ -8,101 +8,115 @@ part of 'media.dart';
 
 class MediaScanFields {
   static bool getHasAudio(MediaScan x) => x.hasAudio;
+  static const int kHasAudio = 0;
   static const hasAudio = ReadOnlyHiveFieldAdapter<MediaScan, bool>(
     getter: getHasAudio,
-    fieldNumber: 0,
+    fieldNumber: kHasAudio,
     fieldName: 'hasAudio',
     merger: PrimitiveMerger(),
   );
   static Duration? getDuration(MediaScan x) => x.duration;
+  static const int kDuration = 1;
   static const duration = ReadOnlyHiveFieldAdapter<MediaScan, Duration?>(
     getter: getDuration,
-    fieldNumber: 1,
+    fieldNumber: kDuration,
     fieldName: 'duration',
     merger: NullableMerger(AdaptedMerger(DurationAdapter.kTypeId)),
   );
   static int? getBitrate(MediaScan x) => x.bitrate;
+  static const int kBitrate = 2;
   static const bitrate = ReadOnlyHiveFieldAdapter<MediaScan, int?>(
     getter: getBitrate,
-    fieldNumber: 2,
+    fieldNumber: kBitrate,
     fieldName: 'bitrate',
     merger: PrimitiveMerger(),
   );
   static int? getWidth(MediaScan x) => x.width;
+  static const int kWidth = 3;
   static const width = ReadOnlyHiveFieldAdapter<MediaScan, int?>(
     getter: getWidth,
-    fieldNumber: 3,
+    fieldNumber: kWidth,
     fieldName: 'width',
     merger: PrimitiveMerger(),
   );
   static int? getHeight(MediaScan x) => x.height;
+  static const int kHeight = 4;
   static const height = ReadOnlyHiveFieldAdapter<MediaScan, int?>(
     getter: getHeight,
-    fieldNumber: 4,
+    fieldNumber: kHeight,
     fieldName: 'height',
     merger: PrimitiveMerger(),
   );
   static String? getCodec(MediaScan x) => x.codec;
+  static const int kCodec = 5;
   static const codec = ReadOnlyHiveFieldAdapter<MediaScan, String?>(
     getter: getCodec,
-    fieldNumber: 5,
+    fieldNumber: kCodec,
     fieldName: 'codec',
     merger: PrimitiveMerger(),
   );
   static double? getVideoFramerate(MediaScan x) => x.videoFramerate;
+  static const int kVideoFramerate = 6;
   static const videoFramerate = ReadOnlyHiveFieldAdapter<MediaScan, double?>(
     getter: getVideoFramerate,
-    fieldNumber: 6,
+    fieldNumber: kVideoFramerate,
     fieldName: 'videoFramerate',
     merger: PrimitiveMerger(),
   );
   static int? getSizeInBytes(MediaScan x) => x.sizeInBytes;
+  static const int kSizeInBytes = 7;
   static const sizeInBytes = ReadOnlyHiveFieldAdapter<MediaScan, int?>(
     getter: getSizeInBytes,
-    fieldNumber: 7,
+    fieldNumber: kSizeInBytes,
     fieldName: 'sizeInBytes',
     merger: PrimitiveMerger(),
   );
   static Map<dynamic, dynamic>? getMetadata(MediaScan x) => x.metadata;
+  static const int kMetadata = 8;
   static const metadata =
       ReadOnlyHiveFieldAdapter<MediaScan, Map<dynamic, dynamic>?>(
     getter: getMetadata,
-    fieldNumber: 8,
+    fieldNumber: kMetadata,
     fieldName: 'metadata',
     merger: MapEqualsMerger(),
   );
   static String? getFormat(MediaScan x) => x.format;
+  static const int kFormat = 9;
   static const format = ReadOnlyHiveFieldAdapter<MediaScan, String?>(
     getter: getFormat,
-    fieldNumber: 9,
+    fieldNumber: kFormat,
     fieldName: 'format',
     merger: PrimitiveMerger(),
   );
   static String? getPixFmt(MediaScan x) => x.pixFmt;
+  static const int kPixFmt = 10;
   static const pixFmt = ReadOnlyHiveFieldAdapter<MediaScan, String?>(
     getter: getPixFmt,
-    fieldNumber: 10,
+    fieldNumber: kPixFmt,
     fieldName: 'pixFmt',
     merger: PrimitiveMerger(),
   );
   static int? getVideoBitrate(MediaScan x) => x.videoBitrate;
+  static const int kVideoBitrate = 11;
   static const videoBitrate = ReadOnlyHiveFieldAdapter<MediaScan, int?>(
     getter: getVideoBitrate,
-    fieldNumber: 11,
+    fieldNumber: kVideoBitrate,
     fieldName: 'videoBitrate',
     merger: PrimitiveMerger(),
   );
   static int? getAudioBitrate(MediaScan x) => x.audioBitrate;
+  static const int kAudioBitrate = 12;
   static const audioBitrate = ReadOnlyHiveFieldAdapter<MediaScan, int?>(
     getter: getAudioBitrate,
-    fieldNumber: 12,
+    fieldNumber: kAudioBitrate,
     fieldName: 'audioBitrate',
     merger: PrimitiveMerger(),
   );
   static String? getForceFormat(MediaScan x) => x.forceFormat;
+  static const int kForceFormat = 13;
   static const forceFormat = ReadOnlyHiveFieldAdapter<MediaScan, String?>(
     getter: getForceFormat,
-    fieldNumber: 13,
+    fieldNumber: kForceFormat,
     fieldName: 'forceFormat',
     merger: PrimitiveMerger(),
   );
@@ -137,9 +151,14 @@ class MediaScanAdapter extends TypeAdapter<MediaScan> {
   @override
   MediaScan read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-    };
+    final List<dynamic> fields = List.filled(14, null);
+    for (int i = 0; i < numOfFields; i++) {
+      final int fieldId = reader.readByte();
+      final dynamic value = reader.read();
+      if (fieldId < fields.length) {
+        fields[fieldId] = value;
+      }
+    }
     return MediaScan(
       hasAudio: fields[0] as bool,
       duration: fields[1] as Duration?,

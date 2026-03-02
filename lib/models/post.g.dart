@@ -8,179 +8,201 @@ part of 'post.dart';
 
 class PostFields {
   static String getBoard(Post x) => x.board;
+  static const int kBoard = 0;
   static const board = ReadOnlyHiveFieldAdapter<Post, String>(
     getter: getBoard,
-    fieldNumber: 0,
+    fieldNumber: kBoard,
     fieldName: 'board',
     merger: PrimitiveMerger(),
   );
   static String getText(Post x) => x.text;
+  static const int kText = 1;
   static const text = ReadOnlyHiveFieldAdapter<Post, String>(
     getter: getText,
-    fieldNumber: 1,
+    fieldNumber: kText,
     fieldName: 'text',
     merger: PrimitiveMerger(),
   );
   static String getName(Post x) => x.name;
+  static const int kName = 2;
   static const name = ReadOnlyHiveFieldAdapter<Post, String>(
     getter: getName,
-    fieldNumber: 2,
+    fieldNumber: kName,
     fieldName: 'name',
     merger: PrimitiveMerger(),
   );
   static DateTime getTime(Post x) => x.time;
+  static const int kTime = 3;
   static const time = ReadOnlyHiveFieldAdapter<Post, DateTime>(
     getter: getTime,
-    fieldNumber: 3,
+    fieldNumber: kTime,
     fieldName: 'time',
     merger: PrimitiveMerger(),
   );
   static int getThreadId(Post x) => x.threadId;
+  static const int kThreadId = 4;
   static const threadId = ReadOnlyHiveFieldAdapter<Post, int>(
     getter: getThreadId,
-    fieldNumber: 4,
+    fieldNumber: kThreadId,
     fieldName: 'threadId',
     merger: PrimitiveMerger(),
   );
   static int getId(Post x) => x.id;
+  static const int kId = 5;
   static const id = ReadOnlyHiveFieldAdapter<Post, int>(
     getter: getId,
-    fieldNumber: 5,
+    fieldNumber: kId,
     fieldName: 'id',
     merger: PrimitiveMerger(),
   );
   static Flag? getFlag(Post x) => x.flag;
   static void setFlag(Post x, Flag? v) => x.flag = v;
+  static const int kFlag = 7;
   static const flag = HiveFieldAdapter<Post, Flag?>(
     getter: getFlag,
     setter: setFlag,
-    fieldNumber: 7,
+    fieldNumber: kFlag,
     fieldName: 'flag',
     merger: PrimitiveMerger<Flag?>(),
   );
   static String? getPosterId(Post x) => x.posterId;
+  static const int kPosterId = 8;
   static const posterId = ReadOnlyHiveFieldAdapter<Post, String?>(
     getter: getPosterId,
-    fieldNumber: 8,
+    fieldNumber: kPosterId,
     fieldName: 'posterId',
     merger: PrimitiveMerger(),
   );
   static PostSpanFormat getSpanFormat(Post x) => x.spanFormat;
   static void setSpanFormat(Post x, PostSpanFormat v) => x.spanFormat = v;
+  static const int kSpanFormat = 9;
   static const spanFormat = HiveFieldAdapter<Post, PostSpanFormat>(
     getter: getSpanFormat,
     setter: setSpanFormat,
-    fieldNumber: 9,
+    fieldNumber: kSpanFormat,
     fieldName: 'spanFormat',
     merger: PrimitiveMerger(),
   );
   static Map<String, int>? getExtraMetadata(Post x) => x.extraMetadata;
   static void setExtraMetadata(Post x, Map<String, int>? v) =>
       x.extraMetadata = v;
+  static const int kExtraMetadata = 12;
   static const extraMetadata = HiveFieldAdapter<Post, Map<String, int>?>(
     getter: getExtraMetadata,
     setter: setExtraMetadata,
-    fieldNumber: 12,
+    fieldNumber: kExtraMetadata,
     fieldName: 'extraMetadata',
     merger: NullableMerger(MapMerger(PrimitiveMerger())),
   );
   static bool getAttachmentDeleted(Post x) => x.attachmentDeleted;
   static void setAttachmentDeleted(Post x, bool v) => x.attachmentDeleted = v;
+  static const int kAttachmentDeleted = 11;
   static const attachmentDeleted = HiveFieldAdapter<Post, bool>(
     getter: getAttachmentDeleted,
     setter: setAttachmentDeleted,
-    fieldNumber: 11,
+    fieldNumber: kAttachmentDeleted,
     fieldName: 'attachmentDeleted',
     merger: PrimitiveMerger(),
   );
   static String? getTrip(Post x) => x.trip;
   static void setTrip(Post x, String? v) => x.trip = v;
+  static const int kTrip = 13;
   static const trip = HiveFieldAdapter<Post, String?>(
     getter: getTrip,
     setter: setTrip,
-    fieldNumber: 13,
+    fieldNumber: kTrip,
     fieldName: 'trip',
     merger: PrimitiveMerger(),
   );
   static int? getPassSinceYear(Post x) => x.passSinceYear;
   static void setPassSinceYear(Post x, int? v) => x.passSinceYear = v;
+  static const int kPassSinceYear = 14;
   static const passSinceYear = HiveFieldAdapter<Post, int?>(
     getter: getPassSinceYear,
     setter: setPassSinceYear,
-    fieldNumber: 14,
+    fieldNumber: kPassSinceYear,
     fieldName: 'passSinceYear',
     merger: PrimitiveMerger(),
   );
   static String? getCapcode(Post x) => x.capcode;
   static void setCapcode(Post x, String? v) => x.capcode = v;
+  static const int kCapcode = 15;
   static const capcode = HiveFieldAdapter<Post, String?>(
     getter: getCapcode,
     setter: setCapcode,
-    fieldNumber: 15,
+    fieldNumber: kCapcode,
     fieldName: 'capcode',
     merger: PrimitiveMerger(),
   );
   static List<Attachment> getAttachments_(Post x) => x.attachments_;
   static void setAttachments_(Post x, List<Attachment> v) => x.attachments_ = v;
+  static const int kAttachments_ = 16;
   static const attachments_ = HiveFieldAdapter<Post, List<Attachment>>(
     getter: getAttachments_,
     setter: setAttachments_,
-    fieldNumber: 16,
+    fieldNumber: kAttachments_,
     fieldName: 'attachments_',
     merger: Attachment.unmodifiableListMerger,
   );
   static int? getUpvotes(Post x) => x.upvotes;
+  static const int kUpvotes = 17;
   static const upvotes = ReadOnlyHiveFieldAdapter<Post, int?>(
     getter: getUpvotes,
-    fieldNumber: 17,
+    fieldNumber: kUpvotes,
     fieldName: 'upvotes',
     merger: PrimitiveMerger(),
   );
   static int? getParentId(Post x) => x.parentId;
+  static const int kParentId = 18;
   static const parentId = ReadOnlyHiveFieldAdapter<Post, int?>(
     getter: getParentId,
-    fieldNumber: 18,
+    fieldNumber: kParentId,
     fieldName: 'parentId',
     merger: PrimitiveMerger(),
   );
   static bool getHasOmittedReplies(Post x) => x.hasOmittedReplies;
   static void setHasOmittedReplies(Post x, bool v) => x.hasOmittedReplies = v;
+  static const int kHasOmittedReplies = 20;
   static const hasOmittedReplies = HiveFieldAdapter<Post, bool>(
     getter: getHasOmittedReplies,
     setter: setHasOmittedReplies,
-    fieldNumber: 20,
+    fieldNumber: kHasOmittedReplies,
     fieldName: 'hasOmittedReplies',
     merger: PrimitiveMerger(),
   );
   static bool getIsDeleted(Post x) => x.isDeleted;
+  static const int kIsDeleted = 21;
   static const isDeleted = ReadOnlyHiveFieldAdapter<Post, bool>(
     getter: getIsDeleted,
-    fieldNumber: 21,
+    fieldNumber: kIsDeleted,
     fieldName: 'isDeleted',
     merger: PrimitiveMerger(),
   );
   static int? getIpNumber(Post x) => x.ipNumber;
   static void setIpNumber(Post x, int? v) => x.ipNumber = v;
+  static const int kIpNumber = 22;
   static const ipNumber = HiveFieldAdapter<Post, int?>(
     getter: getIpNumber,
     setter: setIpNumber,
-    fieldNumber: 22,
+    fieldNumber: kIpNumber,
     fieldName: 'ipNumber',
     merger: PrimitiveMerger(),
   );
   static String? getArchiveName(Post x) => x.archiveName;
   static void setArchiveName(Post x, String? v) => x.archiveName = v;
+  static const int kArchiveName = 23;
   static const archiveName = HiveFieldAdapter<Post, String?>(
     getter: getArchiveName,
     setter: setArchiveName,
-    fieldNumber: 23,
+    fieldNumber: kArchiveName,
     fieldName: 'archiveName',
     merger: PrimitiveMerger(),
   );
   static String? getEmail(Post x) => x.email;
+  static const int kEmail = 24;
   static const email = ReadOnlyHiveFieldAdapter<Post, String?>(
     getter: getEmail,
-    fieldNumber: 24,
+    fieldNumber: kEmail,
     fieldName: 'email',
     merger: PrimitiveMerger(),
   );
@@ -223,21 +245,27 @@ class PostAdapter extends TypeAdapter<Post> {
   @override
   Post read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final Map<int, dynamic> fields;
+    final List<dynamic> fields = List.filled(25, null);
     if (numOfFields == 255) {
       // Dynamic number of fields
-      fields = {};
       while (true) {
         final int fieldId = reader.readByte();
-        fields[fieldId] = reader.read();
+        final dynamic value = reader.read();
+        if (fieldId < fields.length) {
+          fields[fieldId] = value;
+        }
         if (fieldId == 0) {
           break;
         }
       }
     } else {
-      fields = <int, dynamic>{
-        for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-      };
+      for (int i = 0; i < numOfFields; i++) {
+        final int fieldId = reader.readByte();
+        final dynamic value = reader.read();
+        if (fieldId < fields.length) {
+          fields[fieldId] = value;
+        }
+      }
     }
     _readHookPostFields(fields);
     return Post(

@@ -122,6 +122,7 @@ class Imageboard extends ChangeNotifier {
 					controller: threadWatcherController ?? ImageboardRegistry.threadWatcherController
 				);
 				notifications.localWatcher = threadWatcher;
+				await threadWatcher.setInitialCounts(syncIO: true);
 				_threadWatcherInitialized = true;
 				if (persistence.boards.isEmpty) {
 					await setupBoards();
