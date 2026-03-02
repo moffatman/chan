@@ -2888,9 +2888,11 @@ int _calculatePostNumber(ImageboardSite site, Thread thread, Post post) {
 	}
 	int repeatingDigits = 1;
 	final digits = id.toString();
+	final lastIndex = digits.length - 1;
+	final lastDigit = digits.codeUnitAt(lastIndex);
 	if (Settings.instance.highlightRepeatingDigitsInPostIds && site.explicitIds) {
 		for (; repeatingDigits < digits.length; repeatingDigits++) {
-			if (digits[digits.length - 1 - repeatingDigits] != digits[digits.length - 1]) {
+			if (digits.codeUnitAt(lastIndex - repeatingDigits) != lastDigit) {
 				break;
 			}
 		}
