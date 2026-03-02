@@ -164,11 +164,17 @@ class PostSpanRenderOptions {
 sealed class PostSpan {
 	const PostSpan();
 	InlineSpan build(BuildContext context, Post? post, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options);
-	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true});
-	double estimateLines(Post? post, double charactersPerLine) => buildText(post, includeMarkup: false).length / charactersPerLine;
+	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true});
+	double estimateLines(Post? post, double charactersPerLine) {
+		final buffer = StringBuffer();
+		buildText(buffer, post, includeMarkup: false);
+		return buffer.length / charactersPerLine;
+	}
 	@override
 	String toString() {
-		return '$runtimeType(${buildText(null)})';
+		final buffer = StringBuffer();
+		buildText(buffer, null);
+		return '$runtimeType(${buffer.toString()})';
 	}
 	Iterable<PostSpan> traverse(Post post);
 }
@@ -185,7 +191,7 @@ abstract class PostSpanWithChild extends PostSpan {
 	final PostSpan child;
 	const PostSpanWithChild(this.child);
 	@override
-	buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) => child.buildText(post, forQuoteComparison: forQuoteComparison, includeMarkup: includeMarkup);
+	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) => child.buildText(buffer, post, forQuoteComparison: forQuoteComparison, includeMarkup: includeMarkup);
 	@override
 	Iterable<PostSpan> traverse(Post post) sync* {
 		yield this;
@@ -199,7 +205,7 @@ class _PostWrapperSpan extends PostTerminalSpan {
 	@override
 	InlineSpan build(context, post, zone, settings, theme, options) => span;
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) => span.toPlainText();
+	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) => buffer.write(span.toPlainText());
 }
 
 class PostNodeSpan extends PostSpan {
@@ -224,7 +230,7 @@ class PostNodeSpan extends PostSpan {
 		}
 		final ownLineOptions = effectiveOptions.copyWith(ownLine: true);
 		int lines = 0;
-		double lineGuess = 0.001;
+		final lineGuess = StringBuffer();
 		for (int i = 0; i < effectiveChildren.length && lines < options.maxLines; i++) {
 			if ((i == 0 || effectiveChildren[i - 1] is PostLineBreakSpan) && (i == effectiveChildren.length - 1 || effectiveChildren[i + 1] is PostLineBreakSpan)) {
 				renderChildren.add(effectiveChildren[i].build(context, post, zone, settings, theme, ownLineOptions));
@@ -233,14 +239,14 @@ class PostNodeSpan extends PostSpan {
 				renderChildren.add(effectiveChildren[i].build(context, post, zone, settings, theme, effectiveOptions));
 			}
 			if (effectiveChildren[i] is PostLineBreakSpan) {
-				lines += lineGuess.ceil();
-				lineGuess = 0.001;
+				lines += math.max(1, (lineGuess.length / options.charactersPerLine).ceil());
+				lineGuess.clear();
 			}
 			else {
-				lineGuess += effectiveChildren[i].buildText(post).length / options.charactersPerLine;
+				effectiveChildren[i].buildText(lineGuess, post, includeMarkup: false);
 			}
 		}
-		if (lineGuess != 0 && options.ensureTrailingNewline) {
+		if (lineGuess.length > 0 && options.ensureTrailingNewline) {
 			renderChildren.add(const TextSpan(text: '\n'));
 		}
 		return TextSpan(
@@ -291,8 +297,10 @@ class PostNodeSpan extends PostSpan {
 	}
 
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
-		return children.map((x) => x.buildText(post, forQuoteComparison: forQuoteComparison, includeMarkup: includeMarkup)).join('');
+	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+		for (final child in children) {
+			child.buildText(buffer, post, forQuoteComparison: forQuoteComparison, includeMarkup: includeMarkup);
+		}
 	}
 
 	@override
@@ -323,7 +331,9 @@ class PostAttachmentsSpan extends PostTerminalSpan {
 	@override
 	InlineSpan build(context, post, zone, settings, theme, options) {
 		if (options.showRawSource) {
-			return TextSpan(text: buildText(post));
+			final buffer = StringBuffer();
+			buildText(buffer, post);
+			return TextSpan(text: buffer.toString());
 		}
 		final stackIds = zone.stackIds.toList();
 		if (stackIds.isNotEmpty) {
@@ -376,12 +386,21 @@ class PostAttachmentsSpan extends PostTerminalSpan {
 	}
 
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
-		if (forQuoteComparison) {
-			// Make it look like a SiteXenforo quote (the only use case)
-			return '${attachments.map((a) => '[View Attachment ${a.id}](${a.url})').join('')}\n';
+	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+		for (final a in attachments) {
+			if (forQuoteComparison) {
+				// Make it look like a SiteXenforo quote (the only use case)
+				buffer.write('[View Attachment ');
+				buffer.write(a.id);
+				buffer.write('](');
+				buffer.write(a.url);
+				buffer.write(')');
+			}
+			else {
+				buffer.write(a.url);
+			}
 		}
-		return '${attachments.map((a) => a.url).join(', ')}\n';
+		buffer.writeln();
 	}
 }
 
@@ -439,8 +458,8 @@ class PostTextSpan extends PostTerminalSpan {
 	}
 
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
-		return text;
+	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+		buffer.write(text);
 	}
 }
 
@@ -479,7 +498,9 @@ class PostLineBreakSpan extends PostTerminalSpan {
 	InlineSpan build(context, post, zone, settings, theme, options) =>  const TextSpan(text: '\n');
 
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) => '\n';
+	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+		buffer.writeln();
+	}
 
 	@override
 	String toString() => 'PostLineBreakSpan()';
@@ -538,8 +559,8 @@ class PostWeakQuoteLinkSpan extends PostSpan {
 	}
 
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
-		return _getSpan(post).buildText(post, forQuoteComparison: forQuoteComparison, includeMarkup: includeMarkup);
+	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+		_getSpan(post).buildText(buffer, post, forQuoteComparison: forQuoteComparison, includeMarkup: includeMarkup);
 	}
 
 	@override
@@ -563,12 +584,12 @@ class PostQuoteSpan extends PostSpanWithChild {
 	}
 
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
 		if (forQuoteComparison) {
 			// Nested quotes not used
-			return '';
+			return;
 		}
-		return child.buildText(post, includeMarkup: includeMarkup);
+		child.buildText(buffer, post, includeMarkup: includeMarkup);
 	}
 
 	@override
@@ -917,12 +938,13 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 	}
 
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
 		if (forQuoteComparison) {
 			// Xenforo does not nest quotes
-			return '';
+			return;
 		}
-		return '>>$postId';
+		buffer.write('>>');
+		buffer.write(postId.toString());
 	}
 
 	@override
@@ -959,9 +981,13 @@ class PostQuoteLinkWithContextSpan extends PostSpan {
 	@override
 	build(context, post, zone, settings, theme, options) {
 		final thePost = zone.findPost(quoteLink.postId);
-		final theText = thePost?.span.buildText(thePost, forQuoteComparison: true);
-		final contextText = this.context.child.buildText(post, forQuoteComparison: true);
-		final similarity = theText?.similarityTo(contextText) ?? 0;
+		final theBuffer = StringBuffer();
+		thePost?.span.buildText(theBuffer, thePost, forQuoteComparison: true);
+		final theText = theBuffer.toString();
+		final contextBuffer = StringBuffer();
+		this.context.child.buildText(contextBuffer, post, forQuoteComparison: true);
+		final contextText = contextBuffer.toString();
+		final similarity = theText.similarityTo(contextText);
 		return TextSpan(
 			children: [
 				quoteLink.build(context, post, zone, settings, theme, options),
@@ -976,12 +1002,14 @@ class PostQuoteLinkWithContextSpan extends PostSpan {
 	}
 
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
 		if (forQuoteComparison) {
 			// Xenforo does not nest quotes
-			return '';
+			return;
 		}
-		return '${quoteLink.buildText(post, includeMarkup: includeMarkup)}\n${context.buildText(post, includeMarkup: includeMarkup)}';
+		quoteLink.buildText(buffer, post, includeMarkup: includeMarkup);
+		buffer.writeln();
+		context.buildText(buffer, post, includeMarkup: includeMarkup);
 	}
 
 	@override
@@ -1026,8 +1054,10 @@ class PostBoardLinkSpan extends PostTerminalSpan {
 	}
 
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
-		return '>>/$board/';
+	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+		buffer.write('>>/');
+		buffer.write(board);
+		buffer.write('/');
 	}
 }
 
@@ -1174,11 +1204,14 @@ class PostCodeSpan extends PostTerminalSpan {
 	}
 
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
-		if (!includeMarkup) {
-			return text;
+	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+		if (includeMarkup) {
+			buffer.write('[code]');
 		}
-		return '[code]$text[/code]';
+		buffer.write(text);
+		if (includeMarkup) {
+			buffer.write('[/code]');
+		}
 	}
 }
 
@@ -1217,11 +1250,14 @@ class PostSpoilerSpan extends PostSpanWithChild {
 	}
 
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
-		if (!includeMarkup) {
-			return child.buildText(post, forQuoteComparison: forQuoteComparison, includeMarkup: includeMarkup);
+	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+		if (includeMarkup) {
+			buffer.write('[spoiler]');
 		}
-		return '[spoiler]${child.buildText(post, forQuoteComparison: forQuoteComparison)}[/spoiler]';
+		child.buildText(buffer, post, forQuoteComparison: forQuoteComparison, includeMarkup: includeMarkup);
+		if (includeMarkup) {
+			buffer.write('[/spoiler]');
+		}
 	}
 }
 
@@ -1496,15 +1532,19 @@ class PostLinkSpan extends PostTerminalSpan {
 	}
 
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
 		if (includeMarkup) {
-			return name ?? url;
+			buffer.write(name ?? url);
 		}
-		if (name != null && !url.endsWith(name!)) {
-			return '[$name]($url)';
+		else if (name != null && !url.endsWith(name!)) {
+			buffer.write('[');
+			buffer.write(name);
+			buffer.write('](');
+			buffer.write(url);
+			buffer.write(')');
 		}
 		else {
-			return url;
+			buffer.write(url);
 		}
 	}
 }
@@ -1544,8 +1584,11 @@ class PostCatalogSearchSpan extends PostTerminalSpan {
 	}
 
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
-		return '>>>/$board/$query';
+	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+		buffer.write('>>>/');
+		buffer.write(board);
+		buffer.write('/');
+		buffer.write(query);
 	}
 }
 
@@ -1558,9 +1601,12 @@ class PostTeXSpan extends PostTerminalSpan {
 			tex: tex,
 			color: options.overrideTextColor ?? options.baseTextStyle.color
 		);
-		return options.showRawSource ? TextSpan(
-			text: buildText(post)
-		) : WidgetSpan(
+		if (options.showRawSource) {
+			final buffer = StringBuffer();
+			buildText(buffer, post);
+			return TextSpan(text: buffer.toString());
+		}
+		return WidgetSpan(
 			alignment: PlaceholderAlignment.middle,
 			child: SingleChildScrollView(
 				scrollDirection: Axis.horizontal,
@@ -1569,11 +1615,14 @@ class PostTeXSpan extends PostTerminalSpan {
 		);
 	}
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
-		if (!includeMarkup) {
-			return tex;
+	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+		if (includeMarkup) {
+			buffer.write('[math]');
 		}
-		return '[math]$tex[/math]';
+		buffer.write(tex);
+		if (includeMarkup) {
+			buffer.write('[/math]');
+		}
 	}
 }
 
@@ -1611,7 +1660,9 @@ class PostInlineImageSpan extends PostTerminalSpan {
 		);
 	}
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) => src;
+	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+		buffer.write(src);
+	}
 }
 
 class PostColorSpan extends PostSpanWithChild {
@@ -1735,11 +1786,12 @@ class PostPopupSpan extends PostSpanWithChild {
 	}
 
 	@override
-	buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
-		if (!includeMarkup) {
-			return title;
+	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+		buffer.write(title);
+		if (includeMarkup) {
+			buffer.writeln();
+			child.buildText(buffer, post, forQuoteComparison: forQuoteComparison, includeMarkup: includeMarkup);
 		}
-		return '$title\n${child.buildText(post, forQuoteComparison: forQuoteComparison)}';
 	}
 }
 
@@ -1779,7 +1831,9 @@ class PostTableSpan extends PostSpan {
 	@override
 	build(context, post, zone, settings, theme, options) {
 		if (options.showRawSource) {
-			return TextSpan(text: buildText(post));
+			final buffer = StringBuffer();
+			buildText(buffer, post);
+			return TextSpan(text: buffer.toString());
 		}
 		// We want cell to fill width (subtract PostRow padding)
 		final maxWidth = estimateWidth(context) - 32;
@@ -1812,7 +1866,18 @@ class PostTableSpan extends PostSpan {
 		);
 	}
 	@override
-	buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) => rows.map((r) => r.map((r) => r.buildText(post, forQuoteComparison: forQuoteComparison, includeMarkup: includeMarkup)).join(', ')).join('\n');
+	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+		for (final row in rows) {
+			for (int i = 0; i < row.length; i++) {
+				final col = row[i];
+				col.buildText(buffer, post, forQuoteComparison: forQuoteComparison, includeMarkup: includeMarkup);
+				if (i < row.length - 1) {
+					buffer.write(', ');
+				}
+			}
+			buffer.writeln();
+		}
+	}
 
 	@override
 	Iterable<PostSpan> traverse(Post post) sync* {
@@ -1832,7 +1897,9 @@ class PostDividerSpan extends PostTerminalSpan {
 	);
 
 	@override
-	buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) => '\n';
+	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+		buffer.writeln();
+	}
 }
 
 class PostShiftJISSpan extends PostTerminalSpan {
@@ -1870,11 +1937,14 @@ class PostShiftJISSpan extends PostTerminalSpan {
 	}
 
 	@override
-	buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
-		if (!includeMarkup) {
-			return text;
+	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+		if (includeMarkup) {
+			buffer.write('[sjis]');
 		}
-		return '[sjis]$text[/sjis]';
+		buffer.write(text);
+		if (includeMarkup) {
+			buffer.write('[/sjis]');
+		}
 	}
 }
 
@@ -1911,7 +1981,10 @@ class PostUserLinkSpan extends PostTerminalSpan {
 	}
 
 	@override
-	buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) => '/u/$username';
+	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+		buffer.write('/u/');
+		buffer.write(username);
+	}
 }
 
 class PostCssSpan extends PostSpanWithChild {
@@ -1946,7 +2019,9 @@ class PostCssSpan extends PostSpanWithChild {
 				// Not really possible to construct the proper rect. we don't know where we are
 				// Just do a reasonable few words one and loop it
 				// Smaller children should have tighter loop to make sure all colors seen in uncertain offset intersection
-				final rect = Rect.fromLTWH(0, 0, child.buildText(post, includeMarkup: false).length * 5, 17);
+				final buffer = StringBuffer();
+				child.buildText(buffer, post, includeMarkup: false);
+				final rect = Rect.fromLTWH(0, 0, buffer.length * 5, 17);
 				final gradient = value.linearGradient(rect, tileMode: ui.TileMode.mirror);
 				if (gradient == null) {
 					unrecognizedParts.add(part);
@@ -2005,11 +2080,16 @@ class PostCssSpan extends PostSpanWithChild {
 	}
 
 	@override
-	String buildText(Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
-		if (!includeMarkup) {
-			return child.buildText(post, forQuoteComparison: forQuoteComparison, includeMarkup: includeMarkup);
+	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+		if (includeMarkup) {
+			buffer.write('<span style="');
+			buffer.write(css);
+			buffer.write('">');
 		}
-		return '<span style="$css">${child.buildText(post, forQuoteComparison: forQuoteComparison, includeMarkup: includeMarkup)}</span>';
+		child.buildText(buffer, post, forQuoteComparison: forQuoteComparison, includeMarkup: includeMarkup);
+		if (includeMarkup) {
+			buffer.write('</span>');
+		}
 	}
 }
 

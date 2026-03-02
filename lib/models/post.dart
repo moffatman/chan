@@ -215,7 +215,9 @@ class Post implements Filterable {
 				// Already matched
 				continue;
 			}
-			final quoteText = s.quote.child.buildText(this, forQuoteComparison: true);
+			final quoteBuffer = StringBuffer();
+			s.quote.child.buildText(quoteBuffer, this, forQuoteComparison: true);
+			final quoteText = quoteBuffer.toString();
 			// First try for whole string match
 			for (final otherPostText in earlierPostTexts.entries) {
 				final similarity = quoteText.similarityTo(otherPostText.value);
@@ -378,7 +380,11 @@ class Post implements Filterable {
 			}
 		}
 	}
-	String buildText({bool forQuoteComparison = false}) => span.buildText(this, forQuoteComparison: forQuoteComparison);
+	String buildText({bool forQuoteComparison = false}) {
+		final buffer = StringBuffer();
+		span.buildText(buffer, this, forQuoteComparison: forQuoteComparison);
+		return buffer.toString();
+	}
 
 	void migrateFrom(Post previous) {
 		ipNumber ??= previous.ipNumber;
