@@ -100,10 +100,11 @@ packages:
   auto_size_text:
     dependency: "direct main"
     description:
-      name: auto_size_text
-      sha256: "3f5261cd3fb5f2a9ab4e2fc3fba84fd9fcaac8821f20a1d4e71f557521b22599"
-      url: "https://pub.dev"
-    source: hosted
+      path: "."
+      ref: master
+      resolved-ref: "8f5dd4d9e89696c97ceb2afe63fd14cf43fa7fe8"
+      url: "https://github.com/moffatman/auto_size_text.git"
+    source: git
     version: "3.0.0"
   boolean_selector:
     dependency: transitive
