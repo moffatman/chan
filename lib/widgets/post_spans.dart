@@ -743,7 +743,12 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 				text += ' (Old thread)';
 			}
 		}
-		if (threadId != null && (zone.imageboard.persistence.getThreadStateIfExists(ThreadIdentifier(board, threadId))?.youIds.contains(postId) ?? false) && options.revealYourPosts) {
+		if (options.revealYourPosts &&
+			(
+				(threadId == zone.primaryThreadId && (zone.primaryThreadState?.youIds.contains(postId) ?? false))
+				|| (threadId != null && (zone.imageboard.persistence.getThreadStateIfExists(ThreadIdentifier(board, threadId))?.youIds.contains(postId) ?? false))
+			)
+		) {
 			text += ' (You)';
 		}
 		final linkedPost = zone.findPost(postId);
