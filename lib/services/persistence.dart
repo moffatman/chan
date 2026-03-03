@@ -1438,7 +1438,6 @@ class Persistence extends ChangeNotifier {
 			false => CupertinoIcons.antenna_radiowaves_left_right
 		};
 		try {
-			await ImageboardRegistry.instance.clearAllPseudoCookies();
 			await webview.CookieManager.instance().deleteAllCookies();
 			await (switch (fromWifi) {
 				true => Persistence.wifiCookies,

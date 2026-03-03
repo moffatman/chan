@@ -70,7 +70,7 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 	Future<CaptchaLynxchanChallenge> _requestChallenge() async {
 		final captchaJsUrl = Uri.https(widget.site.baseUrl, '/captcha.js');
 		await Persistence.currentCookies.deleteWhere(captchaJsUrl, (c) => c.name == 'captchaid', true);
-		final lastSolvedCaptcha = widget.site.persistence?.browserState.loginFields[SiteLynxchan.kLoginFieldLastSolvedCaptchaKey];
+		final lastSolvedCaptcha = await Persistence.currentCookies.readPseudoCookie(SiteLynxchan.kLastSolvedCaptchaPseudoCookieKey);
 		final idResponse = await widget.site.client.getUri<List<int>>(captchaJsUrl.replace(queryParameters: {
 			'boardUri': widget.request.board,
 			'd': DateTime.now().secondsSinceEpoch.toString(),
@@ -186,8 +186,7 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 			acquiredAt: challenge!.acquiredAt,
 			lifetime: challenge!.lifetime
 		));
-		widget.site.persistence?.browserState.loginFields[SiteLynxchan.kLoginFieldLastSolvedCaptchaKey] = challenge!.id;
-		widget.site.persistence?.didUpdateBrowserState();
+		Persistence.currentCookies.writePseudoCookie(SiteLynxchan.kLastSolvedCaptchaPseudoCookieKey, challenge!.id);
 	}
 
 	Widget _build(BuildContext context) {

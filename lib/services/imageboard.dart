@@ -736,12 +736,6 @@ class ImageboardRegistry extends ChangeNotifier {
 		return null;
 	}
 
-	Future<void> clearAllPseudoCookies() async {
-		for (final i in imageboards) {
-			await i.site.clearPseudoCookies();
-		}
-	}
-
 	Future<void> didImport() async {
 		// Need to do some reinitialization
 		// This will both set the counts and also load the threads from disk

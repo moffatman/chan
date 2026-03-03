@@ -722,11 +722,15 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 	final bool hasPagedCatalog;
 
 	@override
-	Future<void> clearPseudoCookies() async {
-		persistence?.browserState.loginFields.remove(kLoginFieldLastSolvedCaptchaKey);
+	void initState() {
+		super.initState();
+		final lastSolvedCaptchaKey = persistence?.browserState.loginFields.remove('lc');
+		if (lastSolvedCaptchaKey != null) {
+			Persistence.currentCookies.writePseudoCookie(kLastSolvedCaptchaPseudoCookieKey, lastSolvedCaptchaKey);
+		}
 	}
 
-	static const kLoginFieldLastSolvedCaptchaKey = 'lc';
+	static const kLastSolvedCaptchaPseudoCookieKey = 'lc';
 
 	@override
 	/// All images hosted in baseUrl anyway

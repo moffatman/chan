@@ -361,6 +361,7 @@ class CloudflareInterceptor extends Interceptor {
 
 	static const _kDefaultGatewayName = 'Cloudflare';
 	static const kDefaultHeadlessTime = Duration(seconds: 5);
+	static const _kUserInputChannelName = 'userInput';
 
 	static final _webViewLock = Mutex();
 	static Future<T> _useWebview<T extends Object>({
@@ -379,6 +380,11 @@ class CloudflareInterceptor extends Interceptor {
 		assert(initialData != null || initialUrlRequest != null);
 		HeadlessInAppWebView? headlessWebView;
 		try {
+			final headlessTimePseudoCookieKey = 'headlessTime_${cookieUrl.host}_$gatewayName';
+			Duration? knownHeadlessTime;
+			if ((await Persistence.currentCookies.readPseudoCookie(headlessTimePseudoCookieKey))?.tryParseDouble case final seconds?) {
+				knownHeadlessTime = DurationConversion.max(headlessTime, DurationConversion.fromSeconds(seconds));
+			}
 			final manager = CookieManager.instance();
 			await manager.deleteAllCookies();
 			final cookies = await Persistence.currentCookies.loadForRequest(cookieUrl);
@@ -414,6 +420,8 @@ class CloudflareInterceptor extends Interceptor {
 			AsyncSnapshot<T>? callbackValue;
 			final lastResource = Completer<void>();
 			Timer? lastResourceTimer;
+			bool requiredUserInput = false;
+			final startTime = DateTime.now();
 			void resetResourceTimer() {
 				if (!lastResource.isCompleted) {
 					lastResourceTimer?.cancel();
@@ -428,7 +436,22 @@ class CloudflareInterceptor extends Interceptor {
 					return;
 				}
 				callbackValue = value;
+				if (!requiredUserInput) {
+					final thisDuration = DateTime.now().difference(startTime) + const Duration(seconds: 1);
+					if (thisDuration > (knownHeadlessTime ?? headlessTime)) {
+						Persistence.currentCookies.writePseudoCookie(headlessTimePseudoCookieKey, thisDuration.inSecondsFloat.toString());
+					}
+				}
+				else if (knownHeadlessTime != null) {
+					// Reset back to default
+					Persistence.currentCookies.deletePseudoCookie(headlessTimePseudoCookieKey);
+				}
 				callback_(value);
+			}
+			void onWebViewCreated(InAppWebViewController controller) {
+				controller.addJavaScriptHandler(handlerName: _kUserInputChannelName, callback: (event) {
+					requiredUserInput = true;
+				});
 			}
 			void onReceivedError(InAppWebViewController controller, WebResourceRequest request, WebResourceError error) async {
 				if (callbackValue == null && !firstLoad.isCompleted && (request.isForMainFrame ?? false)) {
@@ -506,6 +529,9 @@ class CloudflareInterceptor extends Interceptor {
 				if (currentGateway?.autoClickSelector case final autoClickSelector? when uri != lastLoadedUrl) {
 					await controller.evaluateJavascript(source: 'document.querySelector("$autoClickSelector").click()');
 				}
+				await controller.evaluateJavascript(source: 'document.addEventListener("click", function(evt) {window.flutter_inappwebview.callHandler("$_kUserInputChannelName", "click")}, false)');
+				await controller.evaluateJavascript(source: 'window.addEventListener("blur", function(evt) {window.flutter_inappwebview.callHandler("$_kUserInputChannelName", "blur")}, false)');
+				await controller.evaluateJavascript(source: 'window.focus()');
 				lastLoadedUrl = uri;
 			}
 			void onLoadResource(InAppWebViewController controller, LoadedResource resource) {
@@ -517,6 +543,7 @@ class CloudflareInterceptor extends Interceptor {
 				initialSettings: initialSettings,
 				initialUrlRequest: initialUrlRequest,
 				initialData: initialData,
+				onWebViewCreated: onWebViewCreated,
 				onLoadStop: onLoadStop,
 				onNavigationResponse: onNavigationResponse,
 				onLoadResource: onLoadResource,
@@ -527,8 +554,13 @@ class CloudflareInterceptor extends Interceptor {
 			if (!skipHeadless && priority.shouldPopupCloudflare) {
 				// Show toast after firstLoad, with a bit of time to clear in case we never get challenged
 				() async {
-					await firstLoad.future;
-					await Future.delayed(const Duration(milliseconds: 500));
+					if (knownHeadlessTime case final time?) {
+						await Future.delayed(time - const Duration(seconds: 1));
+					}
+					else {
+						await firstLoad.future;
+						await Future.delayed(const Duration(milliseconds: 500));
+					}
 					if (!headlessCompleter.isCompleted) {
 						showToast(
 							context: ImageboardRegistry.instance.context!,
@@ -540,10 +572,11 @@ class CloudflareInterceptor extends Interceptor {
 			}
 			await Future.any([
 				headlessCompleter.future,
-				Future.delayed(headlessTime),
+				Future.delayed(knownHeadlessTime ?? headlessTime),
 				if (skipHeadless) firstLoad.future.then((_) => Future.delayed(const Duration(milliseconds: 150)))
 				// On Cloudflare, show the page after first load has all resources settle down
-				else if (gatewayName == _kDefaultGatewayName) lastResource.future,
+				// If non-interactive check worked before, try not to pop up
+				else if (gatewayName == _kDefaultGatewayName && knownHeadlessTime == null) lastResource.future,
 				if (cancelToken?.whenCancel case Future<DioError> whenCancel) whenCancel
 			]);
 			if (headlessCompleter.isCompleted) {
@@ -615,6 +648,7 @@ class CloudflareInterceptor extends Interceptor {
 							initialSettings: initialSettings,
 							initialUrlRequest: initialUrlRequest,
 							initialData: initialData,
+							onWebViewCreated: onWebViewCreated,
 							onLoadStop: onLoadStop,
 							onLoadResource: onLoadResource,
 							onNavigationResponse: onNavigationResponse,

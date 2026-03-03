@@ -2578,7 +2578,6 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	}) {
 		return (archives.tryFirstWhere((a) => a.name == archiveName) ?? this).getWebUrlImpl(board, threadId, postId);
 	}
-	Future<void> clearPseudoCookies() async {}
 	DateTime getCaptchaUsableTime(CaptchaSolution captcha) {
 		if (captcha is NoCaptchaSolution) {
 			return captcha.acquiredAt;

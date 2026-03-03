@@ -1101,6 +1101,12 @@ extension ClampAboveZero on Duration {
 
 extension DurationConversion on Duration {
 	static Duration fromSeconds(double seconds) => Duration(microseconds: (seconds * Duration.microsecondsPerSecond).round());
+	static Duration max(Duration a, Duration b) {
+		if (a > b) {
+			return a;
+		}
+		return b;
+	}
 	double get inSecondsFloat {
 		return inMicroseconds / Duration.microsecondsPerSecond;
 	}
