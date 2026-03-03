@@ -85,6 +85,9 @@ class LoggingInterceptor extends Interceptor {
 			}
 			file.writeln('== onRequest(${identityHashCode(options)}) ${DateTime.now()} ${options.uri} ${options.method} ==');
 			file.writeln(options.headers);
+			if (options.extra.isNotEmpty) {
+				file.writeln('extra: ${options.extra}');
+			}
 			final data = options.data;
 			if (data != null) {
 				if (data is FormData) {
@@ -112,6 +115,9 @@ class LoggingInterceptor extends Interceptor {
 			}
 			file.writeln('== onResponse(${identityHashCode(response.requestOptions)}) ${DateTime.now()} ${response.requestOptions.uri} ${response.requestOptions.method} ${response.statusCode} ==');
 			file.writeln(response.headers);
+			if (response.extra.isNotEmpty) {
+				file.writeln('extra: ${response.extra}');
+			}
 			if (response.requestOptions.method != 'GET') {
 				file.writeln(response.data);
 			}
@@ -153,6 +159,9 @@ class LoggingInterceptor extends Interceptor {
 			}
 			file.writeln('== onError(${identityHashCode(err.requestOptions)}) ${DateTime.now()} ${err.requestOptions.uri} ${err.response?.statusCode} ==');
 			file.writeln(err.response?.headers);
+			if (err.response?.extra.isNotEmpty ?? false) {
+				file.writeln('extra: ${err.response?.extra}');
+			}
 			file.writeln(err.response?.data);
 			file.writeln(err.error);
 			await file.flush();
