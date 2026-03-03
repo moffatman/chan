@@ -817,7 +817,17 @@ class CloudflareInterceptor extends Interceptor {
 				}
 				final newResponse = data.response(response.requestOptions);
 				if (newResponse != null) {
-					handler.next(newResponse);
+					if (response.requestOptions.validateStatus(newResponse.statusCode)) {
+						handler.next(newResponse);
+					}
+					else {
+						handler.reject(DioError(
+							requestOptions: response.requestOptions,
+							response: newResponse,
+							type: DioErrorType.response,
+							error: HTTPStatusException.fromResponse(newResponse)
+						), true);
+					}
 					return;
 				}
 			}
@@ -870,7 +880,17 @@ class CloudflareInterceptor extends Interceptor {
 				);
 				final newResponse = data.response(err.requestOptions);
 				if (newResponse != null) {
-					handler.resolve(newResponse, true);
+					if (err.requestOptions.validateStatus(newResponse.statusCode)) {
+						handler.resolve(newResponse, true);
+					}
+					else {
+						handler.reject(DioError(
+							requestOptions: err.requestOptions,
+							response: newResponse,
+							type: DioErrorType.response,
+							error: HTTPStatusException.fromResponse(newResponse)
+						), true);
+					}
 					return;
 				}
 			}
