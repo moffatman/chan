@@ -167,7 +167,7 @@ class CloudflareWebResourceRequestFailed implements Exception {
 }
 
 
-typedef _CloudflareResponse = ({String? content, Uri? uri});
+typedef _CloudflareResponse = ({String? content, Uri? uri, int? statusCode});
 
 extension on _CloudflareResponse {
 	Response? response(RequestOptions options) {
@@ -192,7 +192,7 @@ extension on _CloudflareResponse {
 						uri.toString()
 				]
 			}),
-			statusCode: content == null ? 302 : 200,
+			statusCode: content == null ? 302 : (statusCode ?? 200),
 			extra: {
 				kCloudflare: true
 			}
@@ -316,16 +316,16 @@ class CloudflareInterceptor extends Interceptor {
 		return false;
 	}
 
-	static Future<_CloudflareResponse> Function(InAppWebViewController, Uri?, bool) _buildHandler(Uri initialUrl) => (controller, uri, isCancelledMedia) async {
+	static Future<_CloudflareResponse> Function(InAppWebViewController, Uri?, bool, int?) _buildHandler(Uri initialUrl) => (controller, uri, isCancelledMedia, statusCode) async {
 		if (uri?.looksLikeWebViewRedirect ?? false) {
 			final correctedUri = uri!.replace(
 				scheme: initialUrl.scheme,
 				host: initialUrl.host
 			);
-			return (content: null, uri: correctedUri);
+			return (content: null, uri: correctedUri, statusCode: statusCode);
 		}
 		if (isCancelledMedia) {
-			return (content: null, uri: uri);
+			return (content: null, uri: uri, statusCode: statusCode);
 		}
 		final html = await controller.getHtml() ?? '';
 		final document = parse(html);
@@ -349,14 +349,14 @@ class CloudflareInterceptor extends Interceptor {
 			// This is a dummy page
 			if (document.body?.nodes.tryFirst case dom.Element e) {
 				if (e.localName == 'pre') {
-					return (content: e.text, uri: uri);
+					return (content: e.text, uri: uri, statusCode: statusCode);
 				}
 			}
 			if (document.body?.innerHtml case String content) {
-				return (content: content, uri: uri);
+				return (content: content, uri: uri, statusCode: statusCode);
 			}
 		}
-		return (content: html, uri: uri);
+		return (content: html, uri: uri, statusCode: statusCode);
 	};
 
 	static const _kDefaultGatewayName = 'Cloudflare';
@@ -364,7 +364,7 @@ class CloudflareInterceptor extends Interceptor {
 
 	static final _webViewLock = Mutex();
 	static Future<T> _useWebview<T extends Object>({
-		required Future<T?> Function(InAppWebViewController, Uri?, bool isCancelledMedia) handler,
+		required Future<T?> Function(InAppWebViewController, Uri?, bool isCancelledMedia, int? statusCode) handler,
 		bool skipHeadless = false,
 		Duration headlessTime = kDefaultHeadlessTime,
 		InAppWebViewInitialData? initialData,
@@ -408,6 +408,7 @@ class CloudflareInterceptor extends Interceptor {
 				transparentBackground: true
 			);
 			final firstLoad = Completer<void>();
+			(Uri, int)? lastNavigationResponse;
 			InAppWebViewController? lastController;
 			late ValueChanged<AsyncSnapshot<T>> callback_;
 			AsyncSnapshot<T>? callbackValue;
@@ -440,11 +441,14 @@ class CloudflareInterceptor extends Interceptor {
 			}
 			Future<NavigationResponseAction?> onNavigationResponse(InAppWebViewController controller, NavigationResponse response) async {
 				resetResourceTimer();
+				if ((response.response?.url, response.response?.statusCode) case (Uri, int) resp when response.isForMainFrame) {
+					lastNavigationResponse = resp;
+				}
 				final mime = (response.response?.mimeType ?? '');
 				if (mime.startsWith('video/') || mime.startsWith('image/')) {
 					() async {
 						await Persistence.saveCookiesFromWebView(response.response?.url ?? cookieUrl);
-						final result = await handler(controller, response.response?.url, true);
+						final result = await handler(controller, response.response?.url, true, response.response?.statusCode);
 						if (result != null) {
 							callback(AsyncSnapshot.withData(ConnectionState.done, result));
 						}
@@ -483,7 +487,7 @@ class CloudflareInterceptor extends Interceptor {
 				if (uri != null && currentGateway == null && (!_titleMatches(title) || uri.looksLikeWebViewRedirect)) {
 					await Persistence.saveCookiesFromWebView(uri);
 					try {
-						final value = await handler(controller, uri, false);
+						final value = await handler(controller, uri, false, lastNavigationResponse?.$1 == uri ? lastNavigationResponse?.$2 : null);
 						if (value != null) {
 							callback(AsyncSnapshot.withData(ConnectionState.done, value));
 							return;
@@ -645,7 +649,7 @@ class CloudflareInterceptor extends Interceptor {
 	});
 
 	Future<_CloudflareResponse> _useWebviewForCloudflare({
-		required Future<_CloudflareResponse?> Function(InAppWebViewController, Uri?, bool isCancelledMedia) handler,
+		required Future<_CloudflareResponse?> Function(InAppWebViewController, Uri?, bool isCancelledMedia, int? statusCode) handler,
 		bool skipHeadless = false,
 		InAppWebViewInitialData? initialData,
 		URLRequest? initialUrlRequest,
@@ -657,7 +661,7 @@ class CloudflareInterceptor extends Interceptor {
 	}) => runEphemerallyLocked(cookieUrl.topLevelHost, (wasLocked) async {
 		if (wasLocked) {
 			// I hope someone cleared it already, re-kick the request from the beginning
-			return (uri: cookieUrl, content: null);
+			return (uri: cookieUrl, content: null, statusCode: null);
 		}
 		return await _useWebview(
 			handler: handler,
@@ -913,7 +917,7 @@ Future<T> useCloudflareClearedWebview<T>({
 	bool skipHeadless = false,
 	Duration? headlessTime
 }) async => (await CloudflareInterceptor._useWebview<Wrapper<T>>(
-	handler: (controller, uri, isCancelledMedia) async {
+	handler: (controller, uri, isCancelledMedia, statusCode) async {
 		if (isCancelledMedia) {
 			// Not the point of useCloudflareClearedWebview
 			return null;
