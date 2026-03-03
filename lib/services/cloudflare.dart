@@ -744,11 +744,11 @@ class CloudflareInterceptor extends Interceptor {
 					return;
 				}
 			}
-			catch (e) {
+			catch (e, st) {
 				handler.reject(DioError(
 					requestOptions: options,
 					error: e
-				), true);
+				)..stackTrace = st, true);
 				return;
 			}
 		}
@@ -822,12 +822,12 @@ class CloudflareInterceptor extends Interceptor {
 				}
 			}
 		}
-		catch (e) {
+		catch (e, st) {
 			handler.reject(DioError(
 				requestOptions: response.requestOptions,
 				response: response,
 				error: e
-			), true);
+			)..stackTrace = st, true);
 			return;
 		}
 		handler.next(response);
@@ -875,12 +875,12 @@ class CloudflareInterceptor extends Interceptor {
 				}
 			}
 		}
-		catch (e) {
+		catch (e, st) {
 			handler.reject(DioError(
 				requestOptions: err.requestOptions,
 				response: err.response,
 				error: e
-			), true);
+			)..stackTrace = st, true);
 			return;
 		}
 		handler.next(err);
