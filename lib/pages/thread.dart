@@ -827,7 +827,7 @@ class ThreadPageState extends State<ThreadPage> {
 		_updateHighlightedPosts(restoring: true);
 		if (persistentState.disableUpdates) {
 			_checkForNewGeneral();
-			_loadReferencedThreads(setStateAfterwards: true);
+			_loadReferencedThreads(persistentState.thread, setStateAfterwards: true);
 		}
 	}
 
@@ -889,7 +889,7 @@ class ThreadPageState extends State<ThreadPage> {
 			_updateHighlightedPosts(restoring: true);
 			if (persistentState.disableUpdates) {
 				_checkForNewGeneral();
-				_loadReferencedThreads(setStateAfterwards: true);
+				_loadReferencedThreads(persistentState.thread, setStateAfterwards: true);
 			}
 			setState(() {});
 		}
@@ -1159,10 +1159,9 @@ class ThreadPageState extends State<ThreadPage> {
 		}
 	}
 
-	Future<bool> _loadReferencedThreads({bool setStateAfterwards = false, CancelToken? cancelToken}) async {
+	Future<bool> _loadReferencedThreads(Thread? newThread, {bool setStateAfterwards = false, CancelToken? cancelToken}) async {
 		final imageboard = context.read<Imageboard>();
 		final tmpZone = zone;
-		final newThread = persistentState.thread;
 		if (newThread == null || tmpZone.primaryThread != newThread.identifier) {
 			// The thread switched
 			return false;
@@ -1341,7 +1340,7 @@ class ThreadPageState extends State<ThreadPage> {
 				site
 			);
 		}
-		final loadedReferencedThreads = await _loadReferencedThreads(cancelToken: cancelToken);
+		final loadedReferencedThreads = await _loadReferencedThreads(newThread, cancelToken: cancelToken);
 		_checkForNewGeneral();
 		if (newThread != tmpPersistentState.thread) {
 			await newThread.preinit();
