@@ -653,14 +653,14 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 				title: subject,
 				isSticky: false,
 				isArchived: true,
-				time: DateTime.fromMicrosecondsSinceEpoch(0),
+				time: DateTime.fromMillisecondsSinceEpoch(0),
 				attachments: [],
 				posts_: [
 					Post(
 						board: board,
 						text: text,
 						name: defaultUsername,
-						time: DateTime.fromMicrosecondsSinceEpoch(0),
+						time: DateTime.fromMillisecondsSinceEpoch(0),
 						threadId: id,
 						id: id,
 						spanFormat: PostSpanFormat.chan4,

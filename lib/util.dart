@@ -791,9 +791,9 @@ extension DateTimeConversion on DateTime {
 			.replaceAll('D', day.toString());
 	}
 	DateTime toSecondsRounded() {
-		return DateTime.fromMicrosecondsSinceEpoch(Duration.microsecondsPerSecond * (microsecondsSinceEpoch / Duration.microsecondsPerSecond).round(), isUtc: isUtc);
+		return DateTime.fromMillisecondsSinceEpoch(Duration.millisecondsPerSecond * (microsecondsSinceEpoch / Duration.microsecondsPerSecond).round(), isUtc: isUtc);
 	}
-	static DateTime fromSecondsSinceEpoch(int secondsSinceEpoch, {bool isUtc = false}) => DateTime.fromMicrosecondsSinceEpoch(secondsSinceEpoch * Duration.microsecondsPerSecond, isUtc: isUtc);
+	static DateTime fromSecondsSinceEpoch(int secondsSinceEpoch, {bool isUtc = false}) => DateTime.fromMillisecondsSinceEpoch(secondsSinceEpoch * Duration.millisecondsPerSecond, isUtc: isUtc);
 	String get _toHttpHeader => '$weekdayShortName, $dDD $monthShortName $year $tHH:$tMM:$tSS GMT';
 	String get toHttpHeader => toUtc().toSecondsRounded()._toHttpHeader;
 	static final _httpHeaderPattern = RegExp(r'^[A-Z][a-z]{2}, (\d\d) ([A-Z][a-z]{2}) (\d{4,}) (\d\d):(\d\d):(\d\d) GMT$');

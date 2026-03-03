@@ -311,7 +311,7 @@ class NotificationContent extends StatelessWidget {
 										isSticky: false,
 										replyCount: -1,
 										imageCount: -1,
-										time: DateTime.fromMicrosecondsSinceEpoch(0),
+										time: DateTime.fromMillisecondsSinceEpoch(0),
 										posts_: [],
 										attachments: []
 									),
