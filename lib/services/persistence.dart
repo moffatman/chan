@@ -45,6 +45,7 @@ const _knownCacheDirs = {
 	cacheImageFolderName: 'Images',
 	'httpcache': 'Videos',
 	'webmcache': 'Converted videos',
+	'spancache': 'Decoded posts',
 	'sharecache': 'Media exported for sharing',
 	'webpickercache': 'Images picked from web'
 };
@@ -226,6 +227,7 @@ class Persistence extends ChangeNotifier {
 	static late final Directory webmCacheDirectory;
 	static late final Directory httpCacheDirectory;
 	static late final Directory shareCacheDirectory;
+	static late final Directory spanCacheDirectory;
 	static late final Directory savedAttachmentsDirectory;
 	static late final CookieJar wifiCookies;
 	static late final CookieJar cellularCookies;
@@ -415,7 +417,7 @@ class Persistence extends ChangeNotifier {
 			return await _threadsFileLock.protect(key, (_) async {
 				final ret = await sharedThreadsBox.get(key, syncIO: syncIO);
 				if (ret != null) {
-					final file = Persistence.temporaryDirectory.dir('spancache').dir(imageboardKey).dir(b).file('$id.bin');
+					final file = spanCacheDirectory.dir(imageboardKey).dir(b).file('$id.bin');
 					if (file.existsSync()) {
 						try {
 							final bytes = file.readAsBytesSync();
@@ -434,7 +436,7 @@ class Persistence extends ChangeNotifier {
 
 	static Future<void> _writeSpanCache(String imageboardKey, String b, int id, Thread thread) async {
 		try {
-			final dir = Persistence.temporaryDirectory.dir('spancache').dir(imageboardKey).dir(b);
+			final dir = spanCacheDirectory.dir(imageboardKey).dir(b);
 			dir.createSync(recursive: true);
 			final builder = BytesBuilder(copy: false);
 			thread.writeSpans(builder);
@@ -456,7 +458,10 @@ class Persistence extends ChangeNotifier {
 			}
 			else {
 				await sharedThreadsBox.delete(key);
-				await Persistence.temporaryDirectory.dir('spancache').dir(imageboardKey).dir(b).file('$id.bin').delete();
+				final file = spanCacheDirectory.dir(imageboardKey).dir(b).file('$id.bin');
+				if (await file.exists()) {
+					await file.delete();
+				}
 			}
 		});
 	}
@@ -472,6 +477,7 @@ class Persistence extends ChangeNotifier {
 			oldHttpCache.renameSync(httpCacheDirectory.path);
 		}
 		httpCacheDirectory.createSync(recursive: true);
+		spanCacheDirectory.createSync(recursive: true);
 		shareCacheDirectory.createSync(recursive: true);
 		temporaryDirectory.dir(cacheImageFolderName).createSync(recursive: true);
 	}
@@ -569,6 +575,11 @@ class Persistence extends ChangeNotifier {
 		temporaryDirectory = (await getTemporaryDirectory()).absolute;
 		webmCacheDirectory = temporaryDirectory.dir('webmcache');
 		httpCacheDirectory = temporaryDirectory.dir('httpcache');
+		spanCacheDirectory = temporaryDirectory.dir('spancache');
+		if (!spanCacheDirectory.existsSync()) {
+			// Will have to write various spans to disk
+			splashStage.value = 'Migrating...';
+		}
 		shareCacheDirectory = temporaryDirectory.dir('sharecache');
 		ensureTemporaryDirectoriesExist();
 		documentsDirectory = await getApplicationDocumentsDirectory();
@@ -660,7 +671,7 @@ class Persistence extends ChangeNotifier {
 		_startBoxBackupTimer(sharedBoardsBox, sharedBoardsBoxName);
 		if (sharedBoardsBox.isEmpty) {
 			// First launch on new version
-			Future.delayed(const Duration(milliseconds: 50), () => splashStage.value = 'Migrating...');
+			Future.delayed(const Duration(milliseconds: 50), () => splashStage.value ??= 'Migrating...');
 		}
 		_startBoxBackupTimer(sharedThreadsBox, sharedThreadsBoxName, gzip: true);
 		for (final tab in tabs) {
@@ -697,7 +708,7 @@ class Persistence extends ChangeNotifier {
 			tabs.first.thread = null;
 		}
 		if (!settings.appliedMigrations.contains('ps')) {
-			Future.delayed(const Duration(milliseconds: 50), () => splashStage.value = 'Migrating...');
+			Future.delayed(const Duration(milliseconds: 50), () => splashStage.value ??= 'Migrating...');
 			// ps = "post sorting", need to nullify it to allow taking default from site
 			for (final threadState in sharedThreadStateBox.values) {
 				if (threadState.postSortingMethod == PostSortingMethod.none) {
@@ -709,7 +720,7 @@ class Persistence extends ChangeNotifier {
 			await settings.save();
 		}
 		if (!settings.appliedMigrations.contains('sf')) {
-			Future.delayed(const Duration(milliseconds: 50), () => splashStage.value = 'Migrating...');
+			Future.delayed(const Duration(milliseconds: 50), () => splashStage.value ??= 'Migrating...');
 			// sf = "spam filter", invalidate previous IPs as it had some false positives
 			for (final threadState in sharedThreadStateBox.values) {
 				bool modified = false;
@@ -727,7 +738,7 @@ class Persistence extends ChangeNotifier {
 			await settings.save();
 		}
 		if (!settings.appliedMigrations.contains('bB')) {
-			Future.delayed(const Duration(milliseconds: 50), () => splashStage.value = 'Migrating...');
+			Future.delayed(const Duration(milliseconds: 50), () => splashStage.value ??= 'Migrating...');
 			// bB = board capitalization. They were stored with mixed caps before
 			for (final pair in sharedBoardsBox.toMap().entries) {
 				// This kind of mangles the greek letter boards on lainchan.
@@ -960,10 +971,9 @@ class Persistence extends ChangeNotifier {
 			print('Deleting ${cachedThreadKeys.length} cached threads');
 			await sharedThreadsBox.deleteAll(cachedThreadKeys);
 		}
-		final spanCacheDir = temporaryDirectory.dir('spancache');
-		final spanCacheDirPathLen = spanCacheDir.path.length;
-		if (spanCacheDir.existsSync()) {
-			for (final file in spanCacheDir.listSync(recursive: true)) {
+		if (spanCacheDirectory.existsSync()) {
+			final spanCacheDirPathLen = spanCacheDirectory.path.length;
+			for (final file in spanCacheDirectory.listSync(recursive: true)) {
 				if (file.statSync().type == FileSystemEntityType.file && file.path.endsWith('.bin')) {
 					// After spancache/, before .bin
 					final key = file.path.substring(spanCacheDirPathLen + 1, file.path.length - 4);
