@@ -100,6 +100,11 @@ extension _Cloudflare on RequestPriority {
 	};
 }
 
+extension _RetryBecauseCloudflare on Response {
+	bool get retryBecauseCloudflare => cloudflare && (requestOptions.retryIfCloudflare || (requestOptions.followRedirects && statusCode == 302));
+		
+}
+
 final _initialAllowNonInteractiveWebvieWhen = (timePasses: DateTime(2000), hostPasses: '');
 var _allowNonInteractiveWebviewWhen = _initialAllowNonInteractiveWebvieWhen;
 void _resetAllowNonInteractiveWebview(BuildContext context) {
@@ -711,6 +716,14 @@ class CloudflareInterceptor extends Interceptor {
 		);
 	});
 
+	static bool validateStatus(Response response) {
+		if (response.retryBecauseCloudflare) {
+			// Will be handled by RetryIfCloudflareInterceptor
+			return true;
+		}
+		return response.requestOptions.validateStatus(response.statusCode);
+	}
+
 	@override
 	void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
 		final redirectGateway = options.extra[kRedirectGateway] as ImageboardRedirectGateway?;
@@ -817,7 +830,7 @@ class CloudflareInterceptor extends Interceptor {
 				}
 				final newResponse = data.response(response.requestOptions);
 				if (newResponse != null) {
-					if (response.requestOptions.validateStatus(newResponse.statusCode)) {
+					if (validateStatus(newResponse)) {
 						handler.next(newResponse);
 					}
 					else {
@@ -880,7 +893,7 @@ class CloudflareInterceptor extends Interceptor {
 				);
 				final newResponse = data.response(err.requestOptions);
 				if (newResponse != null) {
-					if (err.requestOptions.validateStatus(newResponse.statusCode)) {
+					if (validateStatus(newResponse)) {
 						handler.resolve(newResponse, true);
 					}
 					else {
@@ -914,13 +927,7 @@ class RetryIfCloudflareInterceptor extends Interceptor {
 	RetryIfCloudflareInterceptor(this.client);
 	@override
 	void onResponse(Response response, ResponseInterceptorHandler handler) async {
-		if (
-			response.cloudflare &&
-			(
-				response.requestOptions.retryIfCloudflare ||
-				(response.requestOptions.followRedirects && response.statusCode == 302)
-			)
-		) {
+		if (response.retryBecauseCloudflare) {
 			try {
 				final response2 = await client.requestUri(
 					response.redirects.tryLast?.location ?? response.requestOptions.uri,
