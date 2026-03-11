@@ -35,10 +35,10 @@ class SettingsPage extends StatefulWidget {
 	});
 
 	@override
-	createState() => _SettingsPageState();
+	createState() => SettingsPageState();
 }
 
-class _SettingsPageState extends State<SettingsPage> {
+class SettingsPageState extends State<SettingsPage> {
 	final scrollKey = GlobalKey(debugLabel: '_SettingsPageState.scrollKey');
 	late final TextEditingController searchController;
 	late final FocusNode searchFocusNode;
@@ -58,6 +58,14 @@ class _SettingsPageState extends State<SettingsPage> {
 			await imageboard.persistence.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();
 		}
 		return list;
+	}
+
+	void unfocusSearch() {
+		searchController.clear();
+		searchFocusNode.unfocus();
+		setState(() {
+			query = '';
+		});
 	}
 
 	@override
@@ -403,13 +411,7 @@ class _SettingsPageState extends State<SettingsPage> {
 										query = newQuery;
 									});
 								},
-								onSuffixTap: () {
-									searchController.clear();
-									searchFocusNode.unfocus();
-									setState(() {
-										query = '';
-									});
-								},
+								onSuffixTap: unfocusSearch,
 							),
 							const SizedBox(height: 16),
 							if (query.isEmpty) ..._buildNormal(context)

@@ -689,6 +689,7 @@ class ChanTabs extends ChangeNotifier {
 	final _searchPageKey = GlobalKey<SearchPageState>();
 	final _historyPageKey = GlobalKey<HistoryPageState>();
 	final _settingsNavigatorKey = GlobalKey<NavigatorState>();
+	final _settingsPageKey = GlobalKey<SettingsPageState>();
 	late final OwnedChangeNotifierSubscription _settingsSubscription;
 	bool _didHideTabPopupFromReplyBox = false;
 	final _willPopZones = <int, WillPopZone>{};
@@ -1245,7 +1246,9 @@ class ChanTabs extends ChangeNotifier {
 	Future<void> willActivatePane(int index) async {
 		if (index == _lastIndex) {
 			if (index == 4) {
-				_settingsNavigatorKey.currentState?.maybePop();
+				if (await _settingsNavigatorKey.currentState?.maybePop() != true) {
+					_settingsPageKey.currentState?.unfocusSearch();
+				}
 			}
 			else {
 				_willPopZones[index]?.maybePop?.call();
@@ -1801,7 +1804,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 											HeroController(),
 											ScrollTrackerNavigatorObserver()
 										],
-										buildRoot: (context) => const SettingsPage()
+										buildRoot: (context) => SettingsPage(
+											key: _tabs._settingsPageKey
+										)
 									)
 								)
 							)
