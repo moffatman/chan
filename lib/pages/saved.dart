@@ -1831,17 +1831,17 @@ class LocalWatcherControls extends StatelessWidget {
 								children: [
 									const Text('Local Watcher'),
 									const SizedBox(height: 8),
-									if (w.updatingNow || (w.nextUpdate != null && w.lastUpdate != null)) ClipRRect(
+									if (w.updatingNow != null || (w.nextUpdate != null && w.lastUpdate != null)) ClipRRect(
 										borderRadius: const BorderRadius.all(Radius.circular(8)),
 										child: TimedRebuilder(
 											interval: () => const Duration(seconds: 1),
 											function: () {
 												final now = DateTime.now();
-												return w.updatingNow ? null : now.difference(w.lastUpdate!).inSeconds / w.nextUpdate!.difference(w.lastUpdate!).inSeconds;
+												return w.updatingNow != null ? null : now.difference(w.lastUpdate!).inSeconds / w.nextUpdate!.difference(w.lastUpdate!).inSeconds;
 											},
 											builder: (context, value) {
 												return LinearProgressIndicator(
-													value: value,
+													value: w.updatingNow != null ? null : value,
 													color: ChanceTheme.primaryColorOf(context).withValues(alpha: 0.5),
 													backgroundColor: ChanceTheme.primaryColorWithBrightness20Of(context),
 													minHeight: 8
@@ -1854,8 +1854,8 @@ class LocalWatcherControls extends StatelessWidget {
 						),
 						const SizedBox(width: 16),
 						CupertinoButton(
-							onPressed: w.update,
-							child: const Icon(CupertinoIcons.refresh)
+							onPressed: w.updatingNow?.cancel ?? w.update,
+							child: w.updatingNow != null ? const Icon(CupertinoIcons.xmark) : const Icon(CupertinoIcons.refresh)
 						),
 						AdaptiveSwitch(
 							value: w.active,

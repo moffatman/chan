@@ -406,7 +406,7 @@ class ThreadWatcher extends ChangeNotifier {
 		return false;
 	}
 
-	Future<void> update() async {
+	Future<void> update(CancelToken? cancelToken) async {
 		if (ImageboardRegistry.instance.getImageboard(imageboardKey)?.seemsOk == false) {
 			return;
 		}
@@ -416,6 +416,9 @@ class ThreadWatcher extends ChangeNotifier {
 		);
 		// Could be concurrently-modified
 		for (final watch in notifications.threadWatches.values) {
+			if (cancelToken?.isCancelled ?? false) {
+				return;
+			}
 			if (watch.zombie) {
 				continue;
 			}
@@ -426,16 +429,19 @@ class ThreadWatcher extends ChangeNotifier {
 				notifications.removeWatch(watch);
 			}
 			else {
-				await _updateThread(threadState, acceptCached, null);
+				await _updateThread(threadState, acceptCached, cancelToken);
 			}
 		}
 		for (final tab in Persistence.tabs.toList(growable: false)) {
+			if (cancelToken?.isCancelled ?? false) {
+				return;
+			}
 			if (tab.imageboardKey == imageboardKey && tab.threadPageState == null && tab.thread != null) {
 				// Thread page widget hasn't yet been instantiated
 				final threadState = persistence.getThreadStateIfExists(tab.thread!);
 				final thread = await threadState?.ensureThreadLoaded(preinit: false);
 				if (threadState != null && thread?.isArchived != true && thread?.isDeleted != true && threadState.threadWatch?.zombie != true) {
-					await _updateThread(threadState, acceptCached, null);
+					await _updateThread(threadState, acceptCached, cancelToken);
 					if (threadState.unseenPostIds.data.isNotEmpty) {
 						tab.unseen.value = threadState.unseenReplyCount() ?? tab.unseen.value;
 						tab.unseenYous.value = threadState.unseenReplyIdsToYouCount() ?? tab.unseenYous.value;
@@ -445,8 +451,11 @@ class ThreadWatcher extends ChangeNotifier {
 		}
 		_unseenStickyThreads.clear();
 		for (final rawBoard in watchForStickyOnBoards) {
+			if (cancelToken?.isCancelled ?? false) {
+				return;
+			}
 			final board = ImageboardBoard.getKey(rawBoard);
-			final catalog = await site.getCatalog(board.s, priority: RequestPriority.functional, acceptCached: acceptCached);
+			final catalog = await site.getCatalog(board.s, priority: RequestPriority.functional, acceptCached: acceptCached, cancelToken: cancelToken);
 			_unseenStickyThreads.addAll(catalog.threads.values.where((t) => t.isSticky).where((t) => persistence.getThreadStateIfExists(t.identifier) == null).map((t) => t.identifier).toList());
 			// Update sticky threads for (you)s
 			final stickyThreadStates = catalog.threads.values.where((t) => t.isSticky).map((t) => persistence.getThreadStateIfExists(t.identifier)).where((s) => s != null).map((s) => s!).toList();
@@ -454,7 +463,7 @@ class ThreadWatcher extends ChangeNotifier {
 				await threadState.ensureThreadLoaded(preinit: false);
 				if (threadState.youIds.isNotEmpty) {
 					try {
-						final newThread = await site.getThread(threadState.thread!.identifier, priority: RequestPriority.functional);
+						final newThread = await site.getThread(threadState.thread!.identifier, priority: RequestPriority.functional, cancelToken: cancelToken);
 						if (newThread != threadState.thread) {
 							newThread.mergePosts(threadState.thread, threadState.thread?.posts_ ?? [], site);
 							threadState.thread = newThread;
@@ -470,6 +479,9 @@ class ThreadWatcher extends ChangeNotifier {
 		}
 		bool savedAnyThread = false;
 		for (final line in Settings.instance.customFilterLines) {
+			if (cancelToken?.isCancelled ?? false) {
+				return;
+			}
 			if (line.disabled || (!line.outputType.autoSave && line.outputType.autoWatch == null)) {
 				continue;
 			}
@@ -487,7 +499,7 @@ class ThreadWatcher extends ChangeNotifier {
 					continue;
 				}
 				final board = ImageboardBoard.getKey(rawBoard);
-				final catalog = await site.getCatalog(board.s, priority: RequestPriority.functional, acceptCached: acceptCached);
+				final catalog = await site.getCatalog(board.s, priority: RequestPriority.functional, acceptCached: acceptCached, cancelToken: cancelToken);
 				for (final thread in catalog.threads.values) {
 					final result = Settings.instance.globalFilter.filter(imageboardKey, thread);
 					if (result?.type.autoSave ?? false) {
@@ -573,11 +585,11 @@ class ThreadWatcherController extends ChangeNotifier {
 	DateTime? lastUpdate;
 	Timer? nextUpdateTimer;
 	DateTime? nextUpdate;
-	bool get active => updatingNow || (nextUpdateTimer?.isActive ?? false) || _addedAppResumeCallback || _addedNetworkResumeCallback;
+	bool get active => (updatingNow != null) || (nextUpdateTimer?.isActive ?? false) || _addedAppResumeCallback || _addedNetworkResumeCallback;
 	bool disposed = false;
 	final Set<ThreadWatcher> _watchers = {};
 	final Set<ThreadWatcher> _doghouse = {};
-	bool updatingNow = false;
+	CancelToken? updatingNow;
 	bool _addedAppResumeCallback = false;
 	bool _addedNetworkResumeCallback = false;
 
@@ -616,7 +628,7 @@ class ThreadWatcherController extends ChangeNotifier {
 			return;
 		}
 		_addedNetworkResumeCallback = false;
-		updatingNow = true;
+		final cancelToken = updatingNow = CancelToken();
 		notifyListeners();
 		if (!ImageboardRegistry.instance.initialized || _watchers.isEmpty) {
 			lastUpdate = DateTime.now();
@@ -629,14 +641,20 @@ class ThreadWatcherController extends ChangeNotifier {
 			// Update up to two sites in parallel
 			final pool = Pool(2);
 			await Future.wait(_watchers.map((watcher) => pool.withResource(() async {
+				if (cancelToken.isCancelled) {
+					return;
+				}
 				if (_doghouse.contains(watcher)) {
 					_doghouse.remove(watcher);
 					return;
 				}
 				try {
-					await watcher.update();
+					await watcher.update(cancelToken);
 				}
 				catch (e, st) {
+					if (cancelToken.isCancelled) {
+						return;
+					}
 					print(e);
 					print(st);
 					_doghouse.add(watcher);
@@ -647,7 +665,7 @@ class ThreadWatcherController extends ChangeNotifier {
 			nextUpdateTimer?.cancel();
 			nextUpdateTimer = Timer(interval, update);
 		}
-		updatingNow = false;
+		updatingNow = null;
 		if (disposed) {
 			nextUpdateTimer?.cancel();
 		}
