@@ -7,6 +7,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/network_image_provider.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
+import 'package:chan/services/thumbnailer.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/adaptive.dart';
@@ -418,7 +419,7 @@ class AttachmentThumbnail extends StatelessWidget {
 			effectiveWidth = effectiveHeight;
 			effectiveHeight = tmp;
 		}
-		if (effectiveWidth <= 125 && effectiveHeight <= 125) {
+		if (effectiveWidth <= 125 && effectiveHeight <= 125 && !attachment.thumbnailUrl.startsWith(thumbsApiPrefix)) {
 			// Don't even try to monitor for HQ caching
 			return _build(
 				context: context,
