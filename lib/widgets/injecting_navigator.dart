@@ -3,7 +3,7 @@ import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:flutter/widgets.dart';
 class InjectingNavigator extends Navigator {
 	final Listenable animation;
-	final Widget Function(BuildContext, Route?, WidgetBuilder) injector;
+	final Widget Function(BuildContext, WidgetBuilder) injector;
 	const InjectingNavigator({
 		required this.animation,
 		required this.injector,
@@ -39,7 +39,7 @@ class _InjectingNavigatorState extends NavigatorState {
 		if (route is FullWidthCupertinoPageRoute<T> && widget is InjectingNavigator) {
 			return super.push(FullWidthCupertinoPageRoute<T>(
 				settings: route.settings,
-				builder: (context) => (widget as InjectingNavigator).injector(context, route, route.builder),
+				builder: (context) => (widget as InjectingNavigator).injector(context, route.builder),
 				showAnimationsForward: route.showAnimationsForward,
 				showAnimations: route.showAnimations
 			));
@@ -66,10 +66,12 @@ class _InjectingNavigatorState extends NavigatorState {
 class PrimaryScrollControllerInjectingNavigator extends StatefulWidget {
 	final List<NavigatorObserver> observers;
 	final WidgetBuilder buildRoot;
+	final WidgetBuilder? buildInitialAboveRoot;
 	final GlobalKey<NavigatorState> navigatorKey;
 	const PrimaryScrollControllerInjectingNavigator({
 		this.observers = const [],
 		required this.buildRoot,
+		this.buildInitialAboveRoot,
 		required this.navigatorKey,
 		Key? key
 	}) : super(key: key);
@@ -81,7 +83,8 @@ class PrimaryScrollControllerInjectingNavigatorState extends State<PrimaryScroll
 	late final ValueNotifier<ScrollController?> primaryScrollControllerTracker;
 	late InjectingNavigator _navigator;
 
-	Widget _injectController(BuildContext context, Route? route, WidgetBuilder childBuilder) {
+	Widget _injectController(BuildContext context, WidgetBuilder childBuilder) {
+		final route = ModalRoute.of(context);
 		final topRoute = ((widget.navigatorKey.currentState) as _InjectingNavigatorState?)?.topRoute;
 		return AnimatedBuilder(
 			animation: Listenable.merge([
@@ -100,16 +103,25 @@ class PrimaryScrollControllerInjectingNavigatorState extends State<PrimaryScroll
 		);
 	}
 
+	static const _kInitialAboveRoot = '/iar';
+
 	InjectingNavigator _makeNavigator() => InjectingNavigator(
 		animation: primaryScrollControllerTracker,
 		injector: _injectController,
-		initialRoute: '/',
+		initialRoute: widget.buildInitialAboveRoot != null ? _kInitialAboveRoot : '/',
 		observers: widget.observers,
 		key: widget.navigatorKey,
 		onGenerateRoute: (settings) {
+			if (settings.name == _kInitialAboveRoot) {
+				return adaptivePageRoute(
+					settings: settings,
+					builder: (context) => _injectController(context, widget.buildInitialAboveRoot!),
+					showAnimationsForward: false
+				);
+			}
 			return adaptivePageRoute(
 				settings: settings,
-				builder: (context) => _injectController(context, null, widget.buildRoot)
+				builder: (context) => _injectController(context, widget.buildRoot)
 			);
 		}
 	);

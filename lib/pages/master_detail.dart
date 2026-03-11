@@ -273,11 +273,6 @@ abstract class _MultiMasterDetailPageState<S extends _MultiMasterDetailPage> ext
 		_tabController = TabController(length: panes.length, vsync: this);
 		_tabController.addListener(_onPaneChanged);
 		_initGlobalKeys();
-		WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-			if (panes[_tabController.index].currentValue.value != null) {
-				_onNewValue(panes[_tabController.index], showAnimationsForward: false);
-			}
-		});
 	}
 
 	@override
@@ -373,6 +368,22 @@ abstract class _MultiMasterDetailPageState<S extends _MultiMasterDetailPage> ext
 		}
 	}
 
+	WidgetBuilder? _buildMasterInitialAboveRoot() {
+		if (!onePane) {
+			return null;
+		}
+		final pane = panes[_tabController.index];
+		if (pane.useRootNavigator) {
+			return null;
+		}
+		final value = pane.currentValue.value;
+		if (value == null) {
+			return null;
+		}
+		final built = pane.buildDetail(() => _onNewValue(pane, showAnimationsForward: false));
+		return (context) => built;
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<Settings>();
@@ -459,7 +470,8 @@ abstract class _MultiMasterDetailPageState<S extends _MultiMasterDetailPage> ext
 							);
 							return child;
 						}
-					)
+					),
+					buildInitialAboveRoot: _buildMasterInitialAboveRoot()
 				)
 			)
 		);

@@ -40,6 +40,7 @@ import 'package:chan/services/share.dart';
 import 'package:chan/services/storage.dart';
 import 'package:chan/services/streaming_mp4.dart';
 import 'package:chan/services/taskgraph.dart';
+import 'package:chan/services/taskstack.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/services/translation.dart';
@@ -678,6 +679,8 @@ enum _AuthenticationStatus {
 
 class ChanTabs extends ChangeNotifier {
 	final _ChanHomePageState _homePageState;
+	final _initializer = TaskStack();
+	bool get initialized => _initializer.isCompleted;
 	final activeBrowserTab = ValueNotifier<int>(Persistence.currentTabIndex);
 	late Listenable browseCountListenable = Listenable.merge([activeBrowserTab, ...Persistence.tabs.map((x) => x.unseen)]);
 	final _tabController = CupertinoTabController();
@@ -693,10 +696,21 @@ class ChanTabs extends ChangeNotifier {
 	late final OwnedChangeNotifierSubscription _settingsSubscription;
 	bool _didHideTabPopupFromReplyBox = false;
 	final _willPopZones = <int, WillPopZone>{};
+	final _devFakeTab = PersistentBrowserTab();
+	final PersistentBrowserTab _savedFakeTab = PersistentBrowserTab();
+	final Map<String, ({Notifications notifications, StreamSubscription<TappedNotification> subscription})> _notificationsSubscriptions = {};
+	late StreamSubscription<String?> _linkSubscription;
+	late StreamSubscription<String?> _fakeLinkSubscription;
+	late StreamSubscription<SharedMedia> _sharedFilesSubscription;
+	// Sometimes duplicate links are received due to use of multiple link handling packages
+	({DateTime time, String link})? _lastLink;
 
 	ChanTabs._(this._homePageState) {
 		Persistence.globalTabMutator.addListener(_onGlobalTabMutatorUpdate);
 		ScrollTracker.instance.someNavigatorNavigated.addListener(_onSomeNavigatorNavigated);
+		ImageboardRegistry.instance.addListener(_onImageboardRegistryUpdate);
+		// Set up notification subscriptions
+		_onImageboardRegistryUpdate();
 		for (final tab in Persistence.tabs) {
 			tab.addListener(_onTabUpdate);
 		}
@@ -704,6 +718,20 @@ class ChanTabs extends ChangeNotifier {
 			s.alwaysUseWideDrawerGesture,
 			s.openBoardSwitcherSlideGesture,
 		)).subscribeOwned(notifyListeners);
+		_linkSubscription = AppLinks().stringLinkStream.listen(_consumeLink);
+		_fakeLinkSubscription = fakeLinkStream.stream.listen(_consumeLink);
+		_sharedFilesSubscription = ShareHandlerPlatform.instance.sharedMediaStream.listen(_consumeSharedMediaFiles);
+		if (!_initialConsume) {
+			_initializer.holdFor(AppLinks().getInitialLinkString()).then((x) => _consumeLink(x, showAnimationsForward: false));
+			_initializer.holdFor(ShareHandlerPlatform.instance.getInitialSharedMedia()).then((x) => _consumeSharedMediaFiles(x, showAnimationsForward: false));
+			_initialConsume = true;
+		}
+
+		/// Some minimum time to wait for stuff to start (notification subscriptions may be drained)
+		_initializer.holdFor(Future.delayed(const Duration(milliseconds: 10)));
+		_initializer.future.then((_) {
+			notifyListeners();
+		});
 	}
 
 	void _onGlobalTabMutatorUpdate() {
@@ -712,6 +740,17 @@ class ChanTabs extends ChangeNotifier {
 
 	void _onTabUpdate() {
 		notifyListeners();
+	}
+
+	void _onImageboardRegistryUpdate() {
+		for (final board in ImageboardRegistry.instance.imageboardsIncludingDev) {
+			if (_notificationsSubscriptions[board.key]?.notifications != board.notifications) {
+				_notificationsSubscriptions[board.key]?.subscription.cancel();
+				_notificationsSubscriptions[board.key] = (notifications: board.notifications, subscription: board.notifications.tapStream.stream.listen((notification) {
+					_onNotificationTapped(board, notification.target.boardThreadOrPostIdentifier, showAnimationsForward: !notification.isLaunch);
+				}));
+			}
+		}
 	}
 
 	void _onSomeNavigatorNavigated() {
@@ -817,6 +856,13 @@ class ChanTabs extends ChangeNotifier {
 			tab.removeListener(_onTabUpdate);
 		}
 		_settingsSubscription.dispose();
+		_linkSubscription.cancel();
+		_fakeLinkSubscription.cancel();
+		_sharedFilesSubscription.cancel();
+		ImageboardRegistry.instance.removeListener(_onImageboardRegistryUpdate);
+		for (final subscription in _notificationsSubscriptions.values) {
+			subscription.subscription.cancel();
+		}
 	}
 
 	PersistentBrowserTab addNewTab({
@@ -1044,7 +1090,7 @@ class ChanTabs extends ChangeNotifier {
 					return value.imageboard.scope(value.result.threadIdentifier);
 				}
 			case 4:
-				final zone = _homePageState.devTab.threadPageState?.zone;
+				final zone = _devFakeTab.threadPageState?.zone;
 				if (zone != null) {
 					return zone.imageboard.scope(zone.primaryThread);
 				}
@@ -1085,7 +1131,8 @@ class ChanTabs extends ChangeNotifier {
 		required int? threadId,
 		int? postId,
 		required bool openNewTabIfNeeded,
-		String? initiallyUseArchive
+		String? initiallyUseArchive,
+		bool showAnimationsForward = true
 	}) async {
 		if (threadId != null) {
 			await ImageboardRegistry.instance.getImageboard(imageboardKey)?.persistence.getThreadStateIfExists(ThreadIdentifier(board, threadId))?.ensureThreadLoaded();
@@ -1099,15 +1146,11 @@ class ChanTabs extends ChangeNotifier {
 				final catalogTab = Persistence.tabs[Persistence.currentTabIndex].tryIf(pred) ?? Persistence.tabs.tryFirstWhere(pred);
 				if (catalogTab != null) {
 					tab = catalogTab;
+					catalogTab.thread = ThreadIdentifier(board, threadId);
 					if (postId != null) {
 						catalogTab.initialPostId[ThreadIdentifier(board, threadId)] = postId;
 					}
-					() async {
-						for (int i = 0; i < 200 && catalogTab.masterDetailKey.currentState == null; i++) {
-							await Future.delayed(const Duration(milliseconds: 50));
-						}
-						catalogTab.masterDetailKey.currentState?.setValue(ThreadIdentifier(board, threadId));
-					}();
+					catalogTab.masterDetailKey.currentState?.setValue(ThreadIdentifier(board, threadId), showAnimationsForward: showAnimationsForward);
 					catalogTab.didUpdate();
 				}
 			}
@@ -1124,18 +1167,11 @@ class ChanTabs extends ChangeNotifier {
 			mainTabIndex = 0;
 			browseTabIndex = Persistence.tabs.indexOf(tab);
 			if (tabAlreadyExisted && postId != null) {
-				_scrollExistingTab(tab, postId);
+				tab.threadPageState?.scrollToPost(postId);
 			}
 			return true;
 		}
 		return false;
-	}
-
-	static void _scrollExistingTab(PersistentBrowserTab tab, int postId) async {
-		for (int i = 0; i < 200 && tab.threadPageState == null; i++) {
-			await Future.delayed(const Duration(milliseconds: 50));
-		}
-		tab.threadPageState?.scrollToPost(postId);
 	}
 
 	ImageboardScoped<ThreadWatch>? get selectedWatchedThread {
@@ -1146,13 +1182,6 @@ class ChanTabs extends ChangeNotifier {
 	}
 	set selectedWatchedThreadWithoutAnimation(ImageboardScoped<ThreadWatch>? newWatchedThread) {
 		_savedMasterDetailKey.currentState?.setValue1(newWatchedThread, showAnimationsForward: false);
-	}
-
-	Future<void> openSavedTab() async {
-		mainTabIndex = 1;
-		for (int i = 0; i < 200 && _savedMasterDetailKey.currentState == null; i++) {
-			await Future.delayed(const Duration(milliseconds: 50));
-		}
 	}
 
 	void _animateTabList({int? index, Duration duration = const Duration(milliseconds: 500), bool inner = false}) async {
@@ -1220,7 +1249,7 @@ class ChanTabs extends ChangeNotifier {
 	Future<void> searchArchives(String imageboardKey, String board, String query) async {
 		mainTabIndex = 3;
 		for (int i = 0; i < 200 && _searchPageKey.currentState == null; i++) {
-			await Future.delayed(const Duration(milliseconds: 50));
+			await SchedulerBinding.instance.endOfFrame;
 		}
 		_searchPageKey.currentState?.onSearchComposed(ImageboardArchiveSearchQuery(
 			imageboardKey: imageboardKey,
@@ -1257,86 +1286,100 @@ class ChanTabs extends ChangeNotifier {
 			await _historyPageKey.currentState?.updateList();
 		}
 	}
-}
 
-class _ChanHomePageState extends State<ChanHomePage> {
-	late final ChanTabs _tabs;
-	final _keys = <int, GlobalKey>{};
-	late final ValueNotifier<bool> _showTabPopup;
-	({Notifications notifications, StreamSubscription<ThreadOrPostIdentifier> subscription})? _devNotificationsSubscription;
-	Imageboard? get devImageboard => ImageboardRegistry.instance.dev;
-	final devTab = PersistentBrowserTab();
-	final PersistentBrowserTab _savedFakeTab = PersistentBrowserTab();
-	final Map<String, ({Notifications notifications, StreamSubscription<ThreadOrPostIdentifier> subscription})> _notificationsSubscriptions = {};
-	late StreamSubscription<String?> _linkSubscription;
-	late StreamSubscription<String?> _fakeLinkSubscription;
-	late StreamSubscription<SharedMedia> _sharedFilesSubscription;
-	// Sometimes duplicate links are received due to use of multiple link handling packages
-	({DateTime time, String link})? _lastLink;
-	bool _hideTabPopupAutomatically = false;
-	_AuthenticationStatus _authenticationStatus = _AuthenticationStatus.ok;
-	final _drawerScaffoldKey = GlobalKey<AdaptiveScaffoldState>(debugLabel: '_ChanHomePageState._drawerScaffoldKey');
-
-	void _onSlowScrollDirectionChange() async {
-		if (!Settings.instance.tabMenuHidesWhenScrollingDown) {
-			return;
-		}
-		if (_tabs.mainTabIndex != 0) {
-			return;
-		}
-		await SchedulerBinding.instance.endOfFrame;
-		_setAdditionalSafeAreaInsets();
-		if (ScrollTracker.instance.slowScrollDirection.value == VerticalDirection.down && _showTabPopup.value) {
-			_hideTabPopupAutomatically = true;
-			_showTabPopup.value = false;
-		}
-		else if (ScrollTracker.instance.slowScrollDirection.value == VerticalDirection.up && _hideTabPopupAutomatically) {
-			_hideTabPopupAutomatically = false;
-			_showTabPopup.value = true;
-		}
-	}
-
-	void _onDevNotificationTapped(BoardThreadOrPostIdentifier id) async {
+	void _onNotificationTapped(Imageboard imageboard, BoardThreadOrPostIdentifier notification, {
+		String? initiallyUseArchive,
+		bool showAnimationsForward = true
+	}) => _initializer.holdForFunction(() async {
 		// Close any gallery or other popup
-		Navigator.of(context, rootNavigator: true).popUntil((r) => r.isFirst);
-		_tabs.mainTabIndex = 4;
-		await ImageboardRegistry.instance.dev?.persistence.getThreadStateIfExists(id.threadIdentifier)?.ensureThreadLoaded();
-		for (int i = 0; i < 200 && _tabs._settingsNavigatorKey.currentState == null; i++) {
-			await Future.delayed(const Duration(milliseconds: 50));
+		Navigator.of(_homePageState.context, rootNavigator: true).popUntil((r) => r.isFirst);
+		if (notification.threadIdentifier case final thread? when !initialized) {
+			await imageboard.persistence.getThreadStateIfExists(thread)?.ensureThreadLoaded(syncIO: true);
 		}
-		final thread = id.threadIdentifier;
-		final postId = id.postId;
-		if (thread == null) {
-			// Load board page
-			_tabs._settingsNavigatorKey.currentState?.popUntil((r) => r.isFirst);
-			_tabs._settingsNavigatorKey.currentState?.push(
-				adaptivePageRoute(
-					builder: (context) => BoardPage(
-						initialBoard: ImageboardRegistry.instance.dev!.persistence.getBoard(id.board),
-						allowChangingBoard: false,
-						semanticId: -1
-					)
-				)
-			);
+		if (imageboard == ImageboardRegistry.instance.dev) {
+			mainTabIndex = 4;
+			if (notification.threadIdentifier case final thread?) {
+				_devFakeTab.thread = thread;
+				if (notification.postId case final postId?) {
+					_devFakeTab.initialPostId[thread] = postId;
+					if (_devFakeTab.threadPageState?.widget.thread == thread) {
+						await _devFakeTab.threadPageState?.scrollToPost(postId);
+					}
+				}
+			}
+			_devFakeTab.board = notification.board;
+			if (_settingsNavigatorKey.currentState case final state?) {
+				final thread = notification.threadIdentifier;
+				final postId = notification.postId;
+				if (thread == null) {
+					// Load board page
+					state.popUntil((r) => r.isFirst);
+					state.push(
+						adaptivePageRoute(
+							builder: (context) => BoardPage(
+								initialBoard: ImageboardRegistry.instance.dev!.persistence.getBoard(notification.board),
+								allowChangingBoard: false,
+								semanticId: -1
+							),
+							showAnimationsForward: showAnimationsForward
+						)
+					);
+				}
+				else if (_devFakeTab.threadPageState?.widget.thread != thread) {
+					state.popUntil((r) => r.isFirst);
+					state.push(
+						adaptivePageRoute(
+							builder: (context) => ThreadPage(
+								thread: thread,
+								initialPostId: postId,
+								boardSemanticId: -1
+							),
+							showAnimationsForward: showAnimationsForward
+						)
+					);
+				}
+			}
 		}
-		else if (devTab.threadPageState?.widget.thread != thread) {
-			_tabs._settingsNavigatorKey.currentState?.popUntil((r) => r.isFirst);
-			_tabs._settingsNavigatorKey.currentState?.push(
-				adaptivePageRoute(
-					builder: (context) => ThreadPage(
-						thread: thread,
-						initialPostId: postId,
-						boardSemanticId: -1
-					)
-				)
-			);
+		else if (!await goToPost(
+			imageboardKey: imageboard.key,
+			board: notification.board,
+			threadId: notification.threadId,
+			postId: notification.postId,
+			openNewTabIfNeeded: false,
+			initiallyUseArchive: initiallyUseArchive,
+			showAnimationsForward: showAnimationsForward
+		)) {
+			final thread = notification.threadIdentifier;
+			final watch = imageboard.persistence.browserState.threadWatches[thread];
+			if (watch == null || thread == null) {
+				await goToPost(
+					imageboardKey: imageboard.key,
+					board: notification.board,
+					threadId: notification.threadId,
+					postId: notification.postId,
+					openNewTabIfNeeded: true,
+					initiallyUseArchive: initiallyUseArchive,
+					showAnimationsForward: showAnimationsForward
+				);
+			}
+			else {
+				_savedFakeTab.imageboardKey = imageboard.key;
+				_savedFakeTab.thread = thread;
+				if (notification.postId case final postId?) {
+					_savedFakeTab.initialPostId[thread] = postId;
+					if (selectedWatchedThread?.item == watch) {
+						_savedFakeTab.threadPageState?.scrollToPost(postId);
+					}
+				}
+				mainTabIndex = 1;
+				_savedMasterDetailKey.currentState?.setValue1(imageboard.scope(watch), showAnimationsForward: showAnimationsForward);
+			}
 		}
-		else if (postId != null) {
-			await devTab.threadPageState?.scrollToPost(postId);
-		}
-	}
+	});
 
-	Future<void> _consumeLink(String? link) async {
+	Future<void> _consumeLink(String? link, {
+		bool showAnimationsForward = true
+	}) async {
 		final settings = Settings.instance;
 		if (link == null || link.isEmpty) {
 			return;
@@ -1352,8 +1395,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					final name = uri.queryParameters['name']!;
 					final theme = SavedTheme.decode(uri.queryParameters['data']!);
 					final match = settings.themes.entries.tryFirstWhere((e) => e.value == theme);
+					await _initializer.future;
+					if (!_homePageState.mounted) {
+						return;
+					}
 					await showAdaptiveDialog(
-						context: context,
+						context: _homePageState.context,
 						barrierDismissible: true,
 						builder: (dialogContext) => AdaptiveAlertDialog(
 							title: Text('Import $name?'),
@@ -1422,51 +1469,60 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					);
 				}
 				catch (e, st) {
-					if (mounted) {
-						alertError(context, e, st);
+					if (_homePageState.mounted) {
+						alertError(_homePageState.context, e, st);
 					}
 				}
 			}
 			else if (uri.pathSegments.length >= 2 && uri.pathSegments[1] == 'thread') {
-				await _tabs.goToPost(
+				await goToPost(
 					imageboardKey: uri.host,
 					board: uri.pathSegments[0],
 					threadId: int.parse(uri.pathSegments[2]),
 					postId: uri.queryParameters['postId']?.tryParseInt,
-					openNewTabIfNeeded: true
+					openNewTabIfNeeded: true,
+					showAnimationsForward: showAnimationsForward
 				);
 			}
 			else if (uri.host == 'site') {
+				await _initializer.future;
+				if (!_homePageState.mounted) {
+					return;
+				}
 				final siteKey = uri.pathSegments[0];
 				try {
 					if (ImageboardRegistry.instance.getImageboard(siteKey) == null) {
 						if (Settings.instance.contentSettings.siteKeys.trySingle == kTestchanKey) {
 							throw Exception('Not allowed to add arbitrary sites');
 						}
-						final consent = await confirm(context, 'Add site $siteKey?');
+						final consent = await confirm(_homePageState.context, 'Add site $siteKey?');
 						if (consent != true) {
 							return;
 						}
-						if (!mounted) return;
-						await modalLoad(context, 'Setting up...', (_) async {
+						if (!_homePageState.mounted) return;
+						await modalLoad(_homePageState.context, 'Setting up...', (_) async {
 							Settings.instance.addSiteKey(siteKey);
 							await Future.delayed(const Duration(milliseconds: 500)); // wait for rebuild of ChanHomePage
 						});
 					}
-					_tabs.addNewTab(
+					addNewTab(
 						withImageboardKey: siteKey,
 						activate: true,
 						keepTabPopupOpen: true
 					);
 				}
 				catch (e, st) {
-					if (mounted) {
-						alertError(context, e, st);
+					if (_homePageState.mounted) {
+						alertError(_homePageState.context, e, st);
 					}
 				}
 			}
 			else if (link != 'chance://') {
-				alertError(context, 'Unrecognized link\n$link', null);
+				await _initializer.future;
+				if (!_homePageState.mounted) {
+					return;
+				}
+				alertError(_homePageState.context, 'Unrecognized link\n$link', null);
 			}
 		}
 		else if (link.toLowerCase().startsWith('sharemedia-com.moffatman.chan')) {
@@ -1474,21 +1530,31 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		}
 		else {
 			if (Uri.tryParse(link) case Uri url) {
-				final devDest = await devImageboard?.site.decodeUrl(url);
-				if (devDest != null) {
-					_onDevNotificationTapped(devDest);
-					return;
+				// Custom [wait] handling to start before [initialized]
+				final future = ImageboardRegistry.instance.decodeUrl(url);
+				(Imageboard, BoardThreadOrPostIdentifier, String?)? dest;
+				try {
+					dest = await _initializer.holdFor(future.timeout(const Duration(milliseconds: 50)));
 				}
-				if (!mounted) return;
-				final dest = await modalLoad(context, 'Checking url...', (_) => ImageboardRegistry.instance.decodeUrl(url), wait: const Duration(milliseconds: 50));
+				on TimeoutException {
+					// Wait for initialization to use context
+					await _initializer.future;
+					if (!_homePageState.mounted) {
+						return;
+					}
+					dest = await modalLoad(_homePageState.context, 'Checking url...', (_) => future);
+				}
 				if (dest != null) {
-					_onNotificationTapped(dest.$1, dest.$2, initiallyUseArchive: dest.$3);
+					_onNotificationTapped(dest.$1, dest.$2, initiallyUseArchive: dest.$3, showAnimationsForward: showAnimationsForward);
 					return;
 				}
-				if (!mounted) return;
+			}
+			await _initializer.future;
+			if (!_homePageState.mounted) {
+				return;
 			}
 			final open = await showAdaptiveDialog<bool>(
-				context: context,
+				context: _homePageState.context,
 				barrierDismissible: true,
 				builder: (context) => AdaptiveAlertDialog(
 					title: const Text('Unrecognized link'),
@@ -1505,9 +1571,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					]
 				)
 			);
-			if (open == true && mounted) {
+			if (open == true && _homePageState.mounted) {
 				await shareOne(
-					context: context,
+					context: _homePageState.context,
 					type: 'text',
 					text: link,
 					sharePositionOrigin: null
@@ -1516,54 +1582,60 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		}
 	}
 
-	void _onNotificationTapped(Imageboard imageboard, BoardThreadOrPostIdentifier notification, {
-		String? initiallyUseArchive
-	}) async {
-		// Close any gallery or other popup
-		Navigator.of(context, rootNavigator: true).popUntil((r) => r.isFirst);
-		if (!await _tabs.goToPost(
-			imageboardKey: imageboard.key,
-			board: notification.board,
-			threadId: notification.threadId,
-			postId: notification.postId,
-			openNewTabIfNeeded: false,
-			initiallyUseArchive: initiallyUseArchive
-		)) {
-			final watch = imageboard.persistence.browserState.threadWatches[notification.threadIdentifier];
-			if (watch == null) {
-				await _tabs.goToPost(
-					imageboardKey: imageboard.key,
-					board: notification.board,
-					threadId: notification.threadId,
-					postId: notification.postId,
-					openNewTabIfNeeded: true,
-					initiallyUseArchive: initiallyUseArchive
-				);
-			}
-			else {
-				await _tabs.openSavedTab();
-				if (_tabs.selectedWatchedThread?.item == watch && notification.postId != null) {
-					ChanTabs._scrollExistingTab(_savedFakeTab, notification.postId!);
-				}
-				else {
-					if (notification.postId != null) {
-						_savedFakeTab.initialPostId[notification.threadIdentifier!] = notification.postId!;
-					}
-					_tabs._savedMasterDetailKey.currentState?.setValue1(imageboard.scope(watch));
-				}
-			}
-		}
-	}
-
 	void _consumeFiles(List<String> paths) {
 		if (paths.isNotEmpty) {
 			showToast(
-				context: context,
+				context: _homePageState.context,
 				message: '${(paths.length > 1 ? 'Files' : 'File')} added to upload selector',
 				icon: CupertinoIcons.paperclip
 			);
 			receivedFilePaths.addAll(paths);
 			attachmentSourceNotifier.didUpdate();
+		}
+	}
+
+	void _consumeSharedMediaFiles(SharedMedia? media, {bool showAnimationsForward = true}) {
+		final files = (media?.attachments ?? []).tryMap((f) {
+			if (f?.type == SharedAttachmentType.file ||
+				  f?.type == SharedAttachmentType.image ||
+				  f?.type == SharedAttachmentType.video) {
+				return f?.path;
+			}
+		}).toList();
+		if (files.isNotEmpty) {
+			_consumeFiles(files);
+		}
+		if (media?.content case final text? when text.isNotEmpty) {
+			_consumeLink(text, showAnimationsForward: showAnimationsForward);
+		}
+	}
+}
+
+class _ChanHomePageState extends State<ChanHomePage> {
+	late final ChanTabs _tabs;
+	final _keys = <int, GlobalKey>{};
+	late final ValueNotifier<bool> _showTabPopup;
+	Imageboard? get devImageboard => ImageboardRegistry.instance.dev;
+	bool _hideTabPopupAutomatically = false;
+	_AuthenticationStatus _authenticationStatus = _AuthenticationStatus.ok;
+	final _drawerScaffoldKey = GlobalKey<AdaptiveScaffoldState>(debugLabel: '_ChanHomePageState._drawerScaffoldKey');
+
+	void _onSlowScrollDirectionChange() async {
+		if (!Settings.instance.tabMenuHidesWhenScrollingDown) {
+			return;
+		}
+		if (_tabs.mainTabIndex != 0) {
+			return;
+		}
+		await SchedulerBinding.instance.endOfFrame;
+		_setAdditionalSafeAreaInsets();
+		if (ScrollTracker.instance.slowScrollDirection.value == VerticalDirection.down && _showTabPopup.value) {
+			_hideTabPopupAutomatically = true;
+			_showTabPopup.value = false;
+		}
+		else if (ScrollTracker.instance.slowScrollDirection.value == VerticalDirection.up && _hideTabPopupAutomatically) {
+			_hideTabPopupAutomatically = false;
+			_showTabPopup.value = true;
 		}
 	}
 
@@ -1587,34 +1659,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		_showTabPopup.value = newShowTabPopup;
 	}
 
-	void _consumeSharedMediaFiles(SharedMedia? media) {
-		final files = (media?.attachments ?? []).tryMap((f) {
-			if (f?.type == SharedAttachmentType.file ||
-				  f?.type == SharedAttachmentType.image ||
-				  f?.type == SharedAttachmentType.video) {
-				return f?.path;
-			}
-		}).toList();
-		if (files.isNotEmpty) {
-			_consumeFiles(files);
-		}
-		if (media?.content case final text? when text.isNotEmpty) {
-			_consumeLink(text);
-		}
-	}
-
 	@override
 	void initState() {
 		super.initState();
 		_tabs = ChanTabs._(this);
 		_tabs.addListener(_tabsListener);
-		if (!_initialConsume) {
-			AppLinks().getInitialLinkString().then(_consumeLink);
-			ShareHandlerPlatform.instance.getInitialSharedMedia().then(_consumeSharedMediaFiles);
-		}
-		_linkSubscription = AppLinks().stringLinkStream.listen(_consumeLink);
-		_fakeLinkSubscription = fakeLinkStream.stream.listen(_consumeLink);
-		_sharedFilesSubscription = ShareHandlerPlatform.instance.sharedMediaStream.listen(_consumeSharedMediaFiles);
 		_showTabPopup = ValueNotifier(false)
 			..addListener(_setAdditionalSafeAreaInsets)
 			..addListener(() {
@@ -1624,7 +1673,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			});
 		// Set initial tab list up right
 		Future.microtask(() => _tabs._animateTabList(duration: Duration.zero));
-		_initialConsume = true;
 		_setAdditionalSafeAreaInsets();
 		ScrollTracker.instance.slowScrollDirection.addListener(_onSlowScrollDirectionChange);
 		if (Persistence.settings.launchCount > 5 && !Persistence.settings.promptedAboutCrashlytics && !_promptedAboutCrashlytics) {
@@ -1704,7 +1752,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			child = MultiProvider(
 				providers: [
 					ChangeNotifierProvider.value(
-						value: _savedFakeTab
+						value: _tabs._savedFakeTab
 					),
 					Provider.value(
 						value: OpenInNewTabZone(
@@ -1721,7 +1769,14 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					)
 				],
 				child: SavedPage(
-					masterDetailKey: _tabs._savedMasterDetailKey
+					masterDetailKey: _tabs._savedMasterDetailKey,
+					initialThreadWatch: switch (_tabs._savedFakeTab.thread) {
+						ThreadIdentifier thread => switch (_tabs._savedFakeTab.imageboard?.persistence.browserState.threadWatches[thread]) {
+							ThreadWatch watch => _tabs._savedFakeTab.imageboard?.scope(watch),
+							null => null
+						},
+						null => null
+					}
 				)
 			);
 		}
@@ -1796,7 +1851,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						child: ImageboardScope(
 							imageboardKey: devImageboard?.key,
 							child: ChangeNotifierProvider.value(
-								value: devTab,
+								value: _tabs._devFakeTab,
 								child: ClipRect(
 									child: PrimaryScrollControllerInjectingNavigator(
 										navigatorKey: _tabs._settingsNavigatorKey,
@@ -1806,7 +1861,22 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										],
 										buildRoot: (context) => SettingsPage(
 											key: _tabs._settingsPageKey
-										)
+										),
+										buildInitialAboveRoot: switch ((_tabs._devFakeTab.thread, _tabs._devFakeTab.board)) {
+											(ThreadIdentifier thread, _) => (context) =>
+													ThreadPage(
+														thread: thread,
+														initialPostId: _tabs._devFakeTab.initialPostId[thread],
+														boardSemanticId: -1,
+													),
+											(_, String board) => (context) =>
+													BoardPage(
+														initialBoard: devImageboard!.persistence.getBoard(board),
+														allowChangingBoard: false,
+														semanticId: -1
+													),
+											_ => null
+										},
 									)
 								)
 							)
@@ -2177,7 +2247,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 
 	@override
 	Widget build(BuildContext context) {
-		if (!ImageboardRegistry.instance.initialized || _authenticationStatus == _AuthenticationStatus.inProgress) {
+		if (!ImageboardRegistry.instance.initialized || _authenticationStatus == _AuthenticationStatus.inProgress || !_tabs.initialized) {
 			return const ChanSplashPage();
 		}
 		if (_authenticationStatus == _AuthenticationStatus.failed) {
@@ -2200,21 +2270,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					]
 				)
 			);
-		}
-		for (final board in ImageboardRegistry.instance.imageboards) {
-			if (_notificationsSubscriptions[board.key]?.notifications != board.notifications) {
-				_notificationsSubscriptions[board.key]?.subscription.cancel();
-				_notificationsSubscriptions[board.key] = (notifications: board.notifications, subscription: board.notifications.tapStream.stream.listen((target) {
-					_onNotificationTapped(board, target.boardThreadOrPostIdentifier);
-				}));
-			}
-		}
-		final dev = devImageboard;
-		if (dev != null && dev.initialized && _devNotificationsSubscription?.notifications != dev.notifications) {
-			_devNotificationsSubscription?.subscription.cancel();
-			_devNotificationsSubscription = (notifications: dev.notifications, subscription: dev.notifications.tapStream.stream.listen((target) {
-				_onDevNotificationTapped(target.boardThreadOrPostIdentifier);
-			}));
 		}
 		final notificationErrors = context.watch<ImageboardRegistry>().notificationErrors;
 		final filterError = context.select<Settings, String?>((s) => s.filterError);
@@ -2616,11 +2671,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							}
 						}
 						else if (datum.dropText != null) {
-							_consumeLink(datum.dropText);
+							_tabs._consumeLink(datum.dropText);
 						}
 					}
 					if (paths.isNotEmpty) {
-						_consumeFiles(paths);
+						_tabs._consumeFiles(paths);
 					}
 				},
 				allowedDropDataTypes: const [DropDataType.url, DropDataType.image, DropDataType.video],
@@ -2653,15 +2708,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		super.dispose();
 		_tabs.removeListener(_tabsListener);
 		_tabs.dispose();
-		devImageboard?.dispose();
-		_linkSubscription.cancel();
-		_fakeLinkSubscription.cancel();
-		_sharedFilesSubscription.cancel();
-		_devNotificationsSubscription?.subscription.cancel();
 		ScrollTracker.instance.slowScrollDirection.removeListener(_onSlowScrollDirectionChange);
-		for (final subscription in _notificationsSubscriptions.values) {
-			subscription.subscription.cancel();
-		}
 	}
 }
 

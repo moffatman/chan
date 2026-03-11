@@ -156,7 +156,10 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 	}
 
 	void _notificationTapped(OverlayNotification notification) {
-		notification.imageboard.notifications.tapStream.add(notification.notification.target);
+		notification.imageboard.notifications.tapStream.add(TappedNotification(
+			target: notification.notification.target,
+			isLaunch: false
+		));
 		closeNotification(notification);
 	}
 

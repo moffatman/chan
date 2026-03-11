@@ -53,6 +53,19 @@ class BoardWatchNotification extends PushNotification {
 	});
 }
 
+class TappedNotification {
+	final ThreadOrPostIdentifier target;
+	final bool isLaunch;
+
+	const TappedNotification({
+		required this.target,
+		required this.isLaunch
+	});
+
+	@override
+	String toString() => 'TappedNotification(target: $target, isLaunch: $isLaunch)';
+}
+
 abstract class _NotificationsToken {
 	Map<String, String> toMap();	
 }
@@ -151,7 +164,7 @@ const _kProtocolVersion = 1;
 class Notifications {
 	static final Map<String, Notifications> _children = {};
 	/// This must not be .broadcast(), we need the buffering feature as we add items early.
-	final tapStream = StreamController<ThreadOrPostIdentifier>();
+	final tapStream = StreamController<TappedNotification>();
 	final foregroundStream = StreamController<PushNotification>.broadcast();
 	final Imageboard imageboard;
 	Persistence get persistence => imageboard.persistence;
@@ -248,10 +261,13 @@ class Notifications {
 			return;
 		}
 		if (data['type'] == 'thread' || data['type'] == 'threadPage' || data['type'] == 'board') {
-			child.tapStream.add(ThreadOrPostIdentifier(
-				data['board']!,
-				data['threadId']!.parseInt,
-				data['postId']?.tryParseInt
+			child.tapStream.add(TappedNotification(
+				isLaunch: true,
+				target: ThreadOrPostIdentifier(
+					data['board']!,
+					data['threadId']!.parseInt,
+					data['postId']?.tryParseInt
+				)
 			));
 		}
 	}

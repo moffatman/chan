@@ -316,9 +316,11 @@ class _SavedThreadsByThreadPostTimeLoader implements _SavedThreadsLoader {
 
 class SavedPage extends StatefulWidget {
 	final GlobalKey<SavedPageMasterDetailPanesState> masterDetailKey;
+	final ImageboardScoped<ThreadWatch>? initialThreadWatch;
 
 	const SavedPage({
 		required this.masterDetailKey,
+		this.initialThreadWatch,
 		Key? key
 	}) : super(key: key);
 
@@ -568,6 +570,7 @@ class _SavedPageState extends State<SavedPage> {
 			key: widget.masterDetailKey,
 			paneCreator1: () =>
 				MultiMasterPane<ImageboardScoped<ThreadWatch>>(
+					initialValue: widget.initialThreadWatch,
 					navigationBar: AdaptiveBar(
 						title: const Text('Watched Threads'),
 						actions: [
