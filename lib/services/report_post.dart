@@ -32,7 +32,7 @@ Future<void> reportPost({
 		}
 		switch (method) {
 			case WebReportMethod():
-				openBrowser(context, method.uri);
+				openBrowser(context, method.uri, fromShareOne: true);
 			case ChoiceReportMethod():
 				ChoiceReportMethodChoice? choice;
 				final couldUseLoginSystem = site.loginSystem?.getSavedLoginFields() != null;
