@@ -726,6 +726,9 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 				heroOtherEndIsBoxFitCover: false
 			);
 		}
+		else if (isOnMac) {
+			await launchUrlExternally(url);
+		}
 		else {
 			try {
 				final theme = context.read<SavedTheme>();
