@@ -16,6 +16,9 @@
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		A5C5995E21E563A3812C0D16 /* Pods_Chance.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 955F0AB04D38CA1B1478842A /* Pods_Chance.framework */; };
+		F24C63C72F64461B0073DFA9 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = F24C63C62F64461A0073DFA9 /* main.swift */; };
+		F24C63C92F6446340073DFA9 /* MyUIApplication.swift in Sources */ = {isa = PBXBuildFile; fileRef = F24C63C82F6446310073DFA9 /* MyUIApplication.swift */; };
+		F24C63CD2F64C56E0073DFA9 /* Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = F24C63CC2F64C56E0073DFA9 /* Utils.swift */; };
 		F281D4362E71E065004C939E /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F281D4352E71E065004C939E /* AVFoundation.framework */; };
 		F29638442F2334440070CC4D /* TranslationHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = F29638432F23343D0070CC4D /* TranslationHelper.swift */; };
 		F29638462F24A4E00070CC4D /* AsyncMutex.swift in Sources */ = {isa = PBXBuildFile; fileRef = F29638452F24A4E00070CC4D /* AsyncMutex.swift */; };
@@ -85,6 +88,9 @@
 		D870108F93AF055E729B5083 /* Pods-Chance.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Chance.profile.xcconfig"; path = "Target Support Files/Pods-Chance/Pods-Chance.profile.xcconfig"; sourceTree = "<group>"; };
 		D980525A70447179B040D5C3 /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
 		F235444D2818411900AC42E7 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
+		F24C63C62F64461A0073DFA9 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		F24C63C82F6446310073DFA9 /* MyUIApplication.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyUIApplication.swift; sourceTree = "<group>"; };
+		F24C63CC2F64C56E0073DFA9 /* Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utils.swift; sourceTree = "<group>"; };
 		F26AD7912B9F82ED00233C3C /* RunnerDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RunnerDebug.entitlements; sourceTree = "<group>"; };
 		F281D4352E71E065004C939E /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		F29638432F23343D0070CC4D /* TranslationHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationHelper.swift; sourceTree = "<group>"; };
@@ -156,6 +162,9 @@
 		97C146F01CF9000F007C117D /* Runner */ = {
 			isa = PBXGroup;
 			children = (
+				F24C63CC2F64C56E0073DFA9 /* Utils.swift */,
+				F24C63C82F6446310073DFA9 /* MyUIApplication.swift */,
+				F24C63C62F64461A0073DFA9 /* main.swift */,
 				F29638472F28E1BA0070CC4D /* SimpleLanguageRecognizer.swift */,
 				F29638452F24A4E00070CC4D /* AsyncMutex.swift */,
 				F29638432F23343D0070CC4D /* TranslationHelper.swift */,
@@ -439,9 +448,12 @@
 			files = (
 				F29638462F24A4E00070CC4D /* AsyncMutex.swift in Sources */,
 				F29638482F28E1C20070CC4D /* SimpleLanguageRecognizer.swift in Sources */,
+				F24C63C72F64461B0073DFA9 /* main.swift in Sources */,
 				F29638442F2334440070CC4D /* TranslationHelper.swift in Sources */,
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
+				F24C63C92F6446340073DFA9 /* MyUIApplication.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
+				F24C63CD2F64C56E0073DFA9 /* Utils.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

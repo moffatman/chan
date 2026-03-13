@@ -68,7 +68,6 @@ class MyFileExportDelegate : NSObject, UIDocumentPickerDelegate {
   }
 }
 
-@main
 @objc class AppDelegate: FlutterAppDelegate {
   var appleChannel: FlutterMethodChannel?
   var garbageKeepAlive: [any NSObjectProtocol] = []
@@ -105,15 +104,7 @@ class MyFileExportDelegate : NSObject, UIDocumentPickerDelegate {
     appleChannel!.setMethodCallHandler({
       (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
       if (call.method == "isOnMac") {
-        #if targetEnvironment(macCatalyst)
-            result(true)
-        #else
-            if #available(iOS 14.0, *) {
-                result(ProcessInfo.processInfo.isiOSAppOnMac)
-            } else {
-                result(false)
-            }
-        #endif
+        result(Utils.isOnMac)
       }
       else if (call.method == "isDevelopmentBuild") {
         #if targetEnvironment(simulator)
