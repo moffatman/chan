@@ -368,7 +368,7 @@ abstract class _MultiMasterDetailPageState<S extends _MultiMasterDetailPage> ext
 		}
 	}
 
-	WidgetBuilder? _buildMasterInitialAboveRoot() {
+	(WidgetBuilder, ValueChanged<dynamic>)? _buildMasterInitialAboveRoot() {
 		if (!onePane) {
 			return null;
 		}
@@ -381,7 +381,7 @@ abstract class _MultiMasterDetailPageState<S extends _MultiMasterDetailPage> ext
 			return null;
 		}
 		final built = pane.buildDetail(() => _onNewValue(pane, showAnimationsForward: false));
-		return (context) => built;
+		return ((context) => built, (value) => _onPushReturn(pane, value));
 	}
 
 	@override

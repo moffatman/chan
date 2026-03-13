@@ -1,5 +1,7 @@
+import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 class InjectingNavigator extends Navigator {
 	final Listenable animation;
@@ -63,10 +65,25 @@ class _InjectingNavigatorState extends NavigatorState {
 	}
 }
 
+class _MyPopListener extends PopEntry<dynamic> {
+	final ValueChanged<dynamic> onPop;
+	_MyPopListener(this.onPop);
+	@override
+	ValueListenable<bool> get canPopNotifier => const ConstantValueListenable(true);
+	@override
+	void onPopInvoked(bool didPop) {
+		onPop(null);
+	}
+	@override
+	void onPopInvokedWithResult(bool didPop, dynamic result) {
+		onPop(result);
+	}
+}
+
 class PrimaryScrollControllerInjectingNavigator extends StatefulWidget {
 	final List<NavigatorObserver> observers;
 	final WidgetBuilder buildRoot;
-	final WidgetBuilder? buildInitialAboveRoot;
+	final (WidgetBuilder builder, ValueChanged<dynamic> onPop)? buildInitialAboveRoot;
 	final GlobalKey<NavigatorState> navigatorKey;
 	const PrimaryScrollControllerInjectingNavigator({
 		this.observers = const [],
@@ -115,9 +132,9 @@ class PrimaryScrollControllerInjectingNavigatorState extends State<PrimaryScroll
 			if (settings.name == _kInitialAboveRoot) {
 				return adaptivePageRoute(
 					settings: settings,
-					builder: (context) => _injectController(context, widget.buildInitialAboveRoot!),
+					builder: (context) => _injectController(context, widget.buildInitialAboveRoot!.$1),
 					showAnimationsForward: false
-				);
+				)..registerPopEntry(_MyPopListener(widget.buildInitialAboveRoot!.$2));
 			}
 			return adaptivePageRoute(
 				settings: settings,

@@ -1863,18 +1863,18 @@ class _ChanHomePageState extends State<ChanHomePage> {
 											key: _tabs._settingsPageKey
 										),
 										buildInitialAboveRoot: switch ((_tabs._devFakeTab.thread, _tabs._devFakeTab.board)) {
-											(ThreadIdentifier thread, _) => (context) =>
+											(ThreadIdentifier thread, _) => ((context) =>
 													ThreadPage(
 														thread: thread,
 														initialPostId: _tabs._devFakeTab.initialPostId[thread],
 														boardSemanticId: -1,
-													),
-											(_, String board) => (context) =>
+													), (_) {}),
+											(_, String board) => ((context) =>
 													BoardPage(
 														initialBoard: devImageboard!.persistence.getBoard(board),
 														allowChangingBoard: false,
 														semanticId: -1
-													),
+													), (_) {}),
 											_ => null
 										},
 									)
