@@ -1166,7 +1166,8 @@ class ChanTabs extends ChangeNotifier {
 		if (tab != null) {
 			mainTabIndex = 0;
 			browseTabIndex = Persistence.tabs.indexOf(tab);
-			if (tabAlreadyExisted && postId != null) {
+			if (tabAlreadyExisted && threadId != null && postId != null) {
+				tab.initialPostId[ThreadIdentifier(board, threadId)] = postId;
 				tab.threadPageState?.scrollToPost(postId);
 			}
 			return true;
