@@ -143,6 +143,11 @@ Widget _buildQuestion(String raw) {
 						fontVariations: CommonFontVariations.bold
 					));
 				}
+				else if (node.localName == 'i') {
+					yield TextSpan(children: visit(node.nodes).toList(), style: const TextStyle(
+						fontStyle: FontStyle.italic
+					));
+				}
 				else if (attributes.remove('src') case String src when node.localName == 'img' && src.startsWith('data:image/')) {
 					styles.remove('float'); // TODO: PlaceholderFloating in forked_flutter_engine
 					final margin = styles.remove('margin');
