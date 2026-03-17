@@ -2148,8 +2148,6 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						if (!value.representsStubChildren) {
 							if (isHidden == TreeItemCollapseType.mutuallyCollapsed) {
 								context.read<_RefreshableTreeItems<T>>().swapSubtreeTo(value);
-								// This should be removed in forked_flutter
-								Future.delayed(_treeAnimationDuration, () => controller._alignToItemIfPartiallyAboveFold(value));
 							}
 							else if (isHidden == TreeItemCollapseType.parentOfNewInsert) {
 								context.read<_RefreshableTreeItems<T>>().revealNewInsertsBelow(value);
