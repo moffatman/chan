@@ -848,6 +848,10 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 	}
 
 	void swapSubtreeTo(RefreshableListItem<T> item) {
+		final index = state.controller._items.indexWhere((i) => i.item == item);
+		if (index != -1) {
+			state.controller._lockSliverListAtIndex(index);
+		}
 		primarySubtreeParents[item.id] = item.parentIds.tryLast ?? -1;
 		_cache.removeWhere((key, value) => key.thisId == item.id || key.parentIds.contains(item.id));
 		state.widget.onCollapsedItemsChanged?.call(manuallyCollapsedItems, primarySubtreeParents);
@@ -880,6 +884,11 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 		});
 		state._onTreeCollapseOrExpand.call(item, false);
 		notifyListeners();
+		if (index != -1) {
+			Future.delayed(_treeAnimationDuration).then((_) {
+				state.controller._unlockSliverList();
+			});
+		}
 	}
 
 	void revealNewInsert(RefreshableListItem<T> item, {bool quiet = false, bool stubOnly = false}) async {
@@ -2091,6 +2100,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						if (!value.representsStubChildren) {
 							if (isHidden == TreeItemCollapseType.mutuallyCollapsed) {
 								context.read<_RefreshableTreeItems<T>>().swapSubtreeTo(value);
+								// This should be removed in forked_flutter
 								Future.delayed(_treeAnimationDuration, () => controller._alignToItemIfPartiallyAboveFold(value));
 							}
 							else if (isHidden == TreeItemCollapseType.parentOfNewInsert) {
