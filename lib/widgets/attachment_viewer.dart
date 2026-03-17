@@ -1421,7 +1421,7 @@ class AttachmentViewer extends StatelessWidget {
 	}) => Builder(
 		builder: (context) => Center(
 			child: RotatedBox(
-				quarterTurns: _rotate90DegreesClockwise(context) ? 1 : 0,
+				quarterTurns: _rotate90DegreesClockwise ? 1 : 0,
 				child: AnimatedSwitcher(
 					duration: const Duration(milliseconds: 300),
 					child: active ? TweenAnimationBuilder<double>(
@@ -1482,11 +1482,12 @@ class AttachmentViewer extends StatelessWidget {
 		);
 	}
 
-	bool _rotate90DegreesClockwise(BuildContext context) {
+	bool get _rotate90DegreesClockwise {
 		if (!autoRotate || attachment.type.isNonMedia) {
 			return false;
 		}
-		final displayIsLandscape = MediaQuery.sizeOf(context).width > MediaQuery.sizeOf(context).height;
+		final displaySize = PlatformDispatcher.instance.views.first.physicalSize;
+		final displayIsLandscape = displaySize.width > displaySize.height;
 		return attachment.aspectRatio != 1 && displayIsLandscape != (attachment.aspectRatio > 1);
 	}
 
@@ -1522,7 +1523,7 @@ class AttachmentViewer extends StatelessWidget {
 				final center = state.context.globalPaintBounds?.center ?? MediaQuery.sizeOf(state.context).center(Offset.zero);
 				final tap = state.pointerDownPosition;
 				if (tap != null) {
-					if (_rotate90DegreesClockwise(state.context)) {
+					if (_rotate90DegreesClockwise) {
 						if (tap.dy < center.dy) {
 							controller.seekBackward();
 						}
@@ -1579,7 +1580,8 @@ class AttachmentViewer extends StatelessWidget {
 				final logicalAnchor = controller._doubleTapDragAnchor ??= ((details.localPosition - offsetBefore) / scaleBefore);
 				if (controller._longPressMode == null) {
 					if (details.offsetFromOrigin.distance > 24) {
-						if (attachment.type.usesVideoPlayer && details.offsetFromOrigin.dx.abs() > details.offsetFromOrigin.dy.abs()) {
+						final dragIsHorizontal = details.offsetFromOrigin.dx.abs() > details.offsetFromOrigin.dy.abs();
+						if (attachment.type.usesVideoPlayer && (dragIsHorizontal ^ _rotate90DegreesClockwise)) {
 							lightHapticFeedback();
 							controller._longPressMode = _LongPressMode.scrub;
 							controller.onLongPressStart(absolute: false);
@@ -1591,7 +1593,8 @@ class AttachmentViewer extends StatelessWidget {
 				}
 				if (controller._longPressMode == _LongPressMode.zoom) {
 					final anchorBefore = (logicalAnchor * scaleBefore) + offsetBefore;
-					final scaleAfter = (state.gestureDetails!.totalScale! * (1 + (0.005 * details.localDelta.dy))).clamp(1.0, state.imageGestureConfig?.maxScale ?? 5.0);
+					final delta = _rotate90DegreesClockwise ? details.localDelta.dx : details.localDelta.dy;
+					final scaleAfter = (state.gestureDetails!.totalScale! * (1 + (0.005 * delta))).clamp(1.0, state.imageGestureConfig?.maxScale ?? 5.0);
 					final offsetAfter = anchorBefore - (logicalAnchor * scaleAfter);
 					state.gestureDetails = GestureDetails(
 						offset: offsetAfter,
@@ -1600,7 +1603,9 @@ class AttachmentViewer extends StatelessWidget {
 					);
 				}
 				else if (controller._longPressMode == _LongPressMode.scrub) {
-					final factor = details.offsetFromOrigin.dx / (MediaQuery.sizeOf(controller.context).width / 2);
+					final factor = _rotate90DegreesClockwise
+						? details.offsetFromOrigin.dy / (MediaQuery.sizeOf(controller.context).height / 2)
+						: details.offsetFromOrigin.dx / (MediaQuery.sizeOf(controller.context).width / 2);
 					controller.onLongPressUpdate(factor);
 				}
 			},
@@ -1708,7 +1713,7 @@ class AttachmentViewer extends StatelessWidget {
 				// Remove the layoutInsets
 				final laidOut = layoutInsets.deflateRect(rect);
 				// Clip to aspectRatio
-				final size = RenderAspectRatio(aspectRatio: _rotate90DegreesClockwise(context) ? (1 / attachment.aspectRatio) : attachment.aspectRatio).getDryLayout(BoxConstraints.loose(laidOut.size));
+				final size = RenderAspectRatio(aspectRatio: _rotate90DegreesClockwise ? (1 / attachment.aspectRatio) : attachment.aspectRatio).getDryLayout(BoxConstraints.loose(laidOut.size));
 				return Rect.fromCenter(
 					center: laidOut.center,
 					width: size.width,
@@ -1716,7 +1721,7 @@ class AttachmentViewer extends StatelessWidget {
 				);
 			},
 			previewBuilder: (context, child) => AspectRatio(
-				aspectRatio: _rotate90DegreesClockwise(context) ? (1 / attachment.aspectRatio) : attachment.aspectRatio,
+				aspectRatio: _rotate90DegreesClockwise ? (1 / attachment.aspectRatio) : attachment.aspectRatio,
 				child: buildChild(inContextMenu: true)
 			)
 		);
@@ -1802,7 +1807,7 @@ class AttachmentViewer extends StatelessWidget {
 							}
 						}
 					),
-					rotate90DegreesClockwise: _rotate90DegreesClockwise(context),
+					rotate90DegreesClockwise: _rotate90DegreesClockwise,
 					loadStateChanged: (loadstate) {
 						void tryUpdatingAttachment() {
 							if (attachment.width != null && attachment.height != null) {
@@ -1944,7 +1949,7 @@ class AttachmentViewer extends StatelessWidget {
 	}
 
 	Widget _buildVideo(BuildContext context, Size? size) {
-		final rotate90DegreesClockwise = _rotate90DegreesClockwise(context);
+		final rotate90DegreesClockwise = _rotate90DegreesClockwise;
 		final soundSourceDownload = controller._soundSourceDownload;
 		Widget buildChild({required bool inContextMenu}) {
 			Widget centerWithPage({required Widget child}) => Positioned.fill(
@@ -2299,7 +2304,7 @@ class AttachmentViewer extends StatelessWidget {
 								attachment: attachment,
 								width: double.infinity,
 								height: double.infinity,
-								rotate90DegreesClockwise: _rotate90DegreesClockwise(context),
+								rotate90DegreesClockwise: _rotate90DegreesClockwise,
 								gaplessPlayback: true,
 								revealSpoilers: true,
 								site: controller.site,
@@ -2340,7 +2345,7 @@ class AttachmentViewer extends StatelessWidget {
 								attachment: attachment,
 								width: double.infinity,
 								height: double.infinity,
-								rotate90DegreesClockwise: _rotate90DegreesClockwise(context),
+								rotate90DegreesClockwise: _rotate90DegreesClockwise,
 								gaplessPlayback: true,
 								revealSpoilers: true,
 								site: controller.site,
