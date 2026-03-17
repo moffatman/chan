@@ -1334,8 +1334,34 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	}
 
 	Future<void> _lockSliverForNextRebuild({bool bottomOnly = false, bool lockAtMiddle = false}) async {
-		// This is not supported on flutter master
-		await SchedulerBinding.instance.endOfFrame;
+		if (!mounted) return;
+		final sliver = controller._renderSliverList;
+		Key? lockKey;
+		if (bottomOnly || controller._useTree != widget.useTree) {
+			final position = controller.scrollController?.tryPosition;
+			if (position != null && position.haveDimensions && position.extentAfter <= _bottomLockTolerance) {
+				lockKey = RenderSliverList.kLockKeyLockToEnd;
+			}
+		}
+		else {
+			var index = lockAtMiddle ? controller.middleVisibleIndex : controller.lastVisibleIndex;
+			while (index >= 0 && controller.isItemHidden(controller.getItem(index)).isHidden) {
+				index--;
+			}
+			if (index >= 0) {
+				lockKey = ValueKey(controller.getItem(index)._key);
+			}
+		}
+		try {
+			sliver?.lockKey = lockKey;
+			setState(() {});
+			await SchedulerBinding.instance.endOfFrame;
+		}
+		finally {
+			if (sliver?.lockKey == lockKey) {
+				sliver?.lockKey = null;
+			}
+		}
 	}
 
 	Set<int>? _getLoadedItemIds() {
@@ -2374,8 +2400,6 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						if (!value.representsStubChildren) {
 							if (isHidden == TreeItemCollapseType.mutuallyCollapsed) {
 								context.read<_RefreshableTreeItems<T>>().swapSubtreeTo(value);
-								// This should be removed in forked_flutter
-								Future.delayed(_treeAnimationDuration, () => controller._alignToItemIfPartiallyAboveFold(value));
 							}
 							else if (isHidden == TreeItemCollapseType.parentOfNewInsert) {
 								context.read<_RefreshableTreeItems<T>>().revealNewInsertsBelow(value);
