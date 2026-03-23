@@ -1,5 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
+
+import 'package:chan/util.dart';
+import 'package:flutter/foundation.dart';
 
 class ByteReader {
 	final Uint8List buffer;
@@ -7,6 +11,7 @@ class ByteReader {
 	ByteReader(this.buffer);
 
 	bool get done => pos >= buffer.length;
+	int get remainingBytes => buffer.length - pos;
 
 	@pragma('vm:prefer-inline')
 	void _check(int bytes) {
@@ -169,6 +174,200 @@ class ByteReader {
 
 	@override
 	String toString() => 'ByteReader(size: ${buffer.length}, pos: $pos)';
+}
+
+/// Pretty lazily done. not "thread"-safe
+class AsyncByteReader extends ChangeNotifier {
+	final Stream<Uint8List> stream;
+	Uint8List _buffer = Uint8List(0);
+	late final StreamSubscription<Uint8List> _subscription;
+	int pos = 0;
+	final _done = Completer<void>();
+	AsyncByteReader(this.stream) {
+		_subscription = stream.listen((data) {
+			final oldBuffer = _buffer;
+			_buffer = Uint8List(oldBuffer.length + data.length);
+			_buffer.setRange(0, oldBuffer.length, oldBuffer);
+			_buffer.setRange(oldBuffer.length, _buffer.length, data);
+			notifyListeners();
+		}, onError: (Object e, StackTrace st) {
+			_done.completeError(e, st);
+		}, onDone: () {
+			_done.complete();
+		});
+	}
+
+	@override
+	Future<void> dispose() async {
+		super.dispose();
+		_subscription.cancel();
+	}
+
+	@pragma('vm:prefer-inline')
+	Future<void> _check(int bytes) async {
+		while ((pos + bytes - 1) >= _buffer.length) {
+			if (_done.isCompleted) {
+				await _done.future; // Throw error if errored
+				throw Exception('Reading $pos + $bytes when there are only ${_buffer.length}');
+			}
+			await nextEvent;
+		}
+	}
+
+	@pragma('vm:prefer-inline')
+	Future<bool> takeBool() async {
+		final byte = await takeUint8();
+		if (byte == 0x01) {
+			return true;
+		}
+		if (byte == 0x00) {
+			return false;
+		}
+		throw Exception('Unrecognized bool code 0x${byte.toRadixString(16)}');
+	}
+
+	@pragma('vm:prefer-inline')
+	Future<int> takeUint8() async {
+		await _check(1);
+		return _buffer[pos++];
+	}
+
+	@pragma('vm:prefer-inline')
+	Future<int> takeUint16() async {
+		await _check(2);
+		return (_buffer[pos++] << 8) | _buffer[pos++];
+	}
+
+	@pragma('vm:prefer-inline')
+	Future<int> takeUint24() async {
+		await _check(3);
+		return (_buffer[pos++] << 16) | (_buffer[pos++] << 8) | _buffer[pos++];
+	}
+
+	@pragma('vm:prefer-inline')
+	Future<int> takeUint32() async {
+		await _check(4);
+		return (_buffer[pos++] << 24) | (_buffer[pos++] << 16) | (_buffer[pos++] << 8) | _buffer[pos++];
+	}
+
+	@pragma('vm:prefer-inline')
+	Future<int> takeUint64() async {
+		await _check(8);
+		return (_buffer[pos++] << 56) | (_buffer[pos++] << 48) | (_buffer[pos++] << 40) | (_buffer[pos++] << 32) | (_buffer[pos++] << 24) | (_buffer[pos++] << 16) | (_buffer[pos++] << 8) | _buffer[pos++];
+	}
+
+	@pragma('vm:prefer-inline')
+	Future<int> takeIntVar() async {
+		final byte = await takeUint8();
+		if (byte < 0x80) {
+			return byte;
+		}
+		if (byte == 0x81) {
+			return await takeUint8();
+		}
+		if (byte == 0x82) {
+			return await takeUint16();
+		}
+		if (byte == 0x83) {
+			return await takeUint24();
+		}
+		if (byte == 0x84) {
+			return await takeUint32();
+		}
+		if (byte == 0x88) {
+			return await takeUint64();
+		}
+		if (byte == 0x91) {
+			return -await takeUint8();
+		}
+		if (byte == 0x92) {
+			return -await takeUint16();
+		}
+		if (byte == 0x93) {
+			return -await takeUint24();
+		}
+		if (byte == 0x94) {
+			return -await takeUint32();
+		}
+		if (byte == 0x98) {
+			return -await takeUint64();
+		}
+		throw Exception('Unrecognized varint code 0x${byte.toRadixString(16)}');
+	}
+
+	@pragma('vm:prefer-inline')
+	Future<int?> takeIntVarNullable() async {
+		final byte = await takeUint8();
+		if (byte < 0x80) {
+			return byte;
+		}
+		if (byte == 0x80) {
+			return null;
+		}
+		if (byte == 0x81) {
+			return await takeUint8();
+		}
+		if (byte == 0x82) {
+			return await takeUint16();
+		}
+		if (byte == 0x83) {
+			return await takeUint24();
+		}
+		if (byte == 0x84) {
+			return await takeUint32();
+		}
+		if (byte == 0x88) {
+			return await takeUint64();
+		}
+		if (byte == 0x91) {
+			return -await takeUint8();
+		}
+		if (byte == 0x92) {
+			return -await takeUint16();
+		}
+		if (byte == 0x93) {
+			return -await takeUint24();
+		}
+		if (byte == 0x94) {
+			return -await takeUint32();
+		}
+		if (byte == 0x98) {
+			return -await takeUint64();
+		}
+		throw Exception('Unrecognized varint? code 0x${byte.toRadixString(16)}');
+	}
+
+	@pragma('vm:prefer-inline')
+	Future<Uint8List> takeBytes(int length) async {
+		await _check(length);
+		final out = _buffer.sublist(pos, pos + length);
+		pos += length;
+		return out;
+	}
+
+	@pragma('vm:prefer-inline')
+	Future<void> skipBytes(int length) async {
+		await _check(length);
+		pos += length;
+	}
+
+	@pragma('vm:prefer-inline')
+	Future<String> takeString() async {
+		final length = await takeIntVar();
+		return utf8.decode(await takeBytes(length));
+	}
+
+	@pragma('vm:prefer-inline')
+	Future<String?> takeStringNullable() async {
+		final length = await takeIntVarNullable();
+		if (length == null) {
+			return null;
+		}
+		return utf8.decode(await takeBytes(length));
+	}
+
+	@override
+	String toString() => 'ByteReader(size: ${_buffer.length}, pos: $pos)';
 }
 
 extension Helpers on BytesBuilder {

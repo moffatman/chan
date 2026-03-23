@@ -1,3 +1,4 @@
+import 'package:chan/services/persistence.dart';
 import 'package:flutter/services.dart';
 
 const _platform = MethodChannel('com.moffatman.chan/userAgent');
@@ -19,4 +20,9 @@ String? defaultUserAgent;
 
 Future<void> initializeDefaultUserAgent() async {
 	defaultUserAgent = await _getDefaultUserAgent();
+	if (defaultUserAgent != Persistence.settings.lastDefaultUserAgent) {
+		Persistence.settings.cachedWebViewTlsHello = null;
+		Persistence.settings.cachedWebViewHeaders = null;
+		Persistence.settings.lastDefaultUserAgent = defaultUserAgent;
+	}
 }

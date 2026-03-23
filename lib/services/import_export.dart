@@ -482,7 +482,10 @@ Future<List<ImportLog>> import(File archive) async {
 					SavedSettingsFields.browserStateBySite.fieldName,
 					'*',
 					PersistentBrowserStateFields.notificationsId.fieldName
-				].join('/')
+				].join('/'),
+				SavedSettingsFields.lastDefaultUserAgent.fieldName,
+				SavedSettingsFields.cachedWebViewHeaders.fieldName,
+				SavedSettingsFields.cachedWebViewTlsHello.fieldName
 			]
 		);
 		for (final pair in Persistence.settings.browserStateBySite.entries) {

@@ -25,6 +25,7 @@ import 'package:chan/services/network_logging.dart';
 import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
+import 'package:chan/services/tls.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/shareable_posts.dart';
@@ -538,6 +539,7 @@ class Persistence extends ChangeNotifier {
 		Hive.registerAdapter(const DraftPostAdapter());
 		Hive.registerAdapter(const ImageboardPollRowAdapter());
 		Hive.registerAdapter(const ImageboardPollAdapter());
+		Hive.registerAdapter(const TlsClientHelloAdapter());
 	}
 
 	static Future<void> initializeForTesting() async {

@@ -379,6 +379,21 @@ extension Filtering on Listenable {
 	}
 }
 
+extension NextEvent on Listenable {
+	Future<void> get nextEvent {
+		final completer = Completer();
+		void listener() {
+			if (!completer.isCompleted) {
+				completer.complete();
+			}
+		}
+		addListener(listener);
+		return completer.future.then((_) {
+			removeListener(listener);
+		});
+	}
+}
+
 class FilteringListenable extends ChangeNotifier {
   FilteringListenable(this._child, this._filter) {
 		_child.addListener(_listen);

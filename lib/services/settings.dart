@@ -22,6 +22,7 @@ import 'package:chan/services/storage.dart';
 import 'package:chan/services/streaming_mp4.dart';
 import 'package:chan/services/strict_json.dart';
 import 'package:chan/services/thread_watcher.dart';
+import 'package:chan/services/tls.dart';
 import 'package:chan/services/url_regexes.dart';
 import 'package:chan/services/user_agents.dart';
 import 'package:chan/services/util.dart';
@@ -1257,6 +1258,12 @@ class SavedSettings extends HiveObject {
 	bool doubleTapToSeekVideo;
 	@HiveField(211)
 	bool showHotPostsInScrollbar;
+	@HiveField(212)
+	String? lastDefaultUserAgent;
+	@HiveField(213)
+	TlsClientHello? cachedWebViewTlsHello;
+	@HiveField(214)
+	Map<String, String>? cachedWebViewHeaders;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1470,6 +1477,9 @@ class SavedSettings extends HiveObject {
 		bool? videoContextMenuInGallery,
 		bool? doubleTapToSeekVideo,
 		bool? showHotPostsInScrollbar,
+		this.lastDefaultUserAgent,
+		this.cachedWebViewTlsHello,
+		this.cachedWebViewHeaders,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,

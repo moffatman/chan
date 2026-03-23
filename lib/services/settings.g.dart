@@ -2748,6 +2748,45 @@ class SavedSettingsFields {
     fieldName: 'showHotPostsInScrollbar',
     merger: PrimitiveMerger(),
   );
+  static String? getLastDefaultUserAgent(SavedSettings x) =>
+      x.lastDefaultUserAgent;
+  static void setLastDefaultUserAgent(SavedSettings x, String? v) =>
+      x.lastDefaultUserAgent = v;
+  static const int kLastDefaultUserAgent = 212;
+  static const lastDefaultUserAgent = HiveFieldAdapter<SavedSettings, String?>(
+    getter: getLastDefaultUserAgent,
+    setter: setLastDefaultUserAgent,
+    fieldNumber: kLastDefaultUserAgent,
+    fieldName: 'lastDefaultUserAgent',
+    merger: PrimitiveMerger(),
+  );
+  static TlsClientHello? getCachedWebViewTlsHello(SavedSettings x) =>
+      x.cachedWebViewTlsHello;
+  static void setCachedWebViewTlsHello(SavedSettings x, TlsClientHello? v) =>
+      x.cachedWebViewTlsHello = v;
+  static const int kCachedWebViewTlsHello = 213;
+  static const cachedWebViewTlsHello =
+      HiveFieldAdapter<SavedSettings, TlsClientHello?>(
+    getter: getCachedWebViewTlsHello,
+    setter: setCachedWebViewTlsHello,
+    fieldNumber: kCachedWebViewTlsHello,
+    fieldName: 'cachedWebViewTlsHello',
+    merger: NullableMerger(AdaptedMerger(TlsClientHelloAdapter.kTypeId)),
+  );
+  static Map<String, String>? getCachedWebViewHeaders(SavedSettings x) =>
+      x.cachedWebViewHeaders;
+  static void setCachedWebViewHeaders(
+          SavedSettings x, Map<String, String>? v) =>
+      x.cachedWebViewHeaders = v;
+  static const int kCachedWebViewHeaders = 214;
+  static const cachedWebViewHeaders =
+      HiveFieldAdapter<SavedSettings, Map<String, String>?>(
+    getter: getCachedWebViewHeaders,
+    setter: setCachedWebViewHeaders,
+    fieldNumber: kCachedWebViewHeaders,
+    fieldName: 'cachedWebViewHeaders',
+    merger: NullableMerger(MapMerger(PrimitiveMerger())),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -2959,13 +2998,16 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     208: SavedSettingsFields.replyButtonAtBottom,
     209: SavedSettingsFields.videoContextMenuInGallery,
     210: SavedSettingsFields.doubleTapToSeekVideo,
-    211: SavedSettingsFields.showHotPostsInScrollbar
+    211: SavedSettingsFields.showHotPostsInScrollbar,
+    212: SavedSettingsFields.lastDefaultUserAgent,
+    213: SavedSettingsFields.cachedWebViewTlsHello,
+    214: SavedSettingsFields.cachedWebViewHeaders
   };
 
   @override
   SavedSettings read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final List<dynamic> fields = List.filled(212, null);
+    final List<dynamic> fields = List.filled(215, null);
     for (int i = 0; i < numOfFields; i++) {
       final int fieldId = reader.readByte();
       final dynamic value = reader.read();
@@ -3190,13 +3232,16 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       videoContextMenuInGallery: fields[209] as bool?,
       doubleTapToSeekVideo: fields[210] as bool?,
       showHotPostsInScrollbar: fields[211] as bool?,
+      lastDefaultUserAgent: fields[212] as String?,
+      cachedWebViewTlsHello: fields[213] as TlsClientHello?,
+      cachedWebViewHeaders: (fields[214] as Map?)?.cast<String, String>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(199)
+      ..writeByte(202)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -3594,7 +3639,13 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(210)
       ..write(obj.doubleTapToSeekVideo)
       ..writeByte(211)
-      ..write(obj.showHotPostsInScrollbar);
+      ..write(obj.showHotPostsInScrollbar)
+      ..writeByte(212)
+      ..write(obj.lastDefaultUserAgent)
+      ..writeByte(213)
+      ..write(obj.cachedWebViewTlsHello)
+      ..writeByte(214)
+      ..write(obj.cachedWebViewHeaders);
   }
 
   @override

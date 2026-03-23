@@ -43,6 +43,7 @@ import 'package:chan/services/taskgraph.dart';
 import 'package:chan/services/taskstack.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_watcher.dart';
+import 'package:chan/services/tls.dart';
 import 'package:chan/services/translation.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
@@ -94,7 +95,6 @@ Future<void> innerMain() async {
 		final initializeIsOnMacTask = Task('initializeIsOnMac', initializeIsOnMac);
 		final initializeHandoffTask = Task('initializeHandoff', initializeHandoff);
 		final initializeAndroidTask = Task('initializeAndroid', initializeAndroid);
-		final initializeDefaultUserAgentTask = Task('initializeDefaultUserAgent', initializeDefaultUserAgent);
 		final imageHttpClient = (ExtendedNetworkImageProvider.httpClient as HttpClient);
 		imageHttpClient.connectionTimeout = const Duration(seconds: 10);
 		imageHttpClient.idleTimeout = const Duration(seconds: 10);
@@ -111,12 +111,13 @@ Future<void> innerMain() async {
 		final hiveTask = Task('hive', Persistence.initializeHive);
 		final directoriesTask = Task('directories', Persistence.initializeDirectories);
 		final persistenceTask = Task('persistence', Persistence.initializeStatic, [hiveTask, directoriesTask, firebaseTask]);
+		final initializeDefaultUserAgentTask = Task('initializeDefaultUserAgent', initializeDefaultUserAgent, [persistenceTask]);
 		final networkLoggingTask = Task('networkLogging', LoggingInterceptor.instance.initialize, [directoriesTask]);
 		final videoServerTask = Task('videoServer', () async {
 			VideoServer.initializeStatic(Persistence.webmCacheDirectory, Persistence.httpCacheDirectory);
 		}, [directoriesTask]);
 		final notificationsTask = Task('notifications', Notifications.initializeStatic, [persistenceTask, networkLoggingTask, firebaseTask]);
-		final updateDynamicColorsTask = Task('updateDynamicColors', updateDynamicColors);
+		final updateDynamicColorsTask = Task('updateDynamicColors', updateDynamicColors, [persistenceTask]);
 		final initializeFontsTask = Task('initializeFonts', initializeFonts, [persistenceTask]);
 		final initializeNativeTranslationTask = Task('initializeNativeTranslation', initializeNativeTranslation);
 		final mediaKitTask = Task('mediaKit', MediaKit.ensureInitialized);
@@ -127,6 +128,7 @@ Future<void> innerMain() async {
 			// Depends on Settings.instance
 			persistenceTask
 		]);
+		final tlsTask = Task('tls', initializeTls, [initializeDefaultUserAgentTask, persistenceTask]);
 		final mediaScanTask = Task('mediaScan', MediaScan.initializeStatic, [hiveTask]);
 		await executeTaskGraph([
 			initializeIsDevelopmentBuildTask,
@@ -145,6 +147,7 @@ Future<void> innerMain() async {
 			mediaKitTask,
 			jsonCacheTask,
 			mediaScanTask,
+			tlsTask,
 			if (kDebugMode)
 				Task('resetAdditionalSafeAreaInsets', resetAdditionalSafeAreaInsets)
 		]);

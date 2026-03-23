@@ -17,6 +17,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/sorting.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_watcher.dart';
+import 'package:chan/services/tls.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/version.dart';
@@ -349,6 +350,10 @@ class SettingsPageState extends State<SettingsPage> {
 				spacing: 8,
 				runSpacing: 8,
 				children: [
+					if (tlsError != null) AdaptiveButton(
+						child: const Text('Compatibility error', style: TextStyle(color: Colors.red)),
+						onPressed: () => alertError(context, tlsError!.$1, tlsError!.$2)
+					),
 					if (skill != null) AdaptiveButton(
 						child: Text('Luck: ${(skill * 100).toStringAsFixed(0)}%'),
 						onPressed: () => showLuckPopup(context: context)
