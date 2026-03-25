@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:chan/services/bytes.dart';
 import 'package:chan/services/cloudflare.dart';
@@ -9,6 +10,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/quic_initial_client_hello.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/util.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_http2_adapter/dio_http2_adapter.dart';
@@ -88,9 +90,18 @@ const _kGREASE = {
 };
 
 const _kTlsExtServerName             = 0x0000;
+const _kTlsExtStatusRequest          = 0x0005;
 const _kTlsExtALPN                   = 0x0010;
+const _kTlsExtCertificateTimestamp   = 0x0012;
+const _kTlsExtPadding                = 0x0015;
+const _kTlsExtCertCompression        = 0x001b;
 const _kTlsExtSignatureAlgorithms    = 0x000d;
 const _kTlsExtSupportedVersions      = 0x002b;
+const _kTlsExtPskKeyExchangeModes    = 0x002d;
+const _kTlsExtKeyShare               = 0x0033;
+const _kTlsExtApplicationSettingsOld = 0x4469;
+const _kTlsExtApplicationSettings    = 0x44cd;
+const _kTlsExtEncryptedClientHello   = 0xfe0d;
 
 String _stringify(Iterable<int> ids) {
 	return ids.map((id) => id.toRadixString(16).padLeft(4, '0')).join(',');
@@ -377,6 +388,9 @@ Future<TlsClientHello> getWebViewHello({required bool http3}) async {
 }
 
 class _TlsSettings {
+	bool? useEchGrease;
+	bool? useAlps;
+	bool? useNewAlpsCodePoint;
 	SecurityContext? context;
 }
 
@@ -387,12 +401,16 @@ bool enableQuic = false;
 HttpClientAdapter myHttpClientAdapter = MyHttpClientAdapter2();
 
 void applyTlsSettings(ClientSetting setting) {
-	// Will be filled in on forked_flutter_engine branch
+	setting.useEchGrease = _tlsSettings.useEchGrease;
+	setting.useAlps = _tlsSettings.useAlps;
+	setting.useNewAlpsCodePoint = _tlsSettings.useNewAlpsCodePoint;
 	setting.context = _tlsSettings.context;
 }
 
 void applyTlsSettings3(ClientSetting setting) {
-	// Will be filled in on forked_flutter_engine branch
+	setting.useEchGrease = _tlsSettings3.useEchGrease;
+	setting.useAlps = _tlsSettings3.useAlps;
+	setting.useNewAlpsCodePoint = _tlsSettings3.useNewAlpsCodePoint;
 	setting.context = _tlsSettings3.context;
 }
 
@@ -403,8 +421,13 @@ const _kAndroidHello = TlsClientHello(
 	signatureAlgorithms: [0x0403,0x0804,0x0401,0x0503,0x0805,0x0501,0x0806,0x0601],
 	quic: false
 );
-// Will be filled in on forked_flutter_engine branch
-const _kAndroidHello3 = _kAndroidHello;
+const _kAndroidHello3 = TlsClientHello(
+	versions: [0x0304],
+	ciphers: [0x1303,0x1301,0x1302],
+	extensions: [0xfe0d,0x000a,0x0010,0x0005,0x000d,0x0012,0x0033,0x002d,0x002b,0x0039,0x001b,0x44cd],
+	signatureAlgorithms: [0x0403,0x0804,0x0401,0x0503,0x0805,0x0501,0x0806,0x0601],
+	quic: true
+);
 
 const _kDarwinHello = TlsClientHello(
 	versions: [0x0304,0x0303],
@@ -413,13 +436,20 @@ const _kDarwinHello = TlsClientHello(
 	signatureAlgorithms: [0x0403,0x0804,0x0401,0x0503,0x0805,0x0805,0x0501,0x0806,0x0601,0x0201],
 	quic: false
 );
-// Will be filled in on forked_flutter_engine branch
-const _kDarwinHello3 = _kDarwinHello;
+const _kDarwinHello3 = TlsClientHello(
+	versions: [0x0304],
+	ciphers: [0x1301,0x1302,0x1303],
+	extensions: [0x000a,0x0010,0x0005,0x000d,0x0012,0x0033,0x002d,0x002b,0x0039,0x001b],
+	signatureAlgorithms: [0x0403,0x0804,0x0401,0x0503,0x0805,0x0805,0x0501,0x0806,0x0601,0x0201],
+	quic: true
+);
 
 final _defaultHello = Platform.isAndroid ? _kAndroidHello : _kDarwinHello;
 final _defaultHello3 = Platform.isAndroid ? _kAndroidHello3 : _kDarwinHello3;
 
 const _kVersions = {
+	0x0301: TlsProtocolVersion.tls1,
+	0x0302: TlsProtocolVersion.tls1_1,
 	0x0303: TlsProtocolVersion.tls1_2,
 	0x0304: TlsProtocolVersion.tls1_3
 };
@@ -472,8 +502,14 @@ void _initializeTls({
 			desiredExtensions.removeAll(unionExtensions);
 			currentExtensions.removeAll(unionExtensions);
 
+			bool? withCertCompression;
+			String? withCipherList;
 			TlsProtocolVersion withMinimumTlsProtocolVersion = TlsProtocolVersion.tls1_2;
 			TlsProtocolVersion withMaximumTlsProtocolVersion = TlsProtocolVersion.tls1_3;
+			bool? withAlwaysAddPadding;
+			Uint16List? withVerifyAlgorithms;
+			bool? withOcspStapling;
+			bool? withSignedCertTimestamps;
 			final errors = [];
 
 			final desiredVersions = desired.versions.toList()..sort();
@@ -490,7 +526,21 @@ void _initializeTls({
 				}
 			}
 			if (withMaximumTlsProtocolVersion != TlsProtocolVersion.tls1_3) {
-				errors.add('Can\'t reduce maximum version: $desiredVersions');
+				// TLSEXT_TYPE_psk_key_exchange_modes will go away too
+				if (!currentExtensions.remove(_kTlsExtPskKeyExchangeModes)) {
+					// Indicate we shouldn't have removed it
+					desiredExtensions.add(_kTlsExtPskKeyExchangeModes);
+				}
+				// TLSEXT_TYPE_key_share will go away too
+				if (!currentExtensions.remove(_kTlsExtKeyShare)) {
+					// Indicate we shouldn't have removed it
+					desiredExtensions.add(_kTlsExtKeyShare);
+				}
+				// TLSEXT_TYPE_application_settings will go away too
+				if (!currentExtensions.remove(_kTlsExtApplicationSettings)) {
+					// Indicate we shouldn't have removed it
+					desiredExtensions.add(_kTlsExtApplicationSettings);
+				}
 			}
 
 			if (
@@ -498,17 +548,54 @@ void _initializeTls({
 				withMinimumTlsProtocolVersion != TlsProtocolVersion.tls1_3
 				&& !listEquals(desired.ciphers, current.ciphers)
 			) {
-				for (final code in desired.ciphers) {
-					if (!_kCipherNames.containsKey(code)) {
+				withCipherList = desired.ciphers.tryMap((code) {
+					final name = _kCipherNames[code];
+					if (name == null) {
 						errors.add('Can\'t add cipher 0x${code.toRadixString(16).padLeft(4, '0')}');
 					}
-				}
-				if (setEquals(desired.ciphers.toSet(), current.ciphers.toSet())) {
-					errors.add('Can\'t re-order ciphers: ${_stringify(desired.ciphers)}');
-				}
-				else {
-					errors.add('Can\'t change ciphers: ${_stringify(desired.ciphers)}');
-				}
+					return name;
+				}).join(':');
+			}
+
+			if (desiredExtensions.contains(_kTlsExtApplicationSettingsOld) && currentExtensions.contains(_kTlsExtApplicationSettings)) {
+				settings.useNewAlpsCodePoint = false;
+				desiredExtensions.remove(_kTlsExtApplicationSettingsOld);
+				currentExtensions.remove(_kTlsExtApplicationSettings);
+			}
+
+			if (currentExtensions.contains(_kTlsExtApplicationSettings)) {
+				settings.useAlps = false;
+				currentExtensions.remove(_kTlsExtApplicationSettings);
+			}
+
+			if (desiredExtensions.contains(_kTlsExtApplicationSettings)) {
+				settings.useAlps = true;
+				desiredExtensions.remove(_kTlsExtApplicationSettings);
+			}
+
+			if (currentExtensions.contains(_kTlsExtEncryptedClientHello)) {
+				settings.useEchGrease = false;
+				currentExtensions.remove(_kTlsExtEncryptedClientHello);
+			}
+
+			if (desiredExtensions.contains(_kTlsExtPadding)) {
+				withAlwaysAddPadding = true;
+				desiredExtensions.remove(_kTlsExtPadding);
+			}
+
+			if (currentExtensions.contains(_kTlsExtCertCompression)) {
+				withCertCompression = false;
+				currentExtensions.remove(_kTlsExtCertCompression);
+			}
+
+			if (currentExtensions.contains(_kTlsExtStatusRequest)) {
+				withOcspStapling = false;
+				currentExtensions.remove(_kTlsExtStatusRequest);
+			}
+
+			if (currentExtensions.contains(_kTlsExtCertificateTimestamp)) {
+				withSignedCertTimestamps = false;
+				currentExtensions.remove(_kTlsExtCertificateTimestamp);
 			}
 
 			if (currentExtensions.isNotEmpty) {
@@ -519,15 +606,38 @@ void _initializeTls({
 			}
 
 			if (!setEquals(current.signatureAlgorithms.toSet(), desired.signatureAlgorithms.toSet())) {
-				errors.add('Can\'t change signatureAlgorithms: ${_stringify(current.signatureAlgorithms)} -> ${_stringify(desired.signatureAlgorithms)}');
+				withVerifyAlgorithms = Uint16List.fromList(desired.signatureAlgorithms);
 			}
 
-			if (withMinimumTlsProtocolVersion != TlsProtocolVersion.tls1_2) {
+			if (withCertCompression != null ||
+					withCipherList != null ||
+					withMinimumTlsProtocolVersion != TlsProtocolVersion.tls1_2 ||
+					withMaximumTlsProtocolVersion != TlsProtocolVersion.tls1_3 ||
+					withAlwaysAddPadding != null ||
+					withVerifyAlgorithms != null ||
+					withOcspStapling != null ||
+					withSignedCertTimestamps != null
+			) {
 				final context = settings.context = SecurityContext(
-					withTrustedRoots: true
+					withTrustedRoots: true,
+					withCertCompression: withCertCompression ?? true,
+					withOcspStapling: withOcspStapling ?? true,
+					withSignedCertTimestamps: withSignedCertTimestamps ?? true
 				);
 				if (withMinimumTlsProtocolVersion != TlsProtocolVersion.tls1_2) {
 					context.minimumTlsProtocolVersion = withMinimumTlsProtocolVersion;
+				}
+				if (withMaximumTlsProtocolVersion != TlsProtocolVersion.tls1_3) {
+					context.maximumTlsProtocolVersion = withMaximumTlsProtocolVersion;
+				}
+				if (withCipherList != null) {
+					context.setCiphers(withCipherList);
+				}
+				if (withAlwaysAddPadding != null) {
+					context.alwaysAddPadding = withAlwaysAddPadding;
+				}
+				if (withVerifyAlgorithms != null) {
+					context.setVerifyAlgorithms(withVerifyAlgorithms);
 				}
 			}
 
@@ -554,7 +664,8 @@ Future<void> initializeTls() async {
 		if (_defaultHello3.quic) {
 			final hello3 = Persistence.settings.cachedWebViewTlsHello3 ??= await getWebViewHello(http3: true);
 			if (hello3.quic) {
-				// Will be filled in on forked_flutter_engine branch
+				myHttpClientAdapter = MyHttpClientAdapter3();
+				enableQuic = true;
 				_initializeTls(
 					quic: true,
 					desired: hello3,
