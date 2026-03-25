@@ -259,7 +259,7 @@ dependency_overrides:
     git:
       url: https://github.com/moffatman/dio.git
       path: plugins/http2_adapter
-      ref: develop
+      ref: forked_flutter_engine
   http2:
     git:
       url: https://github.com/moffatman/http.git
