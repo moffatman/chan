@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:chan/services/bytes.dart';
 import 'package:chan/services/cloudflare.dart';
@@ -22,6 +23,18 @@ const _kGREASE = {
 	0x8a8a, 0x9a9a, 0xaaaa, 0xbaba,
 	0xcaca, 0xdada, 0xeaea, 0xfafa
 };
+
+const _kTlsExtServerName             = 0x0000;
+const _kTlsExtALPN                   = 0x0010;
+const _kTlsExtPadding                = 0x0015;
+const _kTlsExtCertCompression        = 0x001b;
+const _kTlsExtSignatureAlgorithms    = 0x000d;
+const _kTlsExtSupportedVersions      = 0x002b;
+const _kTlsExtPskKeyExchangeModes    = 0x002d;
+const _kTlsExtKeyShare               = 0x0033;
+const _kTlsExtApplicationSettingsOld = 0x4469;
+const _kTlsExtApplicationSettings    = 0x44cd;
+const _kTlsExtEncryptedClientHello   = 0xfe0d;
 
 String _stringify(Iterable<int> ids) {
 	return ids.map((id) => id.toRadixString(16).padLeft(4, '0')).join(',');
@@ -64,7 +77,7 @@ class TlsClientHello {
 		ciphers.sort();
 		final extensions = this.extensions.toList();
 		// Remove SNI and ALPN
-		extensions.removeWhere((e) => e == 0x0000 || e == 0x0010);
+		extensions.removeWhere((e) => e == _kTlsExtServerName || e == _kTlsExtALPN);
 		extensions.sort();
 		final signatureAlgorithms = this.signatureAlgorithms.toList();
 		buffer.write('d'); // Use SNI always
@@ -139,13 +152,13 @@ Future<TlsClientHello> getTlsHello(Future<void> Function(Uri uri, CancelToken ca
 			while (!extensionsReader.done) {
 				final id = extensionsReader.takeUint16();
 				final length = extensionsReader.takeUint16();
-				if (id == 0x000d) {
+				if (id == _kTlsExtSignatureAlgorithms) {
 					final signatureAlgorithmsLength = extensionsReader.takeUint16();
 					signatureAlgorithms.addAll(Iterable.generate(signatureAlgorithmsLength ~/ 2, (_) {
 						return extensionsReader.takeUint16();
 					}));
 				}
-				else if (id == 0x002b) {
+				else if (id == _kTlsExtSupportedVersions) {
 					versions.clear();
 					final supportedVersionsLength = extensionsReader.takeUint8() ~/ 2;
 					for (int i = 0; i < supportedVersionsLength; i++) {
@@ -209,8 +222,16 @@ Future<TlsClientHello> getWebViewHello() async {
 	});
 }
 
+bool? _useEchGrease;
+bool? _useAlps;
+bool? _useNewAlpsCodePoint;
+SecurityContext? _context;
+
 void applyTlsSettings(ClientSetting setting) {
-	// Will be filled in on forked_flutter_engine branch
+	setting.useEchGrease = _useEchGrease;
+	setting.useAlps = _useAlps;
+	setting.useNewAlpsCodePoint = _useNewAlpsCodePoint;
+	setting.context = _context;
 }
 
 const _kAndroidHello = TlsClientHello(
@@ -219,6 +240,7 @@ const _kAndroidHello = TlsClientHello(
 	extensions: [0xfe0d,0x0017,0xff01,0x000a,0x000b,0x0023,0x0010,0x0005,0x000d,0x0012,0x0033,0x002d,0x002b,0x001b,0x44cd],
 	signatureAlgorithms: [0x0403,0x0804,0x0401,0x0503,0x0805,0x0501,0x0806,0x0601]
 );
+const _kAndroidCipherList = 'HIGH:MEDIUM:-ECDHE-ECDSA-AES256-SHA:-ECDHE-ECDSA-AES128-SHA';
 
 const _kDarwinHello = TlsClientHello(
 	versions: [0x0304,0x0303],
@@ -227,7 +249,21 @@ const _kDarwinHello = TlsClientHello(
 	signatureAlgorithms: [0x0403,0x0804,0x0401,0x0503,0x0805,0x0805,0x0501,0x0806,0x0601,0x0201]
 );
 
+const _kDarwinCipherList = 'HIGH:MEDIUM:DES-CBC3-SHA:ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA';
+
 final _defaultHello = Platform.isAndroid ? _kAndroidHello : _kDarwinHello;
+final _defaultCipherList = Platform.isAndroid ? _kAndroidCipherList : _kDarwinCipherList;
+
+const _kCipherNames = {
+	0x000a: 'DES-CBC3-SHA',
+	0x1301: 'TLS_AES_128_GCM_SHA256',
+	0x1302: 'TLS_AES_256_GCM_SHA384',
+	0x1303: 'TLS_CHACHA20_POLY1305_SHA256',
+	0xc009: 'ECDHE-ECDSA-AES128-SHA',
+	0xc00a: 'ECDHE-ECDSA-AES256-SHA',
+	0xcc13: 'ECDHE-RSA-CHACHA20-POLY1305-OLD',
+	0xcc14: 'ECDHE-ECDSA-CHACHA20-POLY1305-OLD'
+};
 
 (Object, StackTrace)? tlsError;
 
@@ -249,10 +285,62 @@ Future<void> initializeTls() async {
 			desiredExtensions.removeAll(unionExtensions);
 			currentExtensions.removeAll(unionExtensions);
 
+			bool? withCertCompression;
+			String? withCipherList;
+			TlsProtocolVersion? withMaximumTlsProtocolVersion;
+			bool? withAlwaysAddPadding;
+			Uint16List? withVerifyAlgorithms;
 			final errors = [];
 
-			if (desired.versions.first != current.versions.first) {
+			if (desired.versions.first == 0x0303 && current.versions.first == 0x0304) {
+				withMaximumTlsProtocolVersion = TlsProtocolVersion.tls1_2;
+				// TLSEXT_TYPE_supported_versions will go away too
+				if (!currentExtensions.remove(_kTlsExtSupportedVersions)) {
+					// Indicate we shouldn't have removed it
+					desiredExtensions.add(_kTlsExtSupportedVersions);
+				}
+				// TLSEXT_TYPE_psk_key_exchange_modes will go away too
+				if (!currentExtensions.remove(_kTlsExtPskKeyExchangeModes)) {
+					// Indicate we shouldn't have removed it
+					desiredExtensions.add(_kTlsExtPskKeyExchangeModes);
+				}
+				// TLSEXT_TYPE_key_share will go away too
+				if (!currentExtensions.remove(_kTlsExtKeyShare)) {
+					// Indicate we shouldn't have removed it
+					desiredExtensions.add(_kTlsExtKeyShare);
+				}
+				// TLSEXT_TYPE_application_settings will go away too
+				if (!currentExtensions.remove(_kTlsExtApplicationSettings)) {
+					// Indicate we shouldn't have removed it
+					desiredExtensions.add(_kTlsExtApplicationSettings);
+				}
+			}
+			else if (desired.versions.first != current.versions.first) {
 				errors.add('Can\'t change versions ${_stringify(current.versions)} -> ${_stringify(desired.versions)}');
+			}
+
+			String cipherList = _defaultCipherList;
+
+			desiredCiphers.removeWhere((cipher) {
+				final nameToAdd = _kCipherNames[cipher];
+				if (nameToAdd == null) {
+					return false;
+				}
+				cipherList += ':$nameToAdd';
+				return true;
+			});
+
+			currentCiphers.removeWhere((cipher) {
+				final nameToRemove = _kCipherNames[cipher];
+				if (nameToRemove == null) {
+					return false;
+				}
+				cipherList += ':-$nameToRemove';
+				return true;
+			});
+
+			if (cipherList != _defaultCipherList) {
+				withCipherList = cipherList;
 			}
 
 			if (currentCiphers.isNotEmpty) {
@@ -260,6 +348,37 @@ Future<void> initializeTls() async {
 			}
 			if (desiredCiphers.isNotEmpty) {
 				errors.add('Can\'t add ciphers: ${_stringify(desiredCiphers)}');
+			}
+
+			if (desiredExtensions.contains(_kTlsExtApplicationSettingsOld) && currentExtensions.contains(_kTlsExtApplicationSettings)) {
+				_useNewAlpsCodePoint = false;
+				desiredExtensions.remove(_kTlsExtApplicationSettingsOld);
+				currentExtensions.remove(_kTlsExtApplicationSettings);
+			}
+
+			if (currentExtensions.contains(_kTlsExtApplicationSettings)) {
+				_useAlps = false;
+				currentExtensions.remove(_kTlsExtApplicationSettings);
+			}
+
+			if (desiredExtensions.contains(_kTlsExtApplicationSettings)) {
+				_useAlps = true;
+				desiredExtensions.remove(_kTlsExtApplicationSettings);
+			}
+
+			if (currentExtensions.contains(_kTlsExtEncryptedClientHello)) {
+				_useEchGrease = false;
+				currentExtensions.remove(_kTlsExtEncryptedClientHello);
+			}
+
+			if (desiredExtensions.contains(_kTlsExtPadding)) {
+				withAlwaysAddPadding = true;
+				desiredExtensions.remove(_kTlsExtPadding);
+			}
+
+			if (currentExtensions.contains(_kTlsExtCertCompression)) {
+				withCertCompression = false;
+				currentExtensions.remove(_kTlsExtCertCompression);
 			}
 
 			if (currentExtensions.isNotEmpty) {
@@ -270,7 +389,31 @@ Future<void> initializeTls() async {
 			}
 
 			if (!setEquals(current.signatureAlgorithms.toSet(), desired.signatureAlgorithms.toSet())) {
-				errors.add('Can\'t change signatureAlgorithms: ${_stringify(current.signatureAlgorithms)} -> ${_stringify(desired.signatureAlgorithms)}');
+				withVerifyAlgorithms = Uint16List.fromList(desired.signatureAlgorithms);
+			}
+
+			if (withCertCompression != null ||
+					withCipherList != null ||
+					withMaximumTlsProtocolVersion != null ||
+					withAlwaysAddPadding != null ||
+					withVerifyAlgorithms != null
+			) {
+				final context = _context = SecurityContext(
+					withTrustedRoots: true,
+					withCertCompression: withCertCompression ?? true
+				);
+				if (withMaximumTlsProtocolVersion != null) {
+					context.maximumTlsProtocolVersion = withMaximumTlsProtocolVersion;
+				}
+				if (withCipherList != null) {
+					context.setCiphers(withCipherList);
+				}
+				if (withAlwaysAddPadding != null) {
+					context.alwaysAddPadding = withAlwaysAddPadding;
+				}
+				if (withVerifyAlgorithms != null) {
+					context.setVerifyAlgorithms(withVerifyAlgorithms);
+				}
 			}
 
 			if (errors.isNotEmpty) {
