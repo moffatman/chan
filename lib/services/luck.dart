@@ -31,33 +31,43 @@ import 'package:flutter/material.dart';
 	return (total, bins);
 }
 
-double _negBinomialCdf(int r, double p, int tMax) {
-  // CDF(T <= tMax) for T ~ NegBin(r, p) counting failures before r successes.
-  // PMF(T = t) = C(t + r - 1, t) * (1 - p)^t * p^r
-  //
-  // We avoid binomials by using the recurrence:
-  // pmf(0) = p^r
-  // pmf(t) = pmf(t-1) * ((t-1 + r) / t) * (1 - p)
-  //
-  // For tMax < 0, CDF = 0.
+double _erf(double x) {
+  // Abramowitz-Stegun approximation
+  final sign = x < 0 ? -1.0 : 1.0;
+  x = x.abs();
 
+  const a1 = 0.254829592;
+  const a2 = -0.284496736;
+  const a3 = 1.421413741;
+  const a4 = -1.453152027;
+  const a5 = 1.061405429;
+  const p = 0.3275911;
+
+  final t = 1.0 / (1.0 + p * x);
+	print('t=$t');
+  final y = 1.0 - (((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t) *
+      math.exp(-x * x);
+	print('y=$y');
+
+  return sign * y;
+}
+
+double _normalCdf(double x) {
+  return 0.5 * (1.0 + _erf(x / math.sqrt2));
+}
+
+double _negBinomialCdfApprox(int r, double p, int tMax) {
   if (tMax < 0) return 0.0;
-  if (r <= 0) return 1.0; // degenerate, but guard anyway
-  if (p <= 0.0) return 0.0; // all mass at infinity; guard
-  if (p >= 1.0) return 1.0; // all mass at t=0
+  if (p <= 0.0) return 0.0;
+  if (p >= 1.0) return 1.0;
 
-  double pmf = math.pow(p, r).toDouble(); // pmf at t=0
-  double cdf = pmf;
+  final q = 1.0 - p;
+  final mean = r * q / p;
+  final variance = r * q / (p * p);
+  final sd = math.sqrt(variance);
 
-  for (int t = 1; t <= tMax; t++) {
-    // pmf(t) from pmf(t-1)
-    pmf = pmf * ((t - 1 + r) / t) * (1.0 - p);
-    cdf += pmf;
-  }
-  // Clamp for safety against FP error
-  if (cdf < 0.0) cdf = 0.0;
-  if (cdf > 1.0) cdf = 1.0;
-  return cdf;
+  final z = (tMax + 0.5 - mean) / sd;
+  return _normalCdf(z).clamp(0.0, 1.0);
 }
 
 double luckScore(int total, Map<int, int> bins, {double p = 0.9}) {
@@ -72,7 +82,7 @@ double luckScore(int total, Map<int, int> bins, {double p = 0.9}) {
   }
 
   // CDF at (Tobs - 1)
-  return _negBinomialCdf(total, p, tObs - 1).clamp(0, 1);
+  return _negBinomialCdfApprox(total, p, tObs - 1).clamp(0, 1);
 }
 
 double? calculateLuck({(int total, Map<int, int> bins)? data}) {

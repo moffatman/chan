@@ -355,7 +355,7 @@ class SettingsPageState extends State<SettingsPage> {
 						onPressed: () => alertError(context, tlsError!.$1, tlsError!.$2)
 					),
 					if (skill != null) AdaptiveButton(
-						child: Text('Luck: ${(skill * 100).toStringAsFixed(0)}%'),
+						child: Text('Luck: ${skill < 0.01 ? (skill * 100).toStringAsPrecision(1) : (skill * 100).round()}%'),
 						onPressed: () => showLuckPopup(context: context)
 					),
 					AdaptiveButton(
