@@ -337,8 +337,8 @@ packages:
     dependency: "direct main"
     description:
       path: "plugins/http2_adapter"
-      ref: develop
-      resolved-ref: "1d82896e75f93ee7e4a71dac5e7bd12ea7aa151b"
+      ref: forked_flutter_engine
+      resolved-ref: ce2f148f890518ac6a90333d1223208659b09434
       url: "https://github.com/moffatman/dio.git"
     source: git
     version: "2.0.0"
