@@ -554,7 +554,7 @@ packages:
     description:
       path: flutter_inappwebview_android
       ref: master
-      resolved-ref: "902e403f528f7aa244324174762100c3aa9c0ae5"
+      resolved-ref: "3376f734ec67949988f867b845a0cb1139477076"
       url: "https://github.com/moffatman/flutter_inappwebview.git"
     source: git
     version: "1.1.3"

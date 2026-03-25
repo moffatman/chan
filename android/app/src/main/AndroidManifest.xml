@@ -190,5 +190,6 @@
             <data android:scheme="mailto" />
         </intent>
         <package android:name="com.google.android.apps.translate" />
+        <package android:name="com.android.chrome" />
     </queries>
 </manifest>
