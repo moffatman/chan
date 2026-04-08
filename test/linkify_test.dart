@@ -7,7 +7,7 @@ void main() {
 	group('Site4Chan', () {
 		test('weird link', () {
 			// The dots in the beginning text broke the old linkify regex
-			final r = Site4Chan.parsePlaintext('soldiers...and child. https://www.walkfree.org/global-slavery-index/map/');
+			final r = Site4Chan.parsePlaintext('soldiers...and child. https://www.walkfree.org/global-slavery-index/map/').toList();
 			expect(r, hasLength(2));
 			final text = r[0] as PostTextSpan;
 			expect(text.text, 'soldiers...and child. ');
@@ -17,7 +17,7 @@ void main() {
 		});
 
 		test('loose linkification heuristic good 1', () {
-			final r = Site4Chan.parsePlaintext('talking about.you too');
+			final r = Site4Chan.parsePlaintext('talking about.you too').toList();
 			expect(r, hasLength(3));
 			final text1 = r[0] as PostTextSpan;
 			expect(text1.text, 'talking ');
@@ -29,7 +29,7 @@ void main() {
 		});
 
 		test('loose linkification heuristic bad 1', () {
-			final r = Site4Chan.parsePlaintext('talking about.You too');
+			final r = Site4Chan.parsePlaintext('talking about.You too').toList();
 			expect(r, hasLength(1));
 			final text = r[0] as PostTextSpan;
 			expect(text.text, 'talking about.You too');

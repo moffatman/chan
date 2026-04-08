@@ -105,14 +105,23 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 		this.basePath = '',
 		this.defaultUsername = 'Anonymous'
 	});
-
-	static List<PostSpan> parsePlaintext(String text) {
-		return linkify(text, linkifiers: const [ChanceLinkifier(), LooseUrlLinkifier()], options: const LinkifyOptions(
+	
+	static Iterable<PostSpan> parsePlaintext(String text) {
+		if (text.length == 1) {
+			if (text == '\n') {
+				return const [PostLineBreakSpan()];
+			}
+			return [PostTextSpan(text)];
+		}
+		return linkify(text, linkifiers: const [ChanceLinkifier(), LooseUrlLinkifier(), LineBreakLinkifier()], options: const LinkifyOptions(
 			defaultToHttps: true,
 			humanize: false
 		)).map((elem) {
 			if (elem is UrlElement) {
 				return PostLinkSpan(elem.url, name: elem.text);
+			}
+			else if (elem is LineBreakElement) {
+				return const PostLineBreakSpan();
 			}
 			else {
 				return PostTextSpan(elem.text);

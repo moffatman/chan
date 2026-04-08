@@ -245,3 +245,36 @@ class LooseUrlLinkifier extends Linkifier {
     return list;
   }
 }
+
+class LineBreakElement extends LinkifyElement {
+	LineBreakElement() : super('\n');
+}
+
+class LineBreakLinkifier extends Linkifier {
+  const LineBreakLinkifier();
+
+  @override
+  List<LinkifyElement> parse(elements, options) {
+    final list = <LinkifyElement>[];
+
+    for (final element in elements) {
+      if (element is TextElement) {
+				int lastEnd = 0;
+				for (final match in lineSeparatorPattern.allMatches(element.text)) {
+					if (match.start != lastEnd) {
+						list.add(TextElement(element.text.substring(lastEnd, match.start)));
+					}
+					list.add(LineBreakElement());
+					lastEnd = match.end;
+				}
+				if (lastEnd < element.text.length) {
+					list.add(TextElement(element.text.substring(lastEnd)));
+				}
+      } else {
+        list.add(element);
+      }
+    }
+
+    return list;
+  }
+}

@@ -255,14 +255,22 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 		Settings.instance.removeListener(_onSettingsUpdate);
 	}
 
-	static List<PostSpan> parsePlaintext(String text, {ThreadIdentifier? fromSearchThread}) {
+	static Iterable<PostSpan> parsePlaintext(String text, {ThreadIdentifier? fromSearchThread}) {
+		if (text.length == 1) {
+			if (text == '\n') {
+				return const [PostLineBreakSpan()];
+			}
+			return [PostTextSpan(text)];
+		}
 		return linkify(text, linkifiers: fromSearchThread != null ? const [
 			LooseUrlLinkifier(),
 			ChanceLinkifier(),
+			LineBreakLinkifier(),
 			_QuoteLinkLinkifier()
 		] : const [
 			LooseUrlLinkifier(),
-			ChanceLinkifier()
+			ChanceLinkifier(),
+			LineBreakLinkifier()
 		], options: const LinkifyOptions(
 			defaultToHttps: true,
 			humanize: false
@@ -277,10 +285,13 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 			else if (elem is UrlElement) {
 				return PostLinkSpan(elem.url, name: elem.text);
 			}
+			else if (elem is LineBreakElement) {
+				return const PostLineBreakSpan();
+			}
 			else {
 				return PostTextSpan(elem.text);
 			}
-		}).toList();
+		});
 	}
 
 	static final _mathPattern = RegExp(r'\[math\](.+?)\[\/math\]');

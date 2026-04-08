@@ -189,7 +189,7 @@ class SiteHackerNews extends ImageboardSite {
 					final text = node.text ?? '';
 					final children = Site4Chan.parsePlaintext(text);
 					if (text.startsWith('>')) {
-						yield PostQuoteSpan(PostNodeSpan(children));
+						yield PostQuoteSpan(PostNodeSpan(children.toList()));
 					}
 					else {
 						yield* children;

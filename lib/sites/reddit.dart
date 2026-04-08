@@ -406,7 +406,7 @@ class SiteReddit extends ImageboardSite {
 						final text = node.text.trim();
 						if (text.startsWith('!') && text.endsWith('!<') && text.length > 3) {
 							// Mis-parsed spoiler (at beginning of line, it also starts with ">")
-							yield PostSpoilerSpan(PostNodeSpan(Site4Chan.parsePlaintext(text.substring(1, text.length - 2))), spoilerSpanId++);
+							yield PostSpoilerSpan(PostNodeSpan(Site4Chan.parsePlaintext(text.substring(1, text.length - 2)).toList(growable: false)), spoilerSpanId++);
 						}
 						else {
 							yield PostQuoteSpan(PostNodeSpan(visit(node.nodes.trim()).toList()));
@@ -1664,6 +1664,9 @@ class SiteReddit extends ImageboardSite {
 
 	@override
 	bool get hasExpiringThreads => false;
+
+	@override
+	bool get hasLargeInlineAttachments => true;
 
 	@override
 	bool operator == (Object other) =>
