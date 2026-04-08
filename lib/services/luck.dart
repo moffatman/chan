@@ -44,10 +44,8 @@ double _erf(double x) {
   const p = 0.3275911;
 
   final t = 1.0 / (1.0 + p * x);
-	print('t=$t');
   final y = 1.0 - (((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t) *
       math.exp(-x * x);
-	print('y=$y');
 
   return sign * y;
 }
