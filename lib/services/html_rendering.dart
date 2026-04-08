@@ -9,20 +9,32 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
-class HTMLRendering {
-	late final ExpiringMutexResource<HeadlessInAppWebView> _webView;
 
-	HTMLRendering() {
-		_webView = ExpiringMutexResource<HeadlessInAppWebView>(_init, _deinit, interval: const Duration(seconds: 5));
+abstract class HTMLRendering<T> {
+	late final ExpiringMutexResource<(HeadlessInAppWebView, T)> _webView;
+	@protected
+	String extraHead = '';
+	@protected
+	String afterInsert = '';
+
+	HTMLRendering({
+		this.extraHead = '',
+		this.afterInsert = ''
+	}) {
+		_webView = ExpiringMutexResource<(HeadlessInAppWebView, T)>(_init, _deinit, interval: const Duration(seconds: 5));
 	}
 
-	static Future<HeadlessInAppWebView> _init() async {
+	Future<T> initImpl();
+	Future<void> deinitImpl(T resource);
+
+	Future<(HeadlessInAppWebView, T)> _init() async {
+		final private = await initImpl();
 		final loadCompleter = Completer<void>();
 		final webView = HeadlessInAppWebView(
 			initialSettings: InAppWebViewSettings(
 				transparentBackground: true
 			),
-			initialData: InAppWebViewInitialData(data: '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body style="width: 400px"/></html>'),
+			initialData: InAppWebViewInitialData(data: '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">$extraHead</head><body style="width: 400px"/></html>'),
 			onLoadStop: (controller, url) {
 				loadCompleter.complete();
 			},
@@ -33,28 +45,30 @@ class HTMLRendering {
 		await webView.run();
 		await Future.any([loadCompleter.future, Future.delayed(const Duration(seconds: 5))]);
 		await Future.delayed(const Duration(milliseconds: 100));
-		return webView;
+		return (webView, private);
 	}
 
-	static Future<void> _deinit(HeadlessInAppWebView webView) async {
-		await webView.dispose();
+	Future<void> _deinit((HeadlessInAppWebView, T) webView) async {
+		await webView.$1.dispose();
+		await deinitImpl(webView.$2);
 	}
 
 	Future<Uint8List> renderHtml(String html, {double textScaleFactor = 1.0, Color? primaryColor}) async {
 		final imageCompleter = Completer<Uint8List>();
 		_webView.runWithResource((webView) async {
 			if (primaryColor != null) {
-				await webView.webViewController?.evaluateJavascript(
+				await webView.$1.webViewController?.evaluateJavascript(
 					source: 'document.body.style.color = "${primaryColor.toCssHex()}"'
 				);
 			}
-			final returnData = await webView.webViewController?.callAsyncJavaScript(functionBody: '''
+			final returnData = await webView.$1.webViewController?.callAsyncJavaScript(functionBody: '''
 				var html = atob("${base64.encode(utf8.encode(html))}");
 				var span = document.createElement("span");
 				span.innerHTML = html;
 				document.body.replaceChildren(span);
+				$afterInsert
 				return new Promise(function (resolve, reject) {
-					requestAnimationFrame(function() {
+					setTimeout(function() {
 						var rect = span.getBoundingClientRect();
 						function descend(element) {
 							var rect2 = element.getBoundingClientRect();
@@ -67,12 +81,11 @@ class HTMLRendering {
 						}
 						[...span.children].forEach(descend)
 						resolve(rect.x + "," + rect.y + "," + rect.width + "," + rect.height);
-					});
+					}, 100);
 				});
 			''');
-			await Future.delayed(const Duration(milliseconds: 50));
 			final ltwh = (returnData!.value as String).split(',').map((s) => double.parse(s)).toList();
-			final imageData = await webView.webViewController?.takeScreenshot(screenshotConfiguration: ScreenshotConfiguration(
+			final imageData = await webView.$1.webViewController?.takeScreenshot(screenshotConfiguration: ScreenshotConfiguration(
 				rect: InAppWebViewRect(
 					x: ltwh[0] - 5,
 					y: ltwh[1] - 5,
@@ -86,9 +99,17 @@ class HTMLRendering {
 		});
 		return await imageCompleter.future;
 	}
+}
 
-	static HTMLRendering? _instance;
-	static HTMLRendering get instance => _instance ??= HTMLRendering();
+class _BasicHtmlRendering extends HTMLRendering<void> {
+	static _BasicHtmlRendering? _instance;
+	static _BasicHtmlRendering get instance => _instance ??= _BasicHtmlRendering();
+
+	@override
+	Future<void> initImpl() async { }
+
+	@override
+	Future<void> deinitImpl(void resource) async { }
 }
 
 class HTMLImageProvider extends ImageProvider<HTMLImageProvider> {
@@ -107,7 +128,7 @@ class HTMLImageProvider extends ImageProvider<HTMLImageProvider> {
 	}
 
 	Future<Codec> _loadAsync(ImageDecoderCallback decode) async {
-		final image = await HTMLRendering.instance.renderHtml(html, primaryColor: primaryColor);
+		final image = await _BasicHtmlRendering.instance.renderHtml(html, primaryColor: primaryColor);
 		return await decode(await ImmutableBuffer.fromUint8List(image));
 	}
 

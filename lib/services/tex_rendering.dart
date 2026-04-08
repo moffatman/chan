@@ -2,49 +2,45 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
 
-import 'package:chan/util.dart';
+import 'package:chan/services/html_rendering.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:flutter_tex/flutter_tex.dart';
-// ignore: implementation_imports
-import 'package:flutter_tex/src/utils/core_utils.dart';
 import 'package:mime/mime.dart';
 
-const String _indexHtmlPath = 'packages/flutter_tex/js/katex/index.html';
-const String _replacementIndexHtmlPath = 'assets/katex.html';
+const _kJsPath = 'assets/mathjax.min.js';
+const _kGzippedPaths = {_kJsPath};
 
-class _ServerWebViewCombo {
-	final HttpServer server;
-	final HeadlessInAppWebView webView;
-	const _ServerWebViewCombo(this.server, this.webView);
-}
+class TeXRendering extends HTMLRendering<HttpServer> {
+	TeXRendering() : super(
+		afterInsert: 'await window.MathJax.typesetPromise();await document.fonts.ready;'
+	);
 
-class TeXRendering {
-	late final ExpiringMutexResource<_ServerWebViewCombo> _webView;
-	Completer<String?>? _renderCallbackCompleter;
-
-	TeXRendering() {
-		_webView = ExpiringMutexResource<_ServerWebViewCombo>(_initCombo, _deinitCombo);
-	}
-
-	Future<_ServerWebViewCombo> _initCombo() async {
-		final server = await HttpServer.bind('localhost', 0, shared: true);
+	@override
+	Future<HttpServer> initImpl() async {
+		final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+		extraHead = '<script type="text/javascript">MathJax = {output: {font: "mathjax-newcm", fontPath: "http://localhost:${server.port}/assets/mathjax-newcm-font"}}</script><script type="text/javascript" src="http://localhost:${server.port}/$_kJsPath"></script>';
 		server.listen((HttpRequest httpRequest) async {
 			List<int> body = [];
 			String path = httpRequest.requestedUri.path;
 			path = (path.startsWith('/')) ? path.substring(1) : path;
 			path += (path.endsWith('/')) ? 'index.html' : '';
 			try {
-				if (path == _indexHtmlPath) {
-					body = (await rootBundle.load(_replacementIndexHtmlPath)).buffer.asUint8List();
+				if (_kGzippedPaths.contains(path)) {
+					body = (await rootBundle.load('$path.gz')).buffer.asUint8List();
+					if (httpRequest.headers.value(HttpHeaders.acceptEncodingHeader)?.contains('gzip') ?? false) {
+						httpRequest.response.headers.set(HttpHeaders.contentEncodingHeader, 'gzip');
+					}
+					else {
+						body = gzip.decode(body);
+					}
 				}
 				else {
 					body = (await rootBundle.load(path)).buffer.asUint8List();
 				}
-			} catch (e) {
+			} catch (e, st) {
 				print('Error: $e');
+				print(st);
 				httpRequest.response.close();
 				return;
 			}
@@ -62,70 +58,12 @@ class TeXRendering {
 			httpRequest.response.add(body);
 			httpRequest.response.close();
 		});
-		final loadCompleter = Completer<void>();
-		final webView = HeadlessInAppWebView(
-			initialSettings: InAppWebViewSettings(
-				transparentBackground: true
-			),
-			initialUrlRequest: URLRequest(
-				url: WebUri.uri(Uri.http('localhost:${server.port}', _indexHtmlPath))
-			),
-			onLoadStop: (controller, url) {
-				loadCompleter.complete();
-			},
-			onConsoleMessage: (controller, message) {
-				print(message);
-			}
-		);
-		await webView.run();
-		await webView.webViewController?.addWebMessageListener(WebMessageListener(
-			jsObjectName: 'TeXViewRenderedCallback',
-			allowedOriginRules: {'*'},
-			onPostMessage: (message, origin, isMainFrame, replyProxy) {
-				_renderCallbackCompleter?.complete(message?.data as String);
-			}
-		));
-		await Future.any([loadCompleter.future, Future.delayed(const Duration(seconds: 5))]);
-		await Future.delayed(const Duration(milliseconds: 100));
-		return _ServerWebViewCombo(server, webView);
+		return server;
 	}
 
-	Future<void> _deinitCombo(_ServerWebViewCombo combo) async {
-		await combo.webView.dispose();
-		await combo.server.close();
-	}
-
-	Future<Uint8List> renderTex(String tex, {double textScaleFactor = 1.0}) async {
-		final imageCompleter = Completer<Uint8List>();
-		_webView.runWithResource((combo) async {
-			_renderCallbackCompleter = Completer<String>();
-			await combo.webView.webViewController?.evaluateJavascript(source: 'var jsonData = ${getRawData(TeXView(
-				child: TeXViewDocument('\$\$${tex.replaceAll('<br>', '')}\$\$'),
-				style: TeXViewStyle(
-					fontStyle: TeXViewFontStyle(fontSize: (16 * textScaleFactor).round())
-				)
-			))};initView(jsonData);');
-			final returnData = await Future.any([Future<String?>.delayed(const Duration(seconds: 10)), _renderCallbackCompleter!.future]);
-			if (returnData == null) {
-				throw StateError('Timed out rendering $tex');
-			}
-			else {
-				await Future.delayed(const Duration(milliseconds: 50));
-				final ltwh = returnData.split(',').map((s) => double.parse(s)).toList();
-				final imageData = await combo.webView.webViewController?.takeScreenshot(screenshotConfiguration: ScreenshotConfiguration(
-					rect: InAppWebViewRect(
-						x: ltwh[0] - 5,
-						y: ltwh[1] - 5,
-						width: ltwh[2] + 10,
-						height: ltwh[3] + 10
-					)
-				));
-				if (imageData != null) {
-					imageCompleter.complete(imageData);
-				}
-			}
-		});
-		return await imageCompleter.future;
+	@override
+	Future<void> deinitImpl(HttpServer server) async {
+		await server.close();
 	}
 
 	static TeXRendering? _instance;
@@ -133,14 +71,14 @@ class TeXRendering {
 		_instance ??= TeXRendering();
 		return _instance!;
 	}
-
 }
 
 class TeXImageProvider extends ImageProvider<TeXImageProvider> {
 	final String tex;
+	final Color? color;
 	final double textScaleFactor;
 
-	TeXImageProvider(this.tex, {this.textScaleFactor = 1.0});
+	TeXImageProvider(this.tex, {this.color, this.textScaleFactor = 1.0});
 
 	@override
 	ImageStreamCompleter loadImage(TeXImageProvider key, ImageDecoderCallback decode) {
@@ -152,7 +90,7 @@ class TeXImageProvider extends ImageProvider<TeXImageProvider> {
 	}
 
 	Future<Codec> _loadAsync(ImageDecoderCallback decode) async {
-		final image = await TeXRendering.getInstance().renderTex(tex, textScaleFactor: textScaleFactor);
+		final image = await TeXRendering.getInstance().renderHtml('<span style="font-size: 20px">\\($tex\\)</span>', textScaleFactor: textScaleFactor, primaryColor: color);
 		return await decode(await ImmutableBuffer.fromUint8List(image));
 	}
 
@@ -165,10 +103,11 @@ class TeXImageProvider extends ImageProvider<TeXImageProvider> {
 	bool operator == (Object other) =>
 		identical(this, other) ||
 		(other is TeXImageProvider) &&
-		(other.tex == tex);
+		(other.tex == tex) &&
+		(other.color == color);
 
 	@override
-	int get hashCode => tex.hashCode;
+	int get hashCode => Object.hash(tex, color);
 
 	@override
 	String toString() => '${objectRuntimeType(this, 'TeXImageProvider')}("$tex")';

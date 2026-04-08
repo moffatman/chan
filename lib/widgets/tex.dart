@@ -13,22 +13,20 @@ class TexWidget extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		return ColorFiltered(
-			colorFilter: ColorFilter.mode(color ?? ChanceTheme.primaryColorOf(context), BlendMode.srcIn),
-			child: Image(
-				image: TeXImageProvider(
-					tex
-				),
-				loadingBuilder: (context, child, chunk) {
-					if (chunk == null) {
-						return child;
-					}
-					return Opacity(
-						opacity: 0.5,
-						child: Text(tex)
-					);
-				},
-			)
+		return Image(
+			image: TeXImageProvider(
+				tex,
+				color: color ?? ChanceTheme.primaryColorOf(context)
+			),
+			frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+				if (frame != null) {
+					return child;
+				}
+				return Opacity(
+					opacity: 0.5,
+					child: Text(tex)
+				);
+			},
 		);
 	}
 }

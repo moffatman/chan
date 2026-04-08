@@ -73,7 +73,6 @@ dependencies:
       ref: master
   flutter_colorpicker: ^1.1.0
   photo_manager: ^3.1.1
-  flutter_tex: ^4.0.3+4
   app_links: ^6.2.0
   crypto: ^3.0.1
   fluttertoast: ^9.0.0
@@ -161,7 +160,10 @@ flutter:
   #  - images/a_dot_burr.jpeg
   #  - images/a_dot_ham.jpeg
   assets:
-    - assets/katex.html
+    - assets/mathjax.min.js.gz
+    - assets/mathjax-newcm-font/
+    - assets/mathjax-newcm-font/chtml/
+    - assets/mathjax-newcm-font/chtml/woff2/
     - assets/splash.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
@@ -188,7 +190,6 @@ dependency_overrides:
       url: https://github.com/moffatman/dio.git
       path: dio
       ref: develop
-  markdown: ^7.2.1 # Needed to resolve a conflict with flutter_tex
   web: ^0.5.1 # Needed to run with current moffatman/flutter tag
   connectivity_plus: # Needed to prioritize Mobile over VPN on Android
     git:
