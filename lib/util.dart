@@ -1032,6 +1032,13 @@ T dprint<T>(T obj, {String label = 'dprint'}) {
 	return obj;
 }
 
+T dprintIf<T>(bool shouldPrint, T obj, {String label = 'dprintIf'}) {
+	if (shouldPrint) {
+		print('$label: $obj');
+	}
+	return obj;
+}
+
 extension Bind1<In, Out> on Out Function(In) {
 	Out Function() bind1(In v) => () => this(v);
 	Out Function()? maybeBind1(In? v) {
