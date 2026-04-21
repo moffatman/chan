@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:chan/models/flag.dart';
@@ -222,6 +223,25 @@ class _LooseHeaderSyntax extends markdown.BlockSyntax {
 
 const _loginFieldRedGifsTokenKey = '_rgt';
 
+class _SiteRedditInterceptor extends Interceptor {
+	final SiteReddit parent;
+	_SiteRedditInterceptor(this.parent);
+
+	@override
+	void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+		try {
+			options.headers[HttpHeaders.cacheControlHeader] = 'max-age=0';
+			handler.next(options);
+		}
+		catch (e, st) {
+			handler.reject(DioError(
+				requestOptions: options,
+				error: e
+			)..stackTrace = st, true);
+		}
+	}
+}
+
 class SiteReddit extends ImageboardSite {
 	(int, DateTime)? _earliestKnown;
 	(int, DateTime)? _latestKnown;
@@ -255,7 +275,9 @@ class SiteReddit extends ImageboardSite {
 		required super.archives,
 		required super.imageHeaders,
 		required super.videoHeaders
-	});
+	}) {
+		client.interceptors.add(_SiteRedditInterceptor(this));
+	}
 	@override
 	String get baseUrl => 'reddit.com';
 
