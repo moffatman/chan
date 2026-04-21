@@ -4082,9 +4082,20 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 					_items[i].cachedHeight = null;
 				}
 			}
-			useDummyItemsInRange = null;
-			state?._rebuild();
-			await SchedulerBinding.instance.endOfFrame;
+			try {
+				if (targetIndex == itemsLength - 1) {
+					_lockSliverListAtEnd();
+				}
+				else {
+					_lockSliverListAtIndex(targetIndex);
+				}
+				useDummyItemsInRange = null;
+				state?._rebuild();
+				await SchedulerBinding.instance.endOfFrame;
+			}
+			finally {
+				_unlockSliverList();
+			}
 		}
 		else {
 			// Just to be safe
