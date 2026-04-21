@@ -221,6 +221,29 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 						else if (node.classes.contains('glow')) {
 							yield PostCssSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)), 'text-shadow: 0px 0px 40px #00fe20, 0px 0px 2px #00fe20');
 						}
+						else if (node.classes.contains('sjis')) {
+							final buffer = StringBuffer();
+							void visit2(Iterable<dom.Node> nodes) {
+								for (final node in nodes) {
+									if (node is dom.Element) {
+										if (node.localName == 'br') {
+											buffer.writeln();
+										}
+										else if (node.localName == 'wbr') {
+											// Do nothing
+										}
+										else {
+											buffer.write(node.outerHtml);
+										}
+									}
+									else {
+										buffer.write(node.text);
+									}
+								}
+							}
+							visit2(node.nodes);
+							yield PostShiftJISSpan(buffer.toString());
+						}
 						else {
 							yield PostTextSpan(node.text);
 						}
@@ -300,6 +323,9 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 					}
 					else if (node.localName == 'code') {
 						yield PostMonospaceSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
+					}
+					else if (node.localName == 'wbr') {
+						// Do nothing
 					}
 					else {
 						yield PostTextSpan(node.outerHtml);
