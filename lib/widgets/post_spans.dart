@@ -704,35 +704,82 @@ class PostTextSpan extends PostTerminalSpan {
 		return PostTextSpan(buffer.takeString());
 	}
 
+	bool _tryToFindFakeQuotelinks(Post post) {
+		if (text.length < 2) {
+			return false;
+		}
+		if (post.board != 'g') {
+			return false;
+		}
+		if (post.spanFormat != PostSpanFormat.chan4) {
+			return false;
+		}
+		if (text.codeUnitAt(0) != 0x3E /* > */) {
+			// Doesn't start with >
+			return false;
+		}
+		final maybeDigit = text.codeUnitAt(1);
+		return maybeDigit >= 0x30 && maybeDigit <= 0x39;
+	}
+	static final _fakeQuotelinksPattern = RegExp(r'>(\d+)');
+
 	@override
 	InlineSpan build(context, post, zone, settings, theme, options) {
-		final children = <TextSpan>[];
+		final children = <InlineSpan>[];
 		final str = settings.filterProfanity(text);
 		final highlightPattern = options.highlightPattern;
-		if (highlightPattern != null) {
-			int lastEnd = 0;
-			for (final match in highlightPattern.allMatches(str)) {
-				if (match.start != lastEnd) {
+		final tryToFindFakeQuotelinks = _tryToFindFakeQuotelinks(post);
+		if (highlightPattern != null || tryToFindFakeQuotelinks) {
+			void processHighlight(String substring) {
+				if (highlightPattern == null) {
+					children.add(TextSpan(text: substring, recognizer: options.recognizer));
+					return;
+				}
+				int lastEnd = 0;
+				for (final match in highlightPattern.allMatches(substring)) {
+					if (match.start != lastEnd) {
+						children.add(TextSpan(
+							text: substring.substring(lastEnd, match.start),
+							recognizer: options.recognizer
+						));
+					}
 					children.add(TextSpan(
-						text: str.substring(lastEnd, match.start),
+						text: match.group(0)!,
+						style: const TextStyle(
+							color: Colors.black,
+							backgroundColor: Colors.yellow
+						),
+						recognizer: options.recognizer
+					));
+					lastEnd = match.end;
+				}
+				if (lastEnd < substring.length) {
+					children.add(TextSpan(
+						text: substring.substring(lastEnd),
 						recognizer: options.recognizer
 					));
 				}
-				children.add(TextSpan(
-					text: match.group(0)!,
-					style: const TextStyle(
-						color: Colors.black,
-						backgroundColor: Colors.yellow
-					),
-					recognizer: options.recognizer
-				));
-				lastEnd = match.end;
+			}
+			int lastEnd = 0;
+			if (tryToFindFakeQuotelinks) {
+				for (final match in _fakeQuotelinksPattern.allMatches(str)) {
+					final foundPost = zone.findPost(match.group(1)?.tryParseInt);
+					if (foundPost == null) {
+						continue;
+					}
+					if (match.start != lastEnd) {
+						processHighlight(str.substring(lastEnd, match.start));
+					}
+					children.add(PostQuoteLinkSpan(
+						board: foundPost.board,
+						threadId: foundPost.threadId,
+						postId: foundPost.id
+					).build(context, post, zone, settings, theme, options));
+					lastEnd = match.end;
+				}
 			}
 			if (lastEnd < str.length) {
-				children.add(TextSpan(
-					text: str.substring(lastEnd),
-					recognizer: options.recognizer
-				));
+				processHighlight(str.substring(lastEnd));
 			}
 		}
 		else {
@@ -761,6 +808,34 @@ class PostTextSpan extends PostTerminalSpan {
 	@override
 	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
 		buffer.write(text);
+	}
+
+	@override
+	Iterable<PostSpan> traverse(Post post) sync* {
+		if (_tryToFindFakeQuotelinks(post)) {
+			int lastEnd = 0;
+			for (final match in _fakeQuotelinksPattern.allMatches(text)) {
+				final postId = match.group(1)?.tryParseInt;
+				if (postId != null) {
+					// They aren't really dead. but we don't know where they are
+					// So this is just to feed the referencedPostIdentifiers -> _loadReferencedThreads
+					if (match.start != lastEnd) {
+						yield PostTextSpan(text.substring(lastEnd, match.start));
+					}
+					yield PostQuoteLinkSpan.dead(
+						board: post.board,
+						postId: postId
+					);
+					lastEnd = match.end;
+				}
+			}
+			if (lastEnd < text.length) {
+				yield PostTextSpan(text.substring(lastEnd));
+			}
+		}
+		else {
+			yield this;
+		}
 	}
 }
 
