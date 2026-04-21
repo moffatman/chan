@@ -164,16 +164,13 @@ abstract class _HeightEstimator {
 	PostSpanZoneData? get zone;
 	Size get characterSize;
 	double get maxWidth;
+	// TODO: FloatingPlaceholder
 	void addRect(Size size);
 	/// Performance optimization
 	void addRects(Size size, int count);
 	void addHardLineBreak();
 	void addCharacters(int chars) {
 		addRects(characterSize, chars);
-	}
-	// TODO: FloatingPlaceholder
-	void addPlaceholder(double width, double height) {
-		addRect(Size(width, height));
 	}
 
 	_HorizontallyScrollingHeightEstimator noWordWrap() {
@@ -232,6 +229,7 @@ class _HeightEstimatorImpl extends _HeightEstimator {
 		if (size.width >= maxWidth) {
 			addHardLineBreak();
 			lineHeight = size.height;
+			_longestLineWidth = maxWidth;
 			addHardLineBreak();
 		}
 		else if ((currentWidth + size.width) > maxWidth) {
@@ -674,18 +672,19 @@ class PostAttachmentsSpan extends PostTerminalSpan {
 	void _estimateHeight(_HeightEstimator estimator) {
 		// Width might exceed this. but only if oneLine
 		final outputSize = Size.square(estimator.post.spanFormat.hasLargeInlineAttachments ? 250 : Settings.instance.thumbnailSize);
-		for (int i = 0; i < attachments.length; i++) {
-			if (i > 0) {
-				// Just handling the Wrap.spacing, Wrap.runSpacing is too hard
-				estimator.addPlaceholder(16, 75);
+		final rects = attachments.map((attachment) {
+			if (Settings.instance.squareThumbnails || attachment.aspectRatio <= 1) {
+				return outputSize;
 			}
-			final fitted = applyBoxFit(
-				Settings.instance.squareThumbnails ? BoxFit.cover : BoxFit.contain,
-				Size(attachments[i].aspectRatio, 1),
-				outputSize
-			);
-			estimator.addPlaceholder(fitted.destination.width, math.max(fitted.destination.height, 75));
-		}
+			// shrinkHeight
+			return Size(outputSize.width, math.max(75, outputSize.height / attachment.aspectRatio));
+		}).toList();
+		estimator.addRect(estimateWrapSize(
+			maxWidth: estimator.maxWidth,
+			rects: rects,
+			spacing: 16,
+			runSpacing: 16
+		));
 	}
 }
 

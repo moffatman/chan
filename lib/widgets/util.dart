@@ -2873,3 +2873,43 @@ class CharacterSize {
 		return Size(characterWidth, lineHeight);
 	}
 }
+
+Size estimateWrapSize({
+	required List<Size> rects,
+	required double maxWidth,
+	double spacing = 0.0,
+	double runSpacing = 0.0
+}) {
+	double currentWidth = 0.0;
+	double longestLineWidth = 0.0;
+	double currentHeight = 0.0;
+	double lineHeight = 0.0;
+	void addHardLineBreak() {
+		currentHeight += lineHeight + runSpacing;
+		lineHeight = 0;
+		longestLineWidth = math.max(longestLineWidth, currentWidth);
+		currentWidth = 0;
+	}
+	for (final rect in rects) {
+		final effectiveWidth = currentWidth > 0 ? rect.width + spacing : rect.width;
+		if (effectiveWidth >= maxWidth) {
+			addHardLineBreak();
+			lineHeight = rect.width;
+			longestLineWidth = maxWidth;
+			addHardLineBreak();
+		}
+		else if ((currentWidth + effectiveWidth) > maxWidth) {
+			addHardLineBreak();
+			lineHeight = rect.height;
+			currentWidth = rect.width;
+		}
+		else {
+			lineHeight = math.max(lineHeight, rect.height);
+			currentWidth += rect.width + spacing;
+		}
+	}
+	if (currentWidth > 0) {
+		return Size(longestLineWidth, currentHeight + lineHeight);
+	}
+	return Size(longestLineWidth, currentHeight);
+}

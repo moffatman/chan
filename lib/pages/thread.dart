@@ -2032,8 +2032,42 @@ class ThreadPageState extends State<ThreadPage> {
 																				postInject = Size((4 + replyCount.numberOfDigitsLinear) * 8, characterSize.height);
 																			}
 																			// TODO: FloatingPlaceholder
-																			final imageWidth = post.attachments_.isNotEmpty || post.attachmentDeleted ? 75 : 0;
-																			final textHeight = post.span.estimateHeight(post, childZone, characterSize, maxWidth - imageWidth, postInject: postInject);
+																			double smallImageWidth = 0;
+																			double largeImageHeight = 0;
+																			double smallImageHeight = 0;
+																			if (post.attachments_.isNotEmpty) {
+																				if (settings.centeredPostThumbnailSize case final size?) {
+																					for (final attachment in post.attachments_) {
+																						largeImageHeight += 24; // padding
+																						if (Settings.instance.squareThumbnails || attachment.aspectRatio <= 1) {
+																							largeImageHeight += size;
+																						}
+																						else {
+																							// shrinkHeight
+																							largeImageHeight += size / attachment.aspectRatio;
+																						}
+																					}
+																				}
+																				else {
+																					smallImageWidth = settings.thumbnailSize + 8;
+																					for (final attachment in post.attachments_) {
+																						smallImageHeight += 8; // padding
+																						if (Settings.instance.squareThumbnails || attachment.aspectRatio <= 1) {
+																							smallImageHeight += max(75, settings.thumbnailSize);
+																						}
+																						else {
+																							// shrinkHeight
+																							smallImageHeight += max(75, settings.thumbnailSize / attachment.aspectRatio);
+																						}
+																					}
+																					smallImageHeight -= 8; // padding is between images
+																				}
+																			}
+																			else if (post.attachmentDeleted) {
+																				smallImageWidth = 75;
+																				smallImageHeight = 75;
+																			}
+																			final textHeight = post.span.estimateHeight(post, childZone, characterSize, maxWidth - smallImageWidth, postInject: postInject);
 																			int metadataLines = 2;
 																			if (post.attachments_.any((a) => a.filename.length > (charactersPerLine * 0.4))) {
 																				metadataLines++;
@@ -2055,11 +2089,7 @@ class ThreadPageState extends State<ThreadPage> {
 																				}
 																			}
 																			final metadataHeight = metadataLines * characterSize.height;
-																			final imageHeight = post.attachmentDeleted ? 75 : post.attachments_.fold(0.0, (s, a) => s + max(75, (switch ((a.width, a.height)) {
-																				(int w, int h) when w > h => h / w,
-																				_ => 1
-																			} * settings.thumbnailSize)));
-																			return max(52, max(textHeight + 8, imageHeight) + 8 + metadataHeight);
+																			return max(52, max(textHeight + 8, smallImageHeight) + 8 + metadataHeight + largeImageHeight);
 																		},
 																		initiallyCollapseSecondLevelReplies: treeModeInitiallyCollapseSecondLevelReplies,
 																		collapsedItemsShowBody: treeModeCollapsedPostsShowBody,
