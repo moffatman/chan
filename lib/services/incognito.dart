@@ -103,7 +103,7 @@ class IncognitoPersistence implements Persistence {
   void removeListener(VoidCallback listener) => parent.removeListener(listener);
 
   @override
-  void saveAttachment(Attachment attachment, File fullResolutionFile, String ext) => parent.saveAttachment(attachment, fullResolutionFile, ext);
+  Future<void> saveAttachment(Attachment attachment, File fullResolutionFile, String ext) => parent.saveAttachment(attachment, fullResolutionFile, ext);
 
   @override
   void savePost(Post post, {DateTime? savedTime}) => parent.savePost(post, savedTime: savedTime);

@@ -1329,14 +1329,14 @@ class Persistence extends ChangeNotifier {
 		return savedAttachments[attachment.globalId];
 	}
 
-	void saveAttachment(Attachment attachment, File fullResolutionFile, String ext) {
+	Future<void> saveAttachment(Attachment attachment, File fullResolutionFile, String ext) async {
 		final newSavedAttachment = SavedAttachment(
 			attachment: attachment,
 			savedTime: DateTime.now(),
 			savedExt: ext
 		);
 		savedAttachments[attachment.globalId] = newSavedAttachment;
-		fullResolutionFile.copy(newSavedAttachment.file.path);
+		await fullResolutionFile.copy(newSavedAttachment.file.path);
 		settings.save();
 		savedAttachmentsListenable.didUpdate();
 		if (savedAttachments.length == 1) {

@@ -1051,7 +1051,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																	persistence.deleteSavedAttachment(currentAttachment.attachment);
 																}
 																else {
-																	persistence.saveAttachment(currentAttachment.attachment, currentController.getFile(), currentController.cacheExt);
+																	await persistence.saveAttachment(currentAttachment.attachment, currentController.getFile(), currentController.cacheExt);
 																}
 															} : null,
 															icon: Icon(currentlySaved ? Adaptive.icons.bookmarkFilled : Adaptive.icons.bookmark)
