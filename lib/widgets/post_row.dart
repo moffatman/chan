@@ -510,32 +510,25 @@ class PostRow extends StatelessWidget {
 											onThumbnailLoadError: onThumbnailLoadError,
 											revealSpoilerImages: revealSpoilerImages,
 											addExpandingPosts: settings.supportMouse != TristateSystemSetting.a,
-											hideThumbnails: hideThumbnails,
-											postInject: showReplyCount ? (overrideReplyCount != null ? WidgetSpan(
-												alignment: PlaceholderAlignment.top,
-												child: Visibility(
-													visible: false,
-													maintainSize: true,
-													maintainAnimation: true,
-													maintainState: true,
-													child: Padding(
-														padding: const EdgeInsets.only(left: 8, right: 8),
-														child: overrideReplyCount!
-													)
+											hideThumbnails: hideThumbnails
+										),
+										ensureTrailingNewline: true,
+										postInject: showReplyCount ? (overrideReplyCount != null ? WidgetSpan(
+											alignment: PlaceholderAlignment.top,
+											child: Visibility(
+												visible: false,
+												maintainSize: true,
+												maintainAnimation: true,
+												maintainState: true,
+												child: Padding(
+													padding: const EdgeInsets.only(left: 8, right: 8),
+													child: overrideReplyCount!
 												)
-											) : ((settings.cloverStyleRepliesButton || replyIds.isEmpty) ? null : WidgetSpan(
-												child: SizedBox(width: (4 + replyIds.length.toString().length) * 8)
-											))) : null
-										)
-									),
-									// In practice this is the height of a line of text
-									if (!shrinkWrap) const WidgetSpan(
-										child: SizedBox(
-											width: double.infinity,
-											height: 0
-										)
+											)
+										) : ((settings.cloverStyleRepliesButton || replyIds.isEmpty) ? null : WidgetSpan(
+											child: SizedBox(width: (4 + replyIds.length.numberOfDigitsLinear) * 8)
+										))) : null
 									)
-									else const TextSpan(text: '\n')
 								]
 							),
 							overflow: TextOverflow.fade

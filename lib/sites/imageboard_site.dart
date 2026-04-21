@@ -2597,7 +2597,6 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	/// Remember these fields (HTML "name"s) between uses
 	Set<String> get authPageFormFields => const {};
 	bool get hasExpiringThreads => true;
-	bool get hasLargeInlineAttachments => false;
 	CatalogVariant get defaultCatalogVariant => Settings.instance.catalogVariant;
 	set defaultCatalogVariant(CatalogVariant value) => Settings.catalogVariantSetting.set(Settings.instance, value);
 	bool get supportsPinkQuotes => false;

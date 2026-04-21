@@ -1667,9 +1667,6 @@ class SiteReddit extends ImageboardSite {
 	bool get hasExpiringThreads => false;
 
 	@override
-	bool get hasLargeInlineAttachments => true;
-
-	@override
 	bool operator == (Object other) =>
 		identical(this, other) ||
 		(other is SiteReddit) &&

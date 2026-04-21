@@ -1828,7 +1828,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	List<Post>? filteredPosts() {
 		return _filteredPosts ??= _makeFilteredPosts();
 	}
-	List<Post>? _makeFilteredPosts() => thread?.posts.where((p) {
+	bool shouldShowPost(Post p) {
 		final threadResult = threadFilter.filter(imageboardKey, p);
 		if (threadResult != null) {
 			return !threadResult.type.hide;
@@ -1842,7 +1842,8 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 			return !globalResult.type.hide;
 		}
 		return true;
-	}).toList(growable: false);
+	}
+	List<Post>? _makeFilteredPosts() => thread?.posts.where(shouldShowPost).toList(growable: false);
 	int? unseenReplyCount() => filteredPosts()?.where((p) => unseenPostIds.data.contains(p.id)).length;
 	int? unseenImageCount() => filteredPosts()?.map((p) {
 		if (!unseenPostIds.data.contains(p.id)) {

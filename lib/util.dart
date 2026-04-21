@@ -1199,3 +1199,173 @@ extension Split<T> on Iterable<T> {
 extension RoundToEven on num {
 	int get roundToEven => (this / 2).round() * 2;
 }
+
+extension NumberOfDigits on int {
+	static const _k1  = 10;
+	static const _k2  = 100;
+	static const _k3  = 1000;
+	static const _k4  = 10000;
+	static const _k5  = 100000;
+	static const _k6  = 1000000;
+	static const _k7  = 10000000;
+	static const _k8  = 100000000;
+	static const _k9  = 1000000000;
+	static const _k10 = 10000000000;
+	static const _k11 = 100000000000;
+	static const _k12 = 1000000000000;
+	static const _k13 = 10000000000000;
+	static const _k14 = 100000000000000;
+	static const _k15 = 1000000000000000;
+	static const _k16 = 10000000000000000;
+	static const _k17 = 100000000000000000;
+	static const _k18 = 1000000000000000000;
+	int get numberOfDigits {
+		final i = abs();
+		if (i < _k10) {
+			if (i < _k5) {
+				if (i < _k2) {
+					if (i < _k1) {
+						return 1;
+					}
+					else {
+						return 2;
+					}
+				}
+				else {
+					if (i < _k3) {
+						return 3;
+					}
+					if (i < _k4) {
+						return 4;
+					}
+					else {
+						return 5;
+					}
+				}
+			}
+			else {
+				if (i < _k7) {
+					if (i < _k6) {
+						return 6;
+					}
+					else {
+						return 7;
+					}
+				}
+				else {
+					if (i < _k8) {
+						return 8;
+					}
+					if (i < _k9) {
+						return 9;
+					}
+					else {
+						return 10;
+					}
+				}
+			}
+		}
+		else {
+			if (i < _k15) {
+				if (i < _k12) {
+					if (i < _k11) {
+						return 11;
+					}
+					else {
+						return 12;
+					}
+				}
+				else {
+					if (i < _k13) {
+						return 13;
+					}
+					if (i < _k14) {
+						return 14;
+					}
+					else {
+						return 15;
+					}
+				}
+			}
+			else {
+				if (i < _k16) {
+					if (i < _k15) {
+						return 15;
+					}
+					else {
+						return 16;
+					}
+				}
+				else {
+					if (i < _k17) {
+						return 17;
+					}
+					if (i < _k18) {
+						return 18;
+					}
+					else {
+						return 19;
+					}
+				}
+			}
+		}
+	}
+	int get numberOfDigitsLinear {
+		final i = abs();
+		if (i < _k1) {
+			return 1;
+		}
+		if (i < _k2) {
+			return 2;
+		}
+		if (i < _k3) {
+			return 3;
+		}
+		if (i < _k4) {
+			return 4;
+		}
+		if (i < _k5) {
+			return 5;
+		}
+		if (i < _k6) {
+			return 6;
+		}
+		if (i < _k7) {
+			return 7;
+		}
+		if (i < _k8) {
+			return 8;
+		}
+		if (i < _k9) {
+			return 9;
+		}
+		if (i < _k10) {
+			return 10;
+		}
+		if (i < _k11) {
+			return 11;
+		}
+		if (i < _k12) {
+			return 12;
+		}
+		if (i < _k13) {
+			return 13;
+		}
+		if (i < _k14) {
+			return 14;
+		}
+		if (i < _k15) {
+			return 15;
+		}
+		if (i < _k16) {
+			return 16;
+		}
+		if (i < _k17) {
+			return 17;
+		}
+		if (i < _k18) {
+			return 18;
+		}
+		return 19;
+	}
+}

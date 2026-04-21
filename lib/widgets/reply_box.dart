@@ -2586,6 +2586,16 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 													if (snippet.previewBuilder != null) AdaptiveDialogAction(
 														child: const Text('Preview'),
 														onPressed: () {
+															final post = Post(
+																board: '',
+																text: '',
+																name: '',
+																time: DateTime.now(),
+																threadId: 0,
+																id: 0,
+																spanFormat: PostSpanFormat.stub,
+																attachments_: []
+															);
 															showAdaptiveDialog<bool>(
 																context: context,
 																barrierDismissible: true,
@@ -2594,14 +2604,14 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 																	content: ChangeNotifierProvider<PostSpanZoneData>(
 																		create: (context) => PostSpanRootZoneData(
 																			imageboard: imageboard,
-																			thread: Thread(posts_: [], attachments: [], replyCount: 0, imageCount: 0, id: 0, board: '', title: '', isSticky: false, time: DateTime.now()),
+																			thread: Thread(posts_: [post], attachments: [], replyCount: 0, imageCount: 0, id: 0, board: '', title: '', isSticky: false, time: post.time),
 																			semanticRootIds: [-14],
 																			style: PostSpanZoneStyle.linear
 																		),
 																		builder: (context, _) => DefaultTextStyle(
 																			style: defaultTextStyle,
 																			child: Text.rich(
-																				snippet.previewBuilder!(controller.text).build(context, null, context.watch<PostSpanZoneData>(), context.watch<Settings>(), context.watch<SavedTheme>(), const PostSpanRenderOptions())
+																				snippet.previewBuilder!(controller.text).build(context, post, context.watch<PostSpanZoneData>(), context.watch<Settings>(), context.watch<SavedTheme>(), const PostSpanRenderOptions())
 																			)
 																		)
 																	),

@@ -68,13 +68,9 @@ class PostSpanRenderOptions {
 	final PointerExitEventListener? onExit;
 	final bool ownLine;
 	final bool shrinkWrap;
-	final int maxLines;
-	final int charactersPerLine;
 	final RegExp? highlightPattern;
-	final InlineSpan? postInject;
 	final bool imageShareMode;
 	final bool revealYourPosts;
-	final bool ensureTrailingNewline;
 	final bool hiddenWithinSpoiler;
 	final ValueChanged<TaggedAttachment>? onThumbnailTap;
 	final bool propagateOnThumbnailTap;
@@ -94,13 +90,9 @@ class PostSpanRenderOptions {
 		this.onExit,
 		this.ownLine = false,
 		this.shrinkWrap = false,
-		this.maxLines = 999999,
-		this.charactersPerLine = 999999,
 		this.highlightPattern,
-		this.postInject,
 		this.imageShareMode = false,
 		this.revealYourPosts = true,
-		this.ensureTrailingNewline = false,
 		this.hiddenWithinSpoiler = false,
 		this.onThumbnailTap,
 		this.propagateOnThumbnailTap = false,
@@ -122,11 +114,6 @@ class PostSpanRenderOptions {
 		bool? addExpandingPosts,
 		PointerEnterEventListener? onEnter,
 		PointerExitEventListener? onExit,
-		int? maxLines,
-		int? charactersPerLine,
-		InlineSpan? postInject,
-		bool removePostInject = false,
-		bool? ensureTrailingNewline,
 		bool? hiddenWithinSpoiler,
 		ValueChanged<TaggedAttachment>? onThumbnailTap,
 		bool? propagateOnThumbnailTap,
@@ -145,14 +132,9 @@ class PostSpanRenderOptions {
 		onEnter: onEnter ?? this.onEnter,
 		onExit: onExit ?? this.onExit,
 		ownLine: ownLine ?? this.ownLine,
-		shrinkWrap: shrinkWrap ?? this.shrinkWrap,
 		highlightPattern: highlightPattern,
-		maxLines: maxLines ?? this.maxLines,
-		charactersPerLine: charactersPerLine ?? this.charactersPerLine,
-		postInject: removePostInject ? null : (postInject ?? this.postInject),
 		imageShareMode: imageShareMode,
 		revealYourPosts: revealYourPosts,
-		ensureTrailingNewline: ensureTrailingNewline ?? this.ensureTrailingNewline,
 		hiddenWithinSpoiler: hiddenWithinSpoiler ?? this.hiddenWithinSpoiler,
 		onThumbnailTap: onThumbnailTap ?? this.onThumbnailTap,
 		propagateOnThumbnailTap: propagateOnThumbnailTap ?? this.propagateOnThumbnailTap,
@@ -177,15 +159,178 @@ class PostSpanReadException implements Exception {
 	String toString() => 'PostSpanReadException($message)';
 }
 
+abstract class _HeightEstimator {
+	Post get post;
+	PostSpanZoneData? get zone;
+	Size get characterSize;
+	double get maxWidth;
+	void addRect(Size size);
+	/// Performance optimization
+	void addRects(Size size, int count);
+	void addHardLineBreak();
+	void addCharacters(int chars) {
+		addRects(characterSize, chars);
+	}
+	// TODO: FloatingPlaceholder
+	void addPlaceholder(double width, double height) {
+		addRect(Size(width, height));
+	}
+
+	_HorizontallyScrollingHeightEstimator noWordWrap() {
+		return _HorizontallyScrollingHeightEstimator(this);
+	}
+	_ScaledHeightEstimator scale(double scale) {
+		return _ScaledHeightEstimator(this, scale);
+	}
+}
+
+class _HeightEstimatorImpl extends _HeightEstimator {
+	@override
+	final Post post;
+	@override
+	final PostSpanZoneData? zone;
+	@override
+	final Size characterSize;
+	@override
+	final double maxWidth;
+	double lineHeight;
+	double currentHeight = 0;
+	double currentWidth = 0;
+	double _longestLineWidth = 0;
+	_HeightEstimatorImpl(this.post, this.zone, this.characterSize, this.maxWidth) : lineHeight = characterSize.height;
+	@override
+	void addRects(Size size, int count) {
+		if (count == 0) {
+			return;
+		}
+		final width = size.width * count;
+		if ((currentWidth + width) <= maxWidth) {
+			lineHeight = math.max(lineHeight, size.height);
+			currentWidth += width;
+		}
+		else {
+			while (count > 0) {
+				lineHeight = math.max(lineHeight, size.height);
+				final toAdd = math.min(count, (maxWidth - currentWidth) ~/ size.width);
+				currentWidth += (size.width * toAdd);
+				count -= toAdd;
+				if (count > 0) {
+					addHardLineBreak();
+				}
+			}
+		}
+	}
+	@override
+	void addHardLineBreak() {
+		currentHeight += lineHeight;
+		lineHeight = characterSize.height;
+		_longestLineWidth = math.max(_longestLineWidth, currentWidth);
+		currentWidth = 0;
+	}
+	@override
+	void addRect(Size size) {
+		if (size.width >= maxWidth) {
+			addHardLineBreak();
+			lineHeight = size.height;
+			addHardLineBreak();
+		}
+		else if ((currentWidth + size.width) > maxWidth) {
+			addHardLineBreak();
+			lineHeight = size.height;
+			currentWidth = size.width;
+		}
+		else {
+			lineHeight = math.max(lineHeight, size.height);
+			currentWidth += size.width;
+		}
+	}
+	double get height {
+		if (currentWidth > 0) {
+			return currentHeight + lineHeight;
+		}
+		return currentHeight;
+	}
+	double get width {
+		return math.max(_longestLineWidth, currentWidth);
+	}
+}
+
+class _HorizontallyScrollingHeightEstimator extends _HeightEstimator {
+	final _HeightEstimator parent;
+	_HorizontallyScrollingHeightEstimator(this.parent);
+
+	@override
+	Post get post => parent.post;
+	@override
+	PostSpanZoneData? get zone => parent.zone;
+	@override
+	Size get characterSize => parent.characterSize;
+	@override
+	double get maxWidth => parent.maxWidth;
+
+	@override
+	void addRects(Size size, int count) {
+		parent.addRects(Size(0, size.height), count);
+	}
+
+	@override
+	void addRect(Size size) {
+		parent.addRect(Size(0, size.height));
+	}
+	
+	@override
+	void addHardLineBreak() {
+		parent.addHardLineBreak();
+	}
+}
+
+class _ScaledHeightEstimator extends _HeightEstimator {
+	final _HeightEstimator parent;
+	final double _scale;
+	_ScaledHeightEstimator(this.parent, this._scale);
+
+	@override
+	Post get post => parent.post;
+	@override
+	PostSpanZoneData? get zone => parent.zone;
+	@override
+	Size get characterSize => parent.characterSize * _scale;
+	@override
+	double get maxWidth => parent.maxWidth;
+
+	@override
+	void addRects(Size size, int count) {
+		parent.addRects(size, count);
+	}
+
+	@override
+	void addRect(Size size) {
+		parent.addRect(size);
+	}
+	
+	@override
+	void addHardLineBreak() {
+		parent.addHardLineBreak();
+	}
+}
+
 @immutable
 sealed class PostSpan {
 	const PostSpan();
-	InlineSpan build(BuildContext context, Post? post, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options);
+	InlineSpan build(BuildContext context, Post post, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options);
 	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true});
-	double estimateLines(Post? post, double charactersPerLine) {
+	void _estimateHeight(_HeightEstimator estimator) {
 		final buffer = StringBuffer();
-		buildText(buffer, post, includeMarkup: false);
-		return buffer.length / charactersPerLine;
+		buildText(buffer, estimator.post, includeMarkup: false);
+		final codeUnits = buffer.toString().codeUnits;
+		for (final codeUnit in codeUnits) {
+			if (codeUnit == 0x0A) {
+				estimator.addHardLineBreak();
+			}
+			else {
+				estimator.addCharacters(1);
+			}
+		}
 	}
 	@override
 	String toString() {
@@ -256,6 +401,10 @@ abstract class PostSpanWithChild extends PostSpan {
 	@override
 	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) => child.buildText(buffer, post, forQuoteComparison: forQuoteComparison, includeMarkup: includeMarkup);
 	@override
+	void _estimateHeight(_HeightEstimator estimator) {
+		child._estimateHeight(estimator);
+	}
+	@override
 	Iterable<PostSpan> traverse(Post post) sync* {
 		yield this;
 		yield* child.traverse(post);
@@ -271,7 +420,22 @@ class _PostWrapperSpan extends PostTerminalSpan {
 	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) => buffer.write(span.toPlainText());
 	@override
 	void dump(BytesBuilder builder, {bool writeTypeId = true}) => throw PostSpanDumpException('Can\'t encode _PostWrapperSpan($span)');
+	@override
+	void _estimateHeight(_HeightEstimator estimator) {
+		switch (span) {
+			case WidgetSpan(child: SizedBox(width: final width?, height: final height?)):
+				estimator.addRect(Size(width, height));
+			default:
+				super._estimateHeight(estimator);
+		}
+	}
 }
+
+typedef PostNodeSpanConstraints = ({
+	double maxHeight,
+	double width,
+	Size characterSize
+});
 
 class PostNodeSpan extends PostSpan {
 	final List<PostSpan> children;
@@ -326,79 +490,52 @@ class PostNodeSpan extends PostSpan {
 	}
 
 	@override
-	InlineSpan build(context, post, zone, settings, theme, options) {
-		PostSpanRenderOptions effectiveOptions = options.copyWith(maxLines: 99999, ensureTrailingNewline: false);
+	InlineSpan build(context, post, zone, settings, theme, options, {
+		InlineSpan? postInject,
+		PostNodeSpanConstraints? constraints,
+		bool ensureTrailingNewline = false
+	}) {
 		final renderChildren = <InlineSpan>[];
 		List<PostSpan> effectiveChildren = children;
-		if (options.postInject != null) {
-			effectiveOptions = effectiveOptions.copyWith(removePostInject: true);
-			effectiveChildren = children.toList()..add(_PostWrapperSpan(options.postInject!));
+		_PostWrapperSpan? postInjected;
+		if (postInject != null) {
+			postInjected = _PostWrapperSpan(postInject);
+			effectiveChildren = children.toList()..add(postInjected);
 		}
-		final ownLineOptions = effectiveOptions.copyWith(ownLine: true);
-		int lines = 0;
-		final lineGuess = StringBuffer();
-		for (int i = 0; i < effectiveChildren.length && lines < options.maxLines; i++) {
-			if ((i == 0 || effectiveChildren[i - 1] is PostLineBreakSpan) && (i == effectiveChildren.length - 1 || effectiveChildren[i + 1] is PostLineBreakSpan)) {
-				renderChildren.add(effectiveChildren[i].build(context, post, zone, settings, theme, ownLineOptions));
-			}
-			else {
-				renderChildren.add(effectiveChildren[i].build(context, post, zone, settings, theme, effectiveOptions));
-			}
-			if (effectiveChildren[i] is PostLineBreakSpan) {
-				lines += math.max(1, (lineGuess.length / options.charactersPerLine).ceil());
-				lineGuess.clear();
-			}
-			else {
-				effectiveChildren[i].buildText(lineGuess, post, includeMarkup: false);
+		_HeightEstimatorImpl? estimator;
+		if (constraints != null) {
+			estimator = _HeightEstimatorImpl(post, zone, constraints.characterSize, constraints.width);
+		}
+		final ownLineOptions = options.copyWith(ownLine: true);
+		for (int i = 0; i < effectiveChildren.length; i++) {
+			final ownLine =
+				// Nothing before
+				(i == 0 || effectiveChildren[i - 1] is PostLineBreakSpan) &&
+				// Nothing after (postInjected is assumed to be invisible)
+				(i == effectiveChildren.length - 1 || effectiveChildren[i + 1] is PostLineBreakSpan || identical(effectiveChildren[i + 1], postInjected));
+			renderChildren.add(effectiveChildren[i].build(context, post, zone, settings, theme, ownLine ? ownLineOptions : options));
+			if (constraints != null && estimator != null) {
+				effectiveChildren[i]._estimateHeight(estimator);
+				if (estimator.currentHeight > constraints.maxHeight) {
+					break;
+				}
 			}
 		}
-		if (lineGuess.length > 0 && options.ensureTrailingNewline) {
-			renderChildren.add(const TextSpan(text: '\n'));
+		bool endsInNewline(InlineSpan? span) => switch (span) {
+			TextSpan(children: [..., InlineSpan last]) => endsInNewline(last),
+			TextSpan(text: final text?) => text.codeUnits.tryLast == 0x0A,
+			_ => false
+		};
+		if (ensureTrailingNewline && !endsInNewline(renderChildren.tryLast)) {
+			renderChildren.add(options.shrinkWrap ? const TextSpan(text: '\n') : const WidgetSpan(
+				child: SizedBox(
+					width: double.infinity,
+					height: 0
+				)
+			));
 		}
 		return TextSpan(
 			children: renderChildren
-		);
-	}
-
-	Widget buildWidget(BuildContext context, Post post, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options, {Widget? preInjectRow, InlineSpan? postInject}) {
-		final rows = <List<InlineSpan>>[[]];
-		int lines = preInjectRow != null ? 2 : 1;
-		for (int i = 0; i < children.length && lines < options.maxLines; i++) {
-			if (children[i] is PostLineBreakSpan) {
-				rows.add([]);
-				lines++;
-			}
-			else if ((i == 0 || children[i - 1] is PostLineBreakSpan) && (i == children.length - 1 || children[i + 1] is PostLineBreakSpan)) {
-				rows.last.add(children[i].build(context, post, zone, settings, theme, options.copyWith(ownLine: true)));
-			}
-			else {
-				rows.last.add(children[i].build(context, post, zone, settings, theme, options));
-			}
-		}
-		if (postInject != null) {
-			rows.last.add(postInject);
-		}
-		if (rows.last.isEmpty) {
-			rows.removeLast();
-		}
-		final widgetRows = <Widget>[
-			if (preInjectRow != null) preInjectRow
-		];
-		for (final row in rows) {
-			if (row.isEmpty) {
-				widgetRows.add(const Text.rich(TextSpan(text: '')));
-			}
-			else if (row.length == 1) {
-				widgetRows.add(Text.rich(row.first));
-			}
-			else {
-				widgetRows.add(Text.rich(TextSpan(children: row)));
-			}
-		}
-		return Column(
-			mainAxisSize: MainAxisSize.min,
-			crossAxisAlignment: CrossAxisAlignment.start,
-			children: widgetRows
 		);
 	}
 
@@ -410,20 +547,21 @@ class PostNodeSpan extends PostSpan {
 	}
 
 	@override
-	double estimateLines(Post? post, double charactersPerLine) {
-		double lines = 0;
-		double lineGuess = 0;
+	void _estimateHeight(_HeightEstimator estimator) {
 		for (final child in children) {
-			if (child is PostLineBreakSpan) {
-				lines += lineGuess.ceil();
-				lineGuess = 0;
-			}
-			else {
-				lineGuess += child.estimateLines(post, charactersPerLine);
-			}
+			child._estimateHeight(estimator);
 		}
-		lines += lineGuess.ceil();
-		return lines;
+	}
+
+	double estimateHeight(Post post, PostSpanZoneData? zone, Size characterSize, double maxWidth, {
+		Size? postInject
+	}) {
+		final estimator = _HeightEstimatorImpl(post, zone, characterSize, maxWidth);
+		_estimateHeight(estimator);
+		if (postInject != null) {
+			estimator.addRect(postInject);
+		}
+		return estimator.height;
 	}
 
 	@override
@@ -477,7 +615,7 @@ class PostAttachmentsSpan extends PostTerminalSpan {
 						attachment: attachment,
 						semanticParentIds: stackIds,
 						imageboard: zone.imageboard,
-						postId: post?.id ?? 0 /* Only in ReplyBox weird state */
+						postId: post.id
 					);
 					return PopupAttachment(
 						attachment: attachment,
@@ -496,8 +634,8 @@ class PostAttachmentsSpan extends PostTerminalSpan {
 									hero: taggedAttachment,
 									fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
 									shrinkHeight: !settings.squareThumbnails,
-									width: zone.imageboard.site.hasLargeInlineAttachments ? 250 : null,
-									height: zone.imageboard.site.hasLargeInlineAttachments ? 250 : null,
+									width: post.spanFormat.hasLargeInlineAttachments || (options.ownLine && attachments.length == 1 && !settings.squareThumbnails) ? 250 : null,
+									height: post.spanFormat.hasLargeInlineAttachments ? 250 : null,
 									mayObscure: true,
 									hide: options.hideThumbnails,
 									cornerIcon: AttachmentThumbnailCornerIcon(
@@ -530,6 +668,24 @@ class PostAttachmentsSpan extends PostTerminalSpan {
 			}
 		}
 		buffer.writeln();
+	}
+
+	@override
+	void _estimateHeight(_HeightEstimator estimator) {
+		// Width might exceed this. but only if oneLine
+		final outputSize = Size.square(estimator.post.spanFormat.hasLargeInlineAttachments ? 250 : Settings.instance.thumbnailSize);
+		for (int i = 0; i < attachments.length; i++) {
+			if (i > 0) {
+				// Just handling the Wrap.spacing, Wrap.runSpacing is too hard
+				estimator.addPlaceholder(16, 75);
+			}
+			final fitted = applyBoxFit(
+				Settings.instance.squareThumbnails ? BoxFit.cover : BoxFit.contain,
+				Size(attachments[i].aspectRatio, 1),
+				outputSize
+			);
+			estimator.addPlaceholder(fitted.destination.width, math.max(fitted.destination.height, 75));
+		}
 	}
 }
 
@@ -595,6 +751,11 @@ class PostTextSpan extends PostTerminalSpan {
 			onEnter: options.onEnter,
 			onExit: options.onExit
 		);
+	}
+	
+	@override
+	void _estimateHeight(_HeightEstimator estimator) {
+		estimator.addCharacters(text.length);
 	}
 
 	@override
@@ -669,6 +830,11 @@ class PostLineBreakSpan extends PostTerminalSpan {
 	@override
 	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
 		buffer.writeln();
+	}
+
+	@override
+	void _estimateHeight(_HeightEstimator estimator) {
+		estimator.addHardLineBreak();
 	}
 
 	@override
@@ -970,7 +1136,7 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 			recognizer: recognizer
 		), recognizer);
 	}
-	(TextSpan, TapGestureRecognizer, bool) _buildNormalLink(BuildContext context, Post? post, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options, int? threadId) {
+	(TextSpan, TapGestureRecognizer, bool) _buildNormalLink(BuildContext context, Post post, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options, int? threadId) {
 		String text = '>>$postId';
 		Color color = theme.secondaryColor;
 		if (postId == threadId) {
@@ -978,7 +1144,7 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 		}
 		if (threadId != zone.primaryThreadId) {
 			color = theme.secondaryColor.shiftHue(-20);
-			if (post?.threadId != threadId) {
+			if (post.threadId != threadId) {
 				text += ' (Old thread)';
 			}
 		}
@@ -1044,7 +1210,7 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 			onExit: options.onExit
 		), recognizer, enableUnconditionalInteraction);
 	}
-	(InlineSpan, TapGestureRecognizer) _build(BuildContext context, Post? post, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options) {
+	(InlineSpan, TapGestureRecognizer) _build(BuildContext context, Post post, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options) {
 		int? actualThreadId = threadId;
 		Post? thisPostLoaded = zone.crossThreadPostFromArchive(board, postId);
 		if (board == zone.board) {
@@ -1196,6 +1362,35 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 		}
 		buffer.write('>>');
 		buffer.write(postId.toString());
+	}
+
+	@override
+	void _estimateHeight(_HeightEstimator estimator) {
+		// Doesn't line break
+		int characters = 2 + postId.numberOfDigits;
+		if (threadId == null) {
+			// Treated like normal text
+			estimator.addCharacters(characters + 7); // ' (Dead)'
+		}
+		else {
+			if (threadId == postId) {
+				characters += 5; // ' (OP)'
+			}
+			if (threadId != estimator.zone?.primaryThreadId) {
+				// Treated like normal text
+				estimator.addCharacters(characters + 15); // ' (Cross-thread)'
+			}
+			else {
+				// Doesn't line break
+				estimator.addRect(Size(estimator.characterSize.width * characters, estimator.characterSize.height));
+			}
+		}
+		if (estimator.zone case final zone? when board == zone.board && zone.shouldExpandPost(this)) {
+			estimator.addHardLineBreak();
+			zone.findPost(postId)?.span._estimateHeight(estimator);
+			estimator.addHardLineBreak();
+			estimator.addHardLineBreak();
+		}
 	}
 
 	@override
@@ -1421,7 +1616,7 @@ class PostCodeSpan extends PostTerminalSpan {
 				return spans;
 			}
 		);
-		final lineCountFieldWidth = lineCount.toString().length;
+		final lineCountFieldWidth = lineCount.numberOfDigitsLinear;
 		if (options.showRawSource) {
 			return TextSpan(
 				children: [
@@ -1497,6 +1692,13 @@ class PostCodeSpan extends PostTerminalSpan {
 		if (includeMarkup) {
 			buffer.write('[/code]');
 		}
+	}
+
+	@override
+	void _estimateHeight(_HeightEstimator estimator) {
+		estimator.addHardLineBreak();
+		super._estimateHeight(estimator.noWordWrap());
+		estimator.addHardLineBreak();
 	}
 }
 
@@ -1645,7 +1847,7 @@ class PostLinkSpan extends PostTerminalSpan {
 			}
 			if (snapshot != null) {
 				EmbedData? data = snapshot.data;
-				if (data?.attachments?.imageboard.key == zone.imageboard.key && (data?.attachments?.item.every((a) => post?.attachments.any((b) => b.url == a.url) ?? false) ?? false)) {
+				if (data?.attachments?.imageboard.key == zone.imageboard.key && (data?.attachments?.item.every((a) => post.attachments.any((b) => b.url == a.url)) ?? false)) {
 					// Don't re-embed same attachments twice next to the real thumbnail
 					// Just show the URL
 					data = null;
@@ -1683,7 +1885,7 @@ class PostLinkSpan extends PostTerminalSpan {
 									attachment: a,
 									imageboard: attachments.imageboard,
 									semanticParentIds: stackIds,
-									postId: post?.id ?? 0 /* Only in ReplyBox weird state */
+									postId: post.id
 								)).toList(),
 								initialAttachment: attachment,
 								heroOtherEndIsBoxFitCover: settings.squareThumbnails
@@ -1890,6 +2092,42 @@ class PostLinkSpan extends PostTerminalSpan {
 			buffer.write(url);
 		}
 	}
+
+	@override
+	void _estimateHeight(_HeightEstimator estimator) {
+		// Complete hack
+		final id = 'noembed $url';
+		if ((estimator.zone?._futures[id]?.data ?? PostSpanZoneData._globalFutures[id]?.data) case EmbedData data) {
+			final Size imageSize;
+			if (data.thumbnailUrl != null) {
+				imageSize = const Size(75, 75);
+			}
+			else if (data.thumbnailWidget case SizedBox(width: final width?, height: final height?)) {
+				imageSize = Size(width, height);
+			}
+			else {
+				imageSize = const Size(16, 16);
+			}
+			final otherWidth = 32 + imageSize.width;
+			final estimator2 = _HeightEstimatorImpl(estimator.post, estimator.zone, estimator.characterSize, estimator.maxWidth - otherWidth);
+			if (name case final name? when !url.contains(name) && (data.title?.contains(name) != true)) {
+				estimator2.addCharacters(name.length);
+				estimator2.addHardLineBreak();
+			}
+			if (data.title case final title? when title.isNotEmpty) {
+				estimator2.addCharacters(title.length);
+				estimator2.addHardLineBreak();
+			}
+			else if (name == null || url.contains(name!)) {
+				estimator2.addCharacters(url.length);
+				estimator2.addHardLineBreak();
+			}
+			estimator.addRect(Size(otherWidth + estimator2.width, 32 + math.max(imageSize.height, estimator2.height)));
+		}
+		else {
+			super._estimateHeight(estimator);
+		}
+	}
 }
 
 class PostCatalogSearchSpan extends PostTerminalSpan {
@@ -1991,6 +2229,13 @@ class PostTeXSpan extends PostTerminalSpan {
 		if (includeMarkup) {
 			buffer.write('[/math]');
 		}
+	}
+
+	@override
+	void _estimateHeight(_HeightEstimator estimator) {
+		estimator.addHardLineBreak();
+		super._estimateHeight(estimator.noWordWrap());
+		estimator.addHardLineBreak();
 	}
 }
 
@@ -2478,6 +2723,12 @@ class PostShiftJISSpan extends PostTerminalSpan {
 			buffer.write('[/sjis]');
 		}
 	}
+
+	@override
+	void _estimateHeight(_HeightEstimator estimator) {
+		// Submona font is smaller than usual
+		super._estimateHeight(estimator.scale(0.91).noWordWrap());
+	}
 }
 
 class PostUserLinkSpan extends PostTerminalSpan {
@@ -2822,6 +3073,15 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 			fakeHoistedRootId: fakeHoistedRootId,
 			onNeedScrollToPost: onNeedScrollToPost
 		);
+	}
+	PostSpanZoneData? peekChildZoneFor(int? postId, {
+		PostSpanZoneStyle? style,
+		int? fakeHoistedRootId,
+		ValueChanged<Post>? onNeedScrollToPost,
+		PostQuoteLinkSpan? link
+	}) {
+		final key = (postId, style, fakeHoistedRootId, onNeedScrollToPost, link);
+		return _children[key];
 	}
 
 	PostSpanZoneData hoistFakeRootZoneFor(int fakeHoistedRootId, {PostSpanZoneStyle? style, bool clearStack = false});

@@ -273,12 +273,6 @@ class _ShareablePostsState extends State<ShareablePosts> {
 								child: child
 							);
 						},
-						estimateHeight: (post, width) {
-							final fontSize = DefaultTextStyle.of(context).style.fontSize ?? 17;
-							return post.span.estimateLines(post,
-								(width / (0.55 * fontSize * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil().toDouble()
-							).ceil() * fontSize;
-						},
 						initiallyCollapseSecondLevelReplies: false,
 						collapsedItemsShowBody: false,
 						repliesToOPAreTopLevel: imageboard.persistence.browserState.treeModeRepliesToOPAreTopLevel,

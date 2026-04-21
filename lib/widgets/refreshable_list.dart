@@ -471,7 +471,7 @@ class RefreshableTreeAdapter<T extends Object> {
 	final Future<List<T>> Function(List<T> currentList, List<ParentAndChildIdentifier> stubIds, CancelToken? cancelToken) updateWithStubItems;
 	final Widget Function(Widget, List<int>) wrapTreeChild;
 	final int opId;
-	final double Function(T item, double width) estimateHeight;
+	final double Function(T item, List<int> parentIds, double width)? estimateHeight;
 	final bool Function(T item) getIsStub;
 	final bool Function(T item) getIsPageStub;
 	final bool initiallyCollapseSecondLevelReplies;
@@ -488,7 +488,7 @@ class RefreshableTreeAdapter<T extends Object> {
 		required this.updateWithStubItems,
 		required this.opId,
 		required this.wrapTreeChild,
-		required this.estimateHeight,
+		this.estimateHeight,
 		required this.getIsStub,
 		required this.getIsPageStub,
 		required this.initiallyCollapseSecondLevelReplies,
@@ -593,10 +593,19 @@ class _RefreshableTreeItemsCacheKey {
 	}
 }
 
-enum _DummyStatus {
+enum _DummyStatusType {
 	// Null = never built as dummy
 	previously,
 	now
+}
+
+class _DummyStatus {
+	final _DummyStatusType type;
+	final double height;
+	_DummyStatus(this.type, this.height);
+
+	@override
+	String toString() => '_DummyStatus($type, $height)';
 }
 
 class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
@@ -1809,18 +1818,33 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		);
 	}
 
+	double? _heightEstimate(RefreshableListItem<T> item) {
+		final width = estimateWidth(context, listen: false);
+		final depth = item.depth;
+		final depthWidth = depth > 0 ? min(width / 2, (pow(depth, 0.60) * 20)) : 0;
+		final height = widget.treeAdapter?.estimateHeight?.call(item.item, item.parentIds, width - depthWidth);
+		if (height != null && _refreshableTreeItems.isItemHidden(item) == TreeItemCollapseType.mutuallyCollapsed) {
+			return min(height, 90);
+		}
+		return height;
+	}
+
 	double? _fastHeightEstimate(RefreshableListItem<T> item) {
-		if (_refreshableTreeItems.isItemHidden(item).isHidden) {
+		final isHidden = _refreshableTreeItems.isItemHidden(item);
+		if (isHidden.isHidden) {
 			return 0;
 		}
 		if (item.representsUnloadedPages.isNotEmpty) {
 			return 50;
 		}
-		if (_refreshableTreeItems._dummyCache[item._key] == _DummyStatus.now) {
-			// Match to dummy builder
-			return _kDummyHeight;
+		if (isHidden == TreeItemCollapseType.collapsed || item.representsStubChildren) {
+			return 36;
 		}
-		return null;
+		if (_refreshableTreeItems._dummyCache[item._key] case _DummyStatus(type: _DummyStatusType.now, height: final height)) {
+			// Match to dummy builder
+			return height;
+		}
+		return _heightEstimate(item);
 	}
 
 	bool _useDummyFor(int itemIndex) {
@@ -1836,24 +1860,45 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			// It can't be done, layout breaks down
 			dummy = false;
 		}
-		if (dummy) {
-			_refreshableTreeItems._dummyCache[value._key] = _DummyStatus.now;
-		}
-		else if (_refreshableTreeItems._dummyCache[value._key] == _DummyStatus.now) {
-			_refreshableTreeItems._dummyCache[value._key] = _DummyStatus.previously;
+		if (_refreshableTreeItems._dummyCache[value._key] case _DummyStatus(type: _DummyStatusType.previously, height: final height) when !dummy) {
+			_refreshableTreeItems._dummyCache[value._key] = _DummyStatus(_DummyStatusType.previously, height);
 		}
 		if (dummy) {
 			// Terrible hack
 			if (_refreshableTreeItems.isItemHidden(value).isHidden) {
 				return const SizedBox(width: double.infinity);
 			}
-			/// 0 -> 0.1
-			final factor = 0.0001 * (identityHashCode(value) % 1000);
-			final child = Container(
-				margin: const EdgeInsets.all(16),
-				width: (widget.gridDelegate == null && widget.staggeredGridDelegate == null) ? double.infinity : null,
-				height: (widget.gridDelegate == null && widget.staggeredGridDelegate == null) ? (_kDummyHeight - 32) : null,
-				color: Settings.instance.theme.primaryColorWithBrightness(factor)
+			/// 0.1 -> 0.2
+			final factor = 0.1 + (0.0001 * (identityHashCode(value) % 1000));
+			final height = _refreshableTreeItems._dummyCache[value._key]?.height ?? _fastHeightEstimate(value) ?? _kDummyHeight;
+			_refreshableTreeItems._dummyCache[value._key] = _DummyStatus(_DummyStatusType.now, height);
+			final child = Column(
+				mainAxisSize: MainAxisSize.min,
+				children: [
+					Container(
+						margin: const EdgeInsets.all(8),
+						width: (widget.gridDelegate == null && widget.staggeredGridDelegate == null) ? double.infinity : null,
+						height: (widget.gridDelegate == null && widget.staggeredGridDelegate == null) ? 20 : null,
+						child: FractionallySizedBox(
+							widthFactor: 0.5,
+							alignment: Alignment.centerLeft,
+							child: ColoredBox(
+								color: Settings.instance.theme.primaryColorWithBrightness(factor)
+							)
+						)
+					),
+					if (height < 60) SizedBox(height: height - 36)
+					else ...[
+						const SizedBox(height: 8),
+						Container(
+							margin: const EdgeInsets.symmetric(horizontal: 16),
+							width: (widget.gridDelegate == null && widget.staggeredGridDelegate == null) ? double.infinity : null,
+							height: (widget.gridDelegate == null && widget.staggeredGridDelegate == null) ? (height - 60) : null,
+							color: Settings.instance.theme.primaryColorWithBrightness(factor)
+						),
+						const SizedBox(height: 16)
+					]
+				]
 			);
 			if (useTree && value.depth > 0) {
 				return Container(
@@ -2187,7 +2232,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			return true;
 		}
 		final width = estimateWidth(context, listen: false);
-		final height = (widget.treeAdapter?.estimateHeight(item.item, width) ?? 0);
+		final height = (widget.treeAdapter?.estimateHeight?.call(item.item, item.parentIds, width) ?? 0);
 		final parentCount = widget.treeAdapter?.getParentIds(item.item).length ?? 0;
 		return height > (100 * max(parentCount, 3));
 	}
@@ -3269,13 +3314,14 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 													},
 													fastHeightEstimate: _fastHeightEstimate,
 													fastErrorEstimate: (i) {
+														final dummyStatus = _refreshableTreeItems._dummyCache[values[i]._key];
 														if (
 															// Item was previously dummy. so its contribution to scrollOffset is not correct
-															_refreshableTreeItems._dummyCache[values[i]._key] == _DummyStatus.previously &&
+															dummyStatus != null && dummyStatus.type == _DummyStatusType.previously &&
 															// We are not in a weird inter-insertion-frame situation
 															controller._items[i].item == values[i]
 														) {
-															return (controller._items[i].cachedHeight ?? _kDummyHeight) - _kDummyHeight;
+															return (controller._items[i].cachedHeight ?? dummyStatus.height) - dummyStatus.height;
 														}
 														// No error
 														return null;

@@ -159,7 +159,7 @@ class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 				},
 				opId: 0,
 				wrapTreeChild: (c, l) => c,
-				estimateHeight: (i, w) => 50,
+				estimateHeight: (i, p, w) => 50,
 				getIsStub: (i) => i.isStub,
 				getIsPageStub: (i) => i.isPageStub,
 				isPaged: false,

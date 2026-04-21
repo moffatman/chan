@@ -504,10 +504,10 @@ class ThreadRow extends StatelessWidget {
 				}
 			}
 		}
-		int? maxSpanLines;
-		int? charactersPerLine;
-		if (approxHeight != null) {
-			charactersPerLine = (approxWidth / (0.4 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil();
+		PostNodeSpanConstraints? spanConstraints;
+		if (approxHeight != null && approxHeight.isFinite) {
+			final characterSize = CharacterSize.of(context);
+			final charactersPerLine = (approxWidth / characterSize.width).lazyCeil();
 			final approxImageHeight = switch (style.isGrid) {
 				true => switch (settings.catalogGridModeTextAboveAttachment) {
 					true => 0, // Image behind
@@ -525,10 +525,12 @@ class ThreadRow extends StatelessWidget {
 				},
 				false => 0 // Image to the side
 			};
-			final oneLineHeight = (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2);
-			final totalLines = 1 + ((approxHeight - approxImageHeight) / oneLineHeight).lazyCeil();
-			final headerLines = (headerRow.fold(0, (s, e) => s + e.toPlainText().length) / charactersPerLine).lazyCeil();
-			maxSpanLines = totalLines - headerLines;
+			final headerHeight = characterSize.height * (headerRow.fold(0, (s, e) => s + e.toPlainText().length) / charactersPerLine).lazyCeil();
+			spanConstraints = (
+				width: approxWidth,
+				maxHeight: approxHeight - (approxImageHeight + headerHeight),
+				characterSize: characterSize
+			);
 		}
 		List<Widget> rowChildren() => [
 			const SizedBox(width: 8),
@@ -607,12 +609,10 @@ class ThreadRow extends StatelessWidget {
 											op.span.build(
 												context, op, context.watch<PostSpanZoneData>(), settings, theme,
 												(baseOptions ?? const PostSpanRenderOptions()).copyWith(
-													maxLines: maxSpanLines,
-													charactersPerLine: charactersPerLine,
-													postInject: settings.useFullWidthForCatalogCounters || (showLastReplies && thread.posts_.length > 1)	? null : countersPlaceholder,
-													hideThumbnails: hideThumbnails,
-													ensureTrailingNewline: true
-												)
+													hideThumbnails: hideThumbnails
+												),
+												ensureTrailingNewline: true,
+												postInject: settings.useFullWidthForCatalogCounters || (showLastReplies && thread.posts_.length > 1) ? null : countersPlaceholder
 											)
 										]
 										else if (!settings.useFullWidthForCatalogCounters && !(showLastReplies && thread.posts_.length > 1)) countersPlaceholder,
@@ -754,10 +754,8 @@ class ThreadRow extends StatelessWidget {
 					builder: (ctx, _) {
 						final others = [
 							if (site.classicCatalogStyle && op.text.isNotEmpty) op.span.build(ctx, op, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
-								maxLines: maxSpanLines,
-								hideThumbnails: hideThumbnails,
-								charactersPerLine: charactersPerLine,
-							)),
+								hideThumbnails: hideThumbnails
+							), constraints: spanConstraints),
 							if (!settings.useFullWidthForCatalogCounters && !settings.catalogGridModeTextAboveAttachment) countersPlaceholder,
 							if (!settings.catalogGridModeAttachmentInBackground && !settings.catalogGridModeShowMoreImageIfLessText && style == ThreadRowStyle.grid) TextSpan(text: '\n' * 25)
 						];

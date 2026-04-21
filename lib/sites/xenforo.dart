@@ -1063,10 +1063,6 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 	@override
 	bool get hasExpiringThreads => false;
 
-	/// On the website these are huge (full-width)
-	@override
-	bool get hasLargeInlineAttachments => true;
-
 	@override
 	bool get hasSharedIdSpace => true;
 

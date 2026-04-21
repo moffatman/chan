@@ -2011,11 +2011,55 @@ class ThreadPageState extends State<ThreadPage> {
 																				child: child
 																			);
 																		},
-																		estimateHeight: (post, width) {
-																			final fontSize = DefaultTextStyle.of(context).style.fontSize ?? 17;
-																			return post.span.estimateLines(post,
-																				(width / (0.55 * fontSize * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil().toDouble()
-																			).ceil() * fontSize;
+																		estimateHeight: (post, List<int> parentIds, width) {
+																			final characterSize = CharacterSize.of(context);
+																			final maxWidth = width - 16;
+																			final charactersPerLine = (maxWidth / characterSize.width).lazyCeil();
+																			PostSpanZoneData? childZone = zone;
+																			for (int id in parentIds) {
+																				childZone = childZone?.peekChildZoneFor(id, style: PostSpanZoneStyle.tree);
+																			}
+																			childZone = childZone?.peekChildZoneFor(post.id);
+																			Size? postInject;
+																			int replyCount = 0;
+																			for (final id in post.replyIds) {
+																				final post = zone.findPost(id);
+																				if (post != null && persistentState.shouldShowPost(post)) {
+																					replyCount++;
+																				}
+																			}
+																			if (replyCount > 0) {
+																				postInject = Size((4 + replyCount.numberOfDigitsLinear) * 8, characterSize.height);
+																			}
+																			// TODO: FloatingPlaceholder
+																			final imageWidth = post.attachments_.isNotEmpty || post.attachmentDeleted ? 75 : 0;
+																			final textHeight = post.span.estimateHeight(post, childZone, characterSize, maxWidth - imageWidth, postInject: postInject);
+																			int metadataLines = 2;
+																			if (post.attachments_.any((a) => a.filename.length > (charactersPerLine * 0.4))) {
+																				metadataLines++;
+																			}
+																			if (post.id == persistentState.id) {
+																				final title = persistentState.thread?.title ?? '';
+																				if (title.isNotEmpty) {
+																					metadataLines += (title.length / charactersPerLine).ceil();
+																				}
+																			}
+																			if (post.isDeleted && post.text.isEmpty) {
+																				metadataLines--;
+																			}
+																			if (settings.mouseSettings.supportMouse) {
+																				final len = post.replyIds.fold(0, (s, id) => s + id.numberOfDigits + 2);
+																				final additionalLines = len / charactersPerLine;
+																				if (additionalLines > 0.3) {
+																					metadataLines += additionalLines.ceil();
+																				}
+																			}
+																			final metadataHeight = metadataLines * characterSize.height;
+																			final imageHeight = post.attachmentDeleted ? 75 : post.attachments_.fold(0.0, (s, a) => s + max(75, (switch ((a.width, a.height)) {
+																				(int w, int h) when w > h => h / w,
+																				_ => 1
+																			} * settings.thumbnailSize)));
+																			return max(52, max(textHeight + 8, imageHeight) + 8 + metadataHeight);
 																		},
 																		initiallyCollapseSecondLevelReplies: treeModeInitiallyCollapseSecondLevelReplies,
 																		collapsedItemsShowBody: treeModeCollapsedPostsShowBody,
@@ -3662,7 +3706,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 																	children: [
 																		Container(
 																			constraints: BoxConstraints(
-																				minWidth: MediaQuery.textScalerOf(context).scale(24) * max(1, 0.5 * _whiteCountAbove.toString().length)
+																				minWidth: MediaQuery.textScalerOf(context).scale(24) * max(1, 0.5 * _whiteCountAbove.numberOfDigitsLinear)
 																			),
 																			child: Text(
 																				_whiteCountAbove.toString(),
@@ -3763,7 +3807,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 																color: theme.primaryColorWithBrightness(0.6),
 																child: Container(
 																	constraints: BoxConstraints(
-																		minWidth: MediaQuery.textScalerOf(context).scale(24) * max(1, 0.5 * _greyCount.toString().length)
+																		minWidth: MediaQuery.textScalerOf(context).scale(24) * max(1, 0.5 * _greyCount.numberOfDigitsLinear)
 																	),
 																	child: Text(
 																		_greyCount.toString(),
@@ -3778,7 +3822,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 																color: theme.primaryColor,
 																child: Container(
 																	constraints: BoxConstraints(
-																		minWidth: MediaQuery.textScalerOf(context).scale(24) * max(1, 0.5 * _whiteCountBelow.toString().length)
+																		minWidth: MediaQuery.textScalerOf(context).scale(24) * max(1, 0.5 * _whiteCountBelow.numberOfDigitsLinear)
 																	),
 																	child: Text(
 																		_whiteCountBelow.toString(),

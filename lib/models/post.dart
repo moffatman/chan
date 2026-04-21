@@ -90,6 +90,10 @@ enum PostSpanFormat {
 		xenforo || reddit => true,
 		_ => false
 	};
+	bool get hasLargeInlineAttachments => switch (this) {
+		xenforo => true,
+		_ => false
+	};
 	bool get hasInlineReplies => switch (this) {
 		reddit || stub || pageStub => false,
 		_ => true

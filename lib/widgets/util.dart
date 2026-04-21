@@ -2864,3 +2864,12 @@ extension CurrentRoute on NavigatorState {
 		return currentRoute;
 	}
 }
+
+class CharacterSize {
+	CharacterSize._();
+	static Size of(BuildContext context) {
+		final lineHeight = (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2);
+		final characterWidth = 0.37 * lineHeight;
+		return Size(characterWidth, lineHeight);
+	}
+}
