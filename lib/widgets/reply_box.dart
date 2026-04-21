@@ -714,43 +714,8 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 			if (!file.uri.pathSegments.last.contains('.')) {
 				// No extension
 				final scan = await MediaScan.scan(file.uri);
-				final format = scan.format;
-				if (format == null) {
-					throw Exception('No file extension, and unable to determine format by scanning!');
-				}
-				final String newExt;
-				if (format.contains('png')) {
-					newExt = 'png';
-				}
-				else if (format.contains('jpeg')) {
-					newExt = 'jpeg';
-				}
-				else if (format == 'gif') {
-					newExt = 'gif';
-				}
-				else if (format.contains('webm')) {
-					newExt = 'webm';
-				}
-				else if (format.contains('matroska')) {
-					newExt = 'mkv';
-				}
-				else if (format.contains('mp4')) {
-					newExt = 'mp4';
-				}
-				else if (format == 'image2') {
-					final codec = scan.codec;
-					if (codec == 'mjpeg') {
-						newExt = 'jpeg';
-					}
-					else {
-						throw Exception('No file extension, and scan codec was unrecognized: "$codec"');
-					}
-				}
-				else {
-					throw Exception('No file extension, and scan format was unrecognized: "$format"');
-				}
 				// Rename it with extension
-				file = await file.copy(Persistence.shareCacheDirectory.child('${file.uri.pathSegments.last}.$newExt'));
+				file = await file.copy(Persistence.shareCacheDirectory.child('${file.uri.pathSegments.last}.${scan.guessExtension}'));
 			}
 			if (file.path.endsWith('.pvt')) {
 				// Live Photo (it's a directory)

@@ -420,6 +420,47 @@ class MediaScan {
 		       map.keys.any((k) => k is! String || !_kUnremoveableMetadataFields.contains(k.toLowerCase()));
 	}
 
+	/// Without '.' before
+	String get guessExtension {
+		final format = this.format;
+		if (format == null) {
+			throw Exception('No file extension, and unable to determine format by scanning!');
+		}
+		if (format.contains('png')) {
+			return 'png';
+		}
+		else if (format.contains('jpeg')) {
+			return 'jpeg';
+		}
+		else if (format == 'gif') {
+			return 'gif';
+		}
+		else if (format.contains('webm')) {
+			return 'webm';
+		}
+		else if (format.contains('matroska')) {
+			return 'mkv';
+		}
+		else if (format.contains('mp4')) {
+			return 'mp4';
+		}
+		else if (format.contains('webp')) {
+			return 'webp';
+		}
+		else if (format == 'image2') {
+			final codec = this.codec;
+			if (codec == 'mjpeg') {
+				return 'jpeg';
+			}
+			else {
+				throw Exception('No file extension, and scan codec was unrecognized: "$codec"');
+			}
+		}
+		else {
+			throw Exception('No file extension, and scan format was unrecognized: "$format"');
+		}
+	}
+
 	@override
 	String toString() => 'MediaScan(hasAudio: $hasAudio, duration: $duration, bitrate: $bitrate, width: $width, height: $height, codec: $codec, videoFramerate: $videoFramerate, sizeInBytes: $sizeInBytes, metadata: $metadata, format: $format, pixFmt: $pixFmt, videoBitrate: $videoBitrate, audioBitrate: $audioBitrate)';
 }

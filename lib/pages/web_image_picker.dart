@@ -1,8 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:chan/models/attachment.dart';
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/cookies.dart';
+import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/md5.dart';
+import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
@@ -10,6 +14,8 @@ import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/adaptive.dart';
+import 'package:chan/widgets/attachment_viewer.dart';
+import 'package:chan/widgets/cupertino_inkwell.dart';
 import 'package:chan/widgets/media_thumbnail.dart';
 import 'package:chan/widgets/network_image.dart';
 import 'package:chan/widgets/util.dart';
@@ -532,79 +538,123 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 														return null;
 													},
 												);
+												bool isBase64 = image.src.startsWith('data:');
 												Uint8List? data;
-												if (image.src.startsWith('data:')) {
+												if (isBase64) {
 													data = base64Decode(image.src.split(',')[1]);
 													imageWidget = ExtendedImage.memory(
 														data,
 														fit: BoxFit.contain
 													);
 												}
-												return GestureDetector(
-													onTap: () async {
-														try {
-															if (data != null) {
-																Navigator.of(context).pop(data);
-																return;
+												Future<Uint8List?> getData() async {
+													if (data != null) {
+														return data;
+													}
+													final file = await getCachedImageFile(image.src);
+													if (file != null) {
+														// Avoid second download
+														final bytes = await file.readAsBytes();
+														return bytes;
+													}
+													if (!context.mounted) return null;
+													final response = await modalLoad(context, 'Downloading...', (controller) async {
+														final response = await settings.client.get(image.src, options: Options(
+															responseType: ResponseType.bytes,
+															headers: headers,
+															extra: {
+																kPriority: RequestPriority.interactive,
+																kExtraCookie: extraCookie
 															}
-															final file = await getCachedImageFile(image.src);
-															if (!context.mounted) return;
-															if (file != null) {
-																// Avoid second download
-																final bytes = await file.readAsBytes();
-																if (context.mounted) {
+														), cancelToken: controller.cancelToken);
+														if (response.data is Uint8List) {
+															return response;
+														}
+														// Something this happens with cloudflare clearance,
+														// we get <img> as String, just try again
+														return await settings.client.get(image.src, options: Options(
+															responseType: ResponseType.bytes,
+															headers: headers,
+															extra: {
+																kPriority: RequestPriority.interactive,
+																kExtraCookie: extraCookie
+															}
+														), cancelToken: controller.cancelToken);
+													}, cancellable: true);
+													return response.data as Uint8List;
+												}
+												return GestureDetector(
+													onLongPress: wrapButtonCallback(context, () async {
+														final dir = Persistence.shareCacheDirectory.dir(DateTime.now().millisecondsSinceEpoch.toString());
+														await dir.create(recursive: true);
+														final bytes = await getData();
+														if (bytes == null) {
+															return;
+														}
+														final basename = isBase64 ? 'tmp' : FileBasename.get(Uri.parse(image.src).pathSegments.tryLast ?? 'tmp.bin');
+														final tmpFile = dir.file('tmp.bin');
+														await tmpFile.writeAsBytes(bytes);
+														final scan = await MediaScan.scan(tmpFile.uri, force: true);
+														final ext = '.${scan.guessExtension}';
+														final filename = '$basename$ext';
+														final file = dir.file(filename);
+														await tmpFile.rename(file.path);
+														final fakeAttachment = Attachment(
+															type: AttachmentType.fromFilename(filename),
+															board: '',
+															id: filename,
+															ext: ext,
+															filename: filename,
+															url: isBase64 ? '' : image.src,
+															thumbnailUrl: '',
+															md5: await calculateMD5(file),
+															width: scan.width,
+															height: scan.height,
+															sizeInBytes: scan.sizeInBytes,
+															threadId: null
+														);
+														if (!context.mounted) return;
+														final controller = AttachmentViewerController(
+															context: context,
+															attachment: fakeAttachment,
+															imageboard: context.read<Imageboard?>() ?? ImageboardRegistry.instance.dev!,
+															overrideSource: file.uri
+														);
+														final filename2 = await controller.download();
+														if (!context.mounted) return;
+														showToast(context: context, message: 'Downloaded $filename2', icon: CupertinoIcons.cloud_download);
+													}),
+													child: CupertinoInkwell(
+														onPressed: () async {
+															try {
+																final bytes = await getData();
+																if (context.mounted && bytes != null) {
 																	Navigator.pop(context, bytes);
 																}
-																return;
 															}
-															final response = await modalLoad(context, 'Downloading...', (controller) async {
-																final response = await settings.client.get(image.src, options: Options(
-																	responseType: ResponseType.bytes,
-																	headers: headers,
-																	extra: {
-																		kPriority: RequestPriority.interactive,
-																		kExtraCookie: extraCookie
-																	}
-																), cancelToken: controller.cancelToken);
-																if (response.data is Uint8List) {
-																	return response;
+															catch (e, st) {
+																Future.error(e, st); // crashlytics
+																if (context.mounted) {
+																	alertError(context, e, st);
 																}
-																// Something this happens with cloudflare clearance,
-																// we get <img> as String, just try again
-																return await settings.client.get(image.src, options: Options(
-																	responseType: ResponseType.bytes,
-																	headers: headers,
-																	extra: {
-																		kPriority: RequestPriority.interactive,
-																		kExtraCookie: extraCookie
-																	}
-																), cancelToken: controller.cancelToken);
-															}, cancellable: true);
-															if (!context.mounted) return;
-															Navigator.of(context).pop(response.data);
-														}
-														catch (e, st) {
-															Future.error(e, st); // crashlytics
-															if (mounted) {
-																alertError(context, e, st);
 															}
-														}
-													},
-													child: Column(
-														crossAxisAlignment: CrossAxisAlignment.stretch,
-														children: [
-															Expanded(
-																child: image.isVideo ? MediaThumbnail(
-																	uri: Uri.parse(image.src),
-																	headers: headers,
-																	extraCookie: extraCookie
-																) : imageWidget
-															),
-															const SizedBox(height: 4),
-															Text('${image.width}x${image.height}', style: const TextStyle(
-																fontSize: 16
-															))
-														]
+														},
+														child: Column(
+															crossAxisAlignment: CrossAxisAlignment.stretch,
+															children: [
+																Expanded(
+																	child: image.isVideo ? MediaThumbnail(
+																		uri: Uri.parse(image.src),
+																		headers: headers,
+																		extraCookie: extraCookie
+																	) : imageWidget
+																),
+																const SizedBox(height: 4),
+																Text('${image.width}x${image.height}', style: const TextStyle(
+																	fontSize: 16
+																))
+															]
+														)
 													)
 												);
 											},
