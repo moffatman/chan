@@ -129,12 +129,12 @@ class PrimaryScrollControllerInjectingNavigatorState extends State<PrimaryScroll
 		observers: widget.observers,
 		key: widget.navigatorKey,
 		onGenerateRoute: (settings) {
-			if (settings.name == _kInitialAboveRoot) {
+			if (widget.buildInitialAboveRoot case final x? when settings.name == _kInitialAboveRoot) {
 				return adaptivePageRoute(
 					settings: settings,
-					builder: (context) => _injectController(context, widget.buildInitialAboveRoot!.$1),
+					builder: (context) => _injectController(context, x.$1),
 					showAnimationsForward: false
-				)..registerPopEntry(_MyPopListener(widget.buildInitialAboveRoot!.$2));
+				)..registerPopEntry(_MyPopListener(x.$2));
 			}
 			return adaptivePageRoute(
 				settings: settings,
