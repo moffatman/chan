@@ -337,7 +337,23 @@ final appearanceSettings = [
 		setting: ImmutableButtonSettingWidget(
 			description: fontSetting.description,
 			icon: CupertinoIcons.textformat_alt,
-			setting: fontSetting.setting,
+			setting: CustomImmutableSetting(
+				reader: fontSetting.setting.read,
+				watcher: fontSetting.setting.watch,
+				writer: (context, newFont) async {
+					if (newFont == null) {
+						// This is always safe
+						await fontSetting.setting.write(context, newFont);
+					}
+					else {
+						fontSetting.setting.setting.setter(Persistence.settings, newFont);
+						// ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+						Settings.instance.notifyListeners();
+						// Allow some time for UI to rerender and maybe crash
+						Future.delayed(const Duration(seconds: 5), Settings.instance.didEdit);
+					}
+				}
+			),
 			injectButton: (fontSetting.error == null) ? null : (context, fontFamily, setFontFamily) => AdaptiveIconButton(
 				icon: const Icon(CupertinoIcons.exclamationmark_circle, color: Colors.red),
 				onPressed: () {
