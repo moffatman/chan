@@ -2034,10 +2034,8 @@ class ThreadPageState extends State<ThreadPage> {
 																			if (replyCount > 0) {
 																				postInject = Size((4 + replyCount.numberOfDigitsLinear) * 8, characterSize.height);
 																			}
-																			// TODO: FloatingPlaceholder
-																			double smallImageWidth = 0;
+																			(Size, PlaceholderFloating)? preInject;
 																			double largeImageHeight = 0;
-																			double smallImageHeight = 0;
 																			if (post.attachments_.isNotEmpty) {
 																				if (settings.centeredPostThumbnailSize case final size?) {
 																					for (final attachment in post.attachments_) {
@@ -2052,29 +2050,35 @@ class ThreadPageState extends State<ThreadPage> {
 																					}
 																				}
 																				else {
-																					smallImageWidth = settings.thumbnailSize + 8;
-																					smallImageHeight = 16;
-																					for (final attachment in post.attachments_) {
-																						smallImageHeight += 8; // padding
-																						if (Settings.instance.squareThumbnails || attachment.aspectRatio <= 1) {
-																							smallImageHeight += max(75, settings.thumbnailSize);
+																					final outputSize = Size.square(settings.thumbnailSize);
+																					final rects = post.attachments_.map((attachment) {
+																						if (settings.squareThumbnails || attachment.aspectRatio <= 1) {
+																							return outputSize;
 																						}
-																						else {
-																							// shrinkHeight
-																							smallImageHeight += max(75, settings.thumbnailSize / attachment.aspectRatio);
-																						}
-																					}
-																					smallImageHeight -= 8; // padding is between images
+																						return Size(outputSize.width, max(51, outputSize.height / attachment.aspectRatio));
+																					}).toList();
+																					preInject = (
+																						estimateWrapSize(
+																							rects: rects,
+																							maxWidth: maxWidth,
+																							spacing: 8,
+																							runSpacing: 8
+																						) + const Offset(8, 8) /* padding */,
+																						settings.imagesOnRight ? PlaceholderFloating.right : PlaceholderFloating.left
+																					);
 																				}
 																			}
 																			else if (post.attachmentDeleted) {
-																				smallImageWidth = 75;
-																				smallImageHeight = 75;
+																				preInject = (const Size(75, 75), settings.imagesOnRight ? PlaceholderFloating.right : PlaceholderFloating.left);
 																			}
-																			final textHeight = post.span.estimateHeight(post, childZone, characterSize, maxWidth - smallImageWidth, postInject: postInject);
+																			final textHeight = post.span.estimateHeight(post, childZone, characterSize, maxWidth, preInject: preInject, postInject: postInject);
 																			int metadataLines = 1;
 																			if (post.attachments_.any((a) => a.filename.length > (charactersPerLine * 0.4))) {
 																				metadataLines++;
+																			}
+																			if (post.attachments_.isNotEmpty) {
+																				// Padding below the image will take care of empty line
+																				metadataLines--;
 																			}
 																			if (post.id == persistentState.id) {
 																				final title = persistentState.thread?.title ?? '';
@@ -2093,7 +2097,7 @@ class ThreadPageState extends State<ThreadPage> {
 																				}
 																			}
 																			final metadataHeight = metadataLines * characterSize.height;
-																			return max(52, max(textHeight + 20, smallImageHeight) + 8 + metadataHeight + largeImageHeight);
+																			return max(52, textHeight + 20 + metadataHeight + largeImageHeight);
 																		},
 																		initiallyCollapseSecondLevelReplies: treeModeInitiallyCollapseSecondLevelReplies,
 																		collapsedItemsShowBody: treeModeCollapsedPostsShowBody,

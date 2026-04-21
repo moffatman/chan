@@ -170,8 +170,7 @@ abstract class _HeightEstimator {
 	PostSpanZoneData? get zone;
 	Size get characterSize;
 	double get maxWidth;
-	// TODO: FloatingPlaceholder
-	void addRect(Size size);
+	void addRect(Size size, {PlaceholderFloating floating = PlaceholderFloating.none});
 	/// Performance optimization
 	void addRects(Size size, int count);
 	void addHardLineBreak();
@@ -219,6 +218,8 @@ class _HeightEstimatorImpl extends _HeightEstimator {
 	double currentHeight = 0;
 	double currentWidth = 0;
 	double _longestLineWidth = 0;
+	Rect? currentLeftFloat;
+	Rect? currentRightFloat;
 	_HeightEstimatorImpl(this.post, this.zone, this.characterSize, this.maxWidth) : lineHeight = characterSize.height;
 	@override
 	void addRects(Size size, int count) {
@@ -248,28 +249,71 @@ class _HeightEstimatorImpl extends _HeightEstimator {
 		lineHeight = characterSize.height;
 		_longestLineWidth = math.max(_longestLineWidth, currentWidth);
 		currentWidth = 0;
+		if (currentLeftFloat != null) {
+			if (currentHeight < currentLeftFloat!.bottom) {
+				currentWidth += currentLeftFloat!.width;
+			}
+			else {
+				// Cleared it
+				currentLeftFloat = null;
+			}
+		}
+		if (currentRightFloat != null) {
+			if (currentHeight < currentRightFloat!.bottom) {
+				currentWidth += currentRightFloat!.width;
+			}
+			else {
+				// Cleared it
+				currentRightFloat = null;
+			}
+		}
 	}
 	@override
-	void addRect(Size size) {
+	void addRect(Size size, {PlaceholderFloating floating = PlaceholderFloating.none}) {
 		if (size.width >= maxWidth) {
 			addHardLineBreak();
 			lineHeight = size.height;
 			_longestLineWidth = maxWidth;
 			addHardLineBreak();
+			return;
 		}
-		else if ((currentWidth + size.width) > maxWidth) {
-			addHardLineBreak();
-			lineHeight = size.height;
-			currentWidth = size.width;
+		if (floating == PlaceholderFloating.none) {
+			if ((currentWidth + size.width) > maxWidth) {
+				addHardLineBreak();
+				lineHeight = size.height;
+				currentWidth = size.width;
+			}
+			else {
+				lineHeight = math.max(lineHeight, size.height);
+				currentWidth += size.width;
+			}
+			return;
+		}
+		else if (floating == PlaceholderFloating.left || floating == PlaceholderFloating.start) {
+			while (currentLeftFloat != null || (currentWidth + size.width) > maxWidth) {
+				addHardLineBreak();
+			}
+			currentLeftFloat = Offset(0, currentHeight) & size;
+			currentWidth += size.width;
 		}
 		else {
-			lineHeight = math.max(lineHeight, size.height);
+			while (currentRightFloat != null || (currentWidth + size.width) > maxWidth) {
+				addHardLineBreak();
+			}
+			currentRightFloat = Offset(0, currentHeight) & size;
 			currentWidth += size.width;
 		}
 	}
 	double get height {
 		if (currentWidth > 0) {
-			return currentHeight + lineHeight;
+			double h = currentHeight + lineHeight;
+			if (currentLeftFloat?.bottom case final b?) {
+				h = math.max(h, b);
+			}
+			if (currentRightFloat?.bottom case final b?) {
+				h = math.max(h, b);
+			}
+			return h;
 		}
 		return currentHeight;
 	}
@@ -297,8 +341,8 @@ class _HorizontallyScrollingHeightEstimator extends _HeightEstimator {
 	}
 
 	@override
-	void addRect(Size size) {
-		parent.addRect(Size(0, size.height));
+	void addRect(Size size, {PlaceholderFloating floating = PlaceholderFloating.none}) {
+		parent.addRect(Size(0, size.height), floating: floating);
 	}
 	
 	@override
@@ -327,8 +371,8 @@ class _ScaledHeightEstimator extends _HeightEstimator {
 	}
 
 	@override
-	void addRect(Size size) {
-		parent.addRect(size);
+	void addRect(Size size, {PlaceholderFloating floating = PlaceholderFloating.none}) {
+		parent.addRect(size, floating: floating);
 	}
 	
 	@override
@@ -572,9 +616,13 @@ class PostNodeSpan extends PostSpan {
 	}
 
 	double estimateHeight(Post post, PostSpanZoneData? zone, Size characterSize, double maxWidth, {
+		(Size, PlaceholderFloating)? preInject,
 		Size? postInject
 	}) {
 		final estimator = _HeightEstimatorImpl(post, zone, characterSize, maxWidth);
+		if (preInject != null) {
+			estimator.addRect(preInject.$1, floating: preInject.$2);
+		}
 		_estimateHeight(estimator);
 		if (postInject != null) {
 			estimator.addRect(postInject);
