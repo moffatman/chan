@@ -482,6 +482,13 @@ class Notifications {
 			}
 		}
 		else if (Platform.isIOS || Platform.isMacOS) {
+			try {
+				await _apnsConnector?.token.waitUntil((v) => v != null).timeout(const Duration(seconds: 1));
+			}
+			on TimeoutException {
+				// Throw async to report to crashlytics
+				Future.error(TimeoutException('Timed out waiting for APNS token'));
+			}
 			final token = _apnsConnector?.token.value;
 			if (token != null) {
 				return _ApnsNotificationsToken(token, !isDevelopmentBuild);
