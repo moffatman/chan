@@ -373,7 +373,8 @@ class SiteReddit extends ImageboardSite {
 									addLinebreakBefore = false;
 								}
 								if (listDepth > 0) {
-									yield PostTextSpan('\n${'    ' * listDepth}');
+									yield const PostLineBreakSpan();
+									yield PostTextSpan('    ' * listDepth);
 								}
 								if (node.localName == 'ol') {
 									yield PostTextSpan('$i. ');
