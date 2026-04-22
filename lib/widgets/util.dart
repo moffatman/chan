@@ -2905,11 +2905,14 @@ Size estimateWrapSize({
 		}
 		else {
 			lineHeight = math.max(lineHeight, rect.height);
-			currentWidth += rect.width + spacing;
+			if (currentWidth > 0) {
+				currentWidth += spacing;
+			}
+			currentWidth += rect.width;
 		}
 	}
 	if (currentWidth > 0) {
-		return Size(longestLineWidth, currentHeight + lineHeight);
+		return Size(math.max(currentWidth, longestLineWidth), currentHeight + lineHeight);
 	}
 	return Size(longestLineWidth, currentHeight);
 }
