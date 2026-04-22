@@ -321,13 +321,21 @@ sealed class PostSpan {
 		final buffer = StringBuffer();
 		buildText(buffer, estimator.post, includeMarkup: false);
 		final codeUnits = buffer.toString().codeUnits;
+		int run = 0;
 		for (final codeUnit in codeUnits) {
 			if (codeUnit == 0x0A) {
+				if (run > 0) {
+					estimator.addCharacters(run);
+					run = 0;
+				}
 				estimator.addHardLineBreak();
 			}
 			else {
-				estimator.addCharacters(1);
+				run++;
 			}
+		}
+		if (run > 0) {
+			estimator.addCharacters(run);
 		}
 	}
 	@override
