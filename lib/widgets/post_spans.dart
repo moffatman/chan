@@ -168,11 +168,30 @@ abstract class _HeightEstimator {
 	void addCharacters(int chars) {
 		addRects(characterSize, chars);
 	}
+	void addPlaintext(String text) {
+		final codeUnits = text.codeUnits;
+		int run = 0;
+		for (final codeUnit in codeUnits) {
+			if (codeUnit == 0x0A) {
+				if (run > 0) {
+					addCharacters(run);
+					run = 0;
+				}
+				addHardLineBreak();
+			}
+			else {
+				run++;
+			}
+		}
+		if (run > 0) {
+			addCharacters(run);
+		}
+	}
 
 	_HorizontallyScrollingHeightEstimator noWordWrap() {
 		return _HorizontallyScrollingHeightEstimator(this);
 	}
-	_ScaledHeightEstimator scale(double scale) {
+	_ScaledHeightEstimator scale(Offset scale) {
 		return _ScaledHeightEstimator(this, scale);
 	}
 }
@@ -280,7 +299,7 @@ class _HorizontallyScrollingHeightEstimator extends _HeightEstimator {
 
 class _ScaledHeightEstimator extends _HeightEstimator {
 	final _HeightEstimator parent;
-	final double _scale;
+	final Offset _scale;
 	_ScaledHeightEstimator(this.parent, this._scale);
 
 	@override
@@ -288,7 +307,7 @@ class _ScaledHeightEstimator extends _HeightEstimator {
 	@override
 	PostSpanZoneData? get zone => parent.zone;
 	@override
-	Size get characterSize => parent.characterSize * _scale;
+	Size get characterSize => Size(parent.characterSize.width * _scale.dx, parent.characterSize.height * _scale.dy);
 	@override
 	double get maxWidth => parent.maxWidth;
 
@@ -313,27 +332,7 @@ sealed class PostSpan {
 	const PostSpan();
 	InlineSpan build(BuildContext context, Post post, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options);
 	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true});
-	void _estimateHeight(_HeightEstimator estimator) {
-		final buffer = StringBuffer();
-		buildText(buffer, estimator.post, includeMarkup: false);
-		final codeUnits = buffer.toString().codeUnits;
-		int run = 0;
-		for (final codeUnit in codeUnits) {
-			if (codeUnit == 0x0A) {
-				if (run > 0) {
-					estimator.addCharacters(run);
-					run = 0;
-				}
-				estimator.addHardLineBreak();
-			}
-			else {
-				run++;
-			}
-		}
-		if (run > 0) {
-			estimator.addCharacters(run);
-		}
-	}
+	void _estimateHeight(_HeightEstimator estimator);
 	@override
 	String toString() {
 		final buffer = StringBuffer();
@@ -428,7 +427,7 @@ class _PostWrapperSpan extends PostTerminalSpan {
 			case WidgetSpan(child: SizedBox(width: final width?, height: final height?)):
 				estimator.addRect(Size(width, height));
 			default:
-				super._estimateHeight(estimator);
+				estimator.addPlaintext(span.toPlainText());
 		}
 	}
 }
@@ -799,6 +798,24 @@ class PostTextSpan extends PostTerminalSpan {
 	@override
 	void _estimateHeight(_HeightEstimator estimator) {
 		estimator.addCharacters(text.length);
+		// The length can only get longer
+		if (_tryToFindFakeQuotelinks(estimator.post)) {
+			for (final match in _fakeQuotelinksPattern.allMatches(text)) {
+				final postId = match.group(1)?.tryParseInt;
+				if (postId != null) {
+					final post = estimator.zone?.findPost(postId);
+					if (post != null && post.threadId != estimator.zone?.primaryThreadId) {
+						estimator.addCharacters(14); // '>' + ' (Old thread)'
+					}
+					else if (post == null && estimator.zone != null) {
+						estimator.addCharacters(16); // '>' + ' (Cross-thread)'
+					}
+					else {
+						estimator.addCharacters(1); // '>'
+					}
+				}
+			}
+		}
 	}
 
 	@override
@@ -986,6 +1003,11 @@ class PostWeakQuoteLinkSpan extends PostSpan {
 	@override
 	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
 		_getSpan(post).buildText(buffer, post, forQuoteComparison: forQuoteComparison, includeMarkup: includeMarkup);
+	}
+
+	@override
+	void _estimateHeight(_HeightEstimator estimator) {
+		_getSpan(estimator.post)._estimateHeight(estimator);
 	}
 
 	@override
@@ -1437,7 +1459,6 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 
 	@override
 	void _estimateHeight(_HeightEstimator estimator) {
-		// Doesn't line break
 		int characters = 2 + postId.numberOfDigits;
 		if (threadId == null) {
 			// Treated like normal text
@@ -1508,6 +1529,8 @@ class PostQuoteLinkWithContextSpan extends PostSpan {
 		return PostQuoteLinkWithContextSpan(quoteLink: quoteLink, context: context);
 	}
 
+	static const _kMaxSimilarityToShow = 0.85;
+
 	@override
 	build(context, post, zone, settings, theme, options) {
 		final thePost = zone.findPost(quoteLink.postId);
@@ -1522,7 +1545,7 @@ class PostQuoteLinkWithContextSpan extends PostSpan {
 			children: [
 				quoteLink.build(context, post, zone, settings, theme, options),
 				const TextSpan(text: '\n'),
-				if (similarity < 0.85) ...[
+				if (similarity < _kMaxSimilarityToShow) ...[
 					// Partial quote, include the snippet
 					this.context.build(context, post, zone, settings, theme, options),
 					const TextSpan(text: '\n'),
@@ -1540,6 +1563,25 @@ class PostQuoteLinkWithContextSpan extends PostSpan {
 		quoteLink.buildText(buffer, post, includeMarkup: includeMarkup);
 		buffer.writeln();
 		context.buildText(buffer, post, includeMarkup: includeMarkup);
+		buffer.writeln();
+	}
+
+	@override
+	void _estimateHeight(_HeightEstimator estimator) {
+		quoteLink._estimateHeight(estimator);
+		estimator.addHardLineBreak();
+		final thePost = estimator.zone?.findPost(quoteLink.postId);
+		final theBuffer = StringBuffer();
+		thePost?.span.buildText(theBuffer, thePost, forQuoteComparison: true);
+		final theText = theBuffer.toString();
+		final contextBuffer = StringBuffer();
+		context.child.buildText(contextBuffer, estimator.post, forQuoteComparison: true);
+		final contextText = contextBuffer.toString();
+		final similarity = theText.similarityTo(contextText);
+		if (similarity < _kMaxSimilarityToShow) {
+			context._estimateHeight(estimator);
+			estimator.addHardLineBreak();
+		}
 	}
 
 	@override
@@ -1599,6 +1641,11 @@ class PostBoardLinkSpan extends PostTerminalSpan {
 		buffer.write('>>/');
 		buffer.write(board);
 		buffer.write('/');
+	}
+
+	@override
+	void _estimateHeight(_HeightEstimator estimator) {
+		estimator.addCharacters(board.length + 4);
 	}
 }
 
@@ -1768,7 +1815,7 @@ class PostCodeSpan extends PostTerminalSpan {
 	@override
 	void _estimateHeight(_HeightEstimator estimator) {
 		estimator.addHardLineBreak();
-		super._estimateHeight(estimator.noWordWrap());
+		estimator.noWordWrap().addPlaintext(text);
 		estimator.addHardLineBreak();
 	}
 }
@@ -2196,7 +2243,12 @@ class PostLinkSpan extends PostTerminalSpan {
 			estimator.addRect(Size(otherWidth + estimator2.width, 32 + math.max(imageSize.height, estimator2.height)));
 		}
 		else {
-			super._estimateHeight(estimator);
+			if (name != null && !url.endsWith(name!)) {
+				estimator.addCharacters(name!.length + url.length + 4);
+			}
+			else {
+				estimator.addCharacters(url.length);
+			}
 		}
 	}
 }
@@ -2256,6 +2308,11 @@ class PostCatalogSearchSpan extends PostTerminalSpan {
 		buffer.write('/');
 		buffer.write(query);
 	}
+
+	@override
+	void _estimateHeight(_HeightEstimator estimator) {
+		estimator.addCharacters(board.length + 5 + query.length);
+	}
 }
 
 class PostTeXSpan extends PostTerminalSpan {
@@ -2304,9 +2361,7 @@ class PostTeXSpan extends PostTerminalSpan {
 
 	@override
 	void _estimateHeight(_HeightEstimator estimator) {
-		estimator.addHardLineBreak();
-		super._estimateHeight(estimator.noWordWrap());
-		estimator.addHardLineBreak();
+		estimator.scale(const Offset(1.25, 2)).addCharacters(tex.length);
 	}
 }
 
@@ -2362,6 +2417,10 @@ class PostInlineImageSpan extends PostTerminalSpan {
 	@override
 	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
 		buffer.write(src);
+	}
+	@override
+	void _estimateHeight(_HeightEstimator estimator) {
+		estimator.addRect(Size(width.toDouble(), height.toDouble()));
 	}
 }
 
@@ -2598,6 +2657,11 @@ class PostPopupSpan extends PostSpanWithChild {
 			child.buildText(buffer, post, forQuoteComparison: forQuoteComparison, includeMarkup: includeMarkup);
 		}
 	}
+
+	@override
+	void _estimateHeight(_HeightEstimator estimator) {
+		estimator.addCharacters(title.length);
+	}
 }
 
 class IntrinsicColumnWidthWithMaxWidth extends IntrinsicColumnWidth {
@@ -2708,6 +2772,14 @@ class PostTableSpan extends PostSpan {
 	}
 
 	@override
+	void _estimateHeight(_HeightEstimator estimator) {
+		// Horizontally scrolling
+		for (final _ in rows) {
+			estimator.addHardLineBreak();
+		}
+	}
+
+	@override
 	Iterable<PostSpan> traverse(Post post) sync* {
 		for (final row in rows) {
 			for (final child in row) {
@@ -2737,6 +2809,11 @@ class PostDividerSpan extends PostTerminalSpan {
 	@override
 	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
 		buffer.writeln();
+	}
+
+	@override
+	void _estimateHeight(_HeightEstimator estimator) {
+		estimator.addHardLineBreak();
 	}
 }
 
@@ -2798,7 +2875,7 @@ class PostShiftJISSpan extends PostTerminalSpan {
 	@override
 	void _estimateHeight(_HeightEstimator estimator) {
 		// Submona font is smaller than usual
-		super._estimateHeight(estimator.scale(0.91).noWordWrap());
+		estimator.scale(const Offset(0.91, 0.91)).noWordWrap().addPlaintext(text);
 	}
 }
 
@@ -2848,6 +2925,11 @@ class PostUserLinkSpan extends PostTerminalSpan {
 	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
 		buffer.write('/u/');
 		buffer.write(username);
+	}
+
+	@override
+	void _estimateHeight(_HeightEstimator estimator) {
+		estimator.addCharacters(username.length + 3);
 	}
 }
 
