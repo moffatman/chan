@@ -835,163 +835,169 @@ class SiteReddit extends ImageboardSite {
 		)).toList() ?? [];
 	}
 
-	Future<Thread> _makeThread(Map data, {CancelToken? cancelToken}) async {
-		final id = fromRedditId(data['id'] as String)!;
-		final attachments = <Attachment>[];
-		Future<void> dumpAttachments(Map data) async {
-			if (data['media_metadata'] case Map mediaMetadata) {
-				for (final item in mediaMetadata.values.cast<Map>()) {
-					if (item['m'] == null && item['e'] == 'RedditVideo') {
-						attachments.add(Attachment(
-							type: AttachmentType.mp4,
-							board: data['subreddit'] as String,
-							threadId: id,
-							id: item['id'] as String,
-							ext: '.mp4',
-							filename: '${item['id']}.mp4',
-							url: unescape.convert(item['hlsUrl'] as String),
-							thumbnailUrl: '',
-							md5: '',
-							width: item['x'] as int?,
-							height: item['y'] as int?,
-							sizeInBytes: null
-						));
-					}
-					else if (item case {
-						'id': String itemId,
-						'm': String m,
-						's': Map s && ({'u': String url} || {'gif': String url}),
-						'p': List p
-					}) {
-						final ext = '.${m.afterLast('/')}';
-						attachments.add(Attachment(
-							type: AttachmentType.image,
-							board: data['subreddit'] as String,
-							threadId: id,
-							id: itemId,
-							ext: ext,
-							filename: itemId + ext,
-							url: unescape.convert(url),
-							thumbnailUrl: switch (p) {
-								[{'u': String u}, ...] => unescape.convert(u),
-								_ => ''
-							},
-							md5: '',
-							width: s['x'] as int?,
-							height: s['y'] as int?,
-							sizeInBytes: null
-						));
-					}
+	Future<void> _dumpAttachments({
+		required int threadId,
+		required List<Attachment> attachments,
+		required Map data,
+		required CancelToken? cancelToken
+	}) async {
+		if (data['media_metadata'] case Map mediaMetadata) {
+			for (final item in mediaMetadata.values.cast<Map>()) {
+				if (item['m'] == null && item['e'] == 'RedditVideo') {
+					attachments.add(Attachment(
+						type: AttachmentType.mp4,
+						board: data['subreddit'] as String,
+						threadId: threadId,
+						id: item['id'] as String,
+						ext: '.mp4',
+						filename: '${item['id']}.mp4',
+						url: unescape.convert(item['hlsUrl'] as String),
+						thumbnailUrl: '',
+						md5: '',
+						width: item['x'] as int?,
+						height: item['y'] as int?,
+						sizeInBytes: null
+					));
+				}
+				else if (item case {
+					'id': String itemId,
+					'm': String m,
+					's': Map s && ({'u': String url} || {'gif': String url}),
+					'p': List p
+				}) {
+					final ext = '.${m.afterLast('/')}';
+					attachments.add(Attachment(
+						type: AttachmentType.image,
+						board: data['subreddit'] as String,
+						threadId: threadId,
+						id: itemId,
+						ext: ext,
+						filename: itemId + ext,
+						url: unescape.convert(url),
+						thumbnailUrl: switch (p) {
+							[{'u': String u}, ...] => unescape.convert(u),
+							_ => ''
+						},
+						md5: '',
+						width: s['x'] as int?,
+						height: s['y'] as int?,
+						sizeInBytes: null
+					));
 				}
 			}
-			else if (data case {
-				'subreddit': String subreddit,
-				'name': String name,
-				'secure_media': {'reddit_video': Map redditVideo && {'hls_url': String url}}
+		}
+		else if (data case {
+			'subreddit': String subreddit,
+			'name': String name,
+			'secure_media': {'reddit_video': Map redditVideo && {'hls_url': String url}}
+		}) {
+			attachments.add(Attachment(
+				type: AttachmentType.mp4,
+				board: subreddit,
+				threadId: threadId,
+				id: name,
+				ext: '.mp4',
+				filename: 'video.mp4',
+				url: unescape.convert(url),
+				thumbnailUrl: switch (data['preview']) {
+					{'images': [{'resolutions': [{'url': String url}, ...]}, ...]} => unescape.convert(url),
+					_ => ''
+				},
+				md5: '',
+				width: redditVideo['width'] as int?,
+				height: redditVideo['height'] as int?,
+				sizeInBytes: null
+			));
+		}
+		else if (data case {
+			'subreddit': String subreddit,
+			'name': String name,
+			'preview': Map preview
+		}) {
+			if (preview case {
+				'reddit_video_preview': Map redditVideoPreview && {'hls_url': String url}
 			}) {
 				attachments.add(Attachment(
 					type: AttachmentType.mp4,
 					board: subreddit,
-					threadId: id,
+					threadId: threadId,
 					id: name,
 					ext: '.mp4',
 					filename: 'video.mp4',
 					url: unescape.convert(url),
-					thumbnailUrl: switch (data['preview']) {
+					thumbnailUrl: switch (preview) {
 						{'images': [{'resolutions': [{'url': String url}, ...]}, ...]} => unescape.convert(url),
 						_ => ''
 					},
 					md5: '',
-					width: redditVideo['width'] as int?,
-					height: redditVideo['height'] as int?,
+					width: redditVideoPreview['width'] as int?,
+					height: redditVideoPreview['height'] as int?,
 					sizeInBytes: null
 				));
 			}
-			else if (data case {
-				'subreddit': String subreddit,
-				'name': String name,
-				'preview': Map preview
-			}) {
-				if (preview case {
-					'reddit_video_preview': Map redditVideoPreview && {'hls_url': String url}
-				}) {
-					attachments.add(Attachment(
-						type: AttachmentType.mp4,
-						board: subreddit,
-						threadId: id,
-						id: name,
-						ext: '.mp4',
-						filename: 'video.mp4',
-						url: unescape.convert(url),
-						thumbnailUrl: switch (preview) {
-							{'images': [{'resolutions': [{'url': String url}, ...]}, ...]} => unescape.convert(url),
-							_ => ''
-						},
-						md5: '',
-						width: redditVideoPreview['width'] as int?,
-						height: redditVideoPreview['height'] as int?,
-						sizeInBytes: null
-					));
-				}
-				else if (data case {'url': String url}) {
-					final urls = await _resolveUrl1(Uri.parse(url), cancelToken: cancelToken);
-					final image0 = (preview['images'] as List?)?.tryFirst as Map?;
-					attachments.addAll(urls.indexed.map((url) => Attachment(
-						type: url.$2.type,
-						board: subreddit,
-						threadId: id,
-						id: '${name}_${url.$1}',
-						ext: url.$2.ext,
-						filename: Uri.tryParse(url.$2.url)?.pathSegments.tryLast ?? '',
-						url: url.$2.url,
-						width: (image0?['source'] as Map?)?['width'] as int?,
-						height: (image0?['source'] as Map?)?['height'] as int?,
-						md5: '',
-						sizeInBytes: null,
-						thumbnailUrl: url.$2.thumbnailUrl ?? switch (image0) {
-							{'resolutions': [{'url': String url}, ...]} => unescape.convert(url),
-							_ => generateThumbnailerForUrl(Uri.parse(url.$2.url)).toString()
-						}
-					)));
-				}
-			}
-			else if (data['is_self'] != true && data['url'] != null) {
-				final urls = await _resolveUrl1(Uri.parse(data['url'] as String), cancelToken: cancelToken);
+			else if (data case {'url': String url}) {
+				final urls = await _resolveUrl1(Uri.parse(url), cancelToken: cancelToken);
+				final image0 = (preview['images'] as List?)?.tryFirst as Map?;
 				attachments.addAll(urls.indexed.map((url) => Attachment(
 					type: url.$2.type,
-					board: data['subreddit'] as String,
-					threadId: id,
-					id: '${data['name']}_${url.$1}',
+					board: subreddit,
+					threadId: threadId,
+					id: '${name}_${url.$1}',
 					ext: url.$2.ext,
 					filename: Uri.tryParse(url.$2.url)?.pathSegments.tryLast ?? '',
 					url: url.$2.url,
-					thumbnailUrl: url.$2.thumbnailUrl ?? generateThumbnailerForUrl(Uri.parse(url.$2.url)).toString(),
+					width: (image0?['source'] as Map?)?['width'] as int?,
+					height: (image0?['source'] as Map?)?['height'] as int?,
 					md5: '',
-					width: null,
-					height: null,
-					sizeInBytes: null
+					sizeInBytes: null,
+					thumbnailUrl: url.$2.thumbnailUrl ?? switch (image0) {
+						{'resolutions': [{'url': String url}, ...]} => unescape.convert(url),
+						_ => generateThumbnailerForUrl(Uri.parse(url.$2.url)).toString()
+					}
 				)));
 			}
-			final galleryMap = switch (data) {
-				{'gallery_data': {'items': List galleryItems}} => {
-					for (final (i, item) in galleryItems.cast<Map>().indexed)
-						item['media_id'] as String: (i, item['caption'] as String?)
-				},
-				_ => <String, (int, String?)>{}
-			};
-			const infiniteIndex = 1 << 50;
-			mergeSort(attachments, compare: (a, b) {
-				final idxA = galleryMap[a.id]?.$1 ?? infiniteIndex;
-				final idxB = galleryMap[b.id]?.$1 ?? infiniteIndex;
-				return idxA.compareTo(idxB);
-			});
-			for (final attachment in attachments) {
-				final caption = galleryMap[attachment.id]?.$2;
-				if (caption != null) {
-					attachment.filename = caption + attachment.ext;
-				}
+		}
+		else if (data['is_self'] != true && data['url'] != null) {
+			final urls = await _resolveUrl1(Uri.parse(data['url'] as String), cancelToken: cancelToken);
+			attachments.addAll(urls.indexed.map((url) => Attachment(
+				type: url.$2.type,
+				board: data['subreddit'] as String,
+				threadId: threadId,
+				id: '${data['name']}_${url.$1}',
+				ext: url.$2.ext,
+				filename: Uri.tryParse(url.$2.url)?.pathSegments.tryLast ?? '',
+				url: url.$2.url,
+				thumbnailUrl: url.$2.thumbnailUrl ?? generateThumbnailerForUrl(Uri.parse(url.$2.url)).toString(),
+				md5: '',
+				width: null,
+				height: null,
+				sizeInBytes: null
+			)));
+		}
+		final galleryMap = switch (data) {
+			{'gallery_data': {'items': List galleryItems}} => {
+				for (final (i, item) in galleryItems.cast<Map>().indexed)
+					item['media_id'] as String: (i, item['caption'] as String?)
+			},
+			_ => <String, (int, String?)>{}
+		};
+		const infiniteIndex = 1 << 50;
+		mergeSort(attachments, compare: (a, b) {
+			final idxA = galleryMap[a.id]?.$1 ?? infiniteIndex;
+			final idxB = galleryMap[b.id]?.$1 ?? infiniteIndex;
+			return idxA.compareTo(idxB);
+		});
+		for (final attachment in attachments) {
+			final caption = galleryMap[attachment.id]?.$2;
+			if (caption != null) {
+				attachment.filename = caption + attachment.ext;
 			}
 		}
+	}
+
+	Future<Thread> _makeThread(Map data, {CancelToken? cancelToken}) async {
+		final id = fromRedditId(data['id'] as String)!;
+		final attachments = <Attachment>[];
 		final url = data['url'] as String;
 		String text = '';
 		if (data['is_self'] as bool? ?? false) {
@@ -1019,11 +1025,21 @@ class SiteReddit extends ImageboardSite {
 		}
 		final crosspostParent = (data['crosspost_parent_list'] as List?)?.cast<Map>().tryFirstWhere((xp) => xp['name'] == data['crosspost_parent']);
 		if (crosspostParent != null) {
-			await dumpAttachments(crosspostParent);
+			await _dumpAttachments(
+				threadId: id,
+				attachments: attachments,
+				data: crosspostParent,
+				cancelToken: cancelToken
+			);
 			text = '<crosspostparent board="${crosspostParent['subreddit']}" id="${crosspostParent['id']}"></crosspostparent>\n$text';
 		}
 		if (attachments.isEmpty) {
-			await dumpAttachments(data);
+			await _dumpAttachments(
+				threadId: id,
+				attachments: attachments,
+				data: data,
+				cancelToken: cancelToken
+			);
 		}
 		final author = data['author'] as String;
 		final authorIsDeleted = author == _kDeleted;
@@ -1386,9 +1402,9 @@ class SiteReddit extends ImageboardSite {
 
 	static final _emotePattern = RegExp(r'!\[img\]\((emote|[^)]+)\)');
 
-	Post _makePost(Map child, {int? parentId, required ThreadIdentifier thread}) {
+	Future<Post> _makePost(Map child, {int? parentId, required ThreadIdentifier thread, CancelToken? cancelToken}) async {
 		final id = fromRedditId(child['id'] as String)!;
-		final text = unescape.convert(child['body'] as String).replaceAllMapped(_emotePattern, (match) {
+		String text = unescape.convert(child['body'] as String).replaceAllMapped(_emotePattern, (match) {
 			final metadata = (child['media_metadata'] as Map?)?[match.group(1)] as Map?;
 			if (metadata == null) {
 				return match.group(0)!;
@@ -1396,6 +1412,17 @@ class SiteReddit extends ImageboardSite {
 			final s = metadata['s'] as Map;
 			return '<img src="${s['u']}" width="${s['x']}" height="${s['y']}">';
 		});
+		final attachments = <Attachment>[];
+		await _dumpAttachments(
+			threadId: thread.id,
+			attachments: attachments,
+			data: child,
+			cancelToken: cancelToken
+		);
+		// It will probably be in the text too. strip it
+		for (final attachment in attachments) {
+			text = text.replaceAll(attachment.url, '');
+		}
 		final author = child['author'] as String;
 		final authorIsDeleted = author == _kDeleted;
 		final textIsDeleted = text == _kRemoved || text == _kDeleted;
@@ -1409,7 +1436,7 @@ class SiteReddit extends ImageboardSite {
 			threadId: thread.id,
 			id: id,
 			spanFormat: PostSpanFormat.reddit,
-			attachments_: const [],
+			attachments_: attachments,
 			parentId: parentId,
 			upvotes: (child['score_hidden'] == true || child['hide_score'] == true) ? null : child['score'] as int?,
 			capcode: child['distinguished'] as String?
@@ -1430,15 +1457,15 @@ class SiteReddit extends ImageboardSite {
 			_ => throw PatternException(response.data)
 		};
 		final ret = await _makeThread(opData, cancelToken: cancelToken);
-		addChildren(int parentId, List<dynamic> childData, Post? parent) {
+		Future<void> addChildren(int parentId, List<dynamic> childData, Post? parent) async {
 			for (final childContainer in childData.cast<Map>()) {
 				final child = childContainer['data'] as Map;
 				if (childContainer['kind'] == 't1') {
-					final post = _makePost(child, parentId: parentId, thread: thread);
+					final post = await _makePost(child, parentId: parentId, thread: thread, cancelToken: cancelToken);
 					ret.posts_.add(post);
 					_updateTimeEstimateData(post.id, post.time);
 					if (child['replies'] case {'data': {'children': List children}}) {
-						addChildren(post.id, children, post);
+						await addChildren(post.id, children, post);
 					}
 				}
 				else if (childContainer['kind'] == 'more') {
@@ -1466,7 +1493,7 @@ class SiteReddit extends ImageboardSite {
 				}
 			}
 		}
-		addChildren(thread.id, repliesData, null);
+		await addChildren(thread.id, repliesData, null);
 		return ret;
 	}
 
@@ -1541,7 +1568,7 @@ class SiteReddit extends ImageboardSite {
 					return ImageboardArchiveSearchResult.thread(await _makeThread(data, cancelToken: cancelToken));
 				}
 				else if (c case {'kind': 't1', 'data': Map data && {'subreddit': String subreddit, 'link_id': String linkId}}) {
-					return ImageboardArchiveSearchResult.post(_makePost(data, thread: ThreadIdentifier(subreddit, fromRedditId(linkId.split('_').last)!)));
+					return ImageboardArchiveSearchResult.post(await _makePost(data, thread: ThreadIdentifier(subreddit, fromRedditId(linkId.split('_').last)!), cancelToken: cancelToken));
 				}
 				else {
 					throw FormatException('Unrecognized search result [kind]', c['kind']);
