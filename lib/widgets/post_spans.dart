@@ -66,7 +66,6 @@ class PostSpanRenderOptions {
 	final bool showRawSource;
 	final PointerEnterEventListener? onEnter;
 	final PointerExitEventListener? onExit;
-	final bool ownLine;
 	final bool shrinkWrap;
 	final RegExp? highlightPattern;
 	final bool imageShareMode;
@@ -88,7 +87,6 @@ class PostSpanRenderOptions {
 		this.showRawSource = false,
 		this.onEnter,
 		this.onExit,
-		this.ownLine = false,
 		this.shrinkWrap = false,
 		this.highlightPattern,
 		this.imageShareMode = false,
@@ -107,7 +105,6 @@ class PostSpanRenderOptions {
 		TapGestureRecognizer? recognizer,
 		bool? overrideRecognizer,
 		Color? overrideTextColor,
-		bool? ownLine,
 		TextStyle? baseTextStyle,
 		bool? showCrossThreadLabel,
 		bool? shrinkWrap,
@@ -131,7 +128,6 @@ class PostSpanRenderOptions {
 		showRawSource: showRawSource,
 		onEnter: onEnter ?? this.onEnter,
 		onExit: onExit ?? this.onExit,
-		ownLine: ownLine ?? this.ownLine,
 		highlightPattern: highlightPattern,
 		imageShareMode: imageShareMode,
 		revealYourPosts: revealYourPosts,
@@ -512,14 +508,8 @@ class PostNodeSpan extends PostSpan {
 		if (constraints != null) {
 			estimator = _HeightEstimatorImpl(post, zone, constraints.characterSize, constraints.width);
 		}
-		final ownLineOptions = options.copyWith(ownLine: true);
 		for (int i = 0; i < effectiveChildren.length; i++) {
-			final ownLine =
-				// Nothing before
-				(i == 0 || effectiveChildren[i - 1] is PostLineBreakSpan) &&
-				// Nothing after (postInjected is assumed to be invisible)
-				(i == effectiveChildren.length - 1 || effectiveChildren[i + 1] is PostLineBreakSpan || identical(effectiveChildren[i + 1], postInjected));
-			renderChildren.add(effectiveChildren[i].build(context, post, zone, settings, theme, ownLine ? ownLineOptions : options));
+			renderChildren.add(effectiveChildren[i].build(context, post, zone, settings, theme, options));
 			if (constraints != null && estimator != null) {
 				effectiveChildren[i]._estimateHeight(estimator);
 				if (estimator.currentHeight > constraints.maxHeight) {
@@ -640,7 +630,7 @@ class PostAttachmentsSpan extends PostTerminalSpan {
 									hero: taggedAttachment,
 									fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
 									shrinkHeight: !settings.squareThumbnails,
-									width: post.spanFormat.hasLargeInlineAttachments || (options.ownLine && attachments.length == 1 && !settings.squareThumbnails) ? 250 : null,
+									width: post.spanFormat.hasLargeInlineAttachments ? 250 : null,
 									height: post.spanFormat.hasLargeInlineAttachments ? 250 : null,
 									mayObscure: true,
 									hide: options.hideThumbnails,
@@ -678,7 +668,6 @@ class PostAttachmentsSpan extends PostTerminalSpan {
 
 	@override
 	void _estimateHeight(_HeightEstimator estimator) {
-		// Width might exceed this. but only if oneLine
 		final outputSize = Size.square(estimator.post.spanFormat.hasLargeInlineAttachments ? 250 : Settings.instance.thumbnailSize);
 		final rects = attachments.map((attachment) {
 			if (Settings.instance.squareThumbnails || attachment.aspectRatio <= 1) {
