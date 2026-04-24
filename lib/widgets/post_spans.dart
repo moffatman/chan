@@ -531,7 +531,7 @@ class PostNodeSpan extends PostSpan {
 							children: Wrapper(newChildren)
 						);
 					case TextSpan(text: final text?) when text.isNotEmpty:
-						if (text.codeUnits.last != 0x0A) {
+						if (text.codeUnitAt(text.length - 1) != 0x0A) {
 							return span;
 						}
 						return span.copyWith(

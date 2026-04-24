@@ -129,7 +129,7 @@ class LooseUrlLinkifier extends Linkifier {
               // Try to catch missing space between sentences by checking capitalization
               // From earlier if branch, we must have a valid TLD. But is it common?
               final tld = domain.afterLast('.');
-              if (switch(tld.codeUnits.first) {
+              if (switch(tld.codeUnitAt(0)) {
                 >= 0x41 && <= 0x5A => tld.codeUnits.skip(1).every((c) => c >= 0x61 && c <= 0x7A),
                 _ => false
               } && !_mostPopularTlds.contains(tld.toLowerCase())) {

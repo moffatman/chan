@@ -115,7 +115,7 @@ CompressedHTML compressHTML(String html) {
 		}
 	}
 	String incrementString(String s) {
-		final c = s.codeUnits.last;
+		final c = s.codeUnitAt(s.length - 1);
 		return s.substring(0, s.length - 1) + getNextCharacter(c);
 	}
 	String getNextShortform() {
