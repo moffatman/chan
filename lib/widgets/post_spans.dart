@@ -495,7 +495,7 @@ class PostNodeSpan extends PostSpan {
 	InlineSpan build(context, post, zone, settings, theme, options, {
 		InlineSpan? postInject,
 		PostNodeSpanConstraints? constraints,
-		bool ensureTrailingNewline = false
+		bool stripTrailingNewline = false
 	}) {
 		final renderChildren = <InlineSpan>[];
 		List<PostSpan> effectiveChildren = children;
@@ -517,18 +517,31 @@ class PostNodeSpan extends PostSpan {
 				}
 			}
 		}
-		bool endsInNewline(InlineSpan? span) => switch (span) {
-			TextSpan(children: [..., InlineSpan last]) => endsInNewline(last),
-			TextSpan(text: final text?) => text.codeUnits.tryLast == 0x0A,
-			_ => false
-		};
-		if (ensureTrailingNewline && !endsInNewline(renderChildren.tryLast)) {
-			renderChildren.add(options.shrinkWrap ? const TextSpan(text: '\n') : const WidgetSpan(
-				child: SizedBox(
-					width: double.infinity,
-					height: 0
-				)
-			));
+		if (stripTrailingNewline && renderChildren.isNotEmpty) {
+			InlineSpan doStrip(InlineSpan span) {
+				switch (span) {
+					case TextSpan(children: final children?) when children.isNotEmpty:
+						final newLast = doStrip(children.last);
+						if (identical(newLast, children.last)) {
+							return span;
+						}
+						final newChildren = children.toList(growable: false);
+						newChildren.last = newLast;
+						return span.copyWith(
+							children: Wrapper(newChildren)
+						);
+					case TextSpan(text: final text?) when text.isNotEmpty:
+						if (text.codeUnits.last != 0x0A) {
+							return span;
+						}
+						return span.copyWith(
+							text: Wrapper(text.substring(0, text.length - 1))
+						);
+					default:
+						return span;
+				}
+			}
+			renderChildren.last = doStrip(renderChildren.last);
 		}
 		return TextSpan(
 			children: renderChildren

@@ -552,6 +552,13 @@ class Wrapper<T> {
 	int get hashCode => value.hashCode;
 }
 
+extension UnwrapOr<T> on Wrapper<T>? {
+	T unwrapOr(T defaultValue) => switch (this) {
+		Wrapper(value: final value) => value,
+		null => defaultValue
+	};
+}
+
 class NullWrapper<T extends Object> {
 	final T? value;
 	const NullWrapper(this.value);

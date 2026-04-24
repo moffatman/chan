@@ -2916,3 +2916,23 @@ Size estimateWrapSize({
 	}
 	return Size(longestLineWidth, currentHeight);
 }
+
+extension CopyWith on TextSpan {
+	TextSpan copyWith({
+		Wrapper<List<InlineSpan>?>? children,
+		Wrapper<String?>? text
+	}) => TextSpan(
+		text: text.unwrapOr(this.text),
+		children: children.unwrapOr(this.children),
+		style: style,
+		recognizer: recognizer,
+		// TODO: recognizer2
+		mouseCursor: mouseCursor,
+		onEnter: onEnter,
+		onExit: onExit,
+		semanticsLabel: semanticsLabel,
+		semanticsIdentifier: semanticsIdentifier,
+		locale: locale,
+		spellOut: spellOut
+	);
+}

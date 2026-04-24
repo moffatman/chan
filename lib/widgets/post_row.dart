@@ -466,7 +466,7 @@ class PostRow extends StatelessWidget {
 		}
 		final content = Builder(
 			builder: (ctx) => Padding(
-				padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
+				padding: const EdgeInsets.only(top: 8, left: 8, right: 8, bottom: 16),
 				child: IgnorePointer(
 					ignoring: !allowTappingLinks,
 					child: ConditionalOnTapUp(
@@ -512,7 +512,7 @@ class PostRow extends StatelessWidget {
 											addExpandingPosts: settings.supportMouse != TristateSystemSetting.a,
 											hideThumbnails: hideThumbnails
 										),
-										ensureTrailingNewline: true,
+										stripTrailingNewline: true,
 										postInject: showReplyCount ? (overrideReplyCount != null ? WidgetSpan(
 											alignment: PlaceholderAlignment.top,
 											child: Visibility(
@@ -583,7 +583,7 @@ class PostRow extends StatelessWidget {
 										)
 									);
 								}).expand((x) => [const SizedBox(height: 8), x]),
-								cloverStyleRepliesButton ? const SizedBox(height: 24) : const SizedBox(height: 8)
+								cloverStyleRepliesButton ? const SizedBox(height: 28) : const SizedBox(height: 12)
 							]
 						)
 					)
@@ -762,8 +762,7 @@ class PostRow extends StatelessWidget {
 													)
 												)
 											);
-										})
-										else const SizedBox(height: 2),
+										}),
 										Flexible(
 											child: Row(
 												crossAxisAlignment: CrossAxisAlignment.start,

@@ -611,7 +611,7 @@ class ThreadRow extends StatelessWidget {
 												(baseOptions ?? const PostSpanRenderOptions()).copyWith(
 													hideThumbnails: hideThumbnails
 												),
-												ensureTrailingNewline: true,
+												stripTrailingNewline: true,
 												postInject: settings.useFullWidthForCatalogCounters || (showLastReplies && thread.posts_.length > 1) ? null : countersPlaceholder
 											)
 										]

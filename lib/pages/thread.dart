@@ -2050,6 +2050,7 @@ class ThreadPageState extends State<ThreadPage> {
 																				}
 																				else {
 																					smallImageWidth = settings.thumbnailSize + 8;
+																					smallImageHeight = 16;
 																					for (final attachment in post.attachments_) {
 																						smallImageHeight += 8; // padding
 																						if (Settings.instance.squareThumbnails || attachment.aspectRatio <= 1) {
@@ -2068,7 +2069,7 @@ class ThreadPageState extends State<ThreadPage> {
 																				smallImageHeight = 75;
 																			}
 																			final textHeight = post.span.estimateHeight(post, childZone, characterSize, maxWidth - smallImageWidth, postInject: postInject);
-																			int metadataLines = 2;
+																			int metadataLines = 1;
 																			if (post.attachments_.any((a) => a.filename.length > (charactersPerLine * 0.4))) {
 																				metadataLines++;
 																			}
@@ -2089,7 +2090,7 @@ class ThreadPageState extends State<ThreadPage> {
 																				}
 																			}
 																			final metadataHeight = metadataLines * characterSize.height;
-																			return max(52, max(textHeight + 8, smallImageHeight) + 8 + metadataHeight + largeImageHeight);
+																			return max(52, max(textHeight + 20, smallImageHeight) + 8 + metadataHeight + largeImageHeight);
 																		},
 																		initiallyCollapseSecondLevelReplies: treeModeInitiallyCollapseSecondLevelReplies,
 																		collapsedItemsShowBody: treeModeCollapsedPostsShowBody,
