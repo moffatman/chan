@@ -2281,7 +2281,7 @@ class PostLinkSpan extends PostTerminalSpan {
 	void _estimateHeight(_HeightEstimator estimator) {
 		// Complete hack
 		final id = 'noembed $url';
-		if ((estimator.zone?._futures[id]?.data ?? PostSpanZoneData._globalFutures[id]?.data) case EmbedData data) {
+		if ((estimator.zone?._futures[id]?.data ?? PostSpanZoneData._globalFutures[id]?.data) case EmbedData data when data.thumbnailUrl != null || data.thumbnailWidget != null || data.imageboardTarget != null) {
 			final Size imageSize;
 			if (data.thumbnailUrl != null) {
 				imageSize = const Size(75, 75);
@@ -2295,11 +2295,11 @@ class PostLinkSpan extends PostTerminalSpan {
 			final otherWidth = 32 + imageSize.width;
 			final estimator2 = _HeightEstimatorImpl(estimator.post, estimator.zone, estimator.characterSize, estimator.maxWidth - otherWidth);
 			if (name case final name? when !url.contains(name) && (data.title?.contains(name) != true)) {
-				estimator2.addCharacters(name.length);
+				estimator2.addPlaintext(name);
 				estimator2.addHardLineBreak();
 			}
 			if (data.title case final title? when title.isNotEmpty) {
-				estimator2.addCharacters(title.length);
+				estimator2.addPlaintext(title);
 				estimator2.addHardLineBreak();
 			}
 			else if (name == null || url.contains(name!)) {
