@@ -83,7 +83,7 @@ class EmbedData {
 
 final _twitterPattern = RegExp(r'(?:x|twitter)\.com/[^/]+/status/(\d+)');
 
-Future<EmbedData?> _loadTwitter(String id) async {
+Future<EmbedData?> _loadTwitter(String id, bool highQuality) async {
 	final response = await Settings.instance.client.getUri(Uri.https('api.vxtwitter.com', '/_/status/$id'), options: Options(
 		responseType: ResponseType.json
 	));
@@ -93,7 +93,7 @@ Future<EmbedData?> _loadTwitter(String id) async {
 			provider: 'Twitter',
 			author: data['user_name'] as String?,
 			thumbnailUrl: switch (data) {
-				{'media_extended': [{'thumbnail_url': String url}, ...]} => generateThumbnailerForUrl(Uri.parse(url)).toString(),
+				{'media_extended': [{'thumbnail_url': String url}, ...]} => highQuality ? url : generateThumbnailerForUrl(Uri.parse(url)).toString(),
 				{'user_profile_image_url': String url} => url,
 				_ => null
 			}
@@ -104,7 +104,7 @@ Future<EmbedData?> _loadTwitter(String id) async {
 
 final _instagramPattern = RegExp(r'instagram\.com/p/([^/]+)');
 
-Future<EmbedData?> _loadInstagram(String id) async {
+Future<EmbedData?> _loadInstagram(String id, bool highQuality) async {
 	final response = await Settings.instance.client.getUri(Uri.https('www.instagram.com', '/p/$id/embed/captioned'), options: Options(
 		responseType: ResponseType.plain
 	));
@@ -128,7 +128,7 @@ Future<EmbedData?> _loadInstagram(String id) async {
 			return e.text ?? '';
 		}).join('').trim(),
 		provider: 'Instagram',
-		thumbnailUrl: generateThumbnailerForUrl(Uri.parse(src)).toString()
+		thumbnailUrl: highQuality ? src : generateThumbnailerForUrl(Uri.parse(src)).toString()
 	);
 }
 
@@ -188,11 +188,11 @@ Future<EmbedData?> loadEmbedData(String url, {required bool highQuality}) async 
 	else {
 		final twitterMatch = _twitterPattern.firstMatch(url);
 		if (twitterMatch != null) {
-			return _loadTwitter(twitterMatch.group(1)!);
+			return _loadTwitter(twitterMatch.group(1)!, highQuality);
 		}
 		final instagramMatch = _instagramPattern.firstMatch(url);
 		if (instagramMatch != null) {
-			return _loadInstagram(instagramMatch.group(1)!);
+			return _loadInstagram(instagramMatch.group(1)!, highQuality);
 		}
 		final uri = Uri.parse(url);
 		final target = await ImageboardRegistry.instance.decodeUrl(uri);
