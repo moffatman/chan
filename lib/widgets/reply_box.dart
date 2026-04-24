@@ -1124,7 +1124,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 		));
 		// Remember _disableLoginSystem, it will also be kept in the draft
 		if (!_disableLoginSystem) {
-			_showAttachmentOptions = false;
+			_showOptions = false;
 		}
 		final oldPostingPost = postingPost.value;
 		if (oldPostingPost != null) {
