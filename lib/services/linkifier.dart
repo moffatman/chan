@@ -2,13 +2,13 @@ import 'package:chan/util.dart';
 import 'package:linkify/linkify.dart';
 
 final _looseUrlRegex = RegExp(
-  r"(https?:\/\/)?([-a-zA-Z0-9@:%_.\+~#=]{1,256}\.[a-z]{2,})(?:\/[-a-zA-Z0-9$@:%_\+.~#?&/=,!;()'\u007F-\u009F\u00A1-\uFFFF]*)?",
+  r"(https?:\/\/)?([a-zA-Z0-9][-a-zA-Z0-9@:%_.\+~#=]{0,255}\.[a-z]{2,})(?:\/[-a-zA-Z0-9$@:%_\+.~#?&/=,!;()'\u007F-\u009F\u00A1-\uFFFF]*)?",
   caseSensitive: false,
   dotAll: true,
 );
 
 final _looseUrlRegexWithBackslash = RegExp(
-  r"(https?:\/\/)?([-a-zA-Z0-9@:%_.\+~#=]{1,256}\.[a-z]{2,})(?:\/[-a-zA-Z0-9$@:%_\+.~#?&/=,!;()'\\\u007F-\u009F\u00A1-\uFFFF]*)?",
+  r"(https?:\/\/)?([a-zA-Z0-9][-a-zA-Z0-9@:%_.\+~#=]{0,255}\.[a-z]{2,})(?:\/[-a-zA-Z0-9$@:%_\+.~#?&/=,!;()'\\\u007F-\u009F\u00A1-\uFFFF]*)?",
   caseSensitive: false,
   dotAll: true,
 );
@@ -106,137 +106,148 @@ class LooseUrlLinkifier extends Linkifier {
 
     for (final element in elements) {
       if (element is TextElement) {
-        final matches = (unescapeBackslashes ? _looseUrlRegexWithBackslash : _looseUrlRegex).allMatches(element.text);
         int lastMatchEnd = 0;
+        void run(int startIndex) {
+          final matches = (unescapeBackslashes ? _looseUrlRegexWithBackslash : _looseUrlRegex).allMatches(element.text, startIndex);
 
-        for (final match in matches) {
-          final domain = match.group(2);
-          if ((domain?.contains('..') ?? false) || !_validTlds.contains((domain ?? '').afterLast('.').toLowerCase())) {
-            // Invalid domain name
-            continue;
-          }
-          if (domain != null && domain.length == (match.end - match.start)) {
-            // Only domain name, no path
-            // Try to catch missing space between sentences by checking capitalization
-            // From earlier if branch, we must have a valid TLD. But is it common?
-            final tld = domain.afterLast('.');
-            if (switch(tld.codeUnits.first) {
-              >= 0x41 && <= 0x5A => tld.codeUnits.skip(1).every((c) => c >= 0x61 && c <= 0x7A),
-              _ => false
-            } && !_mostPopularTlds.contains(tld.toLowerCase())) {
-              // Probably a new sentence without space after the period
-              continue;
+          for (final match in matches) {
+            final domain = match.group(2);
+            if ((domain?.contains('..') ?? false) || !_validTlds.contains((domain ?? '').afterLast('.').toLowerCase())) {
+              // Invalid domain name
+              final dotsPosition = element.text.indexOf('..', match.start);
+              if (dotsPosition == -1) {
+                // Invalid TLD only
+                continue;
+              }
+              // There could be overlapping matches on part of the URL,
+              // skip past the obviously invalid part and retry.
+              run(dotsPosition + 2);
+              return;
             }
-          }
-          if (redditSafeMode) {
-            final before = match.start > 0 ? element.text.substring(0, match.start) : null;
-            final after = match.end < element.text.length ? element.text.substring(match.end) : null;
-            if (before != null && after != null) {
-              if (before.lastChar == '"' && after.firstChar == '"') {
-                // "$link"
+            if (domain != null && domain.length == (match.end - match.start)) {
+              // Only domain name, no path
+              // Try to catch missing space between sentences by checking capitalization
+              // From earlier if branch, we must have a valid TLD. But is it common?
+              final tld = domain.afterLast('.');
+              if (switch(tld.codeUnits.first) {
+                >= 0x41 && <= 0x5A => tld.codeUnits.skip(1).every((c) => c >= 0x61 && c <= 0x7A),
+                _ => false
+              } && !_mostPopularTlds.contains(tld.toLowerCase())) {
+                // Probably a new sentence without space after the period
                 continue;
               }
-              if (before.lastChar == '>' && after.startsWith('</a>')) {
-                // >$link</a>
-                continue;
-              }
-              if (before.contains('[') && after.startsWith('](')) {
-                // [$link](
-                continue;
+            }
+            if (redditSafeMode) {
+              final before = match.start > 0 ? element.text.substring(0, match.start) : null;
+              final after = match.end < element.text.length ? element.text.substring(match.end) : null;
+              if (before != null && after != null) {
+                if (before.lastChar == '"' && after.firstChar == '"') {
+                  // "$link"
+                  continue;
+                }
+                if (before.lastChar == '>' && after.startsWith('</a>')) {
+                  // >$link</a>
+                  continue;
+                }
+                if (before.contains('[') && after.startsWith('](')) {
+                  // [$link](
+                  continue;
+                }
+                if (
+                  before.contains('[')
+                  && !before.contains(']')
+                  && !(match.group(0)?.contains('/') ?? false) // not a full URL
+                  && switch (after.indexOf(']')) {
+                    -1 => false, // No closing bracket
+                    // The closing bracket is not for a separate link
+                    int index => after.indexOf('[') < index
+                  }
+                ) {
+                  // [... $host](
+                  // Sometimes people note the site in a markdown URL label
+                  continue;
+                }
               }
               if (
-                before.contains('[')
-                && !before.contains(']')
-                && !(match.group(0)?.contains('/') ?? false) // not a full URL
-                && switch (after.indexOf(']')) {
-                  -1 => false, // No closing bracket
-                  // The closing bracket is not for a separate link
-                  int index => after.indexOf('[') < index
+                  // TODO: Optimize
+                  (before?.trimRight().endsWith('](') ?? false)
+                  && (
+                    (match.group(0)?.contains(')') ?? false)
+                    || after?.firstChar == ')'
+                  )
+                ) {
+                  // ]($link)
+                  continue;
                 }
-              ) {
-                // [... $host](
-                // Sometimes people note the site in a markdown URL label
+              if ('```'.allMatches(before ?? '').length % 2 == 1) {
+                /// ``` $host ```
                 continue;
               }
             }
+
+            if (match.start > lastMatchEnd) {
+              list.add(TextElement(element.text.substring(lastMatchEnd, match.start)));
+            }
+            lastMatchEnd = match.end;
+
+            String originalUrl = _handleBackslashes(match.group(0)!);
+            String end = '';
+
+            /// (... $link)
             if (
-                // TODO: Optimize
-                (before?.trimRight().endsWith('](') ?? false)
-                && (
-                  (match.group(0)?.contains(')') ?? false)
-                  || after?.firstChar == ')'
-                )
-              ) {
-                // ]($link)
-                continue;
-              }
-            if ('```'.allMatches(before ?? '').length % 2 == 1) {
-              /// ``` $host ```
-              continue;
+                  originalUrl.endsWith(')')
+                  && (element.text.lastIndexOf('(', match.start) > element.text.lastIndexOf(')', match.start))
+            ) {
+              end = ')$end';
+              originalUrl = originalUrl.substring(0, originalUrl.length - 1);
             }
-          }
 
-          if (match.start > lastMatchEnd) {
-            list.add(TextElement(element.text.substring(lastMatchEnd, match.start)));
-          }
-          lastMatchEnd = match.end;
-
-          String originalUrl = _handleBackslashes(match.group(0)!);
-          String end = '';
-
-          /// (... $link)
-          if (
-                originalUrl.endsWith(')')
-                && (element.text.lastIndexOf('(', match.start) > element.text.lastIndexOf(')', match.start))
-          ) {
-            end = ')$end';
-            originalUrl = originalUrl.substring(0, originalUrl.length - 1);
-          }
-
-          if (options.excludeLastPeriod) {
-            int c = 0;
-            for (; c < originalUrl.length - 1; c++) {
-              if (originalUrl[originalUrl.length - (c + 1)] != '.') {
-                break;
+            if (options.excludeLastPeriod) {
+              int c = 0;
+              for (; c < originalUrl.length - 1; c++) {
+                if (originalUrl[originalUrl.length - (c + 1)] != '.') {
+                  break;
+                }
+              }
+              if (c > 0) {
+                end = ('.' * c) + end;
+                originalUrl = originalUrl.substring(0, originalUrl.length - c);
               }
             }
-            if (c > 0) {
-              end = ('.' * c) + end;
-              originalUrl = originalUrl.substring(0, originalUrl.length - c);
-            }
-          }
 
-          String url = originalUrl;
+            String url = originalUrl;
 
-          if (fillInProtocol && !originalUrl.startsWith(_protocolIdentifierRegex)) {
-            originalUrl = (options.defaultToHttps ? "https://" : "http://") +
-                originalUrl;
-          }
-
-          if ((options.humanize) || (options.removeWww)) {
-            if (options.humanize) {
-              // Don't use "s?", still show http:// if that's the explicit protocol
-              url = url.replaceFirst(RegExp(r'https://'), '');
-            }
-            if (options.removeWww) {
-              url = url.replaceFirst(RegExp(r'www\.'), '');
+            if (fillInProtocol && !originalUrl.startsWith(_protocolIdentifierRegex)) {
+              originalUrl = (options.defaultToHttps ? "https://" : "http://") +
+                  originalUrl;
             }
 
-            list.add(UrlElement(
-              originalUrl,
-              url,
-            ));
-          } else {
-            list.add(UrlElement(originalUrl));
-          }
+            if ((options.humanize) || (options.removeWww)) {
+              if (options.humanize) {
+                // Don't use "s?", still show http:// if that's the explicit protocol
+                url = url.replaceFirst(RegExp(r'https://'), '');
+              }
+              if (options.removeWww) {
+                url = url.replaceFirst(RegExp(r'www\.'), '');
+              }
 
-          if (end.isNotEmpty) {
-            list.add(TextElement(end));
+              list.add(UrlElement(
+                originalUrl,
+                url,
+              ));
+            } else {
+              list.add(UrlElement(originalUrl));
+            }
+
+            if (end.isNotEmpty) {
+              list.add(TextElement(end));
+            }
+          }
+          if (lastMatchEnd < element.text.length) {
+            list.add(TextElement(element.text.substring(lastMatchEnd)));
           }
         }
-        if (lastMatchEnd < element.text.length) {
-          list.add(TextElement(element.text.substring(lastMatchEnd)));
-        }
+        run(0);
       } else {
         list.add(element);
       }

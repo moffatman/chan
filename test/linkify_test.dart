@@ -195,5 +195,16 @@ void main() {
 			expect(link.url, 'https://www2.example.com');
 			expect(link.name, 'label');
 		});
+
+		test('link after period', () {
+			// https://www.reddit.com/r/television/comments/1snlka5/the_pitt_2x15_900_pm_episode_discussion/ogn5rtm/
+			final r = SiteReddit.makeSpan('', 0, 'show...https://youtu.be/FDJE1lAzrC8?si=dWRYhi0x2zBMSlJ0');
+			expect(r.children, hasLength(2));
+			final text1 = r.children[0] as PostTextSpan;
+			expect(text1.text, 'show...');
+			final link = r.children[1] as PostLinkSpan;
+			expect(link.url, 'https://youtu.be/FDJE1lAzrC8?si=dWRYhi0x2zBMSlJ0');
+			expect(link.name, 'https://youtu.be/FDJE1lAzrC8?si=dWRYhi0x2zBMSlJ0');
+		});
 	});
 }
