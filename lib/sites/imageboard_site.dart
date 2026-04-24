@@ -1528,12 +1528,12 @@ class DraftPost {
 	String? get fileExt => file?.afterLast('.').toLowerCase();
 
 	String? get overrideFilename {
+		if (Settings.instance.randomizeFilenames && !overrideRandomizeFilenames) {
+			return '${DateTime.now().subtract(const Duration(days: 365) * random.nextDouble()).microsecondsSinceEpoch}.$fileExt';
+		}
 		final override = overrideFilenameWithoutExtension;
 		if ((override?.isEmpty ?? true) || file == null) {
 			return null;
-		}
-		if (Settings.instance.randomizeFilenames && !overrideRandomizeFilenames) {
-			return '${DateTime.now().subtract(const Duration(days: 365) * random.nextDouble()).microsecondsSinceEpoch}.$fileExt';
 		}
 		return '$override.$fileExt';
 	}
