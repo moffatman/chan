@@ -116,8 +116,8 @@ Future<String?> _nativeTranslate(String html, {required String toLanguage, requi
 			'interactive': interactive
 		});
 		if (out != null) {
-			final newlinesBefore = html.codeUnits.countOf(10);
-			final newlinesAfter = out.codeUnits.countOf(10);
+			final newlinesBefore = html.codeUnits.countOf(0x0A);
+			final newlinesAfter = out.codeUnits.countOf(0x0A);
 			if (newlinesAfter == 2 * newlinesBefore) {
 				// This seems to happen on pt -> en sometimes
 				out = out.replaceAll('\n\n', '\n');
