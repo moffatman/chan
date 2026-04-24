@@ -305,7 +305,7 @@ class ThreadPageState extends State<ThreadPage> {
 		if (persistentState.thread?.identifier == widget.thread) {
 			return persistentState.thread?.archiveName;
 		}
-		return null;
+		return widget.initiallyUseArchive;
 	}
 
 	/// Returns whether a load was needed
