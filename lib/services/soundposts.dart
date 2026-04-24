@@ -1,6 +1,6 @@
 import 'package:chan/models/attachment.dart';
 
-final _soundSourceRegex = RegExp(r'\[sound=([^\]]+)\]');
+final _soundSourceRegex = RegExp(r'\[(audio|sound)=([^\]]+)\]');
 
 extension SoundpostAttachment on Attachment {
 	Uri? get soundSource {
@@ -11,12 +11,15 @@ extension SoundpostAttachment on Attachment {
 		final match = _soundSourceRegex.firstMatch(filename);
 		if (match != null) {
 			try {
-				final source = Uri.tryParse(Uri.decodeFull(match.group(1)!));
+				Uri? source = Uri.tryParse(Uri.decodeFull(match.group(2)!));
 				if (source == null) {
 					return null;
 				}
 				if (source.hasScheme) {
 					return source;
+				}
+				if (!source.hasAuthority) {
+					source = Uri.tryParse(Uri.decodeFull(match.group(2)!.replaceAll('-', '/')));
 				}
 				return Uri.tryParse('https://$source');
 			}
@@ -30,5 +33,10 @@ extension SoundpostAttachment on Attachment {
 			}
 		}
 		return null;
+	}
+	static String encodeSoundSourceFilename(String filename) {
+		return filename.replaceAllMapped(_soundSourceRegex, (match) {
+			return '[${match.group(1)}=${Uri.encodeComponent(match.group(2)!)}]';
+		});
 	}
 }

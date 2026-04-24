@@ -21,6 +21,7 @@ import 'package:chan/services/network_logging.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/request_fixup.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/soundposts.dart';
 import 'package:chan/services/strict_json.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/services/webview_introspection.dart';
@@ -1532,10 +1533,10 @@ class DraftPost {
 			return '${DateTime.now().subtract(const Duration(days: 365) * random.nextDouble()).microsecondsSinceEpoch}.$fileExt';
 		}
 		final override = overrideFilenameWithoutExtension;
-		if ((override?.isEmpty ?? true) || file == null) {
+		if (override == null || override.isEmpty || file == null) {
 			return null;
 		}
-		return '$override.$fileExt';
+		return '${SoundpostAttachment.encodeSoundSourceFilename(override)}.$fileExt';
 	}
 
 	@override
