@@ -1693,6 +1693,9 @@ class SiteReddit extends ImageboardSite {
 	Future<ImageboardUserInfo> getUserInfo(String username) async {
 		final aboutResponse = await client.getUri<Map>(Uri.https(baseUrl, '/user/$username/about.json'), options: Options(responseType: ResponseType.json));
 		final data = aboutResponse.data!['data'] as Map;
+		if (data['is_suspended'] == true) {
+			throw Exception('/u/$username is banned');
+		}
 		return ImageboardUserInfo(
 			username: username,
 			avatar: Uri.parse(unescape.convert(data['icon_img'] as String)),
