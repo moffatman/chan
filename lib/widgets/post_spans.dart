@@ -42,6 +42,7 @@ import 'package:chan/widgets/tex.dart';
 import 'package:chan/widgets/thread_spans.dart';
 import 'package:chan/widgets/user_info.dart';
 import 'package:chan/widgets/weak_navigator.dart';
+import 'package:chan/widgets/widget_decoration.dart';
 import 'package:csslib/visitor.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
@@ -1988,7 +1989,7 @@ class PostLinkSpan extends PostTerminalSpan {
 					}
 				}
 				final attachments = data?.attachments;
-				if (attachments != null) {
+				if (attachments != null && name == null) {
 					final stackIds = zone.stackIds.toList();
 					if (stackIds.isNotEmpty) {
 						stackIds.removeLast();
@@ -2098,18 +2099,54 @@ class PostLinkSpan extends PostTerminalSpan {
 						else {
 							filterQuality = FilterQuality.low;
 						}
-						tapChildChild = ExtendedImage(
-							image: image,
-							width: 75,
-							height: 75,
-							fit: BoxFit.cover,
-							filterQuality: filterQuality,
-							loadStateChanged: (loadstate) {
-								if (loadstate.extendedImageLoadState == LoadState.failed) {
-									return const Icon(CupertinoIcons.question);
+						tapChildChild = WidgetDecoration(
+							position: DecorationPosition.foreground,
+							decoration: switch (data.attachments?.item.length) {
+								int count when count > 1 => Align(
+									alignment: Alignment.bottomRight,
+									child: Container(
+										decoration: BoxDecoration(
+											color: theme.backgroundColor,
+											border: BoxBorder.all(
+												color: theme.primaryColorWithBrightness(0.2)
+											),
+											borderRadius: const BorderRadius.only(
+												topLeft: Radius.circular(6)
+											)
+										),
+										padding: const EdgeInsets.all(2),
+										child: Text.rich(TextSpan(
+											children: [
+												TextSpan(text: '$count '),
+												TextSpan(
+													text: String.fromCharCode(Adaptive.icons.photos.codePoint),
+													style: TextStyle(
+														height: kTextHeightNone,
+														fontFamily: Adaptive.icons.photos.fontFamily,
+														package: Adaptive.icons.photos.fontPackage
+													)
+												),
+												const TextSpan(text: ' ')
+											],
+											style: TextStyle(color: theme.primaryColor, fontSize: 16)
+										))
+									)
+								),
+								_ => null
+							},
+							child: ExtendedImage(
+								image: image,
+								width: 75,
+								height: 75,
+								fit: BoxFit.cover,
+								filterQuality: filterQuality,
+								loadStateChanged: (loadstate) {
+									if (loadstate.extendedImageLoadState == LoadState.failed) {
+										return const Icon(CupertinoIcons.question);
+									}
+									return null;
 								}
-								return null;
-							}
+							),
 						);
 						if (settings.blurThumbnails) {
 							// No need for ClipRect, we will ClipRRect below
@@ -2168,6 +2205,22 @@ class PostLinkSpan extends PostTerminalSpan {
 						final imageboardTarget = snapshot?.data?.imageboardTarget;
 						if (imageboardTarget != null) {
 							openImageboardTarget(context, imageboardTarget);
+						}
+						else if (snapshot?.data?.attachments case final attachments?) {
+							final stackIds = zone.stackIds.toList();
+							if (stackIds.isNotEmpty) {
+								stackIds.removeLast();
+							}
+							showGalleryPretagged(
+								context: context,
+								attachments: attachments.item.map((a) => TaggedAttachment(
+									attachment: a,
+									imageboard: attachments.imageboard,
+									semanticParentIds: stackIds,
+									postId: post.id
+								)).toList(),
+								heroOtherEndIsBoxFitCover: true
+							);
 						}
 						else {
 							openBrowser(context, cleanedUri!);
