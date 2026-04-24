@@ -469,7 +469,7 @@ class PostRow extends StatelessWidget {
 			attachments = WidthSnappingBox(
 				factor: 0.5,
 				child: Padding(
-					padding: settings.imagesOnRight ? const EdgeInsets.only(left: 8, bottom: 8) : const EdgeInsets.only(right: 8, bottom: 8),
+					padding: settings.imagesOnRight ? const EdgeInsets.only(left: 8) : const EdgeInsets.only(right: 8),
 					child: Wrap(
 						spacing: 8,
 						runSpacing: 8,
