@@ -434,7 +434,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		if (path != null) {
 			final file = File(path);
 			if (await file.exists()) {
-				setAttachment(true, file);
+				setAttachment(true, file, overrideFilenameWithoutExtension: draft?.overrideFilenameWithoutExtension);
 			}
 			else if (mounted) {
 				// Clear the bad file
@@ -702,7 +702,8 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 		bool forceMp4ToWebm = false,
 		bool forceVideoToGif = false,
 		bool forceGifToMp4 = false,
-		bool forceConvert = false
+		bool forceConvert = false,
+		String? overrideFilenameWithoutExtension
 	}) async {
 		File? file = newAttachment;
 		final settings = Settings.instance;
@@ -984,7 +985,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 						_originalAttachment = originalAttachment;
 					}
 				});
-				_filenameController.text = file.uri.pathSegments.last.replaceAll(RegExp('.$attachmentExt\$'), '');
+				_filenameController.text = overrideFilenameWithoutExtension ?? file.uri.pathSegments.last.replaceAll(RegExp('.$attachmentExt\$'), '');
 				_didUpdateDraft();
 			}
 		}
