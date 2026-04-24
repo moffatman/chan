@@ -1405,6 +1405,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		_searchFocusNode.dispose();
 		_footerShakeAnimation.dispose();
 		_refreshableTreeItems.dispose();
+		updatingNow.value?.cancelToken.cancel();
 		updatingNow.dispose();
 		_backupController?.dispose();
 	}
