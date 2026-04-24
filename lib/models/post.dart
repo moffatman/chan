@@ -106,7 +106,7 @@ enum PostSpanFormat {
 		lainchan => 2,
 		fuuka => 1,
 		futaba => 1,
-		reddit => 2,
+		reddit => 3,
 		hackerNews => 1,
 		stub => 1,
 		lynxchan => 1,

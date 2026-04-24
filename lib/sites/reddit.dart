@@ -289,6 +289,7 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	static final _inlineImagePattern = RegExp(r'https:\/\/(?:preview|i)\.redd\.it\/[^\r\n\t\f\v\) ]+');
+	static final _usernamePattern = RegExp(r'^https:\/\/(?:www)?\.reddit\.com\/(?:u|user)\/([^\/]+)');
 
 	static final _inlineSyntaxes = [
 		_SuperscriptBracketedSyntax(),
@@ -365,6 +366,9 @@ class SiteReddit extends ImageboardSite {
 										sizeInBytes: null
 									)
 								]);
+							}
+							else if (_usernamePattern.firstMatch(href)?.group(1) case final username?) {
+								yield PostUserLinkSpan(Uri.decodeComponent(username));
 							}
 							else {
 								yield PostLinkSpan(href, name: node.text.nonEmptyOrNull);
