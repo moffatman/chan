@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:chan/services/dark_mode_browser.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/interceptor.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/report_bug.dart';
 import 'package:chan/services/settings.dart';
@@ -254,14 +255,14 @@ class CloudflareUserException extends ExtendedException {
 
 /// Block any processing while Cloudflare is clearing, so that the new cookies
 /// can be injected by a later interceptor
-class CloudflareBlockingInterceptor extends Interceptor {
+class CloudflareBlockingInterceptor extends InterceptorBase {
 	@override
-	void onRequest(RequestOptions options, RequestInterceptorHandler handler) => runEphemerallyLocked(options.uri.topLevelHost, (wasLocked) async {
+	Future<void> onRequestImpl(RequestOptions options, RequestInterceptorHandler handler) => runEphemerallyLocked(options.uri.topLevelHost, (wasLocked) async {
 		handler.next(options);
 	});
 }
 
-class CloudflareInterceptor extends Interceptor {
+class CloudflareInterceptor extends InterceptorBase {
 	final ImageboardSiteArchive? site;
 	CloudflareInterceptor(this.site);
 
@@ -725,43 +726,34 @@ class CloudflareInterceptor extends Interceptor {
 	}
 
 	@override
-	void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+	Future<void> onRequestImpl(RequestOptions options, RequestInterceptorHandler handler) async {
 		final redirectGateway = options.extra[kRedirectGateway] as ImageboardRedirectGateway?;
 		if (options.cloudflare || redirectGateway != null) {
-			try {
-				final requestData = await _requestDataAsBytes(options);
-				final data = await _useWebviewForCloudflare(
-					handler: _buildHandler(options.uri),
-					cookieUrl: options.uri,
-					userAgent: options.headers['user-agent'] as String? ?? Settings.instance.userAgent,
-					initialUrlRequest: URLRequest(
-						url: WebUri.uri(options.uri),
-						mainDocumentURL: WebUri.uri(options.uri),
-						method: options.method,
-						headers: {
-							for (final h in options.headers.entries)
-								if (h.value case String value)
-									h.key: value,
-							if (requestData != null)
-								Headers.contentTypeHeader: requestData.contentType
-						},
-						body: requestData?.data
-					),
-					priority: options.priority,
-					cancelToken: options.cancelToken,
-					gatewayName: redirectGateway?.name ?? _kDefaultGatewayName
-				);
-				final newResponse = data.response(options);
-				if (newResponse != null) {
-					handler.resolve(newResponse, true);
-					return;
-				}
-			}
-			catch (e, st) {
-				handler.reject(DioError(
-					requestOptions: options,
-					error: e
-				)..stackTrace = st, true);
+			final requestData = await _requestDataAsBytes(options);
+			final data = await _useWebviewForCloudflare(
+				handler: _buildHandler(options.uri),
+				cookieUrl: options.uri,
+				userAgent: options.headers['user-agent'] as String? ?? Settings.instance.userAgent,
+				initialUrlRequest: URLRequest(
+					url: WebUri.uri(options.uri),
+					mainDocumentURL: WebUri.uri(options.uri),
+					method: options.method,
+					headers: {
+						for (final h in options.headers.entries)
+							if (h.value case String value)
+								h.key: value,
+						if (requestData != null)
+							Headers.contentTypeHeader: requestData.contentType
+					},
+					body: requestData?.data
+				),
+				priority: options.priority,
+				cancelToken: options.cancelToken,
+				gatewayName: redirectGateway?.name ?? _kDefaultGatewayName
+			);
+			final newResponse = data.response(options);
+			if (newResponse != null) {
+				handler.resolve(newResponse, true);
 				return;
 			}
 		}
@@ -769,108 +761,97 @@ class CloudflareInterceptor extends Interceptor {
 	}
 
 	@override
-	void onResponse(Response response, ResponseInterceptorHandler handler) async {
-		try {
-			if (await _responseMatchesBlock(response)) {
-				handler.reject(DioError(
-					requestOptions: response.requestOptions,
-					response: response,
-					error: const CloudflareHandlerBlockedException()
-				), true);
-				return;
-			}
-			if (await _responseMatches(response)) {
-				if (!response.requestOptions.priority.shouldPopupCloudflare) {
-					handler.reject(DioError(
-						requestOptions: response.requestOptions,
-						response: response,
-						error: const CloudflareHandlerNotAllowedException()
-					), true);
-					return;
-				}
-				final _CloudflareResponse data;
-				final gateway = await site?.getRedirectGateway(response.redirects.tryLast?.location.fillInFrom(response.requestOptions.uri) ?? response.realUri, () => response.htmlTitle, () async => response.html);
-				if (gateway != null) {
-					// Start the request again
-					// We need to ensure cookies are preserved in all navigation sequences
-					final requestData = await _requestDataAsBytes(response.requestOptions);
-					data = await _useWebviewForCloudflare(
-						handler: _buildHandler(response.requestOptions.uri),
-						cookieUrl: response.requestOptions.uri,
-						userAgent: (response.requestOptions.headers['user-agent'] as String?) ?? Settings.instance.userAgent,
-						skipHeadless: gateway.alwaysNeedsManualSolving,
-						initialUrlRequest: URLRequest(
-							url: WebUri.uri(response.requestOptions.uri),
-							mainDocumentURL: WebUri.uri(response.requestOptions.uri),
-							method: response.requestOptions.method,
-							headers: {
-								for (final h in response.requestOptions.headers.entries) h.key: h.value.toString(),
-								if (requestData != null)
-									Headers.contentTypeHeader: requestData.contentType
-							},
-							body: requestData?.data
-						),
-						priority: response.requestOptions.priority,
-						gatewayName: gateway.name,
-						cancelToken: response.requestOptions.cancelToken
-					);
-				 }
-				 else {
-					data = await _useWebviewForCloudflare(
-						handler: _buildHandler(response.requestOptions.uri),
-						cookieUrl: response.requestOptions.uri,
-						userAgent: (response.requestOptions.headers['user-agent'] as String?) ?? Settings.instance.userAgent,
-						initialData: InAppWebViewInitialData(
-							data: await _bodyAsString(response.data),
-							baseUrl: WebUri.uri(response.realUri.fillInFrom(response.requestOptions.uri))
-						),
-						priority: response.requestOptions.priority,
-						cancelToken: response.requestOptions.cancelToken
-					);
-				}
-				final newResponse = data.response(response.requestOptions);
-				if (newResponse != null) {
-					if (validateStatus(newResponse)) {
-						handler.next(newResponse);
-					}
-					else {
-						handler.reject(DioError(
-							requestOptions: response.requestOptions,
-							response: newResponse,
-							type: DioErrorType.response,
-							error: HTTPStatusException.fromResponse(newResponse)
-						), true);
-					}
-					return;
-				}
-			}
-		}
-		catch (e, st) {
+	Future<void> onResponseImpl(Response response, ResponseInterceptorHandler handler) async {
+		if (await _responseMatchesBlock(response)) {
 			handler.reject(DioError(
 				requestOptions: response.requestOptions,
 				response: response,
-				error: e
-			)..stackTrace = st, true);
+				error: const CloudflareHandlerBlockedException()
+			), true);
 			return;
+		}
+		if (await _responseMatches(response)) {
+			if (!response.requestOptions.priority.shouldPopupCloudflare) {
+				handler.reject(DioError(
+					requestOptions: response.requestOptions,
+					response: response,
+					error: const CloudflareHandlerNotAllowedException()
+				), true);
+				return;
+			}
+			final _CloudflareResponse data;
+			final gateway = await site?.getRedirectGateway(response.redirects.tryLast?.location.fillInFrom(response.requestOptions.uri) ?? response.realUri, () => response.htmlTitle, () async => response.html);
+			if (gateway != null) {
+				// Start the request again
+				// We need to ensure cookies are preserved in all navigation sequences
+				final requestData = await _requestDataAsBytes(response.requestOptions);
+				data = await _useWebviewForCloudflare(
+					handler: _buildHandler(response.requestOptions.uri),
+					cookieUrl: response.requestOptions.uri,
+					userAgent: (response.requestOptions.headers['user-agent'] as String?) ?? Settings.instance.userAgent,
+					skipHeadless: gateway.alwaysNeedsManualSolving,
+					initialUrlRequest: URLRequest(
+						url: WebUri.uri(response.requestOptions.uri),
+						mainDocumentURL: WebUri.uri(response.requestOptions.uri),
+						method: response.requestOptions.method,
+						headers: {
+							for (final h in response.requestOptions.headers.entries) h.key: h.value.toString(),
+							if (requestData != null)
+								Headers.contentTypeHeader: requestData.contentType
+						},
+						body: requestData?.data
+					),
+					priority: response.requestOptions.priority,
+					gatewayName: gateway.name,
+					cancelToken: response.requestOptions.cancelToken
+				);
+				}
+				else {
+				data = await _useWebviewForCloudflare(
+					handler: _buildHandler(response.requestOptions.uri),
+					cookieUrl: response.requestOptions.uri,
+					userAgent: (response.requestOptions.headers['user-agent'] as String?) ?? Settings.instance.userAgent,
+					initialData: InAppWebViewInitialData(
+						data: await _bodyAsString(response.data),
+						baseUrl: WebUri.uri(response.realUri.fillInFrom(response.requestOptions.uri))
+					),
+					priority: response.requestOptions.priority,
+					cancelToken: response.requestOptions.cancelToken
+				);
+			}
+			final newResponse = data.response(response.requestOptions);
+			if (newResponse != null) {
+				if (validateStatus(newResponse)) {
+					handler.next(newResponse);
+				}
+				else {
+					handler.reject(DioError(
+						requestOptions: response.requestOptions,
+						response: newResponse,
+						type: DioErrorType.response,
+						error: HTTPStatusException.fromResponse(newResponse)
+					), true);
+				}
+				return;
+			}
 		}
 		handler.next(response);
 	}
 
 	@override
-	void onError(DioError err, ErrorInterceptorHandler handler) async {
-		try {
-			if (err.type == DioErrorType.response &&
-					err.response != null &&
-					await _responseMatchesBlock(err.response!)) {
-				handler.reject(DioError(
-					requestOptions: err.requestOptions,
-					response: err.response,
-					error: const CloudflareHandlerBlockedException()
-				), true);
-				return;
-			}
-			if (err.type == DioErrorType.response &&
-		    err.response != null &&
+	Future<void> onErrorImpl(DioError err, ErrorInterceptorHandler handler) async {
+		if (err.type == DioErrorType.response &&
+				err.response != null &&
+				await _responseMatchesBlock(err.response!)) {
+			handler.reject(DioError(
+				requestOptions: err.requestOptions,
+				response: err.response,
+				error: const CloudflareHandlerBlockedException()
+			), true);
+			return;
+		}
+		if (err.type == DioErrorType.response &&
+				err.response != null &&
 				await _responseMatches(err.response!)) {
 			if (!err.requestOptions.priority.shouldPopupCloudflare) {
 				handler.reject(DioError(
@@ -880,41 +861,32 @@ class CloudflareInterceptor extends Interceptor {
 				), true);
 				return;
 			}
-				final data = await _useWebviewForCloudflare(
-					handler: _buildHandler(err.requestOptions.uri),
-					cookieUrl: err.requestOptions.uri,
-					userAgent: err.requestOptions.headers['user-agent'] as String? ?? Settings.instance.userAgent,
-					initialData: InAppWebViewInitialData(
-						data: await _bodyAsString(err.response?.data),
-						baseUrl: WebUri.uri(err.response!.realUri.fillInFrom(err.requestOptions.uri))
-					),
-					priority: err.requestOptions.priority,
-					cancelToken: err.requestOptions.cancelToken
-				);
-				final newResponse = data.response(err.requestOptions);
-				if (newResponse != null) {
-					if (validateStatus(newResponse)) {
-						handler.resolve(newResponse, true);
-					}
-					else {
-						handler.reject(DioError(
-							requestOptions: err.requestOptions,
-							response: newResponse,
-							type: DioErrorType.response,
-							error: HTTPStatusException.fromResponse(newResponse)
-						), true);
-					}
-					return;
+			final data = await _useWebviewForCloudflare(
+				handler: _buildHandler(err.requestOptions.uri),
+				cookieUrl: err.requestOptions.uri,
+				userAgent: err.requestOptions.headers['user-agent'] as String? ?? Settings.instance.userAgent,
+				initialData: InAppWebViewInitialData(
+					data: await _bodyAsString(err.response?.data),
+					baseUrl: WebUri.uri(err.response!.realUri.fillInFrom(err.requestOptions.uri))
+				),
+				priority: err.requestOptions.priority,
+				cancelToken: err.requestOptions.cancelToken
+			);
+			final newResponse = data.response(err.requestOptions);
+			if (newResponse != null) {
+				if (validateStatus(newResponse)) {
+					handler.resolve(newResponse, true);
 				}
+				else {
+					handler.reject(DioError(
+						requestOptions: err.requestOptions,
+						response: newResponse,
+						type: DioErrorType.response,
+						error: HTTPStatusException.fromResponse(newResponse)
+					), true);
+				}
+				return;
 			}
-		}
-		catch (e, st) {
-			handler.reject(DioError(
-				requestOptions: err.requestOptions,
-				response: err.response,
-				error: e
-			)..stackTrace = st, true);
-			return;
 		}
 		handler.next(err);
 	}
@@ -922,44 +894,30 @@ class CloudflareInterceptor extends Interceptor {
 
 /// For requests that probably can't use cloudflare-cleared data
 /// E.g. because null bytes are dropped in webview
-class RetryIfCloudflareInterceptor extends Interceptor {
+class RetryIfCloudflareInterceptor extends InterceptorBase {
 	final Dio client;
 	RetryIfCloudflareInterceptor(this.client);
 	@override
-	void onResponse(Response response, ResponseInterceptorHandler handler) async {
+	Future<void> onResponseImpl(Response response, ResponseInterceptorHandler handler) async {
 		if (response.retryBecauseCloudflare) {
-			try {
-				final response2 = await client.requestUri(
-					response.redirects.tryLast?.location ?? response.requestOptions.uri,
-					data: response.requestOptions.data,
-					cancelToken: response.requestOptions.cancelToken,
-					options: Options(
-						method: response.requestOptions.method,
-						headers: response.requestOptions.headers,
-						extra: {
-							...response.requestOptions.extra,
-							kRetryIfCloudflare: false
-						},
-						responseType: response.requestOptions.responseType,
-						contentType: response.requestOptions.contentType,
-						validateStatus: response.requestOptions.validateStatus
-					)
-				);
-				response2.redirects.insertAll(0, response.redirects);
-				handler.next(response2);
-			}
-			catch (e, st) {
-				if (e is DioError) {
-					handler.reject(e, true);
-				}
-				else {
-					handler.reject(DioError(
-						requestOptions: response.requestOptions,
-						response: response,
-						error: e
-					)..stackTrace = st, true);
-				}
-			}
+			final response2 = await client.requestUri(
+				response.redirects.tryLast?.location ?? response.requestOptions.uri,
+				data: response.requestOptions.data,
+				cancelToken: response.requestOptions.cancelToken,
+				options: Options(
+					method: response.requestOptions.method,
+					headers: response.requestOptions.headers,
+					extra: {
+						...response.requestOptions.extra,
+						kRetryIfCloudflare: false
+					},
+					responseType: response.requestOptions.responseType,
+					contentType: response.requestOptions.contentType,
+					validateStatus: response.requestOptions.validateStatus
+				)
+			);
+			response2.redirects.insertAll(0, response.redirects);
+			handler.next(response2);
 		}
 		else {
 			handler.next(response);

@@ -7,6 +7,7 @@ import 'dart:typed_data';
 import 'package:argon2/argon2.dart';
 import 'package:chan/services/cookies.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/interceptor.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/util.dart';
@@ -123,7 +124,7 @@ Future<void> _sha256EntryPoint(_ChallengeWorkerParam<_Sha256ChallengeParam> para
 	}
 }
 
-class BasedFlareInterceptor extends Interceptor {
+class BasedFlareInterceptor extends InterceptorBase {
 	final Dio client;
 
 	BasedFlareInterceptor(this.client);
@@ -213,21 +214,11 @@ class BasedFlareInterceptor extends Interceptor {
 	}
 
 	@override
-	void onResponse(Response response, ResponseInterceptorHandler handler) async {
+	Future<void> onResponseImpl(Response response, ResponseInterceptorHandler handler) async {
 		if (_responseMatches(response)) {
-			try {
-				final response2 = await _resolve(response);
-				if (response2 != null) {
-					handler.next(response2);
-					return;
-				}
-			}
-			catch (e, st) {
-				handler.reject(DioError(
-					requestOptions: response.requestOptions,
-					response: response,
-					error: e
-				)..stackTrace = st, true);
+			final response2 = await _resolve(response);
+			if (response2 != null) {
+				handler.next(response2);
 				return;
 			}
 		}
@@ -235,21 +226,11 @@ class BasedFlareInterceptor extends Interceptor {
 	}
 
 	@override
-	void onError(DioError err, ErrorInterceptorHandler handler) async {
+	Future<void> onErrorImpl(DioError err, ErrorInterceptorHandler handler) async {
 		if (err.response case final response? when _responseMatches(response)) {
-			try {
-				final response2 = await _resolve(response);
-				if (response2 != null) {
-					handler.resolve(response2, true);
-					return;
-				}
-			}
-			catch (e, st) {
-				handler.reject(DioError(
-					requestOptions: response.requestOptions,
-					response: response,
-					error: e
-				)..stackTrace = st, true);
+			final response2 = await _resolve(response);
+			if (response2 != null) {
+				handler.resolve(response2, true);
 				return;
 			}
 		}

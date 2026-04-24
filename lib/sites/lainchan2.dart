@@ -2,6 +2,7 @@ import 'package:async/async.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
 import 'package:chan/models/thread.dart';
+import 'package:chan/services/interceptor.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan_org.dart';
 import 'package:chan/sites/util.dart';
@@ -16,79 +17,70 @@ const _kExtraBypassLock = 'bypass_lock';
 
 /// Block any processing while form is being submitted, so that the new cookies
 /// can be injected by a later interceptor
-class SiteLainchan2BlockingInterceptor extends Interceptor {
+class SiteLainchan2BlockingInterceptor extends InterceptorBase {
 	final SiteLainchan2 site;
 
 	SiteLainchan2BlockingInterceptor(this.site);
 
 	@override
-	void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+	Future<void> onRequestImpl(RequestOptions options, RequestInterceptorHandler handler) async {
 		if (options.extra[_kExtraBypassLock] == true) {
 			handler.next(options);
 		}
 		else {
-			site.formLock.protect(() async {
+			await site.formLock.protect(() async {
 				handler.next(options);
 			});
 		}
 	}
 }
 
-class SiteLainchan2Interceptor extends Interceptor {
+class SiteLainchan2Interceptor extends InterceptorBase {
 	final SiteLainchan2 site;
 
 	SiteLainchan2Interceptor(this.site);
 
 	@override
-	void onResponse(Response response, ResponseInterceptorHandler handler) async {
-		try {
-			if (response.realUri.host == site.baseUrl) {
-				final formBypass = site.formBypass[response.realUri.path];
-				if (formBypass != null) {
-					final document = parse(response.data);
-					String? action = document.querySelector('form')?.attributes['action'];
-					if (action != null) {
-						if (response.requestOptions.extra[_kExtraBypassLock] == true) {
-							throw Exception('Failed to log into ${site.name} at ${response.realUri}');
-						}
-						if (action.startsWith('/')) {
-							action = 'https://${site.baseUrl}$action';
-						}
-						final action_ = action;
-						final response2 = await site.formLock.protect(() async {
-							final postResponse = await site.client.post(action_, data: FormData.fromMap(formBypass), options: Options(
-								validateStatus: (x) => x != null && (x >= 200 || x < 400),
-								followRedirects: true,
+	Future<void> onResponseImpl(Response response, ResponseInterceptorHandler handler) async {
+		if (response.realUri.host == site.baseUrl) {
+			final formBypass = site.formBypass[response.realUri.path];
+			if (formBypass != null) {
+				final document = parse(response.data);
+				String? action = document.querySelector('form')?.attributes['action'];
+				if (action != null) {
+					if (response.requestOptions.extra[_kExtraBypassLock] == true) {
+						throw Exception('Failed to log into ${site.name} at ${response.realUri}');
+					}
+					if (action.startsWith('/')) {
+						action = 'https://${site.baseUrl}$action';
+					}
+					final action_ = action;
+					final response2 = await site.formLock.protect(() async {
+						final postResponse = await site.client.post(action_, data: FormData.fromMap(formBypass), options: Options(
+							validateStatus: (x) => x != null && (x >= 200 || x < 400),
+							followRedirects: true,
+							extra: {
+								_kExtraBypassLock: true
+							}
+						), cancelToken: response.requestOptions.cancelToken);
+						if (postResponse.realUri.path != response.realUri.path) {
+							return await site.client.fetch(response.requestOptions.copyWith(
 								extra: {
+									...response.requestOptions.extra,
 									_kExtraBypassLock: true
 								}
-							), cancelToken: response.requestOptions.cancelToken);
-							if (postResponse.realUri.path != response.realUri.path) {
-								return await site.client.fetch(response.requestOptions.copyWith(
-									extra: {
-										...response.requestOptions.extra,
-										_kExtraBypassLock: true
-									}
-								));
-							}
-						});
-						if (response2 != null) {
-							// Success
-							handler.next(response2);
-							return;
+							));
 						}
+					});
+					if (response2 != null) {
+						// Success
+						handler.next(response2);
+						return;
 					}
 				}
 			}
-			handler.next(response);
 		}
-		catch (e, st) {
-			Future.error(e, st); // Crashlytics
-			handler.reject(DioError(
-				requestOptions: response.requestOptions,
-				error: e
-			), true);
-		}
+		handler.next(response);
 	}
 }
 

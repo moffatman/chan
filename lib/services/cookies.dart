@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:chan/services/interceptor.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
@@ -7,60 +8,34 @@ import 'package:dio/dio.dart';
 const kExtraCookie = 'extraCookie';
 const kExcludeCookies = 'excludeCookies';
 
-class SeparatedCookieManager extends Interceptor {
+class SeparatedCookieManager extends InterceptorBase {
 
   CookieJar get cookieJar => Persistence.currentCookies;
 
   @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
-		try {
-      options.headers[HttpHeaders.cookieHeader] = await getCookies(options.uri, switch (options.extra[kExtraCookie]) {
-        String extra => extra,
-        _ => ''
-      }, toRemove: switch (options.extra[kExcludeCookies]) {
-        List<String> exclude => exclude,
-        _ => []
-      });
-      handler.next(options);
-		}
-		catch (e, st) {
-			handler.reject(DioError(
-				requestOptions: options,
-				error: e
-			)..stackTrace = st, true);
-		}
+  Future<void> onRequestImpl(RequestOptions options, RequestInterceptorHandler handler) async {
+    options.headers[HttpHeaders.cookieHeader] = await getCookies(options.uri, switch (options.extra[kExtraCookie]) {
+      String extra => extra,
+      _ => ''
+    }, toRemove: switch (options.extra[kExcludeCookies]) {
+      List<String> exclude => exclude,
+      _ => []
+    });
+    handler.next(options);
   }
 
   @override
-  void onResponse(Response response, ResponseInterceptorHandler handler) async {
-		try {
-      await _saveCookies(response);
-			handler.next(response);
-		}
-		catch (e, st) {
-			handler.reject(DioError(
-				requestOptions: response.requestOptions,
-				error: e
-			)..stackTrace = st, true);
-		}
+  Future<void> onResponseImpl(Response response, ResponseInterceptorHandler handler) async {
+    await _saveCookies(response);
+    handler.next(response);
   }
 
   @override
-  void onError(DioError err, ErrorInterceptorHandler handler) async {
+  Future<void> onErrorImpl(DioError err, ErrorInterceptorHandler handler) async {
     if (err.response != null) {
-			try {
-        await _saveCookies(err.response!);
-				handler.next(err);
-			}
-			catch(e, st) {
-				handler.next(DioError(
-					requestOptions: err.response!.requestOptions,
-					error: e
-				)..stackTrace = st);
-			}
-    } else {
-      handler.next(err);
+      await _saveCookies(err.response!);
     }
+    handler.next(err);
   }
 
   Future<void> _saveCookies(Response response) async {

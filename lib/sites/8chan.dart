@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/cookies.dart';
+import 'package:chan/services/interceptor.dart';
 import 'package:chan/services/javascript_challenge.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lynxchan.dart';
@@ -20,24 +21,24 @@ class Site8ChanPoWBlockBypassFailed implements Exception {
 	String toString() => 'Failed to clear 8chan PoWBlock firewall';
 }
 
-class Site8ChanPoWBlockFakePngBlockingInterceptor extends Interceptor {
+class Site8ChanPoWBlockFakePngBlockingInterceptor extends InterceptorBase {
 	final Site8Chan site;
 
 	Site8ChanPoWBlockFakePngBlockingInterceptor(this.site);
 
 	@override
-	void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+	Future<void> onRequestImpl(RequestOptions options, RequestInterceptorHandler handler) async {
 		if (options.extra.containsKey(_kBypassLock)) {
 			handler.next(options);
 			return;
 		}
-		site._interceptorLock.protect(() async {
+		await site._interceptorLock.protect(() async {
 			handler.next(options);
 		});
 	}
 }
 
-class Site8ChanPoWBlockFakePngInterceptor extends Interceptor {
+class Site8ChanPoWBlockFakePngInterceptor extends InterceptorBase {
 	final Site8Chan site;
 
 	Site8ChanPoWBlockFakePngInterceptor(this.site);
@@ -72,24 +73,14 @@ class Site8ChanPoWBlockFakePngInterceptor extends Interceptor {
 	}
 
 	@override
-	void onResponse(Response response, ResponseInterceptorHandler handler) async {
+	Future<void> onResponseImpl(Response response, ResponseInterceptorHandler handler) async {
 		if (_responseMatches(response)) {
-			try {
-				if (response.requestOptions.extra.containsKey(_kThrowOnBlock)) {
-					throw const Site8ChanPoWBlockBypassFailed();
-				}
-				final response2 = await _resolve(response);
-				if (response2 != null) {
-					handler.next(response2);
-					return;
-				}
+			if (response.requestOptions.extra.containsKey(_kThrowOnBlock)) {
+				throw const Site8ChanPoWBlockBypassFailed();
 			}
-			catch (e, st) {
-				handler.reject(DioError(
-					requestOptions: response.requestOptions,
-					response: response,
-					error: e
-				)..stackTrace = st, true);
+			final response2 = await _resolve(response);
+			if (response2 != null) {
+				handler.next(response2);
 				return;
 			}
 		}
@@ -97,24 +88,14 @@ class Site8ChanPoWBlockFakePngInterceptor extends Interceptor {
 	}
 
 	@override
-	void onError(DioError err, ErrorInterceptorHandler handler) async {
+	Future<void> onErrorImpl(DioError err, ErrorInterceptorHandler handler) async {
 		if (err.response case final response? when _responseMatches(response)) {
-			try {
-				if (err.requestOptions.extra.containsKey(_kThrowOnBlock)) {
-					throw const Site8ChanPoWBlockBypassFailed();
-				}
-				final response2 = await _resolve(response);
-				if (response2 != null) {
-					handler.resolve(response2, true);
-					return;
-				}
+			if (err.requestOptions.extra.containsKey(_kThrowOnBlock)) {
+				throw const Site8ChanPoWBlockBypassFailed();
 			}
-			catch (e, st) {
-				handler.reject(DioError(
-					requestOptions: response.requestOptions,
-					response: response,
-					error: e
-				)..stackTrace = st, true);
+			final response2 = await _resolve(response);
+			if (response2 != null) {
+				handler.resolve(response2, true);
 				return;
 			}
 		}

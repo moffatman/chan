@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:chan/services/html_error.dart';
+import 'package:chan/services/interceptor.dart';
 import 'package:chan/services/util.dart';
 import 'package:dio/dio.dart';
 
@@ -29,12 +30,12 @@ class InvalidJsonException extends ExtendedException {
 	}.entries.map((e) => '${e.key}: ${e.value}').join(', ')})';
 }
 
-class StrictJsonInterceptor extends Interceptor {
+class StrictJsonInterceptor extends InterceptorBase {
 	@override
-  void onResponse(
+  Future<void> onResponseImpl(
     Response response,
     ResponseInterceptorHandler handler,
-  ) {
+  ) async {
 		if (response.requestOptions.responseType == ResponseType.json &&
 				!Transformer.isJsonMimeType(response.headers[Headers.contentTypeHeader]?.first) &&
 				// This would be treated as a success and data checked

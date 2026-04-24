@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:chan/models/flag.dart';
 import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/search.dart';
+import 'package:chan/services/interceptor.dart';
 import 'package:chan/services/linkifier.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/models/thread.dart';
@@ -223,22 +224,14 @@ class _LooseHeaderSyntax extends markdown.BlockSyntax {
 
 const _loginFieldRedGifsTokenKey = '_rgt';
 
-class _SiteRedditInterceptor extends Interceptor {
+class _SiteRedditInterceptor extends InterceptorBase {
 	final SiteReddit parent;
 	_SiteRedditInterceptor(this.parent);
 
 	@override
-	void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-		try {
-			options.headers[HttpHeaders.cacheControlHeader] = 'max-age=0';
-			handler.next(options);
-		}
-		catch (e, st) {
-			handler.reject(DioError(
-				requestOptions: options,
-				error: e
-			)..stackTrace = st, true);
-		}
+	Future<void> onRequestImpl(RequestOptions options, RequestInterceptorHandler handler) async {
+		options.headers[HttpHeaders.cacheControlHeader] = 'max-age=0';
+		handler.next(options);
 	}
 }
 

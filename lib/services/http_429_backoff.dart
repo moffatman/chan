@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/interceptor.dart';
 import 'package:chan/services/priority_queue.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/util.dart';
@@ -54,7 +55,7 @@ Duration get429Delay(String? retryAfter, int currentRetries) {
 	);
 }
 
-class HTTP429BackoffInterceptor extends Interceptor {
+class HTTP429BackoffInterceptor extends InterceptorBase {
 	final Dio client;
 	final int maxRetries;
 
@@ -76,79 +77,57 @@ class HTTP429BackoffInterceptor extends Interceptor {
 	}
 
 	@override
-	void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
-		try {
-			if (options.retries == 0) {
-				await http429Queue.start(options.uri);
-			}
-			handler.next(options);
+	Future<void> onRequestImpl(RequestOptions options, RequestInterceptorHandler handler) async {
+		if (options.retries == 0) {
+			await http429Queue.start(options.uri);
 		}
-		catch (e, st) {
-			handler.reject(DioError(
-				requestOptions: options,
-				error: e
-			)..stackTrace = st, true);
-		}
+		handler.next(options);
 	}
 
 	@override
-	void onResponse(Response response, ResponseInterceptorHandler handler) async {
+	Future<void> onResponseImpl(Response response, ResponseInterceptorHandler handler) async {
 		final currentRetries = response.requestOptions.retries;
-		try {
-			if (response.statusCode == 429) {
-				final delay = get429Delay(response.headers.value('retry-after'), currentRetries);
-				if (response.requestOptions.priority == RequestPriority.lowest || currentRetries >= maxRetries) {
-					handler.reject(DioError(
-						requestOptions: response.requestOptions,
-						response: response,
-						error: Http429Exception(DateTime.now().add(delay), currentRetries)
-					));
-					return;
-				}
-				print('[HTTP429BackoffInterceptor] Waiting $delay due to server-side rate-limiting (url: ${response.requestOptions.uri}, currentRetries: $currentRetries)');
-				_maybeShowToast(response.requestOptions.uri, delay);
-				await http429Queue.delay(response.requestOptions.uri, delay);
-				final response2 = await client.requestUri(
-					response.requestOptions.uri,
-					data: response.requestOptions.data,
-					cancelToken: response.requestOptions.cancelToken,
-					options: Options(
-						method: response.requestOptions.method,
-						headers: response.requestOptions.headers,
-						extra: {
-							...response.requestOptions.extra,
-							_kExtraRetriesKey: currentRetries + 1
-						},
-						responseType: response.requestOptions.responseType,
-						contentType: response.requestOptions.contentType,
-						validateStatus: response.requestOptions.validateStatus
-					)
-				);
-				handler.next(response2);
-			}
-			else {
-				handler.next(response);
-			}
-			if (currentRetries == 0) {
-				http429Queue.end(response.requestOptions.uri);
-			}
-		}
-		catch (e, st) {
-			if (e is DioError) {
-				handler.reject(e, true);
-			}
-			else {
+		if (response.statusCode == 429) {
+			final delay = get429Delay(response.headers.value('retry-after'), currentRetries);
+			if (response.requestOptions.priority == RequestPriority.lowest || currentRetries >= maxRetries) {
 				handler.reject(DioError(
 					requestOptions: response.requestOptions,
 					response: response,
-					error: e
-				)..stackTrace = st, true);
+					error: Http429Exception(DateTime.now().add(delay), currentRetries)
+				));
+				return;
 			}
+			print('[HTTP429BackoffInterceptor] Waiting $delay due to server-side rate-limiting (url: ${response.requestOptions.uri}, currentRetries: $currentRetries)');
+			_maybeShowToast(response.requestOptions.uri, delay);
+			await http429Queue.delay(response.requestOptions.uri, delay);
+			final response2 = await client.requestUri(
+				response.requestOptions.uri,
+				data: response.requestOptions.data,
+				cancelToken: response.requestOptions.cancelToken,
+				options: Options(
+					method: response.requestOptions.method,
+					headers: response.requestOptions.headers,
+					extra: {
+						...response.requestOptions.extra,
+						_kExtraRetriesKey: currentRetries + 1
+					},
+					responseType: response.requestOptions.responseType,
+					contentType: response.requestOptions.contentType,
+					validateStatus: response.requestOptions.validateStatus
+				)
+			);
+			handler.next(response2);
+		}
+		else {
+			handler.next(response);
+		}
+		if (currentRetries == 0) {
+			http429Queue.end(response.requestOptions.uri);
 		}
 	}
 
 	@override
-	void onError(DioError err, ErrorInterceptorHandler handler) async {
+	Future<void> onErrorImpl(DioError err, ErrorInterceptorHandler handler) async {
 		final currentRetries = err.requestOptions.retries;
 		try {
 			if (err.type == DioErrorType.response &&
@@ -165,37 +144,23 @@ class HTTP429BackoffInterceptor extends Interceptor {
 				print('[HTTP429BackoffInterceptor] Waiting $delay due to server-side rate-limiting (url: ${err.requestOptions.uri}, currentRetries: $currentRetries)');
 				_maybeShowToast(err.requestOptions.uri, delay);
 				await http429Queue.delay(err.requestOptions.uri, delay);
-				try {
-					final response = await client.requestUri(
-						err.requestOptions.uri,
-						data: err.requestOptions.data,
-						cancelToken: err.requestOptions.cancelToken,
-						options: Options(
-							method: err.requestOptions.method,
-							headers: err.requestOptions.headers,
-							extra: {
-								...err.requestOptions.extra,
-								_kExtraRetriesKey: currentRetries + 1
-							},
-							responseType: err.requestOptions.responseType,
-							contentType: err.requestOptions.contentType,
-							validateStatus: err.requestOptions.validateStatus
-						)
-					);
-					handler.resolve(response, true);
-				}
-				catch (e, st) {
-					if (e is DioError) {
-						handler.reject(e, true);
-					}
-					else {
-						handler.reject(DioError(
-							requestOptions: err.requestOptions,
-							response: err.response,
-							error: e
-						)..stackTrace = st, true);
-					}
-				}
+				final response = await client.requestUri(
+					err.requestOptions.uri,
+					data: err.requestOptions.data,
+					cancelToken: err.requestOptions.cancelToken,
+					options: Options(
+						method: err.requestOptions.method,
+						headers: err.requestOptions.headers,
+						extra: {
+							...err.requestOptions.extra,
+							_kExtraRetriesKey: currentRetries + 1
+						},
+						responseType: err.requestOptions.responseType,
+						contentType: err.requestOptions.contentType,
+						validateStatus: err.requestOptions.validateStatus
+					)
+				);
+				handler.resolve(response, true);
 				return;
 			}
 			handler.next(err);
