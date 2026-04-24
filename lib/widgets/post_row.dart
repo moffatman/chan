@@ -811,7 +811,7 @@ class PostRow extends StatelessWidget {
 											)
 										),
 										if (cloverStyleRepliesButton) SizedBox(
-											height: 48 * settings.textScale
+											height: 32 * settings.textScale
 										)
 									]
 								)
