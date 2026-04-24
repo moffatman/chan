@@ -247,6 +247,9 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	}
 
 	void _onImageboardRegistryUpdate() {
+		if (_popping) {
+			return;
+		}
 		final newAllImageboards = (widget.allowDevsite ? ImageboardRegistry.instance.imageboardsIncludingDev : ImageboardRegistry.instance.imageboards).where((i) => widget.filterImageboards?.call(i) ?? true).toList();
 		if (currentImageboard case final ib?) {
 			currentImageboardIndex = max(0, newAllImageboards.indexOf(ib));
@@ -257,6 +260,9 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	}
 
 	void _onBoardsBoxUpdate(BoxEvent _) {
+		if (_popping) {
+			return;
+		}
 		_fetchBoards();
 		setState(() {});
 	}
@@ -565,6 +571,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	}
 
 	Future<void> _pop(ImageboardScoped<ImageboardBoard> item) async {
+		_popping = true;
 		if (item.imageboard.persistence.maybeGetBoard(item.item.name) == null) {
 			// In case it is found by typeahead or something
 			await item.imageboard.persistence.setBoard(item.item.name, item.item);
