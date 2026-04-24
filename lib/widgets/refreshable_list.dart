@@ -1022,7 +1022,7 @@ class _Divider<T extends Object> extends StatelessWidget {
 			);
 		}
 		return Padding(
-			padding: EdgeInsets.only(left: pow(depth, 0.70) * 20),
+			padding: EdgeInsets.only(left: pow(depth, 0.60) * 20),
 			child: Divider(
 				thickness: 1,
 				height: 0,
