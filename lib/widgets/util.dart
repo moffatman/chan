@@ -2928,7 +2928,7 @@ extension CopyWith on TextSpan {
 		children: children.unwrapOr(this.children),
 		style: style,
 		recognizer: recognizer,
-		// TODO: recognizer2
+		recognizer2: recognizer2,
 		mouseCursor: mouseCursor,
 		onEnter: onEnter,
 		onExit: onExit,
