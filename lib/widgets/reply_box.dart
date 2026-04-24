@@ -283,6 +283,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				_overrideRandomizeFilenames = true;
 			});
 		}
+		_didUpdateDraft();
 	}
 
 	Future<void> _scanForUrl() async {
