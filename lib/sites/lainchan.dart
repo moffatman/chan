@@ -519,7 +519,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 		}
 	}
 
-	static final _pollFormPattern1 = RegExp(r'<div [^>]+class="pollform">.*<\\/div>(?:<br\\/>)?');
+	static final _pollFormPattern1 = RegExp(r'''<div [^>]+class=["']pollform["']>.*<\/div>(?:<br\/>)?''');
 	static final _pollFormPattern2 = RegExp('<iframe [^>]+class="poll" src="/poll.php\\?id=(\\d+).*</iframe>(?:<br\\/>)?');
 
 	Post _makePost(String board, int threadId, Map data) {
