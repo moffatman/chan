@@ -30,6 +30,14 @@ class ScrollTracker {
 
 	bool onNotification(Notification notification) {
 		if (notification is ScrollNotification) {
+			if (notification.context case final context?) {
+				final primaryMetrics = PrimaryScrollController.maybeOf(context)?.tryPosition;
+				if (primaryMetrics?.viewportDimension != notification.metrics.viewportDimension
+						&& primaryMetrics?.pixels != notification.metrics.pixels) {
+					// Not a real scroll of primary scrollable
+					return false;
+				}
+			}
 			final isMeaningfullyScrollable = (notification.metrics.extentBefore + notification.metrics.extentAfter) > 500;
 			if (notification is ScrollStartNotification) {
 				isScrolling.value = true;
