@@ -49,9 +49,11 @@ class _QuoteLinkElement extends LinkifyElement {
 }
 
 class _QuoteLinkLinkifier extends Linkifier {
-  const _QuoteLinkLinkifier();
+	final bool fake;
+  const _QuoteLinkLinkifier({required this.fake});
 
-	static final _pattern = RegExp(r'(?:^|(?<= ))>>(\d+)');
+	static final _pattern1 = RegExp(r'(?:^|(?<= ))>(\d+)');
+	static final _pattern2 = RegExp(r'(?:^|(?<= ))>>(\d+)');
 
   @override
   List<LinkifyElement> parse(elements, options) {
@@ -61,7 +63,7 @@ class _QuoteLinkLinkifier extends Linkifier {
       if (element is TextElement) {
 				String text = element.text;
 				while (text.isNotEmpty) {
-        	final match = _pattern.firstMatch(text);
+        	final match = (fake ? _pattern1 : _pattern2).firstMatch(text);
 					if (match == null) {
 						if (text == element.text) {
 							list.add(element);
@@ -255,32 +257,59 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 		Settings.instance.removeListener(_onSettingsUpdate);
 	}
 
-	static Iterable<PostSpan> parsePlaintext(String text, {ThreadIdentifier? fromSearchThread}) {
+	static Iterable<PostSpan> parsePlaintext(String text, {
+		ThreadIdentifier? fromSearchThread,
+		String? findFakeQuotelinksOnBoard
+	}) {
 		if (text.length == 1) {
 			if (text == '\n') {
 				return const [PostLineBreakSpan()];
 			}
 			return [PostTextSpan(text)];
 		}
+		if (findFakeQuotelinksOnBoard != 'g') {
+			// Only support it on /g/ (/lmg/ threads)
+			findFakeQuotelinksOnBoard = null;
+		}
+		if (findFakeQuotelinksOnBoard != null && text.length > 1 && text.codeUnitAt(0) == 0x3E) {
+			final maybeDigit = text.codeUnitAt(1);
+			if (maybeDigit < 0x30 || maybeDigit > 0x39) {
+				// Not a digit
+				findFakeQuotelinksOnBoard = null;
+			}
+		}
 		return linkify(text, linkifiers: fromSearchThread != null ? const [
 			LooseUrlLinkifier(),
 			ChanceLinkifier(),
 			LineBreakLinkifier(),
-			_QuoteLinkLinkifier()
+			_QuoteLinkLinkifier(fake: false)
+		] : (findFakeQuotelinksOnBoard != null ? const [
+			LooseUrlLinkifier(),
+			ChanceLinkifier(),
+			LineBreakLinkifier(),
+			_QuoteLinkLinkifier(fake: true)
 		] : const [
 			LooseUrlLinkifier(),
 			ChanceLinkifier(),
 			LineBreakLinkifier()
-		], options: const LinkifyOptions(
+		]), options: const LinkifyOptions(
 			defaultToHttps: true,
 			humanize: false
 		)).map((elem) {
 			if (elem is _QuoteLinkElement) {
-				return PostQuoteLinkSpan(
-					board: fromSearchThread!.board,
-					threadId: fromSearchThread.id,
-					postId: elem.id
-				);
+				if (fromSearchThread != null) {
+					return PostQuoteLinkSpan(
+						board: fromSearchThread.board,
+						threadId: fromSearchThread.id,
+						postId: elem.id
+					);
+				}
+				else if (findFakeQuotelinksOnBoard != null) {
+					return PostQuoteLinkSpan.dead(
+						board: findFakeQuotelinksOnBoard,
+						postId: elem.id
+					);
+				}
 			}
 			else if (elem is UrlElement) {
 				return PostLinkSpan(elem.url, name: elem.text);
@@ -288,9 +317,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 			else if (elem is LineBreakElement) {
 				return const PostLineBreakSpan();
 			}
-			else {
-				return PostTextSpan(elem.text);
-			}
+			return PostTextSpan(elem.text);
 		});
 	}
 
@@ -306,7 +333,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 			return '<tex>${match.group(1)!}</tex>';
 		}));
 		int spoilerSpanId = 0;
-		PostNodeSpan process(List<dom.Node> nodes) {
+		PostNodeSpan process(List<dom.Node> nodes, {bool withinQuote = false}) {
 			final List<PostSpan> elements = [];
 			for (int i = 0; i < nodes.length; i++) {
 				final node = nodes[i];
@@ -373,17 +400,17 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 							));
 						}
 						else if (node.classes.contains('quote')) {
-							elements.add(PostQuoteSpan(process(node.nodes)));
+							elements.add(PostQuoteSpan(process(node.nodes, withinQuote: true)));
 						}
 						else if (node.classes.contains('fortune')) {
 							final css = {
 								for (final pair in (node.attributes['style']?.split(';') ?? <String>[])) pair.split(':').first: pair.split(':').last
 							};
 							if (css['color'] case String color) {
-								elements.add(PostColorSpan(process(node.nodes), colorToHex(color)));
+								elements.add(PostColorSpan(process(node.nodes, withinQuote: withinQuote), colorToHex(color)));
 							}
 							else {
-								elements.add(process(node.nodes));
+								elements.add(process(node.nodes, withinQuote: withinQuote));
 							}
 						}
 						else if (node.classes.contains('abbr') &&
@@ -426,7 +453,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 						}
 					}
 					else if (node.localName == 's') {
-						elements.add(PostSpoilerSpan(process(node.nodes), spoilerSpanId++));
+						elements.add(PostSpoilerSpan(process(node.nodes, withinQuote: withinQuote), spoilerSpanId++));
 					}
 					else if (node.localName == 'pre') {
 						final buffer = StringBuffer();
@@ -447,7 +474,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 						elements.add(PostCodeSpan(buffer.toString().trimRight()));
 					}
 					else if (node.localName == 'b' || node.localName == 'strong') {
-						final child = PostBoldSpan(process(node.nodes));
+						final child = PostBoldSpan(process(node.nodes, withinQuote: withinQuote));
 						if (node.attributes['style']?.contains('color: red;') ?? false) {
 							elements.add(PostSecondaryColorSpan(child));
 						}
@@ -456,11 +483,11 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 						}
 					}
 					else {
-						elements.addAll(parsePlaintext(node.text, fromSearchThread: fromSearchThread));
+						elements.addAll(parsePlaintext(node.text, fromSearchThread: fromSearchThread, findFakeQuotelinksOnBoard: withinQuote ? board : null));
 					}
 				}
 				else {
-					elements.addAll(parsePlaintext(node.text ?? '', fromSearchThread: fromSearchThread));
+					elements.addAll(parsePlaintext(node.text ?? '', fromSearchThread: fromSearchThread, findFakeQuotelinksOnBoard: withinQuote ? board : null));
 				}
 			}
 			return PostNodeSpan(elements.toList(growable: false));

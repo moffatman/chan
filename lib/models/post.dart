@@ -101,7 +101,7 @@ enum PostSpanFormat {
 	bool get hasWeakQuoteLinks => this == jForum;
 	/// Must update if any makeSpan function changes
 	int get _makeSpanVersion => 2 + switch (this) {
-		chan4 => 1,
+		chan4 => 2,
 		foolFuuka => 1,
 		lainchan => 2,
 		fuuka => 1,
