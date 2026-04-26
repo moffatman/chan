@@ -44,52 +44,55 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 
 	static PostNodeSpan makeSpan(String board, int threadId, String data) {
 		final body = parseFragment(data.trimRight());
-		final List<PostSpan> elements = [];
 		int spoilerSpanId = 0;
-		for (final node in body.nodes) {
-			if (node is dom.Element) {
-				if (node.localName == 'br') {
-					elements.add(const PostLineBreakSpan());
-				}
-				else if (node.localName == 'a' && node.attributes['href'] != null) {
-					final match = _quoteLinkPattern.firstMatch(node.attributes['href']!);
-					if (match != null) {
-						elements.add(PostQuoteLinkSpan(
-							board: match.group(1)!,
-							threadId: int.parse(match.group(2)!),
-							postId: int.parse(match.group(3)!)
-						));
+		PostNodeSpan process(List<dom.Node> nodes) {
+			final List<PostSpan> elements = [];
+			for (final node in nodes) {
+				if (node is dom.Element) {
+					if (node.localName == 'br') {
+						elements.add(const PostLineBreakSpan());
+					}
+					else if (node.localName == 'a' && node.attributes['href'] != null) {
+						final match = _quoteLinkPattern.firstMatch(node.attributes['href']!);
+						if (match != null) {
+							elements.add(PostQuoteLinkSpan(
+								board: match.group(1)!,
+								threadId: int.parse(match.group(2)!),
+								postId: int.parse(match.group(3)!)
+							));
+						}
+						else {
+							elements.add(PostLinkSpan(node.attributes['href']!, name: node.text.nonEmptyOrNull));
+						}
+					}
+					else if (node.localName == 'span') {
+						if (node.classes.contains('greenText')) {
+							elements.add(PostQuoteSpan(process(node.nodes)));
+						}
+						else if (node.classes.contains('redText')) {
+							elements.add(PostColorSpan(PostBoldSpan(process(node.nodes)), const Color(0xFFAF0A0F)));
+						}
+						else if (node.classes.contains('spoiler')) {
+							elements.add(PostSpoilerSpan(PostTextSpan(node.text), spoilerSpanId++));
+						}
+						else {
+							elements.add(PostTextSpan(node.text));
+						}
+					}
+					else if (node.localName == 'strong') {
+						elements.add(PostBoldSpan(process(node.nodes)));
 					}
 					else {
-						elements.add(PostLinkSpan(node.attributes['href']!, name: node.text.nonEmptyOrNull));
+						elements.addAll(SiteLainchan.parsePlaintext(node.text));
 					}
-				}
-				else if (node.localName == 'span') {
-					if (node.classes.contains('greenText')) {
-						elements.add(PostQuoteSpan(makeSpan(board, threadId, node.innerHtml)));
-					}
-					else if (node.classes.contains('redText')) {
-						elements.add(PostColorSpan(PostBoldSpan(makeSpan(board, threadId, node.innerHtml)), const Color(0xFFAF0A0F)));
-					}
-					else if (node.classes.contains('spoiler')) {
-						elements.add(PostSpoilerSpan(PostTextSpan(node.text), spoilerSpanId++));
-					}
-					else {
-						elements.add(PostTextSpan(node.text));
-					}
-				}
-				else if (node.localName == 'strong') {
-					elements.add(PostBoldSpan(makeSpan(board, threadId, node.innerHtml)));
 				}
 				else {
-					elements.addAll(SiteLainchan.parsePlaintext(node.text));
+					elements.addAll(SiteLainchan.parsePlaintext(node.text ?? ''));
 				}
 			}
-			else {
-				elements.addAll(SiteLainchan.parsePlaintext(node.text ?? ''));
-			}
+			return PostNodeSpan(elements.toList(growable: false));
 		}
-		return PostNodeSpan(elements.toList(growable: false));
+		return process(body.nodes);
 	}
 
 	SiteLynxchan({

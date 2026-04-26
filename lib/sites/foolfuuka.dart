@@ -77,112 +77,115 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			data = data.replaceAll(kShiftJISStart, '<span class="sjis">').replaceAll('[/spoiler]', '</span>');
 		}
 		final body = parseFragment(data.replaceAll('<wbr>', '').replaceAll('\n', ''));
-		final List<PostSpan> elements = [];
 		int spoilerSpanId = 0;
-		processQuotelink(dom.Element quoteLink) {
-			final parts = quoteLink.attributes['href']!.split('/');
-			final linkedBoard = parts[3];
-			if (parts.length > 4) {
-				final linkType = parts[4];
-				final linkedId = parts.length > 5 ? parts[5].tryParseInt : null;
-				if (linkedId == null) {
-					elements.add(PostCatalogSearchSpan(
-						board: linkedBoard,
-						query: parts[5]
-					));
-				}
-				else if (linkType == 'post') {
-					int linkedPostThreadId = linkedPostThreadIds['$linkedBoard/$linkedId'] ?? -1;
-					if (linkedId == threadId) {
-						// Easy fix so that uncached linkedPostThreadIds will correctly have (OP) in almost all cases
-						linkedPostThreadId = threadId;
+		PostNodeSpan process(List<dom.Node> nodes) {
+			final List<PostSpan> elements = [];
+			processQuotelink(dom.Element quoteLink) {
+				final parts = quoteLink.attributes['href']!.split('/');
+				final linkedBoard = parts[3];
+				if (parts.length > 4) {
+					final linkType = parts[4];
+					final linkedId = parts.length > 5 ? parts[5].tryParseInt : null;
+					if (linkedId == null) {
+						elements.add(PostCatalogSearchSpan(
+							board: linkedBoard,
+							query: parts[5]
+						));
 					}
-					elements.add(PostQuoteLinkSpan(
-						board: linkedBoard,
-						threadId: linkedPostThreadId,
-						postId: linkedId
-					));
+					else if (linkType == 'post') {
+						int linkedPostThreadId = linkedPostThreadIds['$linkedBoard/$linkedId'] ?? -1;
+						if (linkedId == threadId) {
+							// Easy fix so that uncached linkedPostThreadIds will correctly have (OP) in almost all cases
+							linkedPostThreadId = threadId;
+						}
+						elements.add(PostQuoteLinkSpan(
+							board: linkedBoard,
+							threadId: linkedPostThreadId,
+							postId: linkedId
+						));
+					}
+					else if (linkType == 'thread') {
+						final linkedPostId = int.parse(parts[6].substring(1));
+						elements.add(PostQuoteLinkSpan(
+							board: linkedBoard,
+							threadId: linkedId,
+							postId: linkedPostId
+						));
+					}
 				}
-				else if (linkType == 'thread') {
-					final linkedPostId = int.parse(parts[6].substring(1));
-					elements.add(PostQuoteLinkSpan(
-						board: linkedBoard,
-						threadId: linkedId,
-						postId: linkedPostId
-					));
+				else {
+					elements.add(PostBoardLinkSpan(linkedBoard));
 				}
 			}
-			else {
-				elements.add(PostBoardLinkSpan(linkedBoard));
-			}
-		}
-		for (final node in body.nodes) {
-			if (node is dom.Element) {
-				if (node.localName == 'br') {
-					elements.add(const PostLineBreakSpan());
-				}
-				else if (node.localName == 'img' && node.attributes.containsKey('width') && node.attributes.containsKey('height')) {
-					final src = node.attributes['src'];
-					final width = int.tryParse(node.attributes['width']!);
-					final height = int.tryParse(node.attributes['height']!);
-					if (src == null || width == null || height == null) {
-						continue;
+			for (final node in nodes) {
+				if (node is dom.Element) {
+					if (node.localName == 'br') {
+						elements.add(const PostLineBreakSpan());
 					}
-					elements.add(PostInlineImageSpan(
-						src: src,
-						width: width,
-						height: height
-					));
-				}
-				else if (node.localName == 'span') {
-					if (node.classes.contains('greentext')) {
-						final quoteLink = node.querySelector('a.backlink');
-						if (quoteLink != null) {
-							processQuotelink(quoteLink);
+					else if (node.localName == 'img' && node.attributes.containsKey('width') && node.attributes.containsKey('height')) {
+						final src = node.attributes['src'];
+						final width = int.tryParse(node.attributes['width']!);
+						final height = int.tryParse(node.attributes['height']!);
+						if (src == null || width == null || height == null) {
+							continue;
+						}
+						elements.add(PostInlineImageSpan(
+							src: src,
+							width: width,
+							height: height
+						));
+					}
+					else if (node.localName == 'span') {
+						if (node.classes.contains('greentext')) {
+							final quoteLink = node.querySelector('a.backlink');
+							if (quoteLink != null) {
+								processQuotelink(quoteLink);
+							}
+							else {
+								elements.add(PostQuoteSpan(process(node.nodes)));
+							}
+						}
+						else if (node.classes.contains('spoiler')) {
+							elements.add(PostSpoilerSpan(process(node.nodes), spoilerSpanId++));
+						}
+						else if (node.classes.contains('fortune')) {
+							final css = {
+								for (final pair in (node.attributes['style']?.split(';') ?? <String>[])) pair.split(':').first.trim(): pair.split(':').last.trim()
+							};
+							if (css['color'] case String color) {
+								elements.add(PostColorSpan(process(node.nodes), colorToHex(color)));
+							}
+							else {
+								elements.add(process(node.nodes));
+							}
+						}
+						else if (node.classes.contains('sjis')) {
+							elements.add(PostShiftJISSpan(node.text));
 						}
 						else {
-							elements.add(PostQuoteSpan(makeSpan(board, threadId, linkedPostThreadIds, node.innerHtml)));
+							elements.addAll(Site4Chan.parsePlaintext(node.text));
 						}
 					}
-					else if (node.classes.contains('spoiler')) {
-						elements.add(PostSpoilerSpan(makeSpan(board, threadId, linkedPostThreadIds, node.innerHtml), spoilerSpanId++));
+					else if (node.localName == 'a' && node.classes.contains('backlink')) {
+						processQuotelink(node);
 					}
-					else if (node.classes.contains('fortune')) {
-						final css = {
-							for (final pair in (node.attributes['style']?.split(';') ?? <String>[])) pair.split(':').first.trim(): pair.split(':').last.trim()
-						};
-						if (css['color'] case String color) {
-							elements.add(PostColorSpan(makeSpan(board, threadId, linkedPostThreadIds, node.innerHtml), colorToHex(color)));
-						}
-						else {
-							elements.add(makeSpan(board, threadId, linkedPostThreadIds, node.innerHtml));
-						}
+					else if (node.localName == 'strong') {
+						elements.add(PostBoldSpan(process(node.nodes)));
 					}
-					else if (node.classes.contains('sjis')) {
-						elements.add(PostShiftJISSpan(node.text));
+					else if (node.localName == 'a' && node.attributes.containsKey('href')) {
+						elements.add(PostLinkSpan(node.attributes['href']!, name: node.text.nonEmptyOrNull));
 					}
 					else {
 						elements.addAll(Site4Chan.parsePlaintext(node.text));
 					}
 				}
-				else if (node.localName == 'a' && node.classes.contains('backlink')) {
-					processQuotelink(node);
-				}
-				else if (node.localName == 'strong') {
-					elements.add(PostBoldSpan(makeSpan(board, threadId, linkedPostThreadIds, node.innerHtml)));
-				}
-				else if (node.localName == 'a' && node.attributes.containsKey('href')) {
-					elements.add(PostLinkSpan(node.attributes['href']!, name: node.text.nonEmptyOrNull));
-				}
 				else {
-					elements.addAll(Site4Chan.parsePlaintext(node.text));
+					elements.addAll(Site4Chan.parsePlaintext(node.text ?? ''));
 				}
 			}
-			else {
-				elements.addAll(Site4Chan.parsePlaintext(node.text ?? ''));
-			}
+			return PostNodeSpan(elements.toList(growable: false));
 		}
-		return PostNodeSpan(elements.toList(growable: false));
+		return process(body.nodes);
 	}
 	Attachment? _makeAttachment(Map data) {
 		if (data case {

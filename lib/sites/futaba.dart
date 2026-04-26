@@ -85,60 +85,63 @@ class SiteFutaba extends ImageboardSite {
 
 	static PostNodeSpan makeSpan(String board, int threadId, String data) {
 		final body = parser.parseFragment(data);
-		final List<PostSpan> elements = [];
-		int previousQuoteDestination = -1;
-		bool skipNextLineBreak = false;
-		for (final node in body.nodes) {
-			if (node is dom.Element) {
-				if (node.localName == 'font') {
-					if (node.attributes['target'] != null) {
-						final thisQuoteDestination = int.parse(node.attributes['target']!);
-						if (thisQuoteDestination != previousQuoteDestination) {
-							elements.add(PostQuoteLinkSpan(
-								board: board,
-								threadId: threadId,
-								postId: thisQuoteDestination
-							));
-							elements.add(const PostLineBreakSpan());
+		PostNodeSpan process(List<dom.Node> nodes) {
+			final List<PostSpan> elements = [];
+			int previousQuoteDestination = -1;
+			bool skipNextLineBreak = false;
+			for (final node in nodes) {
+				if (node is dom.Element) {
+					if (node.localName == 'font') {
+						if (node.attributes['target'] != null) {
+							final thisQuoteDestination = int.parse(node.attributes['target']!);
+							if (thisQuoteDestination != previousQuoteDestination) {
+								elements.add(PostQuoteLinkSpan(
+									board: board,
+									threadId: threadId,
+									postId: thisQuoteDestination
+								));
+								elements.add(const PostLineBreakSpan());
+							}
+							if (node.attributes['d'] == 'true') {
+								skipNextLineBreak = true;
+							}
+							else {
+								elements.add(PostQuoteSpan(process(node.nodes)));
+							}
+							previousQuoteDestination = thisQuoteDestination;
 						}
-						if (node.attributes['d'] == 'true') {
-							skipNextLineBreak = true;
+						else if (node.attributes['color'] == '#789922') {
+							elements.add(PostQuoteSpan(process(node.nodes)));
 						}
 						else {
-							elements.add(PostQuoteSpan(makeSpan(board, threadId, node.innerHtml)));
+							elements.add(PostBoldSpan(PostColorSpan(process(node.nodes), const Color.fromARGB(255, 255, 0, 0))));
 						}
-						previousQuoteDestination = thisQuoteDestination;
 					}
-					else if (node.attributes['color'] == '#789922') {
-						elements.add(PostQuoteSpan(makeSpan(board, threadId, node.innerHtml)));
+					else if (node.localName == 'br') {
+						if (skipNextLineBreak) {
+							skipNextLineBreak = false;
+						}
+						else {
+							elements.add(const PostLineBreakSpan());
+						}
+					}
+					else if (node.localName == 'a') {
+						elements.add(PostLinkSpan(node.attributes['href']!.replaceFirst(RegExp(r'^\/bin\/jump\.php\?'), ''), name: node.text.nonEmptyOrNull));
+					}
+					else if (node.localName == 'b') {
+						elements.add(PostBoldSpan(process(node.nodes)));
 					}
 					else {
-						elements.add(PostBoldSpan(PostColorSpan(makeSpan(board, threadId, node.innerHtml), const Color.fromARGB(255, 255, 0, 0))));
+						elements.add(PostTextSpan(node.outerHtml));
 					}
-				}
-				else if (node.localName == 'br') {
-					if (skipNextLineBreak) {
-						skipNextLineBreak = false;
-					}
-					else {
-						elements.add(const PostLineBreakSpan());
-					}
-				}
-				else if (node.localName == 'a') {
-					elements.add(PostLinkSpan(node.attributes['href']!.replaceFirst(RegExp(r'^\/bin\/jump\.php\?'), ''), name: node.text.nonEmptyOrNull));
-				}
-				else if (node.localName == 'b') {
-					elements.add(PostBoldSpan(makeSpan(board, threadId, node.innerHtml)));
 				}
 				else {
-					elements.add(PostTextSpan(node.outerHtml));
+					elements.addAll(Site4Chan.parsePlaintext((node.text ?? '').replaceAllMapped(_idRemapPattern, (m) => '${m.group(1) ?? ''}>${m.group(2)!}')));
 				}
 			}
-			else {
-				elements.addAll(Site4Chan.parsePlaintext((node.text ?? '').replaceAllMapped(_idRemapPattern, (m) => '${m.group(1) ?? ''}>${m.group(2)!}')));
-			}
+			return PostNodeSpan(elements.toList(growable: false));
 		}
-		return PostNodeSpan(elements.toList(growable: false));
+		return process(body.nodes);
 	}
 
 	@override

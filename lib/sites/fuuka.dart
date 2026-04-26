@@ -45,70 +45,73 @@ class FuukaArchive extends ImageboardSiteArchive {
 	final String name;
 	static PostNodeSpan makeSpan(String board, int threadId, Map<String, int> linkedPostThreadIds, String data) {
 		final body = parseFragment(data.trim());
-		final List<PostSpan> elements = [];
-		for (final node in body.nodes) {
-			if (node is dom.Element) {
-				if (node.localName == 'br') {
-					elements.add(const PostLineBreakSpan());
-				}
-				else if (node.localName == 'span') {
-					if (node.classes.contains('unkfunc')) {
-						final match = _crossBoardLinkMatcher.firstMatch(node.innerHtml);
-						if (match != null) {
-							elements.add(PostQuoteLinkSpan.dead(board: match.group(1)!, postId: int.parse(match.group(2)!)));
+		PostNodeSpan process(List<dom.Node> nodes) {
+			final List<PostSpan> elements = [];
+			for (final node in nodes) {
+				if (node is dom.Element) {
+					if (node.localName == 'br') {
+						elements.add(const PostLineBreakSpan());
+					}
+					else if (node.localName == 'span') {
+						if (node.classes.contains('unkfunc')) {
+							final match = _crossBoardLinkMatcher.firstMatch(node.innerHtml);
+							if (match != null) {
+								elements.add(PostQuoteLinkSpan.dead(board: match.group(1)!, postId: int.parse(match.group(2)!)));
+							}
+							else {
+								elements.add(PostQuoteSpan(process(node.nodes)));
+							}
 						}
 						else {
-							elements.add(PostQuoteSpan(makeSpan(board, threadId, linkedPostThreadIds, node.innerHtml)));
+							elements.addAll(Site4Chan.parsePlaintext(node.text));
+						}
+					}
+					else if (node.localName == 'a' && node.attributes.containsKey('href')) {
+						final href = node.attributes['href']!;
+						final match = _postLinkMatcher.firstMatch(href);
+						if (match != null) {
+							final board = match.group(1)!;
+							final postId = int.parse(match.group(2)!);
+							final linkedThreadId = linkedPostThreadIds['$board/$postId'];
+							if (linkedThreadId != null) {
+								elements.add(PostQuoteLinkSpan(
+									board: board,
+									postId: postId,
+									threadId: linkedThreadId
+								));
+							}
+							else {
+								elements.add(PostQuoteLinkSpan.dead(
+									board: board,
+									postId: postId
+								));
+							}
+						}
+						else {
+							final match = _quoteLinkMatcher.firstMatch(href);
+							if (match != null) {
+								elements.add(PostQuoteLinkSpan(
+									board: board,
+									postId: int.parse(match.group(1)!),
+									threadId: threadId
+								));
+							}
+							else {
+								elements.add(PostLinkSpan(href, name: node.text.nonEmptyOrNull));
+							}
 						}
 					}
 					else {
 						elements.addAll(Site4Chan.parsePlaintext(node.text));
 					}
 				}
-				else if (node.localName == 'a' && node.attributes.containsKey('href')) {
-					final href = node.attributes['href']!;
-					final match = _postLinkMatcher.firstMatch(href);
-					if (match != null) {
-						final board = match.group(1)!;
-						final postId = int.parse(match.group(2)!);
-						final linkedThreadId = linkedPostThreadIds['$board/$postId'];
-						if (linkedThreadId != null) {
-							elements.add(PostQuoteLinkSpan(
-								board: board,
-								postId: postId,
-								threadId: linkedThreadId
-							));
-						}
-						else {
-							elements.add(PostQuoteLinkSpan.dead(
-								board: board,
-								postId: postId
-							));
-						}
-					}
-					else {
-						final match = _quoteLinkMatcher.firstMatch(href);
-						if (match != null) {
-							elements.add(PostQuoteLinkSpan(
-								board: board,
-								postId: int.parse(match.group(1)!),
-								threadId: threadId
-							));
-						}
-						else {
-							elements.add(PostLinkSpan(href, name: node.text.nonEmptyOrNull));
-						}
-					}
-				}
 				else {
-					elements.addAll(Site4Chan.parsePlaintext(node.text));
+					elements.addAll(Site4Chan.parsePlaintext(node.text ?? ''));
 				}
 			}
-			else {
-				elements.addAll(Site4Chan.parsePlaintext(node.text ?? ''));
-			}
+			return PostNodeSpan(elements.toList(growable: false));
 		}
-		return PostNodeSpan(elements.toList(growable: false));
+		return process(body.nodes);
 	}
 	Attachment? _makeAttachment(dom.Element? element, int threadId) {
 		if (element != null) {

@@ -305,164 +305,167 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 		}).replaceAllMapped(_eqnPattern, (match) {
 			return '<tex>${match.group(1)!}</tex>';
 		}));
-		final List<PostSpan> elements = [];
 		int spoilerSpanId = 0;
-		for (int i = 0; i < body.nodes.length; i++) {
-			final node = body.nodes[i];
-			if (node is dom.Element) {
-				if (node.localName == 'br') {
-					elements.add(const PostLineBreakSpan());
-				}
-				else if (node.localName == 'tex') {
-					elements.add(PostTeXSpan(node.innerHtml));
-				}
-				else if (node.localName == 'img' && node.attributes.containsKey('width') && node.attributes.containsKey('height')) {
-					final src = node.attributes['src'];
-					final width = int.tryParse(node.attributes['width']!);
-					final height = int.tryParse(node.attributes['height']!);
-					if (src == null || width == null || height == null) {
-						continue;
+		PostNodeSpan process(List<dom.Node> nodes) {
+			final List<PostSpan> elements = [];
+			for (int i = 0; i < nodes.length; i++) {
+				final node = nodes[i];
+				if (node is dom.Element) {
+					if (node.localName == 'br') {
+						elements.add(const PostLineBreakSpan());
 					}
-					elements.add(PostInlineImageSpan(
-						src: src,
-						width: width,
-						height: height
-					));
-				}
-				else if (node.localName == 'a' && node.classes.contains('quotelink')) {
-					if (node.attributes['href']!.startsWith('#p')) {
-						elements.add(PostQuoteLinkSpan(
-							board: board,
-							threadId: threadId,
-							postId: int.parse(node.attributes['href']!.substring(2))
+					else if (node.localName == 'tex') {
+						elements.add(PostTeXSpan(node.innerHtml));
+					}
+					else if (node.localName == 'img' && node.attributes.containsKey('width') && node.attributes.containsKey('height')) {
+						final src = node.attributes['src'];
+						final width = int.tryParse(node.attributes['width']!);
+						final height = int.tryParse(node.attributes['height']!);
+						if (src == null || width == null || height == null) {
+							continue;
+						}
+						elements.add(PostInlineImageSpan(
+							src: src,
+							width: width,
+							height: height
 						));
 					}
-					else if (node.attributes['href']!.contains('#p')) {
-						// href looks like '/tv/thread/123456#p123457'
-						final parts = node.attributes['href']!.split('/');
-						final threadIndex = parts.indexOf('thread');
-						final ids = parts[threadIndex + 1].split('#p');
-						elements.add(PostQuoteLinkSpan(
-							board: parts[threadIndex - 1],
-							threadId: int.parse(ids[0]),
-							postId: int.parse(ids[1])
-						));
-					}
-					else {
-						// href looks like '//boards.4chan.org/pol/'
-						final parts = node.attributes['href']!.split('/');
-						final catalogSearchMatch = _catalogSearchPattern.firstMatch(parts.last);
-						if (catalogSearchMatch != null) {
-							elements.add(PostCatalogSearchSpan(board: parts[parts.length - 2], query: Uri.decodeFull(catalogSearchMatch.group(1)!)));
-						}
-						else {
-							elements.add(PostBoardLinkSpan(parts[parts.length - 2]));
-						}
-					}
-				}
-				else if (node.localName == 'a' && node.attributes.containsKey('href')) {
-					elements.add(PostLinkSpan(node.attributes['href']!, name: node.text.nonEmptyOrNull));
-				}
-				else if (node.localName == 'span') {
-					if (node.classes.contains('deadlink')) {
-						final parts = node.innerHtml.replaceAll('&gt;', '').split('/');
-						elements.add(PostQuoteLinkSpan.dead(
-							board: (parts.length > 2) ? parts[1] : board,
-							postId: int.tryParse(parts.last) ?? -1
-						));
-					}
-					else if (node.classes.contains('quote')) {
-						elements.add(PostQuoteSpan(makeSpan(board, threadId, node.innerHtml)));
-					}
-					else if (node.classes.contains('fortune')) {
-						final css = {
-							for (final pair in (node.attributes['style']?.split(';') ?? <String>[])) pair.split(':').first: pair.split(':').last
-						};
-						if (css['color'] case String color) {
-							elements.add(PostColorSpan(makeSpan(board, threadId, node.innerHtml), colorToHex(color)));
-						}
-						else {
-							elements.add(makeSpan(board, threadId, node.innerHtml));
-						}
-					}
-					else if (node.classes.contains('abbr') &&
-									(i + 2 < body.nodes.length) &&
-									(body.nodes[i + 1] is dom.Element) &&
-									((body.nodes[i + 1] as dom.Element).localName == 'br') &&
-									(body.nodes[i + 1] is dom.Element) &&
-									((body.nodes[i + 2] as dom.Element).localName == 'table')) {
-							final tableRows = <PostSpan>[];
-							List<List<PostSpan>> subtable = [];
-							for (final row in (body.nodes[i + 2] as dom.Element).firstChild!.children) {
-								if (row.firstChild?.attributes['colspan'] == '2') {
-									if (subtable.isNotEmpty) {
-										tableRows.add(PostTableSpan(subtable));
-										subtable = [];
-									}
-									if (tableRows.isNotEmpty) {
-										tableRows.add(const PostLineBreakSpan());
-									}
-									tableRows.add(PostUnderlinedSpan(PostTextSpan(row.firstChild!.text!)));
-								}
-								else {
-									subtable.add(row.children.map((c) => PostTextSpan(c.text)).toList());
-								}
-							}
-							if (subtable.isNotEmpty) {
-								tableRows.add(PostTableSpan(subtable));
-							}
-							i += 2;
-							elements.add(PostPopupSpan(
-								title: 'EXIF Data',
-								popup: PostNodeSpan(tableRows)
+					else if (node.localName == 'a' && node.classes.contains('quotelink')) {
+						if (node.attributes['href']!.startsWith('#p')) {
+							elements.add(PostQuoteLinkSpan(
+								board: board,
+								threadId: threadId,
+								postId: int.parse(node.attributes['href']!.substring(2))
 							));
-					}
-					else if (node.classes.contains('sjis')) {
-						elements.add(PostShiftJISSpan(node.text));
-					}
-					else {
-						elements.add(PostTextSpan(node.text));
-					}
-				}
-				else if (node.localName == 's') {
-					elements.add(PostSpoilerSpan(makeSpan(board, threadId, node.innerHtml), spoilerSpanId++));
-				}
-				else if (node.localName == 'pre') {
-					final buffer = StringBuffer();
-					// To strip all html syntax but maintain whitespace
-					void dfs(dom.Node node) {
-						if (node is dom.Element) {
-							if (node.localName == 'br') {
-								buffer.writeln();
+						}
+						else if (node.attributes['href']!.contains('#p')) {
+							// href looks like '/tv/thread/123456#p123457'
+							final parts = node.attributes['href']!.split('/');
+							final threadIndex = parts.indexOf('thread');
+							final ids = parts[threadIndex + 1].split('#p');
+							elements.add(PostQuoteLinkSpan(
+								board: parts[threadIndex - 1],
+								threadId: int.parse(ids[0]),
+								postId: int.parse(ids[1])
+							));
+						}
+						else {
+							// href looks like '//boards.4chan.org/pol/'
+							final parts = node.attributes['href']!.split('/');
+							final catalogSearchMatch = _catalogSearchPattern.firstMatch(parts.last);
+							if (catalogSearchMatch != null) {
+								elements.add(PostCatalogSearchSpan(board: parts[parts.length - 2], query: Uri.decodeFull(catalogSearchMatch.group(1)!)));
 							}
 							else {
-								node.nodes.forEach(dfs);
+								elements.add(PostBoardLinkSpan(parts[parts.length - 2]));
 							}
-						} else if (node is dom.Text) {
-							buffer.write(node.text);
 						}
 					}
-					dfs(node);
-					elements.add(PostCodeSpan(buffer.toString().trimRight()));
-				}
-				else if (node.localName == 'b' || node.localName == 'strong') {
-					final child = PostBoldSpan(makeSpan(board, threadId, node.innerHtml));
-					if (node.attributes['style']?.contains('color: red;') ?? false) {
-						elements.add(PostSecondaryColorSpan(child));
+					else if (node.localName == 'a' && node.attributes.containsKey('href')) {
+						elements.add(PostLinkSpan(node.attributes['href']!, name: node.text.nonEmptyOrNull));
+					}
+					else if (node.localName == 'span') {
+						if (node.classes.contains('deadlink')) {
+							final parts = node.innerHtml.replaceAll('&gt;', '').split('/');
+							elements.add(PostQuoteLinkSpan.dead(
+								board: (parts.length > 2) ? parts[1] : board,
+								postId: int.tryParse(parts.last) ?? -1
+							));
+						}
+						else if (node.classes.contains('quote')) {
+							elements.add(PostQuoteSpan(process(node.nodes)));
+						}
+						else if (node.classes.contains('fortune')) {
+							final css = {
+								for (final pair in (node.attributes['style']?.split(';') ?? <String>[])) pair.split(':').first: pair.split(':').last
+							};
+							if (css['color'] case String color) {
+								elements.add(PostColorSpan(process(node.nodes), colorToHex(color)));
+							}
+							else {
+								elements.add(process(node.nodes));
+							}
+						}
+						else if (node.classes.contains('abbr') &&
+										(i + 2 < nodes.length) &&
+										(nodes[i + 1] is dom.Element) &&
+										((nodes[i + 1] as dom.Element).localName == 'br') &&
+										(nodes[i + 1] is dom.Element) &&
+										((nodes[i + 2] as dom.Element).localName == 'table')) {
+								final tableRows = <PostSpan>[];
+								List<List<PostSpan>> subtable = [];
+								for (final row in (nodes[i + 2] as dom.Element).firstChild!.children) {
+									if (row.firstChild?.attributes['colspan'] == '2') {
+										if (subtable.isNotEmpty) {
+											tableRows.add(PostTableSpan(subtable));
+											subtable = [];
+										}
+										if (tableRows.isNotEmpty) {
+											tableRows.add(const PostLineBreakSpan());
+										}
+										tableRows.add(PostUnderlinedSpan(PostTextSpan(row.firstChild!.text!)));
+									}
+									else {
+										subtable.add(row.children.map((c) => PostTextSpan(c.text)).toList());
+									}
+								}
+								if (subtable.isNotEmpty) {
+									tableRows.add(PostTableSpan(subtable));
+								}
+								i += 2;
+								elements.add(PostPopupSpan(
+									title: 'EXIF Data',
+									popup: PostNodeSpan(tableRows)
+								));
+						}
+						else if (node.classes.contains('sjis')) {
+							elements.add(PostShiftJISSpan(node.text));
+						}
+						else {
+							elements.add(PostTextSpan(node.text));
+						}
+					}
+					else if (node.localName == 's') {
+						elements.add(PostSpoilerSpan(process(node.nodes), spoilerSpanId++));
+					}
+					else if (node.localName == 'pre') {
+						final buffer = StringBuffer();
+						// To strip all html syntax but maintain whitespace
+						void dfs(dom.Node node) {
+							if (node is dom.Element) {
+								if (node.localName == 'br') {
+									buffer.writeln();
+								}
+								else {
+									node.nodes.forEach(dfs);
+								}
+							} else if (node is dom.Text) {
+								buffer.write(node.text);
+							}
+						}
+						dfs(node);
+						elements.add(PostCodeSpan(buffer.toString().trimRight()));
+					}
+					else if (node.localName == 'b' || node.localName == 'strong') {
+						final child = PostBoldSpan(process(node.nodes));
+						if (node.attributes['style']?.contains('color: red;') ?? false) {
+							elements.add(PostSecondaryColorSpan(child));
+						}
+						else {
+							elements.add(child);
+						}
 					}
 					else {
-						elements.add(child);
+						elements.addAll(parsePlaintext(node.text, fromSearchThread: fromSearchThread));
 					}
 				}
 				else {
-					elements.addAll(parsePlaintext(node.text, fromSearchThread: fromSearchThread));
+					elements.addAll(parsePlaintext(node.text ?? '', fromSearchThread: fromSearchThread));
 				}
 			}
-			else {
-				elements.addAll(parsePlaintext(node.text ?? '', fromSearchThread: fromSearchThread));
-			}
+			return PostNodeSpan(elements.toList(growable: false));
 		}
-		return PostNodeSpan(elements.toList(growable: false));
+		return process(body.nodes);
 	}
 
 	ImageboardFlag? _makeFlag(Map data, String board) => unsafe(data, () {
