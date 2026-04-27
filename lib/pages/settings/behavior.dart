@@ -688,9 +688,9 @@ final behaviorSettings = [
 		)
 	),
 	ImageboardScopedSettingWidget(
-		description: 'Default post sorting method',
+		description: 'Default reply sorting method',
 		builder: (imageboard) => ImmutableButtonSettingWidget(
-			description: 'Default post sorting method',
+			description: 'Default reply sorting method',
 			icon: CupertinoIcons.sort_down,
 			setting: SettingWithFallback(
 				SavedSetting(
@@ -710,7 +710,7 @@ final behaviorSettings = [
 					context: context,
 					barrierDismissible: true,
 					builder: (context) => AdaptiveAlertDialog(
-						title: Text('Pick default post sorting method for ${imageboard.site.name}'),
+						title: Text('Pick default reply sorting method for ${imageboard.site.name}'),
 						actions: [
 							...PostSortingMethod.values.map((method) => AdaptiveDialogAction(
 								isDefaultAction: method == currentMethod,

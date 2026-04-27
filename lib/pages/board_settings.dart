@@ -109,7 +109,7 @@ class _BoardSettingsPageState extends State<BoardSettingsPage> {
 							),
 							const SizedBox(height: 16),
 							const Center(
-								child: Text('Default post sorting method')
+								child: Text('Default reply sorting method')
 							),
 							const SizedBox(height: 16),
 							AdaptiveChoiceControl(
