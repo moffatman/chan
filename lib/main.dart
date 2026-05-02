@@ -934,6 +934,10 @@ class ChanTabs extends ChangeNotifier {
 		if (oldIndex < newIndex) {
 			newIndex -= 1;
 		}
+		if (Settings.instance.usingHomeBoard) {
+			newIndex += 1;
+			oldIndex += 1;
+		}
 		final tab = Persistence.tabs.removeAt(oldIndex);
 		Persistence.tabs.insert(newIndex, tab);
 		activeBrowserTab.value = Persistence.tabs.indexOf(currentTab);
@@ -2158,7 +2162,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						itemBuilder: (context, index) {
 							final i = usingHomeBoard ? index + 1 : index;
 							return ReorderableDelayedDragStartListener(
-								index: i,
+								index: index,
 								key: _tabs._tabButtonKeys.putIfAbsent(i, () => GlobalKey(debugLabel: '_tabs._tabButtonKeys[$i]')),
 								child: buildTabIcon(i)
 							);
