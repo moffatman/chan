@@ -2808,7 +2808,16 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 								(false, true, null) => null,
 								_ => _submit
 							}),
-							icon: Icon(loading ? CupertinoIcons.xmark : CupertinoIcons.paperplane)
+							icon: Row(
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									if (widget.isArchived) const Text('Thread is archived'),
+									SizedBox(
+										width: 44,
+										child: Icon(loading ? CupertinoIcons.xmark : CupertinoIcons.paperplane)
+									)
+								]
+							)
 						)
 					)
 				)
