@@ -411,13 +411,15 @@ class Persistence extends ChangeNotifier {
 		return sharedThreadsBox.containsKey('$imageboardKey/${board.toLowerCase()}/$id');
 	}
 
+	static const _kUseSpanCache = true;
+
 	static Future<Thread?> getCachedThread(String imageboardKey, String board, int id, {bool syncIO = false}) {
 		final b = board.toLowerCase();
 		final key = '$imageboardKey/$b/$id';
 		return _loadThreadDebouncer.debounce(key, () async {
 			return await _threadsFileLock.protect(key, (_) async {
 				final ret = await sharedThreadsBox.get(key, syncIO: syncIO);
-				if (ret != null) {
+				if (ret != null && _kUseSpanCache) {
 					final file = spanCacheDirectory.dir(imageboardKey).dir(b).file('$id.bin');
 					if (file.existsSync()) {
 						try {
@@ -436,6 +438,9 @@ class Persistence extends ChangeNotifier {
 	}
 
 	static Future<void> _writeSpanCache(String imageboardKey, String b, int id, Thread thread) async {
+		if (!_kUseSpanCache) {
+			return;
+		}
 		try {
 			final dir = spanCacheDirectory.dir(imageboardKey).dir(b);
 			dir.createSync(recursive: true);
