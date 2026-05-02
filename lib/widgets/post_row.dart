@@ -482,48 +482,47 @@ class PostRow extends StatelessWidget {
 		if (smallAttachments.isNotEmpty && settings.showImages(context, latestPost.board)) {
 			attachments = WidthSnappingBox(
 				factor: 0.5,
-				child: Padding(
-					padding: settings.imagesOnRight ? const EdgeInsets.only(left: 8) : const EdgeInsets.only(right: 8),
-					child: Wrap(
-						spacing: 8,
-						runSpacing: 8,
-						children: smallAttachments.map((attachment) {
-							final taggedAttachment = TaggedAttachment(
-								attachment: attachment,
-								semanticParentIds: parentZone.stackIds,
-								imageboard: imageboard,
-								postId: post.id
-							);
-							return PopupAttachment(
-								attachment: attachment,
-								child: CupertinoButton(
-									padding: EdgeInsets.zero,
-									minimumSize: Size.zero,
-									onPressed: onThumbnailTap?.bind1(taggedAttachment),
-									child: ConstrainedBox(
-										constraints: const BoxConstraints(
-											minHeight: 51
-										),
-										child: AttachmentThumbnail(
-											attachment: attachment,
-											revealSpoilers: revealSpoilerImages,
-											onLoadError: onThumbnailLoadError,
-											hero: taggedAttachment,
-											fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
-											shrinkHeight: !settings.squareThumbnails,
-											mayObscure: true,
-											hide: hideThumbnails,
-											cornerIcon: AttachmentThumbnailCornerIcon(
-												backgroundColor: theme.backgroundColor,
-												borderColor: theme.primaryColorWithBrightness(0.2),
-												size: null
-											)
+				unsnappedPadding: settings.imagesOnRight ? const EdgeInsets.only(left: 8) : const EdgeInsets.only(right: 8),
+				child: Wrap(
+					spacing: 8,
+					runSpacing: 8,
+					alignment: WrapAlignment.center,
+					children: smallAttachments.map((attachment) {
+						final taggedAttachment = TaggedAttachment(
+							attachment: attachment,
+							semanticParentIds: parentZone.stackIds,
+							imageboard: imageboard,
+							postId: post.id
+						);
+						return PopupAttachment(
+							attachment: attachment,
+							child: CupertinoButton(
+								padding: EdgeInsets.zero,
+								minimumSize: Size.zero,
+								onPressed: onThumbnailTap?.bind1(taggedAttachment),
+								child: ConstrainedBox(
+									constraints: const BoxConstraints(
+										minHeight: 51
+									),
+									child: AttachmentThumbnail(
+										attachment: attachment,
+										revealSpoilers: revealSpoilerImages,
+										onLoadError: onThumbnailLoadError,
+										hero: taggedAttachment,
+										fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
+										shrinkHeight: !settings.squareThumbnails,
+										mayObscure: true,
+										hide: hideThumbnails,
+										cornerIcon: AttachmentThumbnailCornerIcon(
+											backgroundColor: theme.backgroundColor,
+											borderColor: theme.primaryColorWithBrightness(0.2),
+											size: null
 										)
 									)
 								)
-							);
-						}).toList()
-					)
+							)
+						);
+					}).toList()
 				)
 			);
 		}
