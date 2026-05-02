@@ -560,7 +560,7 @@ final behaviorSettings = [
 		description: 'Home board',
 		icon: CupertinoIcons.home,
 		helpText: 'Chance will always open to this site or board on a fresh launch',
-		setting: const CombinedSetting(
+		setting: const CombinedSavedSetting(
 			Settings.homeImageboardKeySetting,
 			Settings.homeBoardNameSetting
 		),
@@ -590,7 +590,9 @@ final behaviorSettings = [
 							imageboardKey: pair.$1
 						),
 						const SizedBox(width: 8),
-						Text((pair.$2.isEmpty ? homeImageboard?.site.name : homeImageboard?.site.formatBoardName(pair.$2)) ?? pair.$1 ?? 'null')
+						Flexible(
+							child: Text((pair.$2.isEmpty ? homeImageboard?.site.name : homeImageboard?.site.formatBoardName(pair.$2)) ?? pair.$1 ?? 'null')
+						)
 					]
 					else const Text('None')
 				]

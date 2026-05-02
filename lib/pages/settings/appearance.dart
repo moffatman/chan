@@ -1307,7 +1307,7 @@ final appearanceSettings = [
 		description: 'Scrollbar location',
 		icon: CupertinoIcons.arrow_up_down,
 		setting: MappedSetting<(bool, bool), NullSafeOptional>(
-			const CombinedSetting(
+			const CombinedSavedSetting(
 				Settings.showScrollbarsSetting,
 				Settings.scrollbarsOnLeftSetting
 			),
@@ -1505,7 +1505,7 @@ final appearanceSettings = [
 		description: 'Date formatting',
 		icon: CupertinoIcons.calendar,
 		setting: MappedSetting<(bool, String), NullWrapper<String>>(
-			const CombinedSetting(
+			const CombinedSavedSetting(
 				Settings.exactTimeUsesCustomDateFormatSetting,
 				Settings.customDateFormatSetting
 			),
