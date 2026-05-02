@@ -2865,7 +2865,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 			child: TransformedMediaQuery(
 				transformation: (context, mq) => mq.removePadding(
 					removeTop: true,
-					removeBottom: !show
+					removeBottom: true
 				),
 				child: PrototypeLayoutWidget(
 					prototype: Column(
@@ -2899,7 +2899,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 							Flexible(
 								child: Expander(
 									expanded: show,
-									bottomSafe: !show,
+									bottomSafe: true,
 									curve: Curves.ease,
 									child: SizedBox(
 										height:
@@ -3119,9 +3119,11 @@ enum _ReplyBoxLayoutId {
 
 class _ReplyBoxLayoutDelegate extends MultiChildLayoutDelegate {
 	final double topPadding;
+	final double bottomPadding;
 
 	_ReplyBoxLayoutDelegate({
-		required this.topPadding
+		required this.topPadding,
+		required this.bottomPadding
 	});
 
 	@override
@@ -3132,7 +3134,7 @@ class _ReplyBoxLayoutDelegate extends MultiChildLayoutDelegate {
 			maxHeight: size.height - topPadding
 		));
 		final threadHeight = size.height - replyBoxSize.height;
-		positionChild(_ReplyBoxLayoutId.replyBox, Offset(0, threadHeight));
+		positionChild(_ReplyBoxLayoutId.replyBox, Offset(0, threadHeight - bottomPadding));
 		layoutChild(_ReplyBoxLayoutId.body, BoxConstraints.tightFor(
 			width: size.width,
 			height: threadHeight
@@ -3142,7 +3144,8 @@ class _ReplyBoxLayoutDelegate extends MultiChildLayoutDelegate {
 
 	@override
 	bool shouldRelayout(_ReplyBoxLayoutDelegate oldDelegate) {
-		return topPadding != oldDelegate.topPadding;
+		return topPadding != oldDelegate.topPadding
+							|| bottomPadding != oldDelegate.bottomPadding;
 	}
 }
 
@@ -3161,7 +3164,8 @@ class ReplyBoxLayout extends StatelessWidget {
 		final padding = MediaQuery.paddingOf(context);
 		return CustomMultiChildLayout(
 			delegate: _ReplyBoxLayoutDelegate(
-				topPadding: padding.top + 110 // Don't let thread get so small
+				topPadding: padding.top + 110, // Don't let thread get so small
+				bottomPadding: padding.bottom
 			),
 			children: [
 				LayoutId(

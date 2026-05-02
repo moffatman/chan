@@ -1372,335 +1372,332 @@ class BoardPageState extends State<BoardPage> {
 								}
 							},
 							child: ReplyBoxLayout(
-								body: TransformedMediaQuery(
-									transformation: (context, mq) => mq.removePadding(removeBottom: _replyBoxKey.currentState?.show ?? false),
-									child: CallbackShortcuts(
-										bindings: {
-											ConditionalShortcut(
-												parent: LogicalKeySet(LogicalKeyboardKey.keyG),
-												condition: () => !(_listController.state?.searchHasFocus ?? false)
-											): _showGalleryFromNextImage
-										},
-										child: site == null ? const Center(
-											child: ErrorMessageCard('No imageboard selected')
-										) : Stack(
-											fit: StackFit.expand,
-											children: [
-												RefreshableList<Thread>(
-													initialFilter: widget.initialSearch ?? widget.tab?.initialSearch,
-													onFilterChanged: (newFilter) {
-														widget.tab?.mutate((tab) => tab.initialSearch = newFilter);
-														bool newSearching = newFilter != null;
-														if (newSearching != _searching) {
-															setState(() {
-																_searching = newSearching;
-															});
-														}
-													},
-													filterableAdapter: (t) => (imageboard?.key ?? '', t),
-													allowReordering: true,
-													onWantAutosave: (thread) async {
-														final persistence = context.read<Persistence>();
-														if (persistence.browserState.autosavedIds[thread.boardKey]?.contains(thread.id) ?? false) {
-															// Already saw this thread
-															return;
-														}
-														final threadState = persistence.getThreadState(thread.identifier);
-														threadState.savedTime = DateTime.now();
-														if (!threadState.isThreadCached) {
-															threadState.thread = thread;
-														}
-														persistence.browserState.autosavedIds.putIfAbsent(thread.boardKey, () => []).add(thread.id);
-														await threadState.save();
-														await persistence.didUpdateBrowserState();
-													},
-													onWantAutowatch: (thread, autoWatch) async {
-														final imageboard = context.read<Imageboard>();
-														await Future.microtask(() => {});
-														if (imageboard.persistence.browserState.autowatchedIds[thread.boardKey]?.contains(thread.id) ?? false) {
-															// Already saw this thread
-															return;
-														}
-														final threadState = imageboard.persistence.getThreadState(thread.identifier);
-														if (!threadState.isThreadCached) {
-															threadState.thread = thread;
-														}
-														imageboard.notifications.subscribeToThread(
-															thread: thread.identifier,
-															lastSeenId: thread.posts_.last.id,
-															localYousOnly: settings.defaultThreadWatch?.localYousOnly ?? false,
-															pushYousOnly: settings.defaultThreadWatch?.pushYousOnly ?? false,
-															push: autoWatch.push ?? settings.defaultThreadWatch?.push ?? true,
-															youIds: threadState.youIds,
-															foregroundMuted: settings.defaultThreadWatch?.foregroundMuted ?? false,
-															notifyOnSecondLastPage: settings.defaultThreadWatch?.notifyOnSecondLastPage ?? false,
-															notifyOnLastPage: settings.defaultThreadWatch?.notifyOnLastPage ?? true,
-															notifyOnDead: settings.defaultThreadWatch?.notifyOnDead ?? false
-														);
-														imageboard.persistence.browserState.autowatchedIds.putIfAbsent(thread.boardKey, () => []).add(thread.id);
-														await imageboard.persistence.didUpdateBrowserState();
-													},
-													sortMethods: sortMethods,
-													reverseSort: variant.reverseAfterSorting,
-													minCacheExtent: useCatalogGrid ? settings.catalogGridHeight : 0,
-													gridDelegate: (useCatalogGrid && !settings.useStaggeredCatalogGrid) ? SliverGridDelegateWithMaxCrossAxisExtentWithCacheTrickery(
-														maxCrossAxisExtent: settings.catalogGridWidth,
-														childAspectRatio: settings.catalogGridWidth / settings.catalogGridHeight
-													) : null,
-													staggeredGridDelegate: (useCatalogGrid && settings.useStaggeredCatalogGrid) ? SliverStaggeredGridDelegateWithMaxCrossAxisExtent(
-														maxCrossAxisExtent: settings.catalogGridWidth
-													) : null,
-													controller: _listController,
-													listUpdater: (options) async {
-														final catalog = (await site.getCatalog(
-															board!.name,
-															variant: variant,
-															priority: RequestPriority.interactive,
-															cancelToken: options.cancelToken
-														)).threads;
-														final list = catalog.values.toList();
-														for (final thread in list) {
-															await thread.preinit(catalog: true);
-															await persistence?.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();
-														}
-														_lastCatalogUpdateTime = DateTime.now();
-														Future.delayed(const Duration(milliseconds: 100), () {
-															if (!mounted) return;
-															if (_loadCompleter?.isCompleted == false) {
-																_loadCompleter?.complete();
-															}
+								body: CallbackShortcuts(
+									bindings: {
+										ConditionalShortcut(
+											parent: LogicalKeySet(LogicalKeyboardKey.keyG),
+											condition: () => !(_listController.state?.searchHasFocus ?? false)
+										): _showGalleryFromNextImage
+									},
+									child: site == null ? const Center(
+										child: ErrorMessageCard('No imageboard selected')
+									) : Stack(
+										fit: StackFit.expand,
+										children: [
+											RefreshableList<Thread>(
+												initialFilter: widget.initialSearch ?? widget.tab?.initialSearch,
+												onFilterChanged: (newFilter) {
+													widget.tab?.mutate((tab) => tab.initialSearch = newFilter);
+													bool newSearching = newFilter != null;
+													if (newSearching != _searching) {
+														setState(() {
+															_searching = newSearching;
 														});
-														return list;
-													},
-													autoExtendDuringScroll: true,
-													listExtender: (after, cancelToken) => site.getMoreCatalog(
+													}
+												},
+												filterableAdapter: (t) => (imageboard?.key ?? '', t),
+												allowReordering: true,
+												onWantAutosave: (thread) async {
+													final persistence = context.read<Persistence>();
+													if (persistence.browserState.autosavedIds[thread.boardKey]?.contains(thread.id) ?? false) {
+														// Already saw this thread
+														return;
+													}
+													final threadState = persistence.getThreadState(thread.identifier);
+													threadState.savedTime = DateTime.now();
+													if (!threadState.isThreadCached) {
+														threadState.thread = thread;
+													}
+													persistence.browserState.autosavedIds.putIfAbsent(thread.boardKey, () => []).add(thread.id);
+													await threadState.save();
+													await persistence.didUpdateBrowserState();
+												},
+												onWantAutowatch: (thread, autoWatch) async {
+													final imageboard = context.read<Imageboard>();
+													await Future.microtask(() => {});
+													if (imageboard.persistence.browserState.autowatchedIds[thread.boardKey]?.contains(thread.id) ?? false) {
+														// Already saw this thread
+														return;
+													}
+													final threadState = imageboard.persistence.getThreadState(thread.identifier);
+													if (!threadState.isThreadCached) {
+														threadState.thread = thread;
+													}
+													imageboard.notifications.subscribeToThread(
+														thread: thread.identifier,
+														lastSeenId: thread.posts_.last.id,
+														localYousOnly: settings.defaultThreadWatch?.localYousOnly ?? false,
+														pushYousOnly: settings.defaultThreadWatch?.pushYousOnly ?? false,
+														push: autoWatch.push ?? settings.defaultThreadWatch?.push ?? true,
+														youIds: threadState.youIds,
+														foregroundMuted: settings.defaultThreadWatch?.foregroundMuted ?? false,
+														notifyOnSecondLastPage: settings.defaultThreadWatch?.notifyOnSecondLastPage ?? false,
+														notifyOnLastPage: settings.defaultThreadWatch?.notifyOnLastPage ?? true,
+														notifyOnDead: settings.defaultThreadWatch?.notifyOnDead ?? false
+													);
+													imageboard.persistence.browserState.autowatchedIds.putIfAbsent(thread.boardKey, () => []).add(thread.id);
+													await imageboard.persistence.didUpdateBrowserState();
+												},
+												sortMethods: sortMethods,
+												reverseSort: variant.reverseAfterSorting,
+												minCacheExtent: useCatalogGrid ? settings.catalogGridHeight : 0,
+												gridDelegate: (useCatalogGrid && !settings.useStaggeredCatalogGrid) ? SliverGridDelegateWithMaxCrossAxisExtentWithCacheTrickery(
+													maxCrossAxisExtent: settings.catalogGridWidth,
+													childAspectRatio: settings.catalogGridWidth / settings.catalogGridHeight
+												) : null,
+												staggeredGridDelegate: (useCatalogGrid && settings.useStaggeredCatalogGrid) ? SliverStaggeredGridDelegateWithMaxCrossAxisExtent(
+													maxCrossAxisExtent: settings.catalogGridWidth
+												) : null,
+												controller: _listController,
+												listUpdater: (options) async {
+													final catalog = (await site.getCatalog(
 														board!.name,
-														after,
 														variant: variant,
 														priority: RequestPriority.interactive,
-														cancelToken: cancelToken
-													).then((list) async {
-														for (final thread in list) {
-															await thread.preinit(catalog: true);
-															await persistence?.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();
+														cancelToken: options.cancelToken
+													)).threads;
+													final list = catalog.values.toList();
+													for (final thread in list) {
+														await thread.preinit(catalog: true);
+														await persistence?.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();
+													}
+													_lastCatalogUpdateTime = DateTime.now();
+													Future.delayed(const Duration(milliseconds: 100), () {
+														if (!mounted) return;
+														if (_loadCompleter?.isCompleted == false) {
+															_loadCompleter?.complete();
 														}
-														return list;
-													}),
-													disableBottomUpdates: !(variant.hasPagedCatalog ?? site.hasPagedCatalog),
-													id: '${site.name} /${board!.name}/${variant.dataId}',
-													itemBuilder: (context, thread, options) => itemBuilder(context, thread, options),
-													filterHint: 'Search in board',
-													filterAlternative: (widget.onWantArchiveSearch == null || !supportsSearch.options.text) ? null : FilterAlternative(
-														name: supportsSearch.name,
-														handler: (s) {
-															widget.onWantArchiveSearch!(imageboard!.key, board!.name, s);
-														}
-													)
-												),
-												RepaintBoundary(
-													child: SafeArea(
-														child: Align(
-															alignment: settings.showListPositionIndicatorsOnLeft ? Alignment.bottomLeft : Alignment.bottomRight,
-															child: Padding(
-																padding: const EdgeInsets.all(16),
-																child: AnimatedBuilder(
-																	animation: _listController,
-																	builder: (context, _) {
-																		if (_listController.state?.originalList == null) {
-																			return const SizedBox.shrink();
-																		}
-																		final theme = context.watch<SavedTheme>();
-																		final primaryColorWithBrightness60 = theme.primaryColorWithBrightness(0.6);
-																		final primaryColorWithBrightness80 = theme.primaryColorWithBrightness(0.8);
-																		scrollAnimationDuration() => Settings.instance.showAnimations ? const Duration(milliseconds: 200) : const Duration(milliseconds: 1);
-																		scrollToTop() => _listController.animateToIndex(0, duration: scrollAnimationDuration());
-																		scrollToBottom() => _listController.animateToIndex(_listController.itemsLength - 1, alignment: 1.0, duration: scrollAnimationDuration());
-																		final realImageCount = _listController.items.fold<int>(0, (t, a) => t + a.item.attachments.length);
-																		return Row(
-																			mainAxisSize: MainAxisSize.min,
-																			children: [
-																				if (settings.showGalleryGridButton && realImageCount > 1) ...[
-																					AdaptiveFilledButton(
-																						padding: const EdgeInsets.all(8),
-																						minimumSize: Size.zero,
-																						color: primaryColorWithBrightness80,
-																						onPressed: () => _showGalleryFromNextImage(initiallyShowGrid: true),
-																						child: Icon(CupertinoIcons.square_grid_2x2, size: 20, color: theme.backgroundColor, applyTextScaling: true)
-																					),
-																					const SizedBox(width: 8),
-																				],
-																				if (settings.replyButtonAtBottom && supportsPosting) ...[
-																					ValueListenableBuilder(
-																						valueListenable: Combining2ValueListenable(
-																							child1: MappingValueListenable(
-																								parent: Outbox.instance,
-																								mapper: (o) =>
-																									o.queuedPostsFor(imageboard?.key ?? '', board?.name ?? '', null).where((e) => e.state.isSubmittable).length
-																							),
-																							child2: MappingValueListenable(
-																								parent: Outbox.instance,
-																								mapper: (o) => o.submittableCount - o.queuedPostsFor(imageboard?.key ?? '', board?.name ?? '', null).where((e) => e.state.isSubmittable).length
-																							),
-																							combine: (v1, v2) => (thisBoard: v1, otherBoards: v2)
+													});
+													return list;
+												},
+												autoExtendDuringScroll: true,
+												listExtender: (after, cancelToken) => site.getMoreCatalog(
+													board!.name,
+													after,
+													variant: variant,
+													priority: RequestPriority.interactive,
+													cancelToken: cancelToken
+												).then((list) async {
+													for (final thread in list) {
+														await thread.preinit(catalog: true);
+														await persistence?.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();
+													}
+													return list;
+												}),
+												disableBottomUpdates: !(variant.hasPagedCatalog ?? site.hasPagedCatalog),
+												id: '${site.name} /${board!.name}/${variant.dataId}',
+												itemBuilder: (context, thread, options) => itemBuilder(context, thread, options),
+												filterHint: 'Search in board',
+												filterAlternative: (widget.onWantArchiveSearch == null || !supportsSearch.options.text) ? null : FilterAlternative(
+													name: supportsSearch.name,
+													handler: (s) {
+														widget.onWantArchiveSearch!(imageboard!.key, board!.name, s);
+													}
+												)
+											),
+											RepaintBoundary(
+												child: SafeArea(
+													child: Align(
+														alignment: settings.showListPositionIndicatorsOnLeft ? Alignment.bottomLeft : Alignment.bottomRight,
+														child: Padding(
+															padding: const EdgeInsets.all(16),
+															child: AnimatedBuilder(
+																animation: _listController,
+																builder: (context, _) {
+																	if (_listController.state?.originalList == null) {
+																		return const SizedBox.shrink();
+																	}
+																	final theme = context.watch<SavedTheme>();
+																	final primaryColorWithBrightness60 = theme.primaryColorWithBrightness(0.6);
+																	final primaryColorWithBrightness80 = theme.primaryColorWithBrightness(0.8);
+																	scrollAnimationDuration() => Settings.instance.showAnimations ? const Duration(milliseconds: 200) : const Duration(milliseconds: 1);
+																	scrollToTop() => _listController.animateToIndex(0, duration: scrollAnimationDuration());
+																	scrollToBottom() => _listController.animateToIndex(_listController.itemsLength - 1, alignment: 1.0, duration: scrollAnimationDuration());
+																	final realImageCount = _listController.items.fold<int>(0, (t, a) => t + a.item.attachments.length);
+																	return Row(
+																		mainAxisSize: MainAxisSize.min,
+																		children: [
+																			if (settings.showGalleryGridButton && realImageCount > 1) ...[
+																				AdaptiveFilledButton(
+																					padding: const EdgeInsets.all(8),
+																					minimumSize: Size.zero,
+																					color: primaryColorWithBrightness80,
+																					onPressed: () => _showGalleryFromNextImage(initiallyShowGrid: true),
+																					child: Icon(CupertinoIcons.square_grid_2x2, size: 20, color: theme.backgroundColor, applyTextScaling: true)
+																				),
+																				const SizedBox(width: 8),
+																			],
+																			if (settings.replyButtonAtBottom && supportsPosting) ...[
+																				ValueListenableBuilder(
+																					valueListenable: Combining2ValueListenable(
+																						child1: MappingValueListenable(
+																							parent: Outbox.instance,
+																							mapper: (o) =>
+																								o.queuedPostsFor(imageboard?.key ?? '', board?.name ?? '', null).where((e) => e.state.isSubmittable).length
 																						),
-																						builder: (context, counts, _) => SegmentedWidget(
-																							radius: radius,
-																							segments: [
-																								if (counts.otherBoards > 0 && !(_replyBoxKey.currentState?.show ?? false)) SegmentedWidgetSegment(
-																									color: primaryColorWithBrightness80,
-																									child: Text('${counts.otherBoards}', style: TextStyle(
-																										color: theme.backgroundColor
-																									))
-																								),
-																								if (counts.thisBoard > 0 && !(_replyBoxKey.currentState?.show ?? false)) SegmentedWidgetSegment(
-																									color: theme.secondaryColor,
-																									child: Text('${counts.thisBoard}', style: TextStyle(
-																										color: (theme.secondaryColor.computeLuminance() > 0.5) ? Colors.black : Colors.white
-																									))
-																								),
-																								SegmentedWidgetSegment(
-																									color: primaryColorWithBrightness80,
-																									onPressed: _onReplyButtonPressed,
-																									child: Icon(
-																										(_replyBoxKey.currentState?.show ?? false) ? CupertinoIcons.pencil_slash : CupertinoIcons.pencil,
-																										size: 20,
-																										color: theme.backgroundColor,
-																										applyTextScaling: true
-																									)
-																								)
-																							]
-																						)
+																						child2: MappingValueListenable(
+																							parent: Outbox.instance,
+																							mapper: (o) => o.submittableCount - o.queuedPostsFor(imageboard?.key ?? '', board?.name ?? '', null).where((e) => e.state.isSubmittable).length
+																						),
+																						combine: (v1, v2) => (thisBoard: v1, otherBoards: v2)
 																					),
-																					const SizedBox(width: 8),
-																				],
-																				GestureDetector(
-																					onLongPress: () {
-																						final position = _listController.scrollController?.tryPosition;
-																						if (position != null && position.extentAfter < 200 && position.extentBefore > 200) {
+																					builder: (context, counts, _) => SegmentedWidget(
+																						radius: radius,
+																						segments: [
+																							if (counts.otherBoards > 0 && !(_replyBoxKey.currentState?.show ?? false)) SegmentedWidgetSegment(
+																								color: primaryColorWithBrightness80,
+																								child: Text('${counts.otherBoards}', style: TextStyle(
+																									color: theme.backgroundColor
+																								))
+																							),
+																							if (counts.thisBoard > 0 && !(_replyBoxKey.currentState?.show ?? false)) SegmentedWidgetSegment(
+																								color: theme.secondaryColor,
+																								child: Text('${counts.thisBoard}', style: TextStyle(
+																									color: (theme.secondaryColor.computeLuminance() > 0.5) ? Colors.black : Colors.white
+																								))
+																							),
+																							SegmentedWidgetSegment(
+																								color: primaryColorWithBrightness80,
+																								onPressed: _onReplyButtonPressed,
+																								child: Icon(
+																									(_replyBoxKey.currentState?.show ?? false) ? CupertinoIcons.pencil_slash : CupertinoIcons.pencil,
+																									size: 20,
+																									color: theme.backgroundColor,
+																									applyTextScaling: true
+																								)
+																							)
+																						]
+																					)
+																				),
+																				const SizedBox(width: 8),
+																			],
+																			GestureDetector(
+																				onLongPress: () {
+																					final position = _listController.scrollController?.tryPosition;
+																					if (position != null && position.extentAfter < 200 && position.extentBefore > 200) {
+																						scrollToTop();
+																					}
+																					else {
+																						scrollToBottom();
+																					}
+																					mediumHapticFeedback();
+																				},
+																				onPanStart: (details) {
+																					_skipNextIndicatorSwipe = eventTooCloseToEdge(details.globalPosition);
+																				},
+																				onPanEnd: (details) {
+																					if (_skipNextIndicatorSwipe) {
+																						return;
+																					}
+																					final position =_listController.scrollController?.tryPosition;
+																					if ((-1 * details.velocity.pixelsPerSecond.dy) > details.velocity.pixelsPerSecond.dx.abs()) {
+																						mediumHapticFeedback();
+																						if (position != null && position.extentAfter > 0) {
+																							scrollToBottom();
+																						}
+																						else {
+																							// Not possible, do a "double buzz"
+																							Future.delayed(const Duration(milliseconds: 100), mediumHapticFeedback);
+																						}
+																					}
+																					else if (details.velocity.pixelsPerSecond.dy > details.velocity.pixelsPerSecond.dx.abs()) {
+																						mediumHapticFeedback();
+																						if (position != null && position.extentBefore > 0) {
 																							scrollToTop();
 																						}
 																						else {
-																							scrollToBottom();
+																							// Not possible, do a "double buzz"
+																							Future.delayed(const Duration(milliseconds: 100), mediumHapticFeedback);
 																						}
-																						mediumHapticFeedback();
-																					},
-																					onPanStart: (details) {
-																						_skipNextIndicatorSwipe = eventTooCloseToEdge(details.globalPosition);
-																					},
-																					onPanEnd: (details) {
-																						if (_skipNextIndicatorSwipe) {
-																							return;
-																						}
-																						final position =_listController.scrollController?.tryPosition;
-																						if ((-1 * details.velocity.pixelsPerSecond.dy) > details.velocity.pixelsPerSecond.dx.abs()) {
-																							mediumHapticFeedback();
-																							if (position != null && position.extentAfter > 0) {
-																								scrollToBottom();
-																							}
-																							else {
-																								// Not possible, do a "double buzz"
-																								Future.delayed(const Duration(milliseconds: 100), mediumHapticFeedback);
-																							}
-																						}
-																						else if (details.velocity.pixelsPerSecond.dy > details.velocity.pixelsPerSecond.dx.abs()) {
-																							mediumHapticFeedback();
-																							if (position != null && position.extentBefore > 0) {
-																								scrollToTop();
-																							}
-																							else {
-																								// Not possible, do a "double buzz"
-																								Future.delayed(const Duration(milliseconds: 100), mediumHapticFeedback);
-																							}
-																						}
-																					},
-																					child: SegmentedWidget(
-																						radius: radius,
-																						segments: [
-																							if (_searching) ...[
-																								SegmentedWidgetSegment(
-																									color: primaryColorWithBrightness60,
-																									child: Row(
-																										mainAxisSize: MainAxisSize.min,
-																										children: [
-																											Icon(CupertinoIcons.search, color: theme.backgroundColor, size: 19, applyTextScaling: true),
-																											AnimatedBuilder(
-																												animation: _listController,
+																					}
+																				},
+																				child: SegmentedWidget(
+																					radius: radius,
+																					segments: [
+																						if (_searching) ...[
+																							SegmentedWidgetSegment(
+																								color: primaryColorWithBrightness60,
+																								child: Row(
+																									mainAxisSize: MainAxisSize.min,
+																									children: [
+																										Icon(CupertinoIcons.search, color: theme.backgroundColor, size: 19, applyTextScaling: true),
+																										AnimatedBuilder(
+																											animation: _listController,
+																											builder: (context, _) {
+																												if (_listController.state?.searching != true) {
+																													// No actual filter entered yet
+																													return const SizedBox.shrink();
+																												}
+																												return Padding(
+																													padding: const EdgeInsets.only(left: 8),
+																													child: Text(describeCount(_listController.itemsLength, 'result'), style: TextStyle(
+																														color: theme.backgroundColor
+																													))
+																												);
+																											}
+																										)
+																									]
+																								)
+																							),
+																							SegmentedWidgetSegment(
+																								color: theme.primaryColor,
+																								onPressed: _listController.state?.closeSearch,
+																								child: Text('Close', style: TextStyle(color: theme.backgroundColor))
+																							)
+																						]
+																						else ...[
+																							SegmentedWidgetSegment(
+																								color: primaryColorWithBrightness80,
+																								onPressed: () async {
+																									lightHapticFeedback();
+																									try {
+																										await scrollToTop();
+																										_page = _listController.items.first.item.currentPage ?? 1;
+																									}
+																									on TimeoutException {
+																										// Sometimes this happens. Don't do anything
+																									}
+																								},
+																								child: Row(
+																									mainAxisSize: MainAxisSize.min,
+																									children: [
+																										if (sortMethods.isEmpty)
+																											Icon(CupertinoIcons.doc, color: theme.backgroundColor, size: 19, applyTextScaling: true),
+																										ConstrainedBox(
+																											constraints: BoxConstraints(
+																												minWidth: MediaQuery.textScalerOf(context).scale(19)
+																											),
+																											child: AnimatedBuilder(
+																												animation: _listController.slowScrolls,
 																												builder: (context, _) {
-																													if (_listController.state?.searching != true) {
-																														// No actual filter entered yet
-																														return const SizedBox.shrink();
-																													}
-																													return Padding(
-																														padding: const EdgeInsets.only(left: 8),
-																														child: Text(describeCount(_listController.itemsLength, 'result'), style: TextStyle(
-																															color: theme.backgroundColor
-																														))
+																													_page = (_listController.firstVisibleItem?.item.currentPage ?? _page);
+																													return Text(
+																														(sortMethods.isEmpty ? _page : (_listController.itemsLength - (_listController.lastVisibleIndex + 1))).toString(),
+																														textAlign: TextAlign.center,
+																														style: TextStyle(
+																															color: theme.backgroundColor,
+																															fontFeatures: const [FontFeature.tabularFigures()]
+																														)
 																													);
 																												}
 																											)
-																										]
-																									)
-																								),
-																								SegmentedWidgetSegment(
-																									color: theme.primaryColor,
-																									onPressed: _listController.state?.closeSearch,
-																									child: Text('Close', style: TextStyle(color: theme.backgroundColor))
+																										)
+																									]
 																								)
-																							]
-																							else ...[
-																								SegmentedWidgetSegment(
-																									color: primaryColorWithBrightness80,
-																									onPressed: () async {
-																										lightHapticFeedback();
-																										try {
-																											await scrollToTop();
-																											_page = _listController.items.first.item.currentPage ?? 1;
-																										}
-																										on TimeoutException {
-																											// Sometimes this happens. Don't do anything
-																										}
-																									},
-																									child: Row(
-																										mainAxisSize: MainAxisSize.min,
-																										children: [
-																											if (sortMethods.isEmpty)
-																												Icon(CupertinoIcons.doc, color: theme.backgroundColor, size: 19, applyTextScaling: true),
-																											ConstrainedBox(
-																												constraints: BoxConstraints(
-																													minWidth: MediaQuery.textScalerOf(context).scale(19)
-																												),
-																												child: AnimatedBuilder(
-																													animation: _listController.slowScrolls,
-																													builder: (context, _) {
-																														_page = (_listController.firstVisibleItem?.item.currentPage ?? _page);
-																														return Text(
-																															(sortMethods.isEmpty ? _page : (_listController.itemsLength - (_listController.lastVisibleIndex + 1))).toString(),
-																															textAlign: TextAlign.center,
-																															style: TextStyle(
-																																color: theme.backgroundColor,
-																																fontFeatures: const [FontFeature.tabularFigures()]
-																															)
-																														);
-																													}
-																												)
-																											)
-																										]
-																									)
-																								)
-																							]
+																							)
 																						]
-																					)
+																					]
 																				)
-																			]
-																		);
-																	}
-																)
+																			)
+																		]
+																	);
+																}
 															)
 														)
 													)
 												)
-											]
-										)
+											)
+										]
 									)
 								),
 								replyBox: RepaintBoundary(
