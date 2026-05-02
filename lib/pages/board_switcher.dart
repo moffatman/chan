@@ -341,7 +341,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		}
 		final matchingOtherImageboards = {
 			for (final (str: keyword, fin: _) in keywords)
-				keyword: allImageboards.where((i) => i != currentImageboard && i.site.name.toLowerCase().contains(keyword)).toSet()
+				keyword: allImageboards.where((i) => i != currentImageboard && (i.site.name.toLowerCase().contains(keyword) || (i.site.name.looksForeign && i.site.baseUrl.contains(keyword)))).toSet()
 		};
 		final imageboards = allImageboards.toList();
 		imageboards.sort((a, b) => (imageboardUsage[b.key] ?? 0) - (imageboardUsage[a.key] ?? 0));
