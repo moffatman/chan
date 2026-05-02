@@ -44,11 +44,23 @@ class Site8ChanPoWBlockFakePngInterceptor extends InterceptorBase {
 	Site8ChanPoWBlockFakePngInterceptor(this.site);
 
 	bool _responseMatches(Response response) {
-		return response.realUri.host == site.imageUrl
+		if (response.realUri.host == site.imageUrl
 			&& response.realUri.path.startsWith('/.media/')
 			&& response.headers.value(HttpHeaders.ageHeader) == '0'
 			&& response.headers.value(HttpHeaders.expiresHeader) == '0'
-			&& (response.headers.value(HttpHeaders.cacheControlHeader)?.contains('no-cache') ?? false);
+			&& (response.headers.value(HttpHeaders.cacheControlHeader)?.contains('no-cache') ?? false)
+		) {
+			// Returning dummy image to make users realize they need to reload
+			return true;
+		}
+		if (response.realUri.host == site.baseUrl
+			&& response.statusCode == 403
+			&& response.headers.value(HttpHeaders.retryAfterHeader) != null
+			&& response.requestOptions.method.toUpperCase() == 'GET'
+		) {
+			return true;
+		}
+		return false;
 	}
 
 	Future<Response?> _resolve(Response response) async {
