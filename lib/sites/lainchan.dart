@@ -324,6 +324,9 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 					else if (node.localName == 'code') {
 						yield PostMonospaceSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
 					}
+					else if (node.localName == 'del') {
+						yield PostStrikethroughSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
+					}
 					else if (node.localName == 'wbr') {
 						// Do nothing
 					}
