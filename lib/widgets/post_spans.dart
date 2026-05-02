@@ -222,6 +222,15 @@ class _HeightEstimatorImpl extends _HeightEstimator {
 			lineHeight = math.max(lineHeight, size.height);
 			currentWidth += width;
 		}
+		else if (size.width >= maxWidth) {
+			if (currentWidth > 0) {
+				addHardLineBreak();
+			}
+			currentHeight += (size.height * count);
+			lineHeight = characterSize.height;
+			_longestLineWidth = maxWidth;
+			currentWidth = 0;
+		}
 		else {
 			while (count > 0) {
 				lineHeight = math.max(lineHeight, size.height);
@@ -244,7 +253,9 @@ class _HeightEstimatorImpl extends _HeightEstimator {
 	@override
 	void addRect(Size size) {
 		if (size.width >= maxWidth) {
-			addHardLineBreak();
+			if (currentWidth > 0) {
+				addHardLineBreak();
+			}
 			lineHeight = size.height;
 			_longestLineWidth = maxWidth;
 			addHardLineBreak();
