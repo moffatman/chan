@@ -25,6 +25,7 @@ final _timePattern = RegExp(r'^(\d+)\/(\d+)\/(\d+)\([^)]+\)(\d+):(\d+):(\d+)');
 final _idPattern = RegExp(r'^No\.(\d+)$');
 final _idRemapPattern = RegExp(r'^(>*)No\.(\d+)$');
 final _filesizePattern = RegExp(r'^-\((\d+) B\) *$');
+final _omittedRepliesPattern = RegExp(r'レス(\d+)件省略');
 
 Future<dom.Document> parse(Uint8List html, {bool workaroundApplied = false}) async {
 	String converted;
@@ -327,11 +328,17 @@ class SiteFutaba extends ImageboardSite {
 		for (final e in element.querySelectorAll('.rtd')) {
 			posts.add(_makePost(e, board, threadId, posts));
 		}
+		int omittedReplyCount = 0;
+		if (element.querySelector('font[color="#707070"]') case final font?) {
+			if (_omittedRepliesPattern.firstMatch(font.text) case final match?) {
+				omittedReplyCount = match.group(1)?.tryParseInt ?? 0;
+			}
+		}
 		return Thread(
 			board: board,
 			id: threadId,
 			posts_: posts,
-			replyCount: posts.length - 1,
+			replyCount: (posts.length - 1) + omittedReplyCount,
 			imageCount: posts.skip(1).expand((r) => r.attachments).length,
 			title: element.querySelector('.csb')?.text,
 			isSticky: false,
