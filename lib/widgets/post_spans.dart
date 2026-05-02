@@ -22,6 +22,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/network_image_provider.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/report_bug.dart';
 import 'package:chan/services/screen_size_hacks.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
@@ -3070,6 +3071,53 @@ class PostBigTextSpan extends PostSpanWithChild {
 			baseTextStyle: options.baseTextStyle.copyWith(fontSize: 23)
 		));
 	}
+}
+
+class PostFailedSpan extends PostTerminalSpan {
+	final Object error;
+	final StackTrace stackTrace;
+	const PostFailedSpan(this.error, this.stackTrace);
+	
+	@override
+	void _estimateHeight(_HeightEstimator estimator) {
+		estimator.addPlaintext(estimator.post.text.replaceAll('<br>', '\n'));
+		estimator.addRect(const Size(300, 150)); // errormessagecard ish
+	}
+
+	@override
+	InlineSpan build(BuildContext context, Post post, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options) {
+		final error2 = UnsafeParseException(error: error, stackTrace: stackTrace, object: post);
+		return TextSpan(
+			children: [
+				TextSpan(text: post.text.replaceAll('<br>', '\n')),
+				const TextSpan(text: '\n'),
+				WidgetSpan(
+					child: Center(
+						child: ErrorMessageCard(
+							'Failed to display post',
+							remedies: generateBugRemedies(error2, StackTrace.current, context)
+						)
+					)
+				)
+			]
+		);
+	}
+
+	@override
+	void buildText(StringBuffer buffer, Post? post, {bool forQuoteComparison = false, bool includeMarkup = true}) {
+		buffer.writeln(error);
+		buffer.writeln();
+		buffer.writeln(stackTrace.toString().trim());
+		buffer.writeln();
+		buffer.writeln('Raw post data:');
+		buffer.writeln(post?.text.replaceAll('<br>', '\n'));
+	}
+
+	@override
+	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
+		throw PostSpanDumpException('No caching failed posts');
+	}
+
 }
 
 class PostSpanZone extends StatelessWidget {

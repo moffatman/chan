@@ -160,41 +160,46 @@ class Post implements Filterable {
 	@HiveField(12, isOptimized: true)
 	Map<String, int>? extraMetadata;
 	PostNodeSpan _makeSpan() {
-		switch (spanFormat) {
-			case PostSpanFormat.chan4:
-				return Site4Chan.makeSpan(board, threadId, text);
-			case PostSpanFormat.foolFuuka:
-				return FoolFuukaArchive.makeSpan(board, threadId, extraMetadata ?? {}, text);
-			case PostSpanFormat.lainchan:
-				return SiteLainchan.makeSpan(board, threadId, text);
-			case PostSpanFormat.fuuka:
-				return FuukaArchive.makeSpan(board, threadId, extraMetadata ?? {}, text);
-			case PostSpanFormat.futaba:
-				return SiteFutaba.makeSpan(board, threadId, text);
-			case PostSpanFormat.reddit:
-				return SiteReddit.makeSpan(board, threadId, text, attachments: attachments_);
-			case PostSpanFormat.hackerNews:
-				return SiteHackerNews.makeSpan(text);
-			case PostSpanFormat.stub:
-				return const PostNodeSpan([
-					PostTextSpan('Stub post')
-				]);
-			case PostSpanFormat.lynxchan:
-				return SiteLynxchan.makeSpan(board, threadId, text);
-			case PostSpanFormat.chan4Search:
-				return Site4Chan.makeSpan(board, threadId, text, fromSearch: true);
-			case PostSpanFormat.xenforo:
-				return SiteXenforo.makeSpan(board, threadId, id, text);
-			case PostSpanFormat.pageStub:
-				return PostNodeSpan([
-					PostTextSpan('Page $id')
-				]);
-			case PostSpanFormat.karachan:
-				return SiteKarachan.makeSpan(board, threadId, text);
-			case PostSpanFormat.jsChan:
-				return SiteJsChan.makeSpan(board, threadId, text);
-			case PostSpanFormat.jForum:
-				return SiteJForum.makeSpan(text);
+		try {
+			switch (spanFormat) {
+				case PostSpanFormat.chan4:
+					return Site4Chan.makeSpan(board, threadId, text);
+				case PostSpanFormat.foolFuuka:
+					return FoolFuukaArchive.makeSpan(board, threadId, extraMetadata ?? {}, text);
+				case PostSpanFormat.lainchan:
+					return SiteLainchan.makeSpan(board, threadId, text);
+				case PostSpanFormat.fuuka:
+					return FuukaArchive.makeSpan(board, threadId, extraMetadata ?? {}, text);
+				case PostSpanFormat.futaba:
+					return SiteFutaba.makeSpan(board, threadId, text);
+				case PostSpanFormat.reddit:
+					return SiteReddit.makeSpan(board, threadId, text, attachments: attachments_);
+				case PostSpanFormat.hackerNews:
+					return SiteHackerNews.makeSpan(text);
+				case PostSpanFormat.stub:
+					return const PostNodeSpan([
+						PostTextSpan('Stub post')
+					]);
+				case PostSpanFormat.lynxchan:
+					return SiteLynxchan.makeSpan(board, threadId, text);
+				case PostSpanFormat.chan4Search:
+					return Site4Chan.makeSpan(board, threadId, text, fromSearch: true);
+				case PostSpanFormat.xenforo:
+					return SiteXenforo.makeSpan(board, threadId, id, text);
+				case PostSpanFormat.pageStub:
+					return PostNodeSpan([
+						PostTextSpan('Page $id')
+					]);
+				case PostSpanFormat.karachan:
+					return SiteKarachan.makeSpan(board, threadId, text);
+				case PostSpanFormat.jsChan:
+					return SiteJsChan.makeSpan(board, threadId, text);
+				case PostSpanFormat.jForum:
+					return SiteJForum.makeSpan(text);
+			}
+		}
+		catch (e, st) {
+			return PostNodeSpan([PostFailedSpan(e, st)].toList(growable: false));
 		}
 	}
 	void setSpan(PostNodeSpan newSpan) {

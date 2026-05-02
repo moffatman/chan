@@ -440,7 +440,9 @@ class PostRow extends StatelessWidget {
 			theme.primaryColor.withValues(alpha: 0.25) :
 			(highlight > 0) ?
 				theme.primaryColor.withValues(alpha: highlight * settings.newPostHighlightBrightness) :
-				Colors.transparent;
+				post.span.children.trySingle is PostFailedSpan ?
+					Colors.red.withValues(alpha: 0.1) :
+					Colors.transparent;
 		final listFilterReason = context.watch<RefreshableListFilterReason?>();
 		final isPostHiddenByThreadState = switch(parentZoneThreadState?.getPostHiding(latestPost.id)) {
 			PostHidingState.shown => false,
