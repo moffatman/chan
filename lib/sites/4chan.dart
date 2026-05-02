@@ -324,7 +324,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 	static final _mathPattern = RegExp(r'\[math\](.+?)\[\/math\]');
 	static final _eqnPattern = RegExp(r'\[eqn\](.+?)\[\/eqn\]');
 	static final _catalogSearchPattern = RegExp(r'^catalog#s=(.+)$');
-	static final _crossThreadQuoteLinkPattern = RegExp(r'^\/([^/]+)\/thread\/(\d+)(?:\/[^/]+)?#p(\d+)');
+	static final _crossThreadQuoteLinkPattern = RegExp(r'^\/([^/]+)\/thread\/(\d+)(?:\/[^/]*)?#p(\d+)');
 
 	static PostNodeSpan makeSpan(String board, int threadId, String data, {bool fromSearch = false}) {
 		final fromSearchThread = fromSearch ? ThreadIdentifier(board, threadId) : null;
