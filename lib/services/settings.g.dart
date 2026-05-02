@@ -2787,6 +2787,29 @@ class SavedSettingsFields {
     fieldName: 'cachedWebViewHeaders',
     merger: NullableMerger(MapMerger(PrimitiveMerger())),
   );
+  static bool getShowTabPopup(SavedSettings x) => x.showTabPopup;
+  static void setShowTabPopup(SavedSettings x, bool v) => x.showTabPopup = v;
+  static const int kShowTabPopup = 215;
+  static const showTabPopup = HiveFieldAdapter<SavedSettings, bool>(
+    getter: getShowTabPopup,
+    setter: setShowTabPopup,
+    fieldNumber: kShowTabPopup,
+    fieldName: 'showTabPopup',
+    merger: PrimitiveMerger(),
+  );
+  static bool getDidHideTabPopupAutomatically(SavedSettings x) =>
+      x.didHideTabPopupAutomatically;
+  static void setDidHideTabPopupAutomatically(SavedSettings x, bool v) =>
+      x.didHideTabPopupAutomatically = v;
+  static const int kDidHideTabPopupAutomatically = 216;
+  static const didHideTabPopupAutomatically =
+      HiveFieldAdapter<SavedSettings, bool>(
+    getter: getDidHideTabPopupAutomatically,
+    setter: setDidHideTabPopupAutomatically,
+    fieldNumber: kDidHideTabPopupAutomatically,
+    fieldName: 'didHideTabPopupAutomatically',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -3001,13 +3024,15 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     211: SavedSettingsFields.showHotPostsInScrollbar,
     212: SavedSettingsFields.lastDefaultUserAgent,
     213: SavedSettingsFields.cachedWebViewTlsHello,
-    214: SavedSettingsFields.cachedWebViewHeaders
+    214: SavedSettingsFields.cachedWebViewHeaders,
+    215: SavedSettingsFields.showTabPopup,
+    216: SavedSettingsFields.didHideTabPopupAutomatically
   };
 
   @override
   SavedSettings read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final List<dynamic> fields = List.filled(215, null);
+    final List<dynamic> fields = List.filled(217, null);
     for (int i = 0; i < numOfFields; i++) {
       final int fieldId = reader.readByte();
       final dynamic value = reader.read();
@@ -3235,13 +3260,15 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       lastDefaultUserAgent: fields[212] as String?,
       cachedWebViewTlsHello: fields[213] as TlsClientHello?,
       cachedWebViewHeaders: (fields[214] as Map?)?.cast<String, String>(),
+      showTabPopup: fields[215] as bool?,
+      didHideTabPopupAutomatically: fields[216] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(202)
+      ..writeByte(204)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -3645,7 +3672,11 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(213)
       ..write(obj.cachedWebViewTlsHello)
       ..writeByte(214)
-      ..write(obj.cachedWebViewHeaders);
+      ..write(obj.cachedWebViewHeaders)
+      ..writeByte(215)
+      ..write(obj.showTabPopup)
+      ..writeByte(216)
+      ..write(obj.didHideTabPopupAutomatically);
   }
 
   @override

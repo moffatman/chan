@@ -54,11 +54,10 @@ class ScrollTracker {
 					// But it's still appropriate to show stuff now.
 					slowScrollDirection.value = VerticalDirection.up;
 				}
-				slowScrollDirection.value = null;
 			}
 			else if (notification is ScrollUpdateNotification) {
 				_thisScrollHasDragDetails |= notification.dragDetails != null;
-				if (notification.metrics.axis == Axis.vertical && _thisScrollHasDragDetails && isMeaningfullyScrollable) {
+				if (notification.metrics.axis == Axis.vertical && _thisScrollHasDragDetails && isMeaningfullyScrollable && notification.metrics.extentAfter >= 100) {
 					final delta = notification.scrollDelta ?? 0;
 					if ((notification.metrics.pixels > notification.metrics.minScrollExtent || delta < 0) &&
 							(notification.metrics.pixels < notification.metrics.maxScrollExtent || delta > 0)) {
@@ -81,7 +80,6 @@ class ScrollTracker {
 			if (!isMeaningfullyScrollable) {
 				// Scrollable size has shrunk, show the bars
 				slowScrollDirection.value = VerticalDirection.up;
-				slowScrollDirection.value = null;
 			}
 		}
 		return false;

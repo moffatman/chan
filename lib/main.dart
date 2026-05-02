@@ -1673,7 +1673,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	final _keys = <int, GlobalKey>{};
 	late final ValueNotifier<bool> _showTabPopup;
 	Imageboard? get devImageboard => ImageboardRegistry.instance.dev;
-	bool _hideTabPopupAutomatically = false;
 	_AuthenticationStatus _authenticationStatus = _AuthenticationStatus.ok;
 	final _drawerScaffoldKey = GlobalKey<AdaptiveScaffoldState>(debugLabel: '_ChanHomePageState._drawerScaffoldKey');
 
@@ -1687,11 +1686,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		await SchedulerBinding.instance.endOfFrame;
 		_setAdditionalSafeAreaInsets();
 		if (ScrollTracker.instance.slowScrollDirection.value == VerticalDirection.down && _showTabPopup.value) {
-			_hideTabPopupAutomatically = true;
+			Persistence.settings.didHideTabPopupAutomatically = true;
 			_showTabPopup.value = false;
 		}
-		else if (ScrollTracker.instance.slowScrollDirection.value == VerticalDirection.up && _hideTabPopupAutomatically) {
-			_hideTabPopupAutomatically = false;
+		else if (ScrollTracker.instance.slowScrollDirection.value == VerticalDirection.up && Persistence.settings.didHideTabPopupAutomatically) {
+			Persistence.settings.didHideTabPopupAutomatically = false;
 			_showTabPopup.value = true;
 		}
 	}
@@ -1721,9 +1720,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		super.initState();
 		_tabs = ChanTabs._(this);
 		_tabs.addListener(_tabsListener);
-		_showTabPopup = ValueNotifier(false)
+		_showTabPopup = ValueNotifier(Persistence.settings.showTabPopup)
 			..addListener(_setAdditionalSafeAreaInsets)
 			..addListener(() {
+				Persistence.settings.showTabPopup = _showTabPopup.value;
+				Persistence.settings.save();
 				if (_showTabPopup.value) {
 					Future.microtask(() => _tabs._animateTabList(duration: Duration.zero));
 				}

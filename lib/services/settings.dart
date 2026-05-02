@@ -1264,6 +1264,10 @@ class SavedSettings extends HiveObject {
 	TlsClientHello? cachedWebViewTlsHello;
 	@HiveField(214)
 	Map<String, String>? cachedWebViewHeaders;
+	@HiveField(215)
+	bool showTabPopup;
+	@HiveField(216)
+	bool didHideTabPopupAutomatically;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1480,6 +1484,8 @@ class SavedSettings extends HiveObject {
 		this.lastDefaultUserAgent,
 		this.cachedWebViewTlsHello,
 		this.cachedWebViewHeaders,
+		bool? showTabPopup,
+		bool? didHideTabPopupAutomatically,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1712,7 +1718,9 @@ class SavedSettings extends HiveObject {
 		replyButtonAtBottom = replyButtonAtBottom ?? false,
 		videoContextMenuInGallery = videoContextMenuInGallery ?? false,
 		doubleTapToSeekVideo = doubleTapToSeekVideo ?? false,
-		showHotPostsInScrollbar = showHotPostsInScrollbar ?? false {
+		showHotPostsInScrollbar = showHotPostsInScrollbar ?? false,
+		showTabPopup = showTabPopup ?? false,
+		didHideTabPopupAutomatically = didHideTabPopupAutomatically ?? false {
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
