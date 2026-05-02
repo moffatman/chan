@@ -324,6 +324,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 	static final _mathPattern = RegExp(r'\[math\](.+?)\[\/math\]');
 	static final _eqnPattern = RegExp(r'\[eqn\](.+?)\[\/eqn\]');
 	static final _catalogSearchPattern = RegExp(r'^catalog#s=(.+)$');
+	static final _crossThreadQuoteLinkPattern = RegExp(r'^\/([^/]+)\/thread\/(\d+)(?:\/[^/]+)?#p(\d+)');
 
 	static PostNodeSpan makeSpan(String board, int threadId, String data, {bool fromSearch = false}) {
 		final fromSearchThread = fromSearch ? ThreadIdentifier(board, threadId) : null;
@@ -365,15 +366,12 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 								postId: int.parse(node.attributes['href']!.substring(2))
 							));
 						}
-						else if (node.attributes['href']!.contains('#p')) {
-							// href looks like '/tv/thread/123456#p123457'
-							final parts = node.attributes['href']!.split('/');
-							final threadIndex = parts.indexOf('thread');
-							final ids = parts[threadIndex + 1].split('#p');
+						else if (_crossThreadQuoteLinkPattern.firstMatch(node.attributes['href']!) case final match?) {
+							// href looks like '/tv/thread/123456#p123457' or '/tv/thread/123456/title#p123457'
 							elements.add(PostQuoteLinkSpan(
-								board: parts[threadIndex - 1],
-								threadId: int.parse(ids[0]),
-								postId: int.parse(ids[1])
+								board: match.group(1)!,
+								threadId: match.group(2)!.parseInt,
+								postId: match.group(3)!.parseInt
 							));
 						}
 						else {
