@@ -2210,8 +2210,8 @@ class GreedySizeCachingBox extends SingleChildRenderObjectWidget {
 class RenderWidthSnappingBox extends RenderProxyBox {
 	RenderWidthSnappingBox({
 		required double factor,
-		required Alignment alignment
-	}) : _factor = factor, _alignment = alignment;
+		required EdgeInsets unsnappedPadding
+	}) : _factor = factor, _unsnappedPadding = unsnappedPadding;
 
 	double _factor;
 	set factor(double newValue) {
@@ -2221,12 +2221,12 @@ class RenderWidthSnappingBox extends RenderProxyBox {
 		_factor = newValue;
 		markNeedsLayout();
 	}
-	Alignment _alignment;
-	set alignment(Alignment newValue) {
-		if (newValue == _alignment) {
+	EdgeInsets _unsnappedPadding;
+	set unsnappedPadding(EdgeInsets newValue) {
+		if (newValue == _unsnappedPadding) {
 			return;
 		}
-		_alignment = newValue;
+		_unsnappedPadding = newValue;
 		markNeedsLayout();
 	}
 
@@ -2240,16 +2240,18 @@ class RenderWidthSnappingBox extends RenderProxyBox {
   @override
   void performLayout() {
     if (child != null) {
-      child!.layout(constraints, parentUsesSize: true);
-      if (child!.size.width >= (constraints.maxWidth * _factor)) {
+			final maxIntrinsicWidth = child!.getMaxIntrinsicWidth(constraints.maxHeight);
+      if (maxIntrinsicWidth >= (constraints.maxWidth * _factor)) {
 				// Snap
-				size = Size(constraints.maxWidth, child!.size.height);
-				(child!.parentData as BoxParentData).offset = _alignment.inscribe(child!.size, Offset.zero & size).topLeft;
+				child!.layout(constraints.copyWith(minWidth: constraints.maxWidth), parentUsesSize: true);
+				size = child!.size;
+				(child!.parentData as BoxParentData).offset = Offset.zero;
 			}
 			else {
 				// Don't snap
-				size = child!.size;
-				(child!.parentData as BoxParentData).offset = Offset.zero;
+				child!.layout(constraints.deflate(_unsnappedPadding), parentUsesSize: true);
+				size = _unsnappedPadding.inflateSize(child!.size);
+				(child!.parentData as BoxParentData).offset = _unsnappedPadding.topLeft;
 			}
     }
 		else {
@@ -2291,12 +2293,13 @@ class RenderWidthSnappingBox extends RenderProxyBox {
 class WidthSnappingBox extends SingleChildRenderObjectWidget {
 	/// At what scalar factor of maximum width should the container be snapped to fill
 	final double factor;
-	final Alignment alignment;
+	/// Padding to apply if not snapping
+	final EdgeInsets unsnappedPadding;
 
 	const WidthSnappingBox({
 		required super.child,
 		required this.factor,
-		this.alignment = Alignment.topLeft,
+		this.unsnappedPadding = EdgeInsets.zero,
 		super.key
 	});
 
@@ -2304,14 +2307,14 @@ class WidthSnappingBox extends SingleChildRenderObjectWidget {
 	RenderWidthSnappingBox createRenderObject(BuildContext context) {
 		return RenderWidthSnappingBox(
 			factor: factor,
-			alignment: alignment
+			unsnappedPadding: unsnappedPadding
 		);
 	}
 	
 	@override
 	void updateRenderObject(BuildContext context, RenderWidthSnappingBox renderObject) {
 		renderObject.factor = factor;
-		renderObject.alignment = alignment;
+		renderObject.unsnappedPadding = unsnappedPadding;
 	}
 }
 
