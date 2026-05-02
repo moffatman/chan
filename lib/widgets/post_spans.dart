@@ -4129,7 +4129,7 @@ TextSpan buildPostInfoRow({
 	}
 	if (site.supportsPostUpvotes || post.upvotes != null) {
 		final hot = settings.showHotPostsInScrollbar && switch((post.upvotes, zone.findPost(post.parentId)?.upvotes)) {
-			(int upv, int parentUpv) => parentUpv > 0 && upv > (parentUpv + math.min(parentUpv * 1.4, 15)),
+			(int upv, int parentUpv) => post.parentId != post.threadId && parentUpv > 0 && upv > (parentUpv + math.min(parentUpv * 1.4, 15)),
 			_ => false
 		};
 		children.addAll([
