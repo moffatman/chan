@@ -2216,21 +2216,41 @@ class PostLinkSpan extends PostTerminalSpan {
 			else {
 				imageSize = const Size(16, 16);
 			}
-			final otherWidth = 32 + imageSize.width;
-			final estimator2 = _HeightEstimatorImpl(estimator.post, estimator.zone, estimator.characterSize, estimator.maxWidth - otherWidth);
-			if (name case final name? when !url.contains(name) && (data.title?.contains(name) != true)) {
-				estimator2.addPlaintext(name);
-				estimator2.addHardLineBreak();
+			if (estimator.maxWidth < 250) {
+				// Vertical layout
+				final estimator2 = _HeightEstimatorImpl(estimator.post, estimator.zone, estimator.characterSize, estimator.maxWidth - 32);
+				if (name case final name? when !url.contains(name) && (data.title?.contains(name) != true)) {
+					estimator2.addPlaintext(name);
+					estimator2.addHardLineBreak();
+				}
+				if (data.title case final title? when title.isNotEmpty) {
+					estimator2.addPlaintext(title);
+					estimator2.addHardLineBreak();
+				}
+				else if (name == null || url.contains(name!)) {
+					estimator2.addCharacters(url.length);
+					estimator2.addHardLineBreak();
+				}
+				estimator.addRect(Size(32 + estimator2.width, 32 + imageSize.height + estimator2.height));
 			}
-			if (data.title case final title? when title.isNotEmpty) {
-				estimator2.addPlaintext(title);
-				estimator2.addHardLineBreak();
+			else {
+				// Horizontal layout
+				final otherWidth = 32 + imageSize.width;
+				final estimator2 = _HeightEstimatorImpl(estimator.post, estimator.zone, estimator.characterSize, estimator.maxWidth - otherWidth);
+				if (name case final name? when !url.contains(name) && (data.title?.contains(name) != true)) {
+					estimator2.addPlaintext(name);
+					estimator2.addHardLineBreak();
+				}
+				if (data.title case final title? when title.isNotEmpty) {
+					estimator2.addPlaintext(title);
+					estimator2.addHardLineBreak();
+				}
+				else if (name == null || url.contains(name!)) {
+					estimator2.addCharacters(url.length);
+					estimator2.addHardLineBreak();
+				}
+				estimator.addRect(Size(otherWidth + estimator2.width, 32 + math.max(imageSize.height, estimator2.height)));
 			}
-			else if (name == null || url.contains(name!)) {
-				estimator2.addCharacters(url.length);
-				estimator2.addHardLineBreak();
-			}
-			estimator.addRect(Size(otherWidth + estimator2.width, 32 + math.max(imageSize.height, estimator2.height)));
 		}
 		else {
 			if (name != null && !url.endsWith(name!)) {
