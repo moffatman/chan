@@ -2146,6 +2146,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		);
 		return Flex(
 			direction: axis,
+			crossAxisAlignment: CrossAxisAlignment.stretch,
 			children: [
 				if (usingHomeBoard) buildTabIcon(0),
 				Expanded(
