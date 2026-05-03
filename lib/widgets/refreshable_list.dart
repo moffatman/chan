@@ -3075,11 +3075,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 													onRefresh: _updateWithHapticFeedback,
 													refreshTriggerPullDistance: 125
 												),
-												if (widget.header != null) ...[
-													SliverToBoxAdapter(
-														child: widget.header
-													)
-												],
+												if (widget.header != null) SliverToBoxAdapter(
+													child: widget.header
+												),
 												if (!widget.shrinkWrap && sortedList.isNotEmpty && widget.filterableAdapter != null) SliverToBoxAdapter(
 													child: Padding(
 														padding: EdgeInsets.only(
