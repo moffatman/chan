@@ -3068,467 +3068,481 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 									controller: controller.scrollController,
 									physics: const AlwaysScrollableScrollPhysics(),
 									slivers: [
+										SliverSafeArea(
+											bottom: false,
+											sliver: widget.disableUpdates ? const SliverToBoxAdapter(
+												child: SizedBox.shrink()
+											) : CupertinoSliverRefreshControl(
+												onRefresh: _updateWithHapticFeedback,
+												refreshTriggerPullDistance: 125
+											)
+										),
 										SliverPadding(
-											padding: padding,
-											sliver: SliverMainAxisGroup(slivers: [
-												if (!widget.disableUpdates) CupertinoSliverRefreshControl(
-													onRefresh: _updateWithHapticFeedback,
-													refreshTriggerPullDistance: 125
-												),
-												if (widget.header != null) SliverToBoxAdapter(
-													child: widget.header
-												),
-												if (!widget.shrinkWrap && sortedList.isNotEmpty && widget.filterableAdapter != null) SliverToBoxAdapter(
-													child: Padding(
-														padding: EdgeInsets.only(
-															top: 16,
-															left: 16,
-															right: 16,
-															bottom: widget.gridDelegate == null ? 8 : 16
+											padding: padding.copyWith(top: 0),
+											sliver: MediaQuery.removePadding(
+												context: context,
+												removeTop: false,
+												removeBottom: true,
+												removeLeft: true,
+												removeRight: true,
+												child: SliverMainAxisGroup(
+													slivers: [
+														if (widget.header != null) SliverToBoxAdapter(
+															child: widget.header
 														),
-														child: Row(
-															mainAxisSize: MainAxisSize.min,
-															children: [
-																Expanded(
-																	child: Center(
-																		child: AdaptiveSearchTextField(
-																			onTap: () {
-																				setState(() {
-																					_searchTapped = true;
-																				});
-																				widget.onFilterChanged?.call('');
-																			},
-																			onChanged: (searchText) {
-																				setState(() {
-																					if (searchText.isEmpty) {
-																						_lastTreeOrder = null;
-																					}
-																				});
-																				widget.onFilterChanged?.call(searchText);
-																			},
-																			onSubmitted: (_) {
-																				final isHardwareKeyboard = MediaQueryData.fromView(View.of(context)).viewInsets.bottom <= 100;
-																				if (!widget.disableUpdates) {
-																					_updateOrExtendWithHapticFeedback();
-																				}
-																				if (isHardwareKeyboard) {
-																					// Stay focused, usually it will clear to close keyboard (show more items)
-																					Future.microtask(_focusSearch);
-																				}
-																			},
-																			controller: _searchController,
-																			enableIMEPersonalizedLearning: Settings.enableIMEPersonalizedLearningSetting.watch(context),
-																			autocorrect: false,
-																			focusNode: _searchFocusNode,
-																			placeholder: widget.filterHint,
-																			smartQuotesType: SmartQuotesType.disabled,
-																			smartDashesType: SmartDashesType.disabled
-																		)
-																	),
+														if (!widget.shrinkWrap && sortedList.isNotEmpty && widget.filterableAdapter != null) SliverToBoxAdapter(
+															child: Padding(
+																padding: EdgeInsets.only(
+																	top: 16,
+																	left: 16,
+																	right: 16,
+																	bottom: widget.gridDelegate == null ? 8 : 16
 																),
-																if (_searchTapped) CupertinoButton(
-																	padding: const EdgeInsets.only(left: 8),
-																	minimumSize: Size.zero,
-																	onPressed: closeSearch,
-																	child: const Text('Cancel')
-																)
-															]
-														)
-													)
-												),
-												if (widget.filterAlternative != null &&
-														(searching ||
-														(_searchTapped && widget.filterAlternative!.suggestWhenFilterEmpty))) SliverToBoxAdapter(
-													child: Container(
-														decoration: BoxDecoration(
-															border: Border(
-																top: BorderSide(color: dividerColor),
-																bottom: BorderSide(color: dividerColor)
-															)
-														),
-														child: CupertinoButton(
-															padding: const EdgeInsets.all(16),
-															onPressed: () {
-																_searchFocusNode.unfocus();
-																widget.filterAlternative!.handler(_searchController.text);
-															},
-															child: Row(
-																children: [
-																	const Icon(CupertinoIcons.search),
-																	const SizedBox(width: 8),
-																	Expanded(
-																		child: Text(
-																			'Search ${widget.filterAlternative?.name}',
-																			textAlign: TextAlign.left
-																		)
-																	)
-																]
-															)
-														)
-													)
-												),
-												if (values.isNotEmpty)
-													if (widget.staggeredGridDelegate != null) SliverStaggeredGrid(
-														key: _sliverStaggeredGridKey,
-														gridDelegate: widget.staggeredGridDelegate!,
-														id: '${_searchController.text}${widget.sortMethods}$forceRebuildId${widget.rebuildId}${controller.useDummyItemsInRange}${widget.useAllDummies}${Object.hashAll(values)}',
-														delegate: SliverDontRebuildChildBuilderDelegate(
-															(context, i) {
-																return BuildContextRegistrant(
-																	key: ValueKey(values[i]._key),
-																	onBuild: (context) {
-																		controller._registerItem(i, values[i], context);
-																	},
-																	onDispose: (context) {
-																		controller._unregisterItem(i, context);
-																	},
-																	child: Builder(
-																		builder: (context) => _itemBuilder(context, values[i], _useDummyFor(i))
-																	)
-																);
-															},
-															list: values,
-															id: '${_searchController.text}${widget.sortMethods}$forceRebuildId${widget.rebuildId}${controller.useDummyItemsInRange}${widget.useAllDummies}',
-															didFinishLayout: controller.didFinishLayout,
-															childCount: values.length,
-															findChildIndexCallback: (key) {
-																if (key is ValueKey<_RefreshableTreeItemsCacheKey>) {
-																	if (key.value.thisId == 0) {
-																		// Items not really keyed
-																		return null;
-																	}
-																	final idx = values.indexWhere(
-																		(other) => identical(key.value, other._key)
-																	);
-																	if (idx >= 0) {
-																		return idx;
-																	}
-																}
-																return null;
-															},
-															addRepaintBoundaries: false,
-															addAutomaticKeepAlives: false,
-															fastHeightEstimate: _fastHeightEstimate
-														)
-													)
-													else if (widget.gridDelegate != null) SliverGrid(
-														key: _sliverGridKey,
-														gridDelegate: widget.gridDelegate!,
-														delegate: SliverDontRebuildChildBuilderDelegate(
-															(context, i) {
-																return BuildContextRegistrant(
-																	key: ValueKey(values[i]._key),
-																	onBuild: (context) {
-																		controller._registerItem(i, values[i], context);
-																	},
-																	onDispose: (context) {
-																		controller._unregisterItem(i, context);
-																	},
-																	child: Builder(
-																		builder: (context) => _itemBuilder(context, values[i], _useDummyFor(i))
-																	)
-																);
-															},
-															list: values,
-															id: '${_searchController.text}${widget.sortMethods}$forceRebuildId${widget.rebuildId}${controller.useDummyItemsInRange}${widget.useAllDummies}',
-															didFinishLayout: controller.didFinishLayout,
-															childCount: values.length,
-															findChildIndexCallback: (key) {
-																if (key is ValueKey<_RefreshableTreeItemsCacheKey>) {
-																	if (key.value.thisId == 0) {
-																		// Items not really keyed
-																		return null;
-																	}
-																	final idx = values.indexWhere(
-																		(other) => identical(key.value, other._key)
-																	);
-																	if (idx >= 0) {
-																		return idx;
-																	}
-																}
-																return null;
-															},
-															addRepaintBoundaries: false,
-															addAutomaticKeepAlives: false,
-															fastHeightEstimate: _fastHeightEstimate
-														)
-													)
-													else SliverList(
-														key: _sliverListKey,
-														delegate: SliverDontRebuildChildBuilderDelegate(
-															(context, childIndex) {
-																return BuildContextRegistrant(
-																	key: ValueKey(values[childIndex]._key),
-																	onBuild: (context) {
-																		controller._registerItem(childIndex, values[childIndex], context);
-																	},
-																	onDispose: (context) {
-																		controller._unregisterItem(childIndex, context);
-																	},
-																	child: Builder(
-																		builder: (context) => _itemBuilder(context, values[childIndex], _useDummyFor(childIndex))
-																	)
-																);
-															},
-															separatorBuilder: (context, childIndex) {
-																return _Divider(
-																	key: ValueKey(_DividerKey(values[childIndex]._key)),
-																	dummy: _useDummyFor(childIndex),
-																	itemBefore: values[childIndex],
-																	itemAfter: (childIndex < values.length - 1) ? values[childIndex + 1] : null,
-																	color: dividerColor
-																);
-															},
-															separatorSentinel: dividerColor,
-															list: values,
-															id: '${_searchController.text}${widget.sortMethods}$forceRebuildId${widget.rebuildId}${controller.useDummyItemsInRange}${widget.useAllDummies}',
-															childCount: values.length * 2,
-															findChildIndexCallback: (key) {
-																if (key is ValueKey<_RefreshableTreeItemsCacheKey>) {
-																	if (key.value.thisId == 0) {
-																		// Items not really keyed
-																		return null;
-																	}
-																	final idx = values.indexWhere(
-																		(other) => identical(key.value, other._key)
-																	) * 2;
-																	if (idx >= 0) {
-																		return idx;
-																	}
-																}
-																else if (key is ValueKey<_DividerKey>) {
-																	if (key.value.key.thisId == 0) {
-																		// Items not really keyed
-																		return null;
-																	}
-																	final idx = values.indexWhere(
-																		(other) => identical(key.value.key, other._key)
-																	) * 2;
-																	if (idx >= 0) {
-																		return idx + 1;
-																	}
-																}
-																return null;
-															},
-															fastHeightEstimate: _fastHeightEstimate,
-															fastErrorEstimate: (i) {
-																final dummyStatus = _refreshableTreeItems._dummyCache[values[i]._key];
-																if (
-																	// Item was previously dummy. so its contribution to scrollOffset is not correct
-																	dummyStatus != null && dummyStatus.type == _DummyStatusType.previously &&
-																	// We are not in a weird inter-insertion-frame situation
-																	controller._items[i].item == values[i]
-																) {
-																	return (controller._items[i].cachedHeight ?? dummyStatus.height) - dummyStatus.height;
-																}
-																// No error
-																return null;
-															},
-															didFinishLayout: (startIndex, endIndex) {
-																controller.didFinishLayout.call((startIndex / 2).ceil(), (endIndex / 2).floor());
-															},
-															addAutomaticKeepAlives: false,
-															addRepaintBoundaries: false,
-														)
-													),
-												if (values.isEmpty)
-													const SliverToBoxAdapter(
-															child: SizedBox(
-																height: 100,
-																child: Center(
-																	child: Text('Nothing to see here')
-																)
-															)
-														),
-												if (!widget.shrinkWrap && filteredValues.isNotEmpty && Settings.showHiddenItemsFooterSetting.watch(context)) ...[
-													SliverToBoxAdapter(
-														child: GestureDetector(
-															onTap: () {
-																setState(() {
-																	_showFilteredValues = !_showFilteredValues;
-																});
-															},
-															child: SizedBox(
-																height: 50,
-																child: Center(
-																	child: Text(
-																		(_showFilteredValues ? 'Showing ' : '') + describeCount(filteredValues.length, 'filtered item'),
-																		style: TextStyle(
-																			color: theme.primaryColorWithBrightness(0.4)
-																		)
-																	)
-																)
-															)
-														),
-													),
-													if (_showFilteredValues)
-														if (widget.staggeredGridDelegate != null) SliverStaggeredGrid(
-															key: PageStorageKey('filtered staggered grid for ${widget.id}'),
-															gridDelegate: widget.staggeredGridDelegate!,
-															delegate: SliverDontRebuildChildBuilderDelegate(
-																(context, i) => Stack(
-																	key: ValueKey(filteredValues[i]._key),
+																child: Row(
+																	mainAxisSize: MainAxisSize.min,
 																	children: [
-																		Provider.value(
-																			value: RefreshableListFilterReason(filteredValues[i].filterReason ?? 'Unknown'),
-																			builder: (context, _) => _itemBuilder(context, filteredValues[i], false)
-																		),
-																		Align(
-																			alignment: Alignment.topRight,
-																			child: Padding(
-																				padding: const EdgeInsets.only(top: 8, right: 8),
-																				child: AdaptiveFilledButton(
-																					padding: EdgeInsets.zero,
-																					child: const Icon(CupertinoIcons.question),
-																					onPressed: () {
-																						alert(context, 'Filter reason', filteredValues[i].filterReason ?? 'Unknown');
-																					}
-																				)
-																			)
-																		)
-																	]
-																),
-																list: filteredValues,
-																id: widget.id,
-																childCount: filteredValues.length,
-																addRepaintBoundaries: false,
-																addAutomaticKeepAlives: false,
-																fastHeightEstimate: _fastHeightEstimate
-															)
-														)
-														else if (widget.gridDelegate != null) SliverGrid(
-															key: PageStorageKey('filtered grid for ${widget.id}'),
-															gridDelegate: widget.gridDelegate!,
-															delegate: SliverDontRebuildChildBuilderDelegate(
-																(context, i) => Stack(
-																	key: ValueKey(filteredValues[i]._key),
-																	children: [
-																		Provider.value(
-																			value: RefreshableListFilterReason(filteredValues[i].filterReason ?? 'Unknown'),
-																			builder: (context, _) => _itemBuilder(context, filteredValues[i], false)
-																		),
-																		Align(
-																			alignment: Alignment.topRight,
-																			child: Padding(
-																				padding: const EdgeInsets.only(top: 8, right: 8),
-																				child: AdaptiveFilledButton(
-																					padding: EdgeInsets.zero,
-																					child: const Icon(CupertinoIcons.question),
-																					onPressed: () {
-																						alert(context, 'Filter reason', filteredValues[i].filterReason ?? 'Unknown');
-																					}
-																				)
-																			)
-																		)
-																	]
-																),
-																list: filteredValues,
-																id: '$forceRebuildId${widget.rebuildId}',
-																childCount: filteredValues.length,
-																addRepaintBoundaries: false,
-																addAutomaticKeepAlives: false
-															)
-														)
-														else SliverList(
-															key: PageStorageKey('filtered list for ${widget.id}'),
-															delegate: SliverDontRebuildChildBuilderDelegate(
-																(context, childIndex) {
-																	return Column(
-																		key: ValueKey(filteredValues[childIndex]._key),
-																		mainAxisSize: MainAxisSize.min,
-																		crossAxisAlignment: CrossAxisAlignment.stretch,
-																		children: [
-																			IgnorePointer(
-																				child: Container(
-																					padding: const EdgeInsets.all(4),
-																					color: theme.primaryColorWithBrightness(0.5),
-																					child: Text('Filter reason:\n${filteredValues[childIndex].filterReason}', style: TextStyle(
-																						color: theme.backgroundColor
-																					))
+																		Expanded(
+																			child: Center(
+																				child: AdaptiveSearchTextField(
+																					onTap: () {
+																						setState(() {
+																							_searchTapped = true;
+																						});
+																						widget.onFilterChanged?.call('');
+																					},
+																					onChanged: (searchText) {
+																						setState(() {
+																							if (searchText.isEmpty) {
+																								_lastTreeOrder = null;
+																							}
+																						});
+																						widget.onFilterChanged?.call(searchText);
+																					},
+																					onSubmitted: (_) {
+																						final isHardwareKeyboard = MediaQueryData.fromView(View.of(context)).viewInsets.bottom <= 100;
+																						if (!widget.disableUpdates) {
+																							_updateOrExtendWithHapticFeedback();
+																						}
+																						if (isHardwareKeyboard) {
+																							// Stay focused, usually it will clear to close keyboard (show more items)
+																							Future.microtask(_focusSearch);
+																						}
+																					},
+																					controller: _searchController,
+																					enableIMEPersonalizedLearning: Settings.enableIMEPersonalizedLearningSetting.watch(context),
+																					autocorrect: false,
+																					focusNode: _searchFocusNode,
+																					placeholder: widget.filterHint,
+																					smartQuotesType: SmartQuotesType.disabled,
+																					smartDashesType: SmartDashesType.disabled
 																				)
 																			),
-																			Container(
-																				color: theme.primaryColorWithBrightness(0.5),
-																				padding: const EdgeInsets.all(8),
-																				child: Provider.value(
-																					value: RefreshableListFilterReason(filteredValues[childIndex].filterReason ?? 'Unknown'),
-																					builder: (context, _) => _itemBuilder(context, filteredValues[childIndex], false)
+																		),
+																		if (_searchTapped) CupertinoButton(
+																			padding: const EdgeInsets.only(left: 8),
+																			minimumSize: Size.zero,
+																			onPressed: closeSearch,
+																			child: const Text('Cancel')
+																		)
+																	]
+																)
+															)
+														),
+														if (widget.filterAlternative != null &&
+																(searching ||
+																(_searchTapped && widget.filterAlternative!.suggestWhenFilterEmpty))) SliverToBoxAdapter(
+															child: Container(
+																decoration: BoxDecoration(
+																	border: Border(
+																		top: BorderSide(color: dividerColor),
+																		bottom: BorderSide(color: dividerColor)
+																	)
+																),
+																child: CupertinoButton(
+																	padding: const EdgeInsets.all(16),
+																	onPressed: () {
+																		_searchFocusNode.unfocus();
+																		widget.filterAlternative!.handler(_searchController.text);
+																	},
+																	child: Row(
+																		children: [
+																			const Icon(CupertinoIcons.search),
+																			const SizedBox(width: 8),
+																			Expanded(
+																				child: Text(
+																					'Search ${widget.filterAlternative?.name}',
+																					textAlign: TextAlign.left
 																				)
 																			)
 																		]
-																	);
-																},
-																separatorBuilder: (context, childIndex) => Divider(
-																	thickness: 1,
-																	height: 0,
-																	color: dividerColor
-																),
-																separatorSentinel: dividerColor,
-																list: filteredValues,
-																id: '$forceRebuildId${widget.rebuildId}',
-																childCount: filteredValues.length * 2,
-																addRepaintBoundaries: false,
-																addAutomaticKeepAlives: false
-															)
-														)
-												],
-												SliverList(
-													delegate: SliverChildListDelegate([
-														if (widget.aboveFooter != null) widget.aboveFooter!,
-														if (widget.footer != null && widget.disableUpdates) widget.footer!
-														else if (widget.footer != null && !widget.disableUpdates) RepaintBoundary(
-															child: GestureDetector(
-																behavior: HitTestBehavior.opaque,
-																onTap: (!widget.canTapFooter || (updatingNow.value != null)) ? null : () {
-																	lightHapticFeedback();
-																	Future.delayed(const Duration(milliseconds: 17), () {
-																		controller.scrollController?.animateTo(
-																			controller.scrollController!.position.maxScrollExtent,
-																			duration: const Duration(milliseconds: 250),
-																			curve: Curves.ease
-																		);
-																	});
-																	_footerShakeAnimation.forward(from: 0);
-																	_updateOrExtendWithHapticFeedback();
-																},
-																child: AnimatedBuilder(
-																	animation: shakeAnimation,
-																	builder: (context, child) => Transform.scale(
-																		scale: 1.0 - 0.2*sin(pi * shakeAnimation.value),
-																		child: child
-																	),
-																	child: widget.footer
+																	)
 																)
 															)
 														),
-														if (!widget.disableUpdates && !widget.disableBottomUpdates) RepaintBoundary(
-															child: ValueListenableBuilder(
-																valueListenable: error,
-																builder: (context, error, _) {
-																	final errorType = error?.$1.runtimeType;
-																	return ValueListenableBuilder(
-																		valueListenable: updatingNow,
-																		builder: (context, updatingNow, _) => RefreshableListFooter(
-																			key: _footerKey,
-																			updater: _updateOrExtendWithHapticFeedback,
-																			updatingNow: updatingNow != null,
-																			lastUpdateTime: lastUpdateTime,
-																			nextUpdateTime: nextUpdateTime,
-																			error: error,
-																			remedy: widget.remedies[errorType],
-																			overscrollFactor: controller.overscrollFactor,
-																			isScrollable: controller.isScrollable,
-																			pointerDownNow: () {
-																				return _pointerDownCount > 0;
+														if (values.isNotEmpty)
+															if (widget.staggeredGridDelegate != null) SliverStaggeredGrid(
+																key: _sliverStaggeredGridKey,
+																gridDelegate: widget.staggeredGridDelegate!,
+																id: '${_searchController.text}${widget.sortMethods}$forceRebuildId${widget.rebuildId}${controller.useDummyItemsInRange}${widget.useAllDummies}${Object.hashAll(values)}',
+																delegate: SliverDontRebuildChildBuilderDelegate(
+																	(context, i) {
+																		return BuildContextRegistrant(
+																			key: ValueKey(values[i]._key),
+																			onBuild: (context) {
+																				controller._registerItem(i, values[i], context);
+																			},
+																			onDispose: (context) {
+																				controller._unregisterItem(i, context);
+																			},
+																			child: Builder(
+																				builder: (context) => _itemBuilder(context, values[i], _useDummyFor(i))
+																			)
+																		);
+																	},
+																	list: values,
+																	id: '${_searchController.text}${widget.sortMethods}$forceRebuildId${widget.rebuildId}${controller.useDummyItemsInRange}${widget.useAllDummies}',
+																	didFinishLayout: controller.didFinishLayout,
+																	childCount: values.length,
+																	findChildIndexCallback: (key) {
+																		if (key is ValueKey<_RefreshableTreeItemsCacheKey>) {
+																			if (key.value.thisId == 0) {
+																				// Items not really keyed
+																				return null;
 																			}
-																		)
-																	);
-																}
+																			final idx = values.indexWhere(
+																				(other) => identical(key.value, other._key)
+																			);
+																			if (idx >= 0) {
+																				return idx;
+																			}
+																		}
+																		return null;
+																	},
+																	addRepaintBoundaries: false,
+																	addAutomaticKeepAlives: false,
+																	fastHeightEstimate: _fastHeightEstimate
+																)
 															)
+															else if (widget.gridDelegate != null) SliverGrid(
+																key: _sliverGridKey,
+																gridDelegate: widget.gridDelegate!,
+																delegate: SliverDontRebuildChildBuilderDelegate(
+																	(context, i) {
+																		return BuildContextRegistrant(
+																			key: ValueKey(values[i]._key),
+																			onBuild: (context) {
+																				controller._registerItem(i, values[i], context);
+																			},
+																			onDispose: (context) {
+																				controller._unregisterItem(i, context);
+																			},
+																			child: Builder(
+																				builder: (context) => _itemBuilder(context, values[i], _useDummyFor(i))
+																			)
+																		);
+																	},
+																	list: values,
+																	id: '${_searchController.text}${widget.sortMethods}$forceRebuildId${widget.rebuildId}${controller.useDummyItemsInRange}${widget.useAllDummies}',
+																	didFinishLayout: controller.didFinishLayout,
+																	childCount: values.length,
+																	findChildIndexCallback: (key) {
+																		if (key is ValueKey<_RefreshableTreeItemsCacheKey>) {
+																			if (key.value.thisId == 0) {
+																				// Items not really keyed
+																				return null;
+																			}
+																			final idx = values.indexWhere(
+																				(other) => identical(key.value, other._key)
+																			);
+																			if (idx >= 0) {
+																				return idx;
+																			}
+																		}
+																		return null;
+																	},
+																	addRepaintBoundaries: false,
+																	addAutomaticKeepAlives: false,
+																	fastHeightEstimate: _fastHeightEstimate
+																)
+															)
+															else SliverList(
+																key: _sliverListKey,
+																delegate: SliverDontRebuildChildBuilderDelegate(
+																	(context, childIndex) {
+																		return BuildContextRegistrant(
+																			key: ValueKey(values[childIndex]._key),
+																			onBuild: (context) {
+																				controller._registerItem(childIndex, values[childIndex], context);
+																			},
+																			onDispose: (context) {
+																				controller._unregisterItem(childIndex, context);
+																			},
+																			child: Builder(
+																				builder: (context) => _itemBuilder(context, values[childIndex], _useDummyFor(childIndex))
+																			)
+																		);
+																	},
+																	separatorBuilder: (context, childIndex) {
+																		return _Divider(
+																			key: ValueKey(_DividerKey(values[childIndex]._key)),
+																			dummy: _useDummyFor(childIndex),
+																			itemBefore: values[childIndex],
+																			itemAfter: (childIndex < values.length - 1) ? values[childIndex + 1] : null,
+																			color: dividerColor
+																		);
+																	},
+																	separatorSentinel: dividerColor,
+																	list: values,
+																	id: '${_searchController.text}${widget.sortMethods}$forceRebuildId${widget.rebuildId}${controller.useDummyItemsInRange}${widget.useAllDummies}',
+																	childCount: values.length * 2,
+																	findChildIndexCallback: (key) {
+																		if (key is ValueKey<_RefreshableTreeItemsCacheKey>) {
+																			if (key.value.thisId == 0) {
+																				// Items not really keyed
+																				return null;
+																			}
+																			final idx = values.indexWhere(
+																				(other) => identical(key.value, other._key)
+																			) * 2;
+																			if (idx >= 0) {
+																				return idx;
+																			}
+																		}
+																		else if (key is ValueKey<_DividerKey>) {
+																			if (key.value.key.thisId == 0) {
+																				// Items not really keyed
+																				return null;
+																			}
+																			final idx = values.indexWhere(
+																				(other) => identical(key.value.key, other._key)
+																			) * 2;
+																			if (idx >= 0) {
+																				return idx + 1;
+																			}
+																		}
+																		return null;
+																	},
+																	fastHeightEstimate: _fastHeightEstimate,
+																	fastErrorEstimate: (i) {
+																		final dummyStatus = _refreshableTreeItems._dummyCache[values[i]._key];
+																		if (
+																			// Item was previously dummy. so its contribution to scrollOffset is not correct
+																			dummyStatus != null && dummyStatus.type == _DummyStatusType.previously &&
+																			// We are not in a weird inter-insertion-frame situation
+																			controller._items[i].item == values[i]
+																		) {
+																			return (controller._items[i].cachedHeight ?? dummyStatus.height) - dummyStatus.height;
+																		}
+																		// No error
+																		return null;
+																	},
+																	didFinishLayout: (startIndex, endIndex) {
+																		controller.didFinishLayout.call((startIndex / 2).ceil(), (endIndex / 2).floor());
+																	},
+																	addAutomaticKeepAlives: false,
+																	addRepaintBoundaries: false,
+																)
+															),
+														if (values.isEmpty)
+															const SliverToBoxAdapter(
+																	child: SizedBox(
+																		height: 100,
+																		child: Center(
+																			child: Text('Nothing to see here')
+																		)
+																	)
+																),
+														if (!widget.shrinkWrap && filteredValues.isNotEmpty && Settings.showHiddenItemsFooterSetting.watch(context)) ...[
+															SliverToBoxAdapter(
+																child: GestureDetector(
+																	onTap: () {
+																		setState(() {
+																			_showFilteredValues = !_showFilteredValues;
+																		});
+																	},
+																	child: SizedBox(
+																		height: 50,
+																		child: Center(
+																			child: Text(
+																				(_showFilteredValues ? 'Showing ' : '') + describeCount(filteredValues.length, 'filtered item'),
+																				style: TextStyle(
+																					color: theme.primaryColorWithBrightness(0.4)
+																				)
+																			)
+																		)
+																	)
+																),
+															),
+															if (_showFilteredValues)
+																if (widget.staggeredGridDelegate != null) SliverStaggeredGrid(
+																	key: PageStorageKey('filtered staggered grid for ${widget.id}'),
+																	gridDelegate: widget.staggeredGridDelegate!,
+																	delegate: SliverDontRebuildChildBuilderDelegate(
+																		(context, i) => Stack(
+																			key: ValueKey(filteredValues[i]._key),
+																			children: [
+																				Provider.value(
+																					value: RefreshableListFilterReason(filteredValues[i].filterReason ?? 'Unknown'),
+																					builder: (context, _) => _itemBuilder(context, filteredValues[i], false)
+																				),
+																				Align(
+																					alignment: Alignment.topRight,
+																					child: Padding(
+																						padding: const EdgeInsets.only(top: 8, right: 8),
+																						child: AdaptiveFilledButton(
+																							padding: EdgeInsets.zero,
+																							child: const Icon(CupertinoIcons.question),
+																							onPressed: () {
+																								alert(context, 'Filter reason', filteredValues[i].filterReason ?? 'Unknown');
+																							}
+																						)
+																					)
+																				)
+																			]
+																		),
+																		list: filteredValues,
+																		id: widget.id,
+																		childCount: filteredValues.length,
+																		addRepaintBoundaries: false,
+																		addAutomaticKeepAlives: false,
+																		fastHeightEstimate: _fastHeightEstimate
+																	)
+																)
+																else if (widget.gridDelegate != null) SliverGrid(
+																	key: PageStorageKey('filtered grid for ${widget.id}'),
+																	gridDelegate: widget.gridDelegate!,
+																	delegate: SliverDontRebuildChildBuilderDelegate(
+																		(context, i) => Stack(
+																			key: ValueKey(filteredValues[i]._key),
+																			children: [
+																				Provider.value(
+																					value: RefreshableListFilterReason(filteredValues[i].filterReason ?? 'Unknown'),
+																					builder: (context, _) => _itemBuilder(context, filteredValues[i], false)
+																				),
+																				Align(
+																					alignment: Alignment.topRight,
+																					child: Padding(
+																						padding: const EdgeInsets.only(top: 8, right: 8),
+																						child: AdaptiveFilledButton(
+																							padding: EdgeInsets.zero,
+																							child: const Icon(CupertinoIcons.question),
+																							onPressed: () {
+																								alert(context, 'Filter reason', filteredValues[i].filterReason ?? 'Unknown');
+																							}
+																						)
+																					)
+																				)
+																			]
+																		),
+																		list: filteredValues,
+																		id: '$forceRebuildId${widget.rebuildId}',
+																		childCount: filteredValues.length,
+																		addRepaintBoundaries: false,
+																		addAutomaticKeepAlives: false
+																	)
+																)
+																else SliverList(
+																	key: PageStorageKey('filtered list for ${widget.id}'),
+																	delegate: SliverDontRebuildChildBuilderDelegate(
+																		(context, childIndex) {
+																			return Column(
+																				key: ValueKey(filteredValues[childIndex]._key),
+																				mainAxisSize: MainAxisSize.min,
+																				crossAxisAlignment: CrossAxisAlignment.stretch,
+																				children: [
+																					IgnorePointer(
+																						child: Container(
+																							padding: const EdgeInsets.all(4),
+																							color: theme.primaryColorWithBrightness(0.5),
+																							child: Text('Filter reason:\n${filteredValues[childIndex].filterReason}', style: TextStyle(
+																								color: theme.backgroundColor
+																							))
+																						)
+																					),
+																					Container(
+																						color: theme.primaryColorWithBrightness(0.5),
+																						padding: const EdgeInsets.all(8),
+																						child: Provider.value(
+																							value: RefreshableListFilterReason(filteredValues[childIndex].filterReason ?? 'Unknown'),
+																							builder: (context, _) => _itemBuilder(context, filteredValues[childIndex], false)
+																						)
+																					)
+																				]
+																			);
+																		},
+																		separatorBuilder: (context, childIndex) => Divider(
+																			thickness: 1,
+																			height: 0,
+																			color: dividerColor
+																		),
+																		separatorSentinel: dividerColor,
+																		list: filteredValues,
+																		id: '$forceRebuildId${widget.rebuildId}',
+																		childCount: filteredValues.length * 2,
+																		addRepaintBoundaries: false,
+																		addAutomaticKeepAlives: false
+																	)
+																)
+														],
+														SliverList(
+															delegate: SliverChildListDelegate([
+																if (widget.aboveFooter != null) widget.aboveFooter!,
+																if (widget.footer != null && widget.disableUpdates) widget.footer!
+																else if (widget.footer != null && !widget.disableUpdates) RepaintBoundary(
+																	child: GestureDetector(
+																		behavior: HitTestBehavior.opaque,
+																		onTap: (!widget.canTapFooter || (updatingNow.value != null)) ? null : () {
+																			lightHapticFeedback();
+																			Future.delayed(const Duration(milliseconds: 17), () {
+																				controller.scrollController?.animateTo(
+																					controller.scrollController!.position.maxScrollExtent,
+																					duration: const Duration(milliseconds: 250),
+																					curve: Curves.ease
+																				);
+																			});
+																			_footerShakeAnimation.forward(from: 0);
+																			_updateOrExtendWithHapticFeedback();
+																		},
+																		child: AnimatedBuilder(
+																			animation: shakeAnimation,
+																			builder: (context, child) => Transform.scale(
+																				scale: 1.0 - 0.2*sin(pi * shakeAnimation.value),
+																				child: child
+																			),
+																			child: widget.footer
+																		)
+																	)
+																),
+																if (!widget.disableUpdates && !widget.disableBottomUpdates) RepaintBoundary(
+																	child: ValueListenableBuilder(
+																		valueListenable: error,
+																		builder: (context, error, _) {
+																			final errorType = error?.$1.runtimeType;
+																			return ValueListenableBuilder(
+																				valueListenable: updatingNow,
+																				builder: (context, updatingNow, _) => RefreshableListFooter(
+																					key: _footerKey,
+																					updater: _updateOrExtendWithHapticFeedback,
+																					updatingNow: updatingNow != null,
+																					lastUpdateTime: lastUpdateTime,
+																					nextUpdateTime: nextUpdateTime,
+																					error: error,
+																					remedy: widget.remedies[errorType],
+																					overscrollFactor: controller.overscrollFactor,
+																					isScrollable: controller.isScrollable,
+																					pointerDownNow: () {
+																						return _pointerDownCount > 0;
+																					}
+																				)
+																			);
+																		}
+																	)
+																)
+															])
 														)
-													])
+													]
 												)
-											])
+											)
 										)
 									]
 								)
