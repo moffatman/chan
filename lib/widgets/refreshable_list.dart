@@ -4239,7 +4239,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			if (_isDisposed) {
 				return;
 			}
-			double atAlignment0 = _items[targetIndex].cachedOffset! - topOffset;
+			double atAlignment0 = _items[targetIndex].cachedOffset!;
 			final alignmentSlidingWindow = scrollController!.position.viewportDimension - _items[targetIndex].cachedHeight! - topOffset - bottomOffset;
 			if (targetIndex == _items.length - 1) {
 				// add offset to reveal the full footer
@@ -4272,7 +4272,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			double maxScrollExtent;
 			if (_items.last.cachedHeight != null && _items.last.cachedOffset != null) {
 				final footerHeight = state?.widget.footer != null ? 56 : 0; // Lazy estimate
-				maxScrollExtent = _items.last.cachedHeight! + _items.last.cachedOffset! + footerHeight - scrollController!.position.viewportDimension + bottomOffset;
+				maxScrollExtent = _items.last.cachedHeight! + _items.last.cachedOffset! + footerHeight - scrollController!.position.viewportDimension + bottomOffset + topOffset;
 			}
 			else {
 				maxScrollExtent = scrollController!.position.maxScrollExtent - (state?.updatingNow.value != null ? 64 : 0);
