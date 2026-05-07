@@ -4256,6 +4256,9 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			if (targetIndex == _items.length - 1) {
 				// add offset to reveal the full footer
 				atAlignment0 += 110;
+				if (state?.filteredValues.isNotEmpty ?? false) {
+					atAlignment0 += 50;
+				}
 			}
 			else if (targetIndex == 0 && state?.widget.filterableAdapter != null && alignment >= 0) {
 				// subtract offset to reveal the search bar
@@ -4284,7 +4287,8 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			double maxScrollExtent;
 			if (_items.last.cachedHeight != null && _items.last.cachedOffset != null) {
 				final footerHeight = state?.widget.footer != null ? 56 : 0; // Lazy estimate
-				maxScrollExtent = _items.last.cachedHeight! + _items.last.cachedOffset! + footerHeight - scrollController!.position.viewportDimension + bottomOffset + topOffset;
+				final filteredItemsHeight = (state?.filteredValues.isNotEmpty ?? false) ? 50 : 0;
+				maxScrollExtent = _items.last.cachedHeight! + _items.last.cachedOffset! + filteredItemsHeight + footerHeight - scrollController!.position.viewportDimension + bottomOffset + topOffset;
 			}
 			else {
 				maxScrollExtent = scrollController!.position.maxScrollExtent - (state?.updatingNow.value != null ? 64 : 0);
