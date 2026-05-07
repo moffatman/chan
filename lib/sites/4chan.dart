@@ -1188,8 +1188,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 	@override
 	String get siteData => apiUrl;
 	
-	@override
-	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url) async {
+	BoardThreadOrPostIdentifier? _decodeUrl(Uri url) {
 		if (url.host == baseUrl || url.host == _alternateBaseUrl) {
 			switch (url.pathSegments) {
 				case [String board, 'thread', String threadId, ...]:
@@ -1199,6 +1198,16 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 			}
 		}
 		return null;
+	}
+
+	@override
+	bool decodeUrlPossible(Uri url) {
+		return _decodeUrl(url) != null;
+	}
+
+	@override
+	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url) async {
+		return _decodeUrl(url);
 	}
 	
 	final Map<String, AsyncMemoizer<List<ImageboardBoardFlag>>> _boardFlags = {};

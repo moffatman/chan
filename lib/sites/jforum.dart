@@ -172,6 +172,31 @@ class SiteJForum extends ImageboardSite with ForumSite {
 		return (await getThread(ThreadIdentifier('', threadId), priority: RequestPriority.functional)).board;
 	}
 
+	static const _kForumsPattern = r'^/forums/show/(\d+)\.page';
+	static const _kPostsListPattern = r'^/posts/list/(?:(\d+)\/)?(\d+)\.page';
+	static const _kPostsPrelistPattern = r'^/posts/preList/(\d+)/(\d+)\.page';
+
+	@override
+	bool decodeUrlPossible(Uri url) {
+		if (url.host != baseUrl) {
+			return false;
+		}
+		if (!url.path.startsWith(basePath)) {
+			return false;
+		}
+		final path = url.path.substring(basePath.length);
+		if (RegExp(_kForumsPattern).firstMatch(path) != null) {
+			return true;
+		}
+		if (RegExp(_kPostsListPattern).firstMatch(path) != null) {
+			return true;
+		}
+		if (RegExp(_kPostsPrelistPattern).firstMatch(path) != null) {
+			return true;
+		}
+		return false;
+	}
+
 	@override
 	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url) async {
 		if (url.host != baseUrl) {
@@ -181,14 +206,14 @@ class SiteJForum extends ImageboardSite with ForumSite {
 			return null;
 		}
 		final path = url.path.substring(basePath.length);
-		if (RegExp(r'^/forums/show/(\d+)\.page').firstMatch(path) case Match match) {
+		if (RegExp(_kForumsPattern).firstMatch(path) case Match match) {
 			final prefix = '${match.group(1)}.';
 			final board = persistence?.boards.tryFirstWhere((b) => b.name.startsWith(prefix));
 			if (board != null) {
 				return BoardThreadOrPostIdentifier(board.name);
 			}
 		}
-		if (RegExp(r'^/posts/list/(?:(\d+)\/)?(\d+)\.page').firstMatch(path) case Match match) {
+		if (RegExp(_kPostsListPattern).firstMatch(path) case Match match) {
 			final threadId = int.parse(match.group(2)!);
 			final board = await _lookupBoard(threadId);
 			if (url.fragment.tryParseInt case int postId) {
@@ -200,7 +225,7 @@ class SiteJForum extends ImageboardSite with ForumSite {
 			}
 			return BoardThreadOrPostIdentifier(board, threadId);
 		}
-		if (RegExp(r'^/posts/preList/(\d+)/(\d+)\.page').firstMatch(path) case Match match) {
+		if (RegExp(_kPostsPrelistPattern).firstMatch(path) case Match match) {
 			final threadId = int.parse(match.group(1)!);
 			final postId = int.parse(match.group(2)!);
 			final board = await _lookupBoard(threadId);

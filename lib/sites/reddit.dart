@@ -583,6 +583,20 @@ class SiteReddit extends ImageboardSite {
 	static final _redditProtocolPattern = RegExp(r'reddit:\/\/([^ ]+)');
 
 	@override
+	bool decodeUrlPossible(Uri url) {
+		if (_isShareLink(url) || _isCommentsLink(url)) {
+			return true;
+		}
+		if (url.host.endsWith(baseUrl)) {
+			final match = _linkPattern.firstMatch(url.path);
+			if (match != null) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	@override
 	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url) async {
 		if (_isShareLink(url) || _isCommentsLink(url)) {
 			final response = await client.getUri<String>(url, options: Options(

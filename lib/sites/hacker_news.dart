@@ -395,6 +395,17 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	@override
+	bool decodeUrlPossible(Uri url) {
+		if (url.host == baseUrl && url.path == '/item') {
+			final id = url.queryParameters['id']?.tryParseInt;
+			if (id != null) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	@override
 	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url) async {
 		if (url.host == baseUrl && url.path == '/item') {
 			final id = url.queryParameters['id']?.tryParseInt;

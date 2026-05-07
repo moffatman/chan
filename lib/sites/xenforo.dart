@@ -427,6 +427,32 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 		return null;
 	}
 
+	@override
+  bool decodeUrlPossible(Uri url) {
+		if (url.host != baseUrl) {
+			return false;
+		}
+		final p = url.pathSegments.where((s) => s.isNotEmpty).toList();
+		if (basePath.isNotEmpty) {
+			for (final part in basePath.split('/').where((s) => s.isNotEmpty)) {
+				if (p.tryFirst != part) {
+					return false;
+				}
+				p.removeAt(0);
+			}
+		}
+		if (p.length >= 2 && p[0] == 'forums') {
+			return true;
+		}
+
+		if (p.length >= 2 && p[0] == 'threads') {
+			if (p[1].afterLast('.').tryParseInt != null) {
+				return true;
+			}
+		}
+		return false;
+  }
+
   @override
   Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url) async {
 		if (url.host != baseUrl) {

@@ -704,6 +704,20 @@ class ImageboardRegistry extends ChangeNotifier {
 		await Future.wait(futures);
 	}
 
+	bool decodeUrlPossible(Uri url) {
+		for (final imageboard in imageboardsIncludingDev) {
+			if (imageboard.site.decodeUrlPossible(url)) {
+				return true;
+			}
+			for (final archive in imageboard.site.archives) {
+				if (archive.decodeUrlPossible(url)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
 	Future<(Imageboard, BoardThreadOrPostIdentifier, String?)?> decodeUrl(Uri url) async {
 		for (final imageboard in imageboardsIncludingDev) {
 			BoardThreadOrPostIdentifier? dest = await imageboard.site.decodeUrl(url);

@@ -47,6 +47,7 @@ import 'package:chan/widgets/widget_decoration.dart';
 import 'package:csslib/visitor.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:chan/widgets/util.dart';
@@ -1870,6 +1871,25 @@ class PostLinkSpan extends PostTerminalSpan {
 
 	static final _trailingJunkPattern = RegExp(r'(\.[A-Za-z0-9\-._~]+)[^A-Za-z0-9\-._~\.\/?]+$');
 
+	AsyncSnapshot<EmbedData?>? _getSnapshot(PostSpanZoneData zone, bool showEmbeds) {
+		if (embedData != null) {
+			return AsyncSnapshot.withData(ConnectionState.done, embedData);
+		}
+		else if (showEmbeds) {
+			final check = zone.getFutureForComputation(
+				id: 'embedcheck $url',
+				work: () => SynchronousFuture(embedPossible(url))
+			).data;
+			if (check == true) {
+				return zone.getFutureForComputation(
+					id: 'noembed $url',
+					work: () => loadEmbedData(url, highQuality: false)
+				);
+			}
+		}
+		return null;
+	}
+
 	@override
 	build(context, post, zone, settings, theme, options) {
 		// Remove trailing bracket or other punctuation
@@ -1879,28 +1899,7 @@ class PostLinkSpan extends PostTerminalSpan {
 		);
 		final cleanedUri = Uri.tryParse(cleanedUrl);
 		if (!options.showRawSource && settings.useEmbeds) {
-			final AsyncSnapshot<EmbedData?>? snapshot;
-			if (embedData != null) {
-				snapshot = AsyncSnapshot.withData(ConnectionState.done, embedData);
-			}
-			else if (options.showEmbeds) {
-				final check = zone.getFutureForComputation(
-					id: 'embedcheck $url',
-					work: () => embedPossible(url)
-				);
-				if (check.data == true) {
-					snapshot = zone.getFutureForComputation(
-						id: 'noembed $url',
-						work: () => loadEmbedData(url, highQuality: false)
-					);
-				}
-				else {
-					snapshot = null;
-				}
-			}
-			else {
-				snapshot = null;
-			}
+			final snapshot = _getSnapshot(zone, options.showEmbeds);
 			if (snapshot != null) {
 				EmbedData? data = snapshot.data;
 				if (data?.attachments?.imageboard.key == zone.imageboard.key && (data?.attachments?.item.every((a) => post.attachments.any((b) => b.url == a.url)) ?? false)) {
@@ -2139,11 +2138,11 @@ class PostLinkSpan extends PostTerminalSpan {
 						);
 					}
 					onTap() {
-						final imageboardTarget = snapshot?.data?.imageboardTarget;
+						final imageboardTarget = snapshot.data?.imageboardTarget;
 						if (imageboardTarget != null) {
 							openImageboardTarget(context, imageboardTarget);
 						}
-						else if (snapshot?.data?.attachments case final attachments?) {
+						else if (snapshot.data?.attachments case final attachments?) {
 							final stackIds = zone.stackIds.toList();
 							if (stackIds.isNotEmpty) {
 								stackIds.removeLast();
@@ -2203,9 +2202,19 @@ class PostLinkSpan extends PostTerminalSpan {
 
 	@override
 	void _estimateHeight(_HeightEstimator estimator) {
-		// Complete hack
-		final id = 'noembed $url';
-		if ((estimator.zone?._futures[id]?.data ?? PostSpanZoneData._globalFutures[id]?.data) case EmbedData data when data.thumbnailUrl != null || data.thumbnailWidget != null || data.imageboardTarget != null) {
+		final snapshot = switch (estimator.zone) {
+			_ when !Settings.instance.useEmbeds => null,
+			final zone? => _getSnapshot(zone, true /* assumption */)?.data,
+			null when embedPossible(url) => const EmbedData(
+				// Just some dummy values that will render a minimum size button
+				title: '',
+				provider: '',
+				author: null,
+				thumbnailUrl: ''
+			),
+			_ => null
+		};
+		if (snapshot case final data? when data.thumbnailUrl != null || data.thumbnailWidget != null || data.imageboardTarget != null) {
 			final Size imageSize;
 			if (data.thumbnailUrl != null) {
 				imageSize = const Size(75, 75);
@@ -3252,19 +3261,27 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 		}
 		if (!_futures.containsKey(id)) {
 			_futures[id] = AsyncSnapshot<T>.waiting();
-			() async {
-				try {
-					final data = await work();
-					_futures[id] = AsyncSnapshot<T>.withData(ConnectionState.done, data);
-				}
-				catch (e) {
-					_futures[id] = AsyncSnapshot<T>.withError(ConnectionState.done, e);
-				}
-				_globalFutures[id] = _futures[id]!;
-				if (!disposed) {
-					notifyListeners();
-				}
-			}();
+			final future = work();
+			if (future is SynchronousFuture<T>) {
+				future.then((data) {
+					_globalFutures[id] = _futures[id] = AsyncSnapshot<T>.withData(ConnectionState.done, data);
+				});
+			}
+			else {
+				() async {
+					try {
+						final data = await future;
+						_futures[id] = AsyncSnapshot<T>.withData(ConnectionState.done, data);
+					}
+					catch (e) {
+						_futures[id] = AsyncSnapshot<T>.withError(ConnectionState.done, e);
+					}
+					_globalFutures[id] = _futures[id]!;
+					if (!disposed) {
+						notifyListeners();
+					}
+				}();
+			}
 		}
 		return _futures[id] as AsyncSnapshot<T>;
 	}

@@ -36,7 +36,7 @@ mixin DecodeGenericUrlMixin {
 	String get res;
 	@protected
 	String get basePath => '';
-	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url) async {
+	BoardThreadOrPostIdentifier? _decodeUrl(Uri url) {
 		if (url.host != baseUrl) {
 			return null;
 		}
@@ -68,6 +68,12 @@ mixin DecodeGenericUrlMixin {
 			return BoardThreadOrPostIdentifier(p[0]);
 		}
 		return null;
+	}
+	bool decodeUrlPossible(Uri url) {
+		return _decodeUrl(url) != null;
+	}
+	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url) async {
+		return _decodeUrl(url);
 	}
 }
 

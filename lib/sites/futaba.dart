@@ -145,8 +145,7 @@ class SiteFutaba extends ImageboardSite {
 		return process(body.nodes);
 	}
 
-	@override
-	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url) async {
+	BoardThreadOrPostIdentifier? _decodeUrl(Uri url) {
 		if (!url.host.endsWith(_baseBaseUrl ?? baseUrl)) {
 			return null;
 		}
@@ -162,6 +161,16 @@ class SiteFutaba extends ImageboardSite {
 				}
 		}
 		return null;
+	}
+
+	@override
+	bool decodeUrlPossible(Uri url) {
+		return _decodeUrl(url) != null;
+	}
+
+	@override
+	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url) async {
+		return _decodeUrl(url);
 	}
 
 	@override
