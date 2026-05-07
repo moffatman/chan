@@ -4036,7 +4036,11 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				}
 			}
 		}
-		double estimate = _items[nearestIndex].cachedOffset!;
+		final estimate0 = _items[nearestIndex].cachedOffset;
+		if (estimate0 == null) {
+			return null;
+		}
+		double estimate = estimate0;
 		if (targetIndex > nearestIndex) {
 			for (int j = nearestIndex; j < targetIndex; j++) {
 				estimate += _items[j].cachedHeight ?? averageItemHeight;
