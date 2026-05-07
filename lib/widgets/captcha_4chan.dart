@@ -908,6 +908,7 @@ class Captcha4ChanCustomChallengeText extends Captcha4ChanCustomChallenge {
 	final ui.Image? foregroundImage;
 	final ui.Image? backgroundImage;
 	final int? backgroundWidth;
+	String? _wipAnswer;
 
 	Captcha4ChanCustomChallengeText({
 		required super.request,
@@ -949,6 +950,7 @@ typedef Captcha4ChanCustomChallengeTasksTask = ({List<ui.Image> choices, Widget 
 
 class Captcha4ChanCustomChallengeTasks extends Captcha4ChanCustomChallenge {
 	final List<Captcha4ChanCustomChallengeTasksTask> tasks;
+	({List<int?> taskChoices, List<bool> collapseTasks})? _wipAnswer;
 
 	Captcha4ChanCustomChallengeTasks({
 		required super.request,
@@ -1099,9 +1101,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		setState(() {}); // numLetters may have changed
 	}
 
-	void _animateLocalGuess() {
+	void _animateLocalGuess(String? wipAnswer) {
 		try {
-			_lastGuesses = Chan4CustomCaptchaGuesses.dummy('000000', 10);
+			_lastGuesses = Chan4CustomCaptchaGuesses.dummy(wipAnswer ?? '000000', 10);
 			numLetters = _lastGuesses!.likelyNumLetters;
 			final selection = _solutionController.selection;
 			final lastResolvedPickerStuff = {
@@ -1142,7 +1144,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		}
 	}
 
-	Future<void> _animateGuess() async {
+	Future<void> _animateGuess(String? wipAnswer) async {
 		Settings.useCloudCaptchaSolverSetting.value ??= await showAdaptiveDialog<bool>(
 			context: context,
 			barrierDismissible: true,
@@ -1174,7 +1176,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				}
 			}
 		}
-		_animateLocalGuess();
+		_animateLocalGuess(wipAnswer);
 	}
 
 	_PickerStuff _getPickerStuffForWidgetIndex(int i) {
@@ -1239,17 +1241,28 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				backgroundSlide = 0;
 			}
 			if (useNewCaptchaForm) {
-				await _animateGuess();
+				await _animateGuess(challenge._wipAnswer);
 			}
 			else {
 				setState(() {});
 				_solutionController.clear();
+				if (challenge._wipAnswer case final wip?) {
+					_solutionController.text = wip;
+				}
 				_solutionNode.requestFocus();
 			}
 		}
 		else if (challenge case Captcha4ChanCustomChallengeTasks challenge) {
-			_taskChoices = List.filled(challenge.tasks.length, null);
-			_collapseTasks = List.filled(challenge.tasks.length, false);
+			if (challenge._wipAnswer case final wip? when wip.collapseTasks.length == challenge.tasks.length &&
+																										wip.taskChoices.length == challenge.tasks.length
+			) {
+				_taskChoices = wip.taskChoices;
+				_collapseTasks = wip.collapseTasks;
+			}
+			else {
+				_taskChoices = List.filled(challenge.tasks.length, null);
+				_collapseTasks = List.filled(challenge.tasks.length, false);
+			}
 			setState(() {});
 		}
 	}
@@ -1533,7 +1546,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 												backgroundSlide = await _alignImage(challenge);
 												setState(() {});
 											}
-											await _animateGuess();
+											await _animateGuess(null);
 										},
 										child: CustomPaint(
 											size: Size(min(challenge.backgroundImage?.width ?? challenge.foregroundImage!.width, challenge.foregroundImage!.width).toDouble(), challenge.foregroundImage!.height.toDouble()),
@@ -1571,7 +1584,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 												},
 												onChangeEnd: (newOffset) {
 													if (_solutionController.text.toUpperCase() == _lastGuess.guess.toUpperCase()) {
-														_animateGuess();
+														_animateGuess(null);
 													}
 												}
 											)
@@ -2110,6 +2123,14 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		final tryAgainAt = this.tryAgainAt;
 		if (tryAgainAt != null && tryAgainAt.isAfter(DateTime.now())) {
 			widget.onTryAgainAt?.call(tryAgainAt);
+		}
+		switch (challenge) {
+			case Captcha4ChanCustomChallengeText text:
+				text._wipAnswer = _solutionController.text;
+			case Captcha4ChanCustomChallengeTasks tasks:
+				tasks._wipAnswer = (taskChoices: _taskChoices, collapseTasks: _collapseTasks);
+			default:
+				break;
 		}
 		super.dispose();
 		_solutionNode.dispose();
