@@ -84,7 +84,7 @@ class ScrollTracker {
 		}
 		else if (notification is ScrollMetricsNotification) {
 			final isMeaningfullyScrollable = (notification.metrics.extentBefore + notification.metrics.extentAfter) > 500;
-			if (!isMeaningfullyScrollable) {
+			if (!isMeaningfullyScrollable && notification.metrics.axis == Axis.vertical) {
 				// Scrollable size has shrunk, show the bars
 				slowScrollDirection.value = VerticalDirection.up;
 			}
