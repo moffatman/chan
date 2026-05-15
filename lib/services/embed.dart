@@ -65,7 +65,7 @@ class EmbedData {
 	final String? author;
 	final String? thumbnailUrl;
 	final Widget? thumbnailWidget;
-	final (Imageboard imageboard, BoardThreadOrPostIdentifier target, String? useArchive)? imageboardTarget;
+	final (String? imageboardKey, BoardThreadOrPostIdentifier target, String? useArchive)? imageboardTarget;
 	final ImageboardScoped<List<Attachment>>? attachments;
 
 	const EmbedData({
@@ -215,7 +215,7 @@ Future<EmbedData?> loadEmbedData(String url, {required bool highQuality}) {
 					provider: target.$1.site.name,
 					author: target.$1.site.formatUsername(post.name),
 					thumbnailUrl: post.attachments.tryFirst?.thumbnailUrl ?? thread.attachments.tryFirst?.thumbnailUrl,
-					imageboardTarget: target
+					imageboardTarget: (target.$1.key, target.$2, target.$3)
 				);
 			}
 			String title = thread.title ?? thread.posts_.first.buildText();
@@ -228,7 +228,7 @@ Future<EmbedData?> loadEmbedData(String url, {required bool highQuality}) {
 				provider: '${target.$1.site.name} (${target.$1.site.formatBoardName(thread.board)})',
 				author: target.$1.site.formatUsername(post.name),
 				thumbnailUrl: post.attachments.tryFirst?.thumbnailUrl ?? thread.attachments.tryFirst?.thumbnailUrl,
-				imageboardTarget: target
+				imageboardTarget: (target.$1.key, target.$2, target.$3)
 			);
 		}
 		final attachments = await ImageboardRegistry.instance.loadEmbedData(uri);

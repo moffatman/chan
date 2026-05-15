@@ -1833,37 +1833,60 @@ class PostLinkSpan extends PostTerminalSpan {
 		if (embedData?.thumbnailWidget != null) {
 			throw PostSpanDumpException('embedData.thumbnailWidget ${embedData?.thumbnailWidget} not supported');
 		}
-		if (embedData?.imageboardTarget != null) {
-			throw PostSpanDumpException('embedData.imageboardTarget ${embedData?.imageboardTarget} not supported');
-		}
 		if (embedData?.attachments != null) {
 			throw PostSpanDumpException('embedData.attachments ${embedData?.attachments} not supported');
 		}
 		if (writeTypeId) builder.addByte(kTypeId);
 		builder.addString(url);
 		builder.addStringNullable(name);
-		builder.addBool(embedData != null);
+		if (embedData?.imageboardTarget != null) {
+			builder.addByte(0x02);
+		}
+		else if (embedData != null) {
+			builder.addByte(0x01);
+		}
+		else {
+			builder.addByte(0x00);
+		}
 		if (embedData != null) {
 			builder.addStringNullable(embedData?.title);
 			builder.addStringNullable(embedData?.provider);
 			builder.addStringNullable(embedData?.author);
 			builder.addStringNullable(embedData?.thumbnailUrl);
+			if (embedData?.imageboardTarget case final target?) {
+				builder.addStringNullable(target.$1);
+				builder.addString(target.$2.board);
+				builder.addIntVarNullable(target.$2.threadId);
+				builder.addIntVarNullable(target.$2.postId);
+				builder.addStringNullable(target.$3);
+			}
 		}
 	}
 	static PostLinkSpan read(ByteReader buffer) {
 		final url = buffer.takeString();
 		final name = buffer.takeStringNullable();
 		EmbedData? embedData;
-		if (buffer.takeBool()) {
+		final byte = buffer.takeUint8();
+		if (byte > 0) {
 			final title = buffer.takeStringNullable();
 			final provider = buffer.takeStringNullable();
 			final author = buffer.takeStringNullable();
 			final thumbnailUrl = buffer.takeStringNullable();
+			(String? imageboardKey, BoardThreadOrPostIdentifier target, String? useArchive)? imageboardTarget;
+			if (byte > 1) {
+				final imageboardKey = buffer.takeStringNullable();
+				final board = buffer.takeString();
+				final threadId = buffer.takeIntVarNullable();
+				final postId = buffer.takeIntVarNullable();
+				final useArchive = buffer.takeStringNullable();
+				imageboardTarget = (imageboardKey, BoardThreadOrPostIdentifier(board, threadId, postId), useArchive);
+			}
 			embedData = EmbedData(
 				title: title,
 				provider: provider,
 				author: author,
-				thumbnailUrl: thumbnailUrl
+				thumbnailUrl: thumbnailUrl,
+				imageboardTarget: imageboardTarget
 			);
 		}
 		return PostLinkSpan(url, name: name, embedData: embedData);
@@ -1908,7 +1931,7 @@ class PostLinkSpan extends PostTerminalSpan {
 					data = null;
 				}
 				final imageboardTarget = data?.imageboardTarget;
-				if (imageboardTarget != null && imageboardTarget.$1.key == zone.imageboard.key) {
+				if (imageboardTarget != null && (imageboardTarget.$1 ?? zone.imageboard.key) == zone.imageboard.key) {
 					final thread = imageboardTarget.$2.threadIdentifier;
 					if (thread != null) {
 						if (zone.imageboard.site.explicitIds) {
@@ -2098,7 +2121,7 @@ class PostLinkSpan extends PostTerminalSpan {
 					}
 					if (tapChildChild == null && data?.imageboardTarget != null) {
 						tapChildChild = ImageboardIcon(
-							imageboardKey: data?.imageboardTarget?.$1.key,
+							imageboardKey: (data?.imageboardTarget?.$1 ?? zone.imageboard.key),
 							boardName: data?.imageboardTarget?.$2.board
 						);
 					}
@@ -2140,7 +2163,7 @@ class PostLinkSpan extends PostTerminalSpan {
 					onTap() {
 						final imageboardTarget = snapshot.data?.imageboardTarget;
 						if (imageboardTarget != null) {
-							openImageboardTarget(context, imageboardTarget);
+							openImageboardTarget(context, (ImageboardRegistry.instance.getImageboard(imageboardTarget.$1) ?? zone.imageboard, imageboardTarget.$2, imageboardTarget.$3));
 						}
 						else if (snapshot.data?.attachments case final attachments?) {
 							final stackIds = zone.stackIds.toList();
@@ -2205,6 +2228,7 @@ class PostLinkSpan extends PostTerminalSpan {
 		final snapshot = switch (estimator.zone) {
 			_ when !Settings.instance.useEmbeds => null,
 			final zone? => _getSnapshot(zone, true /* assumption */)?.data,
+			null when embedData != null => embedData,
 			null when embedPossible(url) => const EmbedData(
 				// Just some dummy values that will render a minimum size button
 				title: '',
