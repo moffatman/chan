@@ -764,6 +764,7 @@ class ChanTabs extends ChangeNotifier {
 		if (newHomeBoard != _lastHomeBoard) {
 			if (Persistence.tabs.first.imageboardKey == _lastHomeBoard.$1
 			 		&& Persistence.tabs.first.board == _lastHomeBoard.$2
+					&& !Persistence.tabs.first.incognito
 			) {
 				if (newHomeBoard.$1 != null) {
 					// Edit existing tab
@@ -790,6 +791,7 @@ class ChanTabs extends ChangeNotifier {
 				&& !(Persistence.tabs.first.imageboardKey == newHomeBoard.$1
 							&& Persistence.tabs.first.board == newHomeBoard.$2
 							&& Persistence.tabs.first.thread == null
+							&& !Persistence.tabs.first.incognito
 				)
 			) {
 				// Insert new tab
