@@ -1,3 +1,4 @@
+import 'package:chan/models/board.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/network_image.dart';
@@ -9,6 +10,7 @@ class ImageboardIcon extends StatelessWidget {
 	final ImageboardSite? site;
 	final String? imageboardKey;
 	final String? boardName;
+	final ImageboardBoard? board;
 	final double size;
 	final bool applyTextScaling;
 
@@ -16,6 +18,7 @@ class ImageboardIcon extends StatelessWidget {
 		this.site,
 		this.imageboardKey,
 		this.boardName,
+		this.board,
 		this.size = 16,
 		this.applyTextScaling = false,
 		Key? key
@@ -37,7 +40,14 @@ class ImageboardIcon extends StatelessWidget {
 		}
 		Uri? url = site.iconUrl;
 		bool clipOval = false;
-		if (boardName != null) {
+		if (board != null) {
+			final boardUrl = board?.icon;
+			if (boardUrl != null) {
+				url = boardUrl;
+				clipOval = true;
+			}
+		}
+		else if (boardName != null) {
 			final boardUrl = imageboard?.persistence.getBoard(boardName!).icon;
 			if (boardUrl != null) {
 				url = boardUrl;

@@ -998,7 +998,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																	const SizedBox(width: 16),
 																	ImageboardIcon(
 																		imageboardKey: imageboard.key,
-																		boardName: board.name,
+																		board: board,
 																		size: 24
 																	),
 																	const SizedBox(width: 16),
@@ -1192,7 +1192,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																			padding: const EdgeInsets.only(left: 2),
 																			child: ImageboardIcon(
 																				imageboardKey: imageboard.key,
-																				boardName: board.name,
+																				board: board,
 																				size: 13
 																			)
 																		),
