@@ -2753,7 +2753,9 @@ class PostTableSpan extends PostSpan {
 				scrollDirection: Axis.horizontal,
 				physics: const BouncingScrollPhysics(),
 				child: Table(
-					defaultColumnWidth: IntrinsicColumnWidthWithMaxWidth(
+					defaultColumnWidth: (!options.shrinkWrap && rows.every((r) => r.length == 1)) ? FixedColumnWidth(
+						maxWidth
+					) : IntrinsicColumnWidthWithMaxWidth(
 						flex: null,
 						maxWidth: maxWidth
 					),
@@ -2766,7 +2768,7 @@ class PostTableSpan extends PostSpan {
 								padding: const EdgeInsets.all(4),
 								child: Text.rich(
 									col.build(context, post, zone, settings, theme, options),
-									textAlign: TextAlign.left,
+									textAlign: !options.shrinkWrap && row.length == 1 ? TextAlign.center : TextAlign.left,
 									textScaler: TextScaler.noScaling
 								)
 							)
@@ -2793,6 +2795,7 @@ class PostTableSpan extends PostSpan {
 	@override
 	void _estimateHeight(_HeightEstimator estimator) {
 		// Horizontally scrolling
+		estimator.addHardLineBreak();
 		for (final _ in rows) {
 			estimator.addHardLineBreak();
 		}

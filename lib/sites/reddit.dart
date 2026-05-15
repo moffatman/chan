@@ -408,7 +408,14 @@ class SiteReddit extends ImageboardSite {
 						}
 					}
 					else if (node.localName == 'table') {
-						yield PostTableSpan(node.querySelectorAll('tr').map((tr) => tr.querySelectorAll('td,th').map((td) => PostNodeSpan(visit(td.nodes).toList())).toList()).toList());
+						yield PostTableSpan(
+							node.querySelectorAll('tr')
+								.map((tr) => tr.querySelectorAll('td,th')
+									.map((td) => PostNodeSpan(visit(td.nodes).toList(growable: false))
+								).toList(growable: false))
+								.where((r) => r.any((e) => e.children.isNotEmpty))
+								.toList()
+						);
 					}
 					else if (node.localName == 'hr') {
 						yield const PostDividerSpan();
