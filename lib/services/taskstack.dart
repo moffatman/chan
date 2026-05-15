@@ -17,11 +17,14 @@ class TaskStack {
 		if (future == null) {
 			return Future.value();
 		}
+		if (_completer.isCompleted) {
+			return future;
+		}
 		final index = ++_index;
 		_lastFuture = _lastFuture.then((_) => future.safe).then((_) {
 			// Give some time for another hold to start
 			Future.microtask(() {
-				if (index == _index) {
+				if (index == _index && !_completer.isCompleted) {
 					_completer.complete();
 				}
 			});
