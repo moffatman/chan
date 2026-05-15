@@ -4151,6 +4151,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				useDummyItemsInRange = null;
 				state?._rebuild();
 				await SchedulerBinding.instance.endOfFrame;
+				await SchedulerBinding.instance.endOfFrame;
 			}
 			finally {
 				_unlockSliverList();
@@ -4159,8 +4160,8 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		else {
 			// Just to be safe
 			useDummyItemsInRange = null;
-			await _animateToIndex(targetIndex, alignment: alignment, duration: duration, curve: curve, startPixels: startPixels, revealIfHidden: revealIfHidden);
 		}
+		await _animateToIndex(targetIndex, alignment: alignment, duration: duration, curve: curve, startPixels: startPixels, revealIfHidden: revealIfHidden);
 	}
 	void _lockSliverListAtIndex(int index) {
 		assert(index >= 0);
