@@ -1861,7 +1861,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			// It can't be done, layout breaks down
 			dummy = false;
 		}
-		if (_refreshableTreeItems._dummyCache[value._key] case _DummyStatus(type: _DummyStatusType.previously, height: final height) when !dummy) {
+		if (_refreshableTreeItems._dummyCache[value._key] case _DummyStatus(type: _DummyStatusType.now, height: final height) when !dummy) {
 			_refreshableTreeItems._dummyCache[value._key] = _DummyStatus(_DummyStatusType.previously, height);
 		}
 		if (dummy) {
