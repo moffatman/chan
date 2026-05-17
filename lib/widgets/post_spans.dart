@@ -437,12 +437,22 @@ class _PostWrapperSpan extends PostTerminalSpan {
 	void dump(BytesBuilder builder, {bool writeTypeId = true}) => throw PostSpanDumpException('Can\'t encode _PostWrapperSpan($span)');
 	@override
 	void _estimateHeight(_HeightEstimator estimator) {
-		switch (span) {
-			case WidgetSpan(child: SizedBox(width: final width?, height: final height?)):
-				estimator.addRect(Size(width, height));
-			default:
-				estimator.addPlaintext(span.toPlainText());
+		void descend(InlineSpan span) {
+			switch (span) {
+				case WidgetSpan(child: SizedBox(width: final width?, height: final height?)):
+					estimator.addRect(Size(width, height));
+				case WidgetSpan(child: Container(constraints: final constraints?)) when constraints.isTight:
+					estimator.addRect(Size(constraints.maxWidth, constraints.maxHeight));
+				case TextSpan(text: final text, children: final children):
+					if (text != null) {
+						estimator.addPlaintext(text);
+					}
+					children?.forEach(descend);
+				default:
+					estimator.addPlaintext(span.toPlainText());
+			}
 		}
+		descend(span);
 	}
 }
 
