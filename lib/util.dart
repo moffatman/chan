@@ -1046,6 +1046,11 @@ T dprintIf<T>(bool shouldPrint, T obj, {String label = 'dprintIf'}) {
 	return obj;
 }
 
+R rprint<R>(String str, R r) {
+	print(str);
+	return r;
+}
+
 extension Bind1<In, Out> on Out Function(In) {
 	Out Function() bind1(In v) => () => this(v);
 	Out Function()? maybeBind1(In? v) {
