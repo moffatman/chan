@@ -1384,7 +1384,10 @@ class ThreadPageState extends State<ThreadPage> {
 		else if (firstLoad && tmpPersistentState == persistentState) {
 			shouldScroll = true;
 		}
-		if (firstLoad) {
+		if (firstLoad
+				&& widget.initialPostId == null
+				&& !(mounted && (context.read<PersistentBrowserTab?>()?.initialPostId.containsKey(widget.thread) ?? false))
+		) {
 			// Don't highlight the first-loaded posts, it looks bad to have everything highlighted
 			for (final id in persistentState.unseenPostIds.data) {
 				_highlightPosts[id] = _kHighlightZero;
@@ -1961,7 +1964,15 @@ class ThreadPageState extends State<ThreadPage> {
 																	_ => false
 																}),
 																autoUpdateDuration: persistentState.disableUpdates ? null : autoUpdateDuration,
-																initialList: persistentState.thread?.posts ?? (site.isPaged ? null : site.getThreadFromCatalogCache(widget.thread)?.posts_.sublist(0, 1)),
+																initialList: persistentState.thread?.posts
+																								?? (
+																									(
+																										site.isPaged
+																											|| widget.initialPostId != null
+																											|| (context.read<PersistentBrowserTab?>()?.initialPostId.containsKey(widget.thread) ?? false)
+																									) ? null
+																										: site.getThreadFromCatalogCache(widget.thread)?.posts_.sublist(0, 1)
+																								),
 																initialTreeSplitId: persistentState.treeSplitId,
 																onTreeSplitIdChanged: (newId) {
 																	persistentState.treeSplitId = newId;
