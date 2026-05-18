@@ -34,6 +34,18 @@ void main() {
 			final text = r[0] as PostTextSpan;
 			expect(text.text, 'talking about.You too');
 		});
+
+		test('link at end of bracketed text, with suffix', () {
+			final r = Site4Chan.parsePlaintext('bootloader (https://github.com/Limine-Bootloader/Limine), amongst').toList();
+			expect(r, hasLength(3));
+			final text1 = r[0] as PostTextSpan;
+			expect(text1.text, 'bootloader (');
+			final link = r[1] as PostLinkSpan;
+			expect(link.url, 'https://github.com/Limine-Bootloader/Limine');
+			expect(link.name, 'https://github.com/Limine-Bootloader/Limine');
+			final text2 = r[2] as PostTextSpan;
+			expect(text2.text, '), amongst');
+		});
 	});
 
 	group('SiteReddit', () {

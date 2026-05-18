@@ -194,12 +194,13 @@ class LooseUrlLinkifier extends Linkifier {
             String end = '';
 
             /// (... $link)
+            final bracketIndex = originalUrl.indexOf(')');
             if (
-                  originalUrl.endsWith(')')
+                  bracketIndex != -1
                   && (element.text.lastIndexOf('(', match.start) > element.text.lastIndexOf(')', match.start))
             ) {
-              end = ')$end';
-              originalUrl = originalUrl.substring(0, originalUrl.length - 1);
+              end = '${originalUrl.substring(bracketIndex)}$end';
+              originalUrl = originalUrl.substring(0, bracketIndex);
             }
 
             if (options.excludeLastPeriod) {
@@ -250,6 +251,15 @@ class LooseUrlLinkifier extends Linkifier {
         run(0);
       } else {
         list.add(element);
+      }
+    }
+
+    // Defragment elements due to regex [end]
+    for (int i = 1; i < list.length; i++) {
+      if ((list[i - 1], list[i]) case (TextElement a, TextElement b)) {
+        list[i - 1] = TextElement(a.text + b.text);
+        list.removeAt(i);
+        i--;
       }
     }
 
