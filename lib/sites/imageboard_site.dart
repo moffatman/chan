@@ -1967,15 +1967,8 @@ abstract class ImageboardSiteArchive {
 		if (identifier == null) {
 			return null;
 		}
-		final caches = _catalogCache[identifier.board];
-		if (caches == null) {
-			final temporary = _temporaryThreadCache[identifier];
-			if (temporary != null && (constraints == null || temporary.satisfiesConstraints(constraints))) {
-				return temporary.thread;
-			}
-			return null;
-		}
-		for (final cache in caches.values) {
+		final caches = _catalogCache[identifier.board]?.values ?? [];
+		for (final cache in caches) {
 			if (constraints != null && !cache.satisfiesConstraints(constraints)) {
 				continue;
 			}
@@ -1983,6 +1976,10 @@ abstract class ImageboardSiteArchive {
 			if (thread != null) {
 				return thread;
 			}
+		}
+		final temporary = _temporaryThreadCache[identifier];
+		if (temporary != null && (constraints == null || temporary.satisfiesConstraints(constraints))) {
+			return temporary.thread;
 		}
 		return null;
 	}
