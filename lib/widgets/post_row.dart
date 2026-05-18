@@ -479,7 +479,7 @@ class PostRow extends StatelessWidget {
 								onTap?.call();
 							}
 						},
-						child: isDeletedStub ? const SizedBox(height: 14) : RichTextWithBottomRightCornerWidget(
+						child: isDeletedStub ? const SizedBox(height: 0) : RichTextWithBottomRightCornerWidget(
 							TextSpan(
 								children: [
 									if (
