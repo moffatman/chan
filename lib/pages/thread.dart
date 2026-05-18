@@ -2968,6 +2968,12 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 											for (final buttons in [
 												[(describeCount(youIds.length, 'submission'), const Icon(CupertinoIcons.person, size: 19, applyTextScaling: true), youIds.isEmpty ? null : () {
 														WeakNavigator.push(context, PostsPage(
+															header: Container(
+																color: theme.barColor,
+																padding: const EdgeInsets.all(16),
+																alignment: Alignment.center,
+																child: Text(describeCount(youIds.length, 'submission'))
+															),
 															zone: widget.zone,
 															postsIdsToShow: youIds,
 															onTap: (post) {
@@ -2979,6 +2985,12 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 												})],
 												[(describeCount(_youIds.length, '(You)'), const Icon(CupertinoIcons.reply_all, size: 19, applyTextScaling: true), _youIds.isEmpty ? null : () {
 														WeakNavigator.push(context, PostsPage(
+															header: Container(
+																color: theme.barColor,
+																padding: const EdgeInsets.all(16),
+																alignment: Alignment.center,
+																child: Text(describeCount(_youIds.length, '(You)'))
+															),
 															zone: widget.zone,
 															postsIdsToShow: _youIds,
 															onTap: (post) {

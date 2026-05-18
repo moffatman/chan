@@ -61,7 +61,7 @@ class PostsPage extends StatefulWidget {
 		this.onThumbnailTap,
 		this.isRepliesForPostId,
 		this.clearStack = false,
-		this.header,
+		required this.header,
 		Key? key
 	}) : super(key: key);
 

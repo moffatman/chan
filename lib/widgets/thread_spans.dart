@@ -3,6 +3,8 @@ import 'dart:math';
 import 'package:chan/models/flag.dart';
 import 'package:chan/pages/posts.dart';
 import 'package:chan/services/countries.dart';
+import 'package:chan/services/settings.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/cupertino_inkwell.dart';
@@ -55,6 +57,23 @@ InlineSpan makeFlagSpan({
 				}
 				else {
 					easyButton = ('${postIdsToShow.length} posts', () => WeakNavigator.push(context, PostsPage(
+						header: Container(
+							color: Settings.instance.theme.barColor,
+							padding: const EdgeInsets.all(16),
+							alignment: Alignment.center,
+							child: Text.rich(TextSpan(
+								children: [
+									TextSpan(text: '${describeCount(postIdsToShow.length, 'post')} from '),
+									makeFlagSpan(
+										context: null,
+										zone: zone,
+										flag: part,
+										includeTextOnlyContent: true,
+										appendLabels: true
+									)
+								]
+							))
+						),
 						postsIdsToShow: postIdsToShow,
 						zone: zone
 					)));

@@ -459,6 +459,7 @@ class PostRow extends StatelessWidget {
 		openReplies() {
 			if (replyIds.isNotEmpty) {
 				WeakNavigator.push(context, PostsPage(
+					header: null,
 					postsIdsToShow: replyIds,
 					postIdForBackground: latestPost.id,
 					zone: parentZone.childZoneFor(latestPost.id),
@@ -1350,6 +1351,7 @@ class PostRow extends StatelessWidget {
 				style: expandedInlineWithin != null ? PostSpanZoneStyle.expandedInline : null,
 				child: (replyIds.isNotEmpty) ? SliderBuilder(
 					popup: PostsPage(
+						header: null,
 						postsIdsToShow: replyIds,
 						postIdForBackground: latestPost.id,
 						zone: parentZone.childZoneFor(latestPost.id),

@@ -1220,6 +1220,7 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 				if (!settings.mouseSettings.supportMouse || settings.mouseModeQuoteLinkBehavior == MouseModeQuoteLinkBehavior.popupPostsPage) {
 					zone.highlightQuoteLinkId = postId;
 					await WeakNavigator.push(context, PostsPage(
+						header: null,
 						zone: zone.childZoneFor(postId),
 						postsIdsToShow: [postId],
 						postIdForBackground: zone.stackIds.last,
@@ -4164,6 +4165,17 @@ TextSpan buildPostInfoRow({
 						}
 						else {
 							WeakNavigator.push(context, PostsPage(
+								header: Container(
+									color: theme.barColor,
+									padding: const EdgeInsets.all(16),
+									alignment: Alignment.center,
+									child: Text.rich(TextSpan(
+										children: [
+											TextSpan(text: '${describeCount(postIdsToShow.length, 'post')} from '),
+											IDSpan(id: post.posterId!, onPressed: null)
+										]
+									))
+								),
 								postsIdsToShow: postIdsToShow,
 								onThumbnailTap: propagatedOnThumbnailTap,
 								zone: zone
