@@ -176,8 +176,6 @@ class _RenderCheatingParagraph extends RenderBox with SlottedContainerRenderObje
 		return false;
 	}
 
-	// TODO: Steal intrinsics from TextPainter
-
 	@override
 	double computeMinIntrinsicWidth(double height) {
 		final paragraphWidth = _paragraph!.getMinIntrinsicWidth(height);
@@ -210,6 +208,25 @@ class _RenderCheatingParagraph extends RenderBox with SlottedContainerRenderObje
 
 	@override
 	Size computeDryLayout(BoxConstraints constraints) {
-		return _paragraph!.getDryLayout(constraints);
+		final paragraphSize = _paragraph!.getDryLayout(constraints);
+		if (_decoration == null) {
+			return paragraphSize;
+		}
+		final decorationSize = _decoration!.getDryLayout(constraints.loosen());
+		final double decorationTop;
+		// Assuming any renderobject around the paragraph does not change the layout (mouseregion)
+		if (_extractParagraph(_paragraph) case final paragraph?) {
+			decorationTop = _calculateDecorationTop(
+				biggest: constraints.biggest,
+				decoration: decorationSize,
+				paragraphHeight: paragraphSize.height,
+				hitTest: (o) => paragraph.textIntrinsics.getOffsetForCaret(paragraph.textIntrinsics.getPositionForOffset(o), Rect.zero)
+			);
+		}
+		else {
+			decorationTop = constraints.constrainHeight(paragraphSize.height + decorationSize.height) - decorationSize.height;
+		}
+		final width = constraints.maxWidth.isFinite ? constraints.maxWidth : paragraphSize.width;
+		return Size(width, decorationTop + decorationSize.height);
 	}
 }
