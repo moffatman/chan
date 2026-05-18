@@ -174,22 +174,32 @@ class _RenderCheatingParagraph extends RenderBox with SlottedContainerRenderObje
 
 	@override
 	double computeMinIntrinsicWidth(double height) {
-		return math.max(_paragraph!.computeMinIntrinsicWidth(height), _decoration!.computeMinIntrinsicWidth(height));
+		final paragraphWidth = _paragraph!.getMinIntrinsicWidth(height);
+		if (_decoration == null) {
+			return paragraphWidth;
+		}
+		final decorationWidth = _decoration!.getMinIntrinsicWidth(height);
+		return math.max(paragraphWidth, decorationWidth);
 	}
 
 	@override
 	double computeMaxIntrinsicWidth(double height) {
-		return math.max(_paragraph!.computeMaxIntrinsicWidth(height), _decoration!.computeMaxIntrinsicWidth(height));
+		final paragraphWidth = _paragraph!.getMaxIntrinsicWidth(height);
+		if (_decoration == null) {
+			return paragraphWidth;
+		}
+		final decorationWidth = _decoration!.getMaxIntrinsicWidth(height);
+		return math.max(paragraphWidth, decorationWidth);
 	}
 
 	@override
 	double computeMinIntrinsicHeight(double width) {
-		return _paragraph!.computeMinIntrinsicHeight(width);
+		return _paragraph!.getMinIntrinsicHeight(width);
 	}
 
 	@override
 	double computeMaxIntrinsicHeight(double width) {
-		return _paragraph!.computeMaxIntrinsicHeight(width);
+		return _paragraph!.getMaxIntrinsicHeight(width);
 	}
 
 	@override
