@@ -2197,28 +2197,31 @@ class AttachmentViewer extends StatelessWidget {
 						centerWithPage(
 							child: AnimatedSwitcher(
 								duration: const Duration(milliseconds: 250),
-								child: (controller.overlayText != null) ? Container(
-									padding: const EdgeInsets.all(8),
-									margin: const EdgeInsets.only(
-										top: 12,
-										bottom: 12
-									),
-									decoration: const BoxDecoration(
-										color: Colors.black54,
-										borderRadius: BorderRadius.all(Radius.circular(8))
-									),
-									child: IntrinsicWidth(
-										child: Column(
-											mainAxisSize: MainAxisSize.min,
-											children: [
-												Text(
-													controller.overlayText!,
-													style: const TextStyle(
-														fontSize: 32,
-														color: Colors.white
+								child: (controller.overlayText != null) ? RotatedBox(
+									quarterTurns: _rotate90DegreesClockwise ? 1 : 0,
+									child: Container(
+										padding: const EdgeInsets.all(8),
+										margin: const EdgeInsets.only(
+											top: 12,
+											bottom: 12
+										),
+										decoration: const BoxDecoration(
+											color: Colors.black54,
+											borderRadius: BorderRadius.all(Radius.circular(8))
+										),
+										child: IntrinsicWidth(
+											child: Column(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													Text(
+														controller.overlayText!,
+														style: const TextStyle(
+															fontSize: 32,
+															color: Colors.white
+														)
 													)
-												)
-											]
+												]
+											)
 										)
 									)
 								) : const SizedBox.shrink()
