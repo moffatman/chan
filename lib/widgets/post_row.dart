@@ -13,6 +13,7 @@ import 'package:chan/services/share.dart';
 import 'package:chan/services/translation.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/widgets/adaptive.dart';
+import 'package:chan/widgets/cheating_paragraph.dart';
 import 'package:chan/widgets/cupertino_inkwell.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/popup_attachment.dart';
@@ -478,7 +479,7 @@ class PostRow extends StatelessWidget {
 								onTap?.call();
 							}
 						},
-						child: isDeletedStub ? const SizedBox(height: 14) : Text.rich(
+						child: isDeletedStub ? const SizedBox(height: 14) : RichTextWithBottomRightCornerWidget(
 							TextSpan(
 								children: [
 									if (
@@ -514,25 +515,23 @@ class PostRow extends StatelessWidget {
 											addExpandingPosts: settings.supportMouse != TristateSystemSetting.a,
 											hideThumbnails: hideThumbnails
 										),
-										stripTrailingNewline: true,
-										postInject: showReplyCount ? (overrideReplyCount != null ? WidgetSpan(
-											alignment: PlaceholderAlignment.top,
-											child: Visibility(
-												visible: false,
-												maintainSize: true,
-												maintainAnimation: true,
-												maintainState: true,
-												child: Padding(
-													padding: const EdgeInsets.only(left: 8, right: 8),
-													child: overrideReplyCount!
-												)
-											)
-										) : ((settings.cloverStyleRepliesButton || replyIds.isEmpty) ? null : WidgetSpan(
-											child: SizedBox(width: (4 + replyIds.length.numberOfDigitsLinear) * 8)
-										))) : null
+										stripTrailingNewline: true
 									)
 								]
 							),
+							assumeTopMargin: 8.0,
+							cornerWidget: showReplyCount ? (overrideReplyCount != null ? Visibility(
+								visible: false,
+								maintainSize: true,
+								maintainAnimation: true,
+								maintainState: true,
+								child: Padding(
+									padding: const EdgeInsets.only(left: 8, right: 8, top: 8),
+									child: overrideReplyCount!
+								)
+							) : ((settings.cloverStyleRepliesButton || replyIds.isEmpty) ? null :
+								SizedBox(width: (4 + replyIds.length.numberOfDigitsLinear) * 8, height: 28)
+							)) : null,
 							overflow: TextOverflow.fade
 						)
 					)
