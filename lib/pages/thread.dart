@@ -407,11 +407,24 @@ class ThreadPageState extends State<ThreadPage> {
 		else if (persistentState.firstVisiblePostId != null) {
 			postId = persistentState.firstVisiblePostId!;
 			targetAlignment = persistentState.firstVisiblePostAlignment;
+			if (postId == persistentState.threadId && (targetAlignment ?? 0) < 0.5) {
+				if (_useAllDummies) {
+					setState(() {
+						_useAllDummies = false;
+					});
+				}
+				return;
+			}
 		}
 		else if (persistentState.lastSeenPostId != null) {
 			postId = persistentState.lastSeenPostId!;
 		}
 		else {
+			if (_useAllDummies) {
+				setState(() {
+					_useAllDummies = false;
+				});
+			}
 			// Nothing to scroll to
 			return;
 		}
