@@ -102,15 +102,21 @@ class _RenderCheatingParagraph extends RenderBox with SlottedContainerRenderObje
 		required Size biggest,
 		required Offset Function(Offset) hitTest
 	}) {
+		Offset? lastPosition;
 		double decorationTop = math.min(math.max(decoration.height, paragraphHeight), biggest.height - decoration.height);
-		final minDecorationTop = math.max(2.0, paragraphHeight - decoration.height);
+		final minDecorationTop = math.max(0.0, paragraphHeight - decoration.height);
 		while (decorationTop > minDecorationTop) {
 			final position = hitTest(Offset(double.infinity, decorationTop - 2.0 /* some small delta to go into next line */));
+			if (position == lastPosition) {
+				// Avoid infinite loop
+				break;
+			}
 			final availableWidth = biggest.width - position.dx;
 			if (availableWidth < decoration.width) {
 				return decorationTop;
 			}
 			decorationTop = position.dy;
+			lastPosition = position;
 		}
 		return math.max(-_assumeTopMargin, paragraphHeight - decoration.height);
 	}
