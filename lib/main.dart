@@ -717,6 +717,7 @@ class ChanTabs extends ChangeNotifier {
 		_onImageboardRegistryUpdate();
 		for (final tab in Persistence.tabs) {
 			tab.addListener(_onTabUpdate);
+			tab.threadForPullTab = tab.thread;
 		}
 		_lastHomeBoard = (Settings.instance.homeImageboardKey, Settings.instance.homeBoardName);
 		Settings.instance.addListener(_onSettingsUpdate);
