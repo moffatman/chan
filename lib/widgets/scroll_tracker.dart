@@ -17,6 +17,7 @@ class ScrollTracker {
 	}
 	double _accumulatedScrollDelta = 0;
 	bool _thisScrollHasDragDetails = false;
+	double? _thisScrollEstimatedDestination;
 	final _someNavigatorNavigated = EasyListenable();
 	ChangeNotifier get someNavigatorNavigated => _someNavigatorNavigated;
 
@@ -44,7 +45,8 @@ class ScrollTracker {
 				return false;
 			}
 			if (notification.context case final context?) {
-				final primaryMetrics = PrimaryScrollController.maybeOf(context)?.tryPosition;
+				final primaryController = PrimaryScrollController.maybeOf(context);
+				final primaryMetrics = primaryController?.tryPosition;
 				if (primaryMetrics?.viewportDimension != notification.metrics.viewportDimension
 						|| primaryMetrics?.pixels != notification.metrics.pixels) {
 					// Not a real scroll of primary scrollable
@@ -54,11 +56,16 @@ class ScrollTracker {
 					// Background tab or something
 					return false;
 				}
+				// ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+				if (primaryController?.tryPosition?.activity case BallisticScrollActivity activity) {
+					_thisScrollEstimatedDestination = activity.simulation.x(double.infinity);
+				}
 			}
 			final isMeaningfullyScrollable = _isMeaningfullyScrollable(notification.metrics);
 			if (notification is ScrollStartNotification) {
 				isScrolling.value = true;
 				_thisScrollHasDragDetails = false;
+				_thisScrollEstimatedDestination = null;
 			}
 			else if (notification is ScrollEndNotification) {
 				isScrolling.value = false;
@@ -74,13 +81,17 @@ class ScrollTracker {
 					final delta = notification.scrollDelta ?? 0;
 					final isPastTop = notification.metrics.pixels > notification.metrics.minScrollExtent;
 					final isOverscrollBottom = notification.metrics.pixels > notification.metrics.maxScrollExtent;
+					final willReachEnd = switch (_thisScrollEstimatedDestination) {
+						double pixels => pixels >= notification.metrics.maxScrollExtent,
+						null => false
+					};
 					if (!isOverscrollBottom) {
 						if ((isPastTop || delta < 0) &&
 								(notification.metrics.pixels < notification.metrics.maxScrollExtent || delta > 0)) {
 							_accumulatedScrollDelta += delta;
 						}
 						_accumulatedScrollDelta = _accumulatedScrollDelta.clamp(-51, 51);
-						if (_accumulatedScrollDelta > 50 && slowScrollDirection.value != VerticalDirection.down) {
+						if (_accumulatedScrollDelta > 50 && slowScrollDirection.value != VerticalDirection.down && !willReachEnd) {
 							_accumulatedScrollDelta = 0;
 							slowScrollDirection.value = VerticalDirection.down;
 						}
