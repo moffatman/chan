@@ -455,6 +455,16 @@ class PostRow extends StatelessWidget {
 		);
 		final isPostHidden = isPostHiddenByThreadState || listFilterReason != null;
 		final cloverStyleRepliesButton = (settings.cloverStyleRepliesButton && replyIds.isNotEmpty && parentZone.style != PostSpanZoneStyle.tree);
+		final showReplyCount = this.showReplyCount && (overrideReplyCount != null || parentZone.style != PostSpanZoneStyle.tree || switch (replyIds) {
+			// Don't show reply count for tree + single reply
+			[int _] => false,
+			// Don't show reply count for tree + single reply (no subreplies) + second reply
+			[int firstReplyId, int _] => (parentZone.findPost(firstReplyId)?.replyIds.length ?? 0) > 0,
+			// Don't show reply count for tree + single reply (no subreplies) + second reply (no subreplies) + third reply
+			[int firstReplyId, int secondReplyId, int _] => (parentZone.findPost(firstReplyId)?.replyIds.length ?? 0) > 0 || (parentZone.findPost(secondReplyId)?.replyIds.length ?? 0) > 0,
+			// Otherwise show reply count
+			_ => true
+		});
 		final replyCountColor = highlightReplyCount ? theme.secondaryColor.shiftHue(90) : theme.secondaryColor;
 		openReplies() {
 			if (replyIds.isNotEmpty) {
