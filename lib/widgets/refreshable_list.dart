@@ -3898,7 +3898,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			}
 		}
 		if (_lastLaidOutRange case final range?) {
-			for (int i = range.$1; i < range.$2; i++) {
+			for (int i = range.$1; i < range.$2 && i < _items.length; i++) {
 				if (_items[i].cachedHeight == null) {
 					_tryCachingItem(i);
 				}
