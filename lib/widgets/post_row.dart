@@ -482,7 +482,7 @@ class PostRow extends StatelessWidget {
 		if (smallAttachments.isNotEmpty && settings.showImages(context, latestPost.board)) {
 			attachments = WidthSnappingBox(
 				factor: 0.5,
-				unsnappedPadding: settings.imagesOnRight ? const EdgeInsets.only(left: 8) : const EdgeInsets.only(right: 8),
+				unsnappedPadding: settings.imagesOnRight ? const EdgeInsets.only(left: 8, bottom: 16) : const EdgeInsets.only(right: 8, bottom: 16),
 				child: Wrap(
 					spacing: 8,
 					runSpacing: 8,
