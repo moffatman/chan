@@ -3830,7 +3830,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	}
 	void invalidateAfter(RefreshableListItem<T> item, bool looseEquality) {
 		final index = looseEquality ?
-			_items.indexWhere((i) => i.item.item == item.item) :
+			_items.indexWhere((i) => i.item.item == item.item && i.item.representsStubChildren == item.representsStubChildren) :
 			_items.indexWhere((i) => i.item == item);
 		if (index == -1) {
 			print('Could not find $item in list to invalidate after');
