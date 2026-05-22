@@ -3897,6 +3897,13 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				item.context = null;
 			}
 		}
+		if (_lastLaidOutRange case final range?) {
+			for (int i = range.$1; i < range.$2; i++) {
+				if (_items[i].cachedHeight == null) {
+					_tryCachingItem(i);
+				}
+			}
+		}
 	}
 	void _onScrollControllerNotification() {
 		if (_isDisposed) {
