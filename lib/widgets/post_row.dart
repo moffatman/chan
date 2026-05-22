@@ -480,7 +480,7 @@ class PostRow extends StatelessWidget {
 		}
 		final content = Builder(
 			builder: (ctx) => Padding(
-				padding: const EdgeInsets.only(top: 8, left: 8, right: 8, bottom: 16),
+				padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
 				child: IgnorePointer(
 					ignoring: !allowTappingLinks,
 					child: ConditionalOnTapUp(
@@ -526,7 +526,8 @@ class PostRow extends StatelessWidget {
 											addExpandingPosts: settings.supportMouse != TristateSystemSetting.a,
 											hideThumbnails: hideThumbnails
 										),
-										stripTrailingNewline: true
+										stripTrailingNewline: true,
+										postInject: const TextSpan(text: '\n ', style: TextStyle(fontSize: 16, height: 1))
 									)
 								]
 							),
@@ -537,11 +538,11 @@ class PostRow extends StatelessWidget {
 								maintainAnimation: true,
 								maintainState: true,
 								child: Padding(
-									padding: const EdgeInsets.only(left: 8, right: 8, top: 8),
+									padding: const EdgeInsets.only(left: 8, right: 8, top: 8, bottom: 16),
 									child: overrideReplyCount!
 								)
 							) : ((settings.cloverStyleRepliesButton || replyIds.isEmpty) ? null :
-								SizedBox(width: (4 + replyIds.length.numberOfDigitsLinear) * 8, height: 28)
+								SizedBox(width: (4 + replyIds.length.numberOfDigitsLinear) * 8, height: 44)
 							)) : null,
 							overflow: TextOverflow.fade
 						)
