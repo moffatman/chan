@@ -169,6 +169,15 @@ class ThreadWatchAdapter extends TypeAdapter<ThreadWatch> {
   ThreadWatch read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final List<dynamic> fields = List.filled(13, null);
+    fields[3] = true;
+    fields[4] = <int>[];
+    fields[5] = false;
+    fields[6] = true;
+    fields[7] = true;
+    fields[8] = false;
+    fields[10] = false;
+    fields[11] = true;
+    fields[12] = false;
     for (int i = 0; i < numOfFields; i++) {
       final int fieldId = reader.readByte();
       final dynamic value = reader.read();
@@ -181,16 +190,16 @@ class ThreadWatchAdapter extends TypeAdapter<ThreadWatch> {
       board: fields[0] as String,
       threadId: fields[1] as int,
       lastSeenId: fields[2] as int,
-      localYousOnly: fields[3] == null ? true : fields[3] as bool,
-      youIds: fields[4] == null ? [] : (fields[4] as List).cast<int>(),
-      zombie: fields[5] == null ? false : fields[5] as bool,
-      pushYousOnly: fields[6] == null ? true : fields[6] as bool?,
-      push: fields[7] == null ? true : fields[7] as bool,
-      foregroundMuted: fields[8] == null ? false : fields[8] as bool,
+      localYousOnly: fields[3] as bool,
+      youIds: (fields[4] as List).cast<int>(),
+      zombie: fields[5] as bool,
+      pushYousOnly: fields[6] as bool?,
+      push: fields[7] as bool,
+      foregroundMuted: fields[8] as bool,
       watchTime: fields[9] as DateTime,
-      notifyOnSecondLastPage: fields[10] == null ? false : fields[10] as bool,
-      notifyOnLastPage: fields[11] == null ? true : fields[11] as bool,
-      notifyOnDead: fields[12] == null ? false : fields[12] as bool,
+      notifyOnSecondLastPage: fields[10] as bool,
+      notifyOnLastPage: fields[11] as bool,
+      notifyOnDead: fields[12] as bool,
     );
   }
 

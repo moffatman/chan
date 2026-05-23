@@ -246,6 +246,10 @@ class PostAdapter extends TypeAdapter<Post> {
   Post read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final List<dynamic> fields = List.filled(25, null);
+    fields[11] = false;
+    fields[16] = <Attachment>[];
+    fields[20] = false;
+    fields[21] = false;
     if (numOfFields == 255) {
       // Dynamic number of fields
       while (true) {
@@ -278,17 +282,16 @@ class PostAdapter extends TypeAdapter<Post> {
       id: fields[5] as int,
       spanFormat: fields[9] as PostSpanFormat,
       flag: fields[7] as Flag?,
-      attachmentDeleted: fields[11] == null ? false : fields[11] as bool,
+      attachmentDeleted: fields[11] as bool,
       posterId: fields[8] as String?,
       extraMetadata: (fields[12] as Map?)?.cast<String, int>(),
       passSinceYear: fields[14] as int?,
       capcode: fields[15] as String?,
-      attachments_:
-          fields[16] == null ? [] : (fields[16] as List).cast<Attachment>(),
+      attachments_: (fields[16] as List).cast<Attachment>(),
       upvotes: fields[17] as int?,
       parentId: fields[18] as int?,
-      hasOmittedReplies: fields[20] == null ? false : fields[20] as bool,
-      isDeleted: fields[21] == null ? false : fields[21] as bool,
+      hasOmittedReplies: fields[20] as bool,
+      isDeleted: fields[21] as bool,
       ipNumber: fields[22] as int?,
       archiveName: fields[23] as String?,
       email: fields[24] as String?,

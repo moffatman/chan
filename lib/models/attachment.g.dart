@@ -170,6 +170,9 @@ class AttachmentAdapter extends TypeAdapter<Attachment> {
   Attachment read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final List<dynamic> fields = List.filled(16, null);
+    fields[8] = false;
+    fields[14] = false;
+    fields[15] = false;
     if (numOfFields == 255) {
       // Dynamic number of fields
       while (true) {
@@ -201,13 +204,13 @@ class AttachmentAdapter extends TypeAdapter<Attachment> {
       url: fields[5] as String,
       thumbnailUrl: fields[6] as String,
       md5: fields[7] as String,
-      spoiler: fields[8] == null ? false : fields[8] as bool,
+      spoiler: fields[8] as bool,
       width: fields[9] as int?,
       height: fields[10] as int?,
       threadId: fields[11] as int?,
       sizeInBytes: fields[12] as int?,
-      useRandomUseragent: fields[14] == null ? false : fields[14] as bool,
-      isRateLimited: fields[15] == null ? false : fields[15] as bool,
+      useRandomUseragent: fields[14] as bool,
+      isRateLimited: fields[15] as bool,
     );
   }
 

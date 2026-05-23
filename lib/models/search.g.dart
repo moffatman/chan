@@ -223,6 +223,8 @@ class ImageboardArchiveSearchQueryAdapter
   ImageboardArchiveSearchQuery read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final List<dynamic> fields = List.filled(15, null);
+    fields[7] = PostDeletionStatusFilter.none;
+    fields[13] = false;
     for (int i = 0; i < numOfFields; i++) {
       final int fieldId = reader.readByte();
       final dynamic value = reader.read();
@@ -238,15 +240,13 @@ class ImageboardArchiveSearchQueryAdapter
       endDate: fields[4] as DateTime?,
       boards: (fields[5] as List?)?.cast<String>(),
       md5: fields[6] as String?,
-      deletionStatusFilter: fields[7] == null
-          ? PostDeletionStatusFilter.none
-          : fields[7] as PostDeletionStatusFilter,
+      deletionStatusFilter: fields[7] as PostDeletionStatusFilter,
       imageboardKey: fields[8] as String?,
       name: fields[9] as String?,
       trip: fields[10] as String?,
       subject: fields[11] as String?,
       filename: fields[12] as String?,
-      oldestFirst: fields[13] == null ? false : fields[13] as bool,
+      oldestFirst: fields[13] as bool,
       countryCode: fields[14] as String?,
     );
   }

@@ -256,6 +256,8 @@ class SavedThemeAdapter extends TypeAdapter<SavedTheme> {
   SavedTheme read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final List<dynamic> fields = List.filled(10, null);
+    fields[4] = const Color.fromRGBO(120, 153, 34, 1.0);
+    fields[7] = const Color.fromRGBO(87, 153, 57, 1.0);
     for (int i = 0; i < numOfFields; i++) {
       final int fieldId = reader.readByte();
       final dynamic value = reader.read();
@@ -268,12 +270,8 @@ class SavedThemeAdapter extends TypeAdapter<SavedTheme> {
       barColor: fields[1] as Color,
       primaryColor: fields[2] as Color,
       secondaryColor: fields[3] as Color,
-      quoteColor: fields[4] == null
-          ? const Color.fromRGBO(120, 153, 34, 1.0)
-          : fields[4] as Color,
-      titleColor: fields[7] == null
-          ? const Color.fromRGBO(87, 153, 57, 1.0)
-          : fields[7] as Color,
+      quoteColor: fields[4] as Color,
+      titleColor: fields[7] as Color,
       locked: fields[6] as bool,
       copiedFrom: fields[5] as SavedTheme?,
       textFieldColor: fields[8] as Color?,

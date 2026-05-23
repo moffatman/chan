@@ -267,6 +267,10 @@ class ThreadAdapter extends TypeAdapter<Thread> {
   Thread read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final List<dynamic> fields = List.filled(24, null);
+    fields[15] = false;
+    fields[20] = false;
+    fields[22] = false;
+    fields[23] = false;
     if (numOfFields == 255) {
       // Dynamic number of fields
       while (true) {
@@ -296,7 +300,7 @@ class ThreadAdapter extends TypeAdapter<Thread> {
       replyCount: fields[3] as int,
       imageCount: fields[4] as int,
       id: fields[5] as int,
-      attachmentDeleted: fields[15] == null ? false : fields[15] as bool,
+      attachmentDeleted: fields[15] as bool,
       board: fields[6] as String,
       title: fields[8] as String?,
       isSticky: fields[9] as bool,
@@ -309,10 +313,10 @@ class ThreadAdapter extends TypeAdapter<Thread> {
       suggestedVariant: fields[17] as ThreadVariant?,
       poll: fields[19] as ImageboardPoll?,
       archiveName: fields[18] as String?,
-      isEndless: fields[20] == null ? false : fields[20] as bool,
+      isEndless: fields[20] as bool,
       lastUpdatedTime: fields[21] as DateTime?,
-      isLocked: fields[22] == null ? false : fields[22] as bool,
-      isNsfw: fields[23] == null ? false : fields[23] as bool,
+      isLocked: fields[22] as bool,
+      isNsfw: fields[23] as bool,
     );
   }
 

@@ -231,6 +231,7 @@ class DraftPostAdapter extends TypeAdapter<DraftPost> {
   DraftPost read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final List<dynamic> fields = List.filled(12, null);
+    fields[11] = false;
     for (int i = 0; i < numOfFields; i++) {
       final int fieldId = reader.readByte();
       final dynamic value = reader.read();
@@ -250,8 +251,7 @@ class DraftPostAdapter extends TypeAdapter<DraftPost> {
       overrideFilenameWithoutExtension: fields[8] as String?,
       flag: fields[9] as ImageboardBoardFlag?,
       useLoginSystem: fields[10] as bool?,
-      overrideRandomizeFilenames:
-          fields[11] == null ? false : fields[11] as bool,
+      overrideRandomizeFilenames: fields[11] as bool,
     );
   }
 

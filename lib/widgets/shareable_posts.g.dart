@@ -125,6 +125,10 @@ class ShareablePostsStyleAdapter extends TypeAdapter<ShareablePostsStyle> {
   ShareablePostsStyle read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final List<dynamic> fields = List.filled(10, null);
+    fields[6] = true;
+    fields[7] = true;
+    fields[8] = true;
+    fields[9] = true;
     for (int i = 0; i < numOfFields; i++) {
       final int fieldId = reader.readByte();
       final dynamic value = reader.read();
@@ -139,10 +143,10 @@ class ShareablePostsStyleAdapter extends TypeAdapter<ShareablePostsStyle> {
       width: fields[3] as double,
       overrideThemeKey: fields[4] as String?,
       expandPrimaryImage: fields[5] as bool,
-      revealYourPosts: fields[6] == null ? true : fields[6] as bool,
-      includeFooter: fields[7] == null ? true : fields[7] as bool,
-      showReplyCounts: fields[8] == null ? true : fields[8] as bool,
-      highlightPrimaryPost: fields[9] == null ? true : fields[9] as bool,
+      revealYourPosts: fields[6] as bool,
+      includeFooter: fields[7] as bool,
+      showReplyCounts: fields[8] as bool,
+      highlightPrimaryPost: fields[9] as bool,
     );
   }
 

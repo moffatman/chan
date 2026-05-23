@@ -751,7 +751,7 @@ packages:
     description:
       path: hive
       ref: master
-      resolved-ref: "7b0679a8499387a55d119fb72208151cdaa6d9d6"
+      resolved-ref: da107d13db03fe9dad469c31170cc3cfdd45b997
       url: "https://github.com/moffatman/hive.git"
     source: git
     version: "3.0.0-dev"
@@ -768,7 +768,7 @@ packages:
     description:
       path: hive_generator
       ref: master
-      resolved-ref: "7b0679a8499387a55d119fb72208151cdaa6d9d6"
+      resolved-ref: da107d13db03fe9dad469c31170cc3cfdd45b997
       url: "https://github.com/moffatman/hive.git"
     source: git
     version: "2.0.0"
