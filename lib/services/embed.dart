@@ -77,6 +77,14 @@ class EmbedData {
 		this.imageboardTarget,
 		this.attachments
 	});
+	const EmbedData.empty() :
+			title = null,
+			provider = null,
+			author = null,
+			thumbnailUrl = null,
+			thumbnailWidget = null,
+			imageboardTarget = null,
+			attachments = null;
 
 	@override
 	String toString() => 'EmbedData(title: $title, provider: $provider, author: $author, thumbnailUrl: $thumbnailUrl, thumbnailWidget: $thumbnailWidget, imageboardTarget: $imageboardTarget, attachments: $attachments)';
