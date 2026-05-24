@@ -239,7 +239,12 @@ class SettingsPageState extends State<SettingsPage> {
 												child1: MappingValueListenable(
 													parent: context.watch<ThreadWatcher>().unseenCount,
 													mapper: (unseenCount) => unseenCount.value - (snapshot.data?.map((t) {
-														return imageboard.persistence.getThreadStateIfExists(t.identifier)?.unseenReplyCount() ?? 0;
+														final ts = imageboard.persistence.getThreadStateIfExists(t.identifier);
+														if (ts == null) {
+															// Never-opened sticky threads count as "1" for watcher purposes
+															return 1;
+														}
+														return ts.unseenReplyCount() ?? 0;
 													}).fold<int>(0, (a, b) => a + b) ?? 0)
 												),
 												child2: MappingValueListenable(
