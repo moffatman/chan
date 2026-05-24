@@ -821,6 +821,7 @@ class ThreadPageState extends State<ThreadPage> {
 		    persistentState.lastSeenPostId != null &&
 				(persistentState.thread?.posts_.length ?? 0) > 20) {
 			_useAllDummies = true;
+			blocked = true;
 			_scrollIfWarranted(switch (Navigator.of(context).currentRoute) {
 				TransitionRoute tr => tr.transitionDuration,
 				_ => const Duration(milliseconds: 500)
