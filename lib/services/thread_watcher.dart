@@ -414,6 +414,9 @@ class ThreadWatcher extends ChangeNotifier {
 		final acceptCached = CacheConstraints(
 			fetchedOnOrAfter: DateTime.now()
 		);
+		final acceptCachedLax = CacheConstraints(
+			fetchedOnOrAfter: DateTime.now().subtract(const Duration(minutes: 5))
+		);
 		// Could be concurrently-modified
 		for (final watch in notifications.threadWatches.values) {
 			if (cancelToken?.isCancelled ?? false) {
@@ -446,6 +449,23 @@ class ThreadWatcher extends ChangeNotifier {
 						tab.unseen.value = threadState.unseenReplyCount() ?? tab.unseen.value;
 						tab.unseenYous.value = threadState.unseenReplyIdsToYouCount() ?? tab.unseenYous.value;
 					}
+				}
+			}
+			if (tab.imageboardKey == imageboardKey && tab.board != null && tab.boardKey.currentState == null) {
+				// Catalog widget hasn't yet been instantiated
+				final board = ImageboardBoard.getKey(tab.board!);
+				final variant = tab.catalogVariant ?? (persistence.browserState.catalogVariants[board] ?? site.defaultCatalogVariant);
+				final catalog = await site.getCatalog(
+					board.s,
+					priority: RequestPriority.functional,
+					variant: variant,
+					// Don't care about keeping it up to date so much
+					acceptCached: acceptCachedLax,
+					cancelToken: cancelToken
+				);
+				for (final thread in catalog.threads.values) {
+					await thread.preinit(catalog: true);
+					await persistence.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();
 				}
 			}
 		}

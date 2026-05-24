@@ -1861,6 +1861,16 @@ abstract class ImageboardSiteArchive {
 			return catalog;
 		});
 	}
+	Catalog? getCatalogFromCatalogCache(String? board, {CatalogVariant? variant, CacheConstraints? constraints}) {
+		if (board == null) {
+			return null;
+		}
+		final catalog = _catalogCache[board]?[variant.dataId];
+		if (constraints == null || catalog == null || catalog.satisfiesConstraints(constraints)) {
+			return catalog;
+		}
+		return null;
+	}
 	/// By default, always fetch the catalog
 	Future<Catalog?> getCatalogIfModifiedSince(String board, DateTime lastModified, {
 		CatalogVariant? variant,

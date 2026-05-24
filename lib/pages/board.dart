@@ -46,6 +46,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 
 import 'package:chan/models/thread.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -1171,6 +1172,20 @@ class BoardPageState extends State<BoardPage> {
 				(a, b) => a.compareTo(b)
 		];
 		final radius = settings.materialStyle ? const Radius.circular(4) : const Radius.circular(8);
+		List<Thread>? initialList;
+		if (_lastCatalogUpdateTime == null && !(kDebugMode && Navigator.of(context).userGestureInProgress)) {
+			final catalog = site?.getCatalogFromCatalogCache(board!.name, variant: variant);
+			if (catalog != null) {
+				initialList = catalog.threads.values.toList();
+				_lastCatalogUpdateTime = catalog.fetchedTime;
+				Future.delayed(const Duration(milliseconds: 100), () {
+					if (!mounted) return;
+					if (_loadCompleter?.isCompleted == false) {
+						_loadCompleter?.complete();
+					}
+				});
+			}
+		}
 		return AdaptiveScaffold(
 			resizeToAvoidBottomInset: false,
 			bar: AdaptiveBar(
@@ -1449,6 +1464,7 @@ class BoardPageState extends State<BoardPage> {
 													maxCrossAxisExtent: settings.catalogGridWidth
 												) : null,
 												controller: _listController,
+												initialList: initialList,
 												listUpdater: (options) async {
 													final catalog = (await site.getCatalog(
 														board!.name,
