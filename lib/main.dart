@@ -1723,7 +1723,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		super.initState();
 		_tabs = ChanTabs._(this);
 		_tabs.addListener(_tabsListener);
-		_showTabPopup = ValueNotifier(Persistence.settings.showTabPopup)
+		_showTabPopup = ValueNotifier(false)
 			..addListener(_setAdditionalSafeAreaInsets)
 			..addListener(() {
 				Persistence.settings.showTabPopup = _showTabPopup.value;
@@ -1732,6 +1732,13 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					Future.microtask(() => _tabs._animateTabList(duration: Duration.zero));
 				}
 			});
+		if (Persistence.settings.showTabPopup) {
+			Future.delayed(const Duration(milliseconds: 50), () {
+				SchedulerBinding.instance.addPostFrameCallback((_) {
+					_showTabPopup.value = true;
+				});
+			});
+		}
 		// Set initial tab list up right
 		Future.microtask(() => _tabs._animateTabList(duration: Duration.zero));
 		_setAdditionalSafeAreaInsets();
