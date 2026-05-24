@@ -408,9 +408,10 @@ class ThreadPageState extends State<ThreadPage> {
 			postId = persistentState.firstVisiblePostId!;
 			targetAlignment = persistentState.firstVisiblePostAlignment;
 			if (postId == persistentState.threadId && (targetAlignment ?? 0) < 0.5) {
-				if (_useAllDummies) {
+				if (_useAllDummies || blocked) {
 					setState(() {
 						_useAllDummies = false;
+						blocked = false;
 					});
 				}
 				return;
@@ -420,9 +421,10 @@ class ThreadPageState extends State<ThreadPage> {
 			postId = persistentState.lastSeenPostId!;
 		}
 		else {
-			if (_useAllDummies) {
+			if (_useAllDummies || blocked) {
 				setState(() {
 					_useAllDummies = false;
+					blocked = false;
 				});
 			}
 			// Nothing to scroll to
@@ -439,9 +441,10 @@ class ThreadPageState extends State<ThreadPage> {
 				(null, _) => false
 			};
 			if (alignmentMatches()) {
-				if (_useAllDummies) {
+				if (_useAllDummies || blocked) {
 					setState(() {
 						_useAllDummies = false;
+						blocked = false;
 					});
 				}
 				if (glow) {
@@ -819,7 +822,8 @@ class ThreadPageState extends State<ThreadPage> {
 		context.read<PersistentBrowserTab?>()?.threadPageState = this;
 		if (!(context.read<MasterDetailLocation?>()?.twoPane ?? false) &&
 		    persistentState.lastSeenPostId != null &&
-				(persistentState.thread?.posts_.length ?? 0) > 20) {
+				(persistentState.thread?.posts_.length ?? 0) > 20 &&
+				persistentState.firstVisiblePostId != persistentState.id) {
 			_useAllDummies = true;
 			blocked = true;
 			_scrollIfWarranted(switch (Navigator.of(context).currentRoute) {
@@ -938,8 +942,9 @@ class ThreadPageState extends State<ThreadPage> {
 			if (explicitScrollToId == widget.thread.id) {
 				_glowPost(widget.thread.id);
 			}
-			if (_useAllDummies) {
+			if (_useAllDummies || blocked) {
 				setState(() {
+					blocked = false;
 					_useAllDummies = false;
 				});
 			}
