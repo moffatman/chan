@@ -16,6 +16,7 @@ import 'package:chan/widgets/util.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:html/parser.dart' show parse, parseFragment;
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -241,11 +242,24 @@ class OwoVgService {
 		return (body, contentType);
 	}
 
-	static void _notify(String message, {bool warning = false, bool error = false}) {
+	static void _notify(
+		String message, {
+		bool warning = false,
+		bool error = false,
+		String? lastStatusPlain,
+		void Function(String plain)? onStatusShown,
+	}) {
 		final context = ImageboardRegistry.instance.context;
 		final plain = _plainNotificationText(message);
+		if (plain.isEmpty) {
+			return;
+		}
 		if (context == null || !context.mounted) {
 			print('[owo.vg] $plain');
+			return;
+		}
+		final isStatus = !warning && !error;
+		if (isStatus && lastStatusPlain != null && lastStatusPlain == plain) {
 			return;
 		}
 		final lower = plain.toLowerCase();
@@ -256,6 +270,12 @@ class OwoVgService {
 				: (lower.contains('waiting') || lower.contains('verifying') || lower.contains('visiting') || lower.contains('loading') || lower.contains('getting email') || lower.contains('solving'))
 					? const Duration(seconds: 8)
 					: const Duration(seconds: 3);
+		if (isStatus) {
+			final fToast = FToast().init(context);
+			fToast.removeQueuedCustomToasts();
+			fToast.removeCustomToast();
+			onStatusShown?.call(plain);
+		}
 		showToast(
 			context: context,
 			message: plain,
@@ -323,6 +343,18 @@ class OwoVgService {
 		WebSocketChannel? channel;
 		StreamSubscription? subscription;
 		var responseStarted = false;
+		String? lastStatusPlain;
+		Future<void> wsEventChain = Future.value();
+
+		void notify(String message, {bool warning = false, bool error = false}) {
+			_notify(
+				message,
+				warning: warning,
+				error: error,
+				lastStatusPlain: warning || error ? null : lastStatusPlain,
+				onStatusShown: warning || error ? null : (plain) => lastStatusPlain = plain,
+			);
+		}
 
 		void cleanup() {
 			subscription?.cancel();
@@ -336,6 +368,113 @@ class OwoVgService {
 				unawaited(_applyDeferredCookie(site).catchError((Object e) {
 					print('[owo.vg] deferred cookie failed: $e');
 				}));
+			}
+		}
+
+		Future<void> handleWsEvent(dynamic event) async {
+			if (completer.isCompleted) {
+				return;
+			}
+			Map res;
+			try {
+				res = jsonDecode(event as String) as Map;
+			}
+			catch (e) {
+				return;
+			}
+			switch (res['t']) {
+				case 'hb':
+					break;
+				case 'info':
+					notify(res['d'] as String? ?? '');
+					break;
+				case 'tag':
+					notify(res['d'] as String? ?? '');
+					break;
+				case 'warn':
+					notify(res['d'] as String? ?? '', warning: true);
+					break;
+				case 'email_hcaptcha':
+					final data = res['d'];
+					final context = ImageboardRegistry.instance.context;
+					if (context == null || !context.mounted) {
+						completer.completeError(const OwoVgException('hCaptcha required but no UI context available'));
+						cleanup();
+						return;
+					}
+					if (data is! Map) {
+						completer.completeError(const OwoVgException('Invalid hCaptcha prompt'));
+						cleanup();
+						return;
+					}
+					final prompt = OwoVgEmailHcaptchaPrompt.fromJson(data.cast<String, dynamic>());
+					if (!prompt.isValid) {
+						completer.completeError(const OwoVgException('Invalid hCaptcha prompt'));
+						cleanup();
+						return;
+					}
+					final solved = await showOwoVgEmailHcaptchaDialog(
+						context: context,
+						prompt: prompt,
+						sendMessage: (payload) {
+							channel?.sink.add(jsonEncode(payload));
+						}
+					);
+					if (!solved) {
+						completer.completeError(const OwoVgException('hCaptcha cancelled'));
+						cleanup();
+					}
+					break;
+				case 'interactive':
+					final html = res['d'] as String? ?? '';
+					final context = ImageboardRegistry.instance.context;
+					if (context == null || !context.mounted) {
+						completer.completeError(const OwoVgException('Captcha required but no UI context available'));
+						cleanup();
+						return;
+					}
+					final solved = await showOwoVgCaptchaDialog(
+						context: context,
+						site: site,
+						request: site.makeCaptchaRequest(post.board, post.threadId),
+						html: html,
+						sendMessage: (payload) {
+							channel?.sink.add(jsonEncode(payload));
+						}
+					);
+					if (!solved) {
+						completer.completeError(const OwoVgException('Captcha cancelled'));
+						cleanup();
+					}
+					break;
+				case 'res':
+					responseStarted = true;
+					try {
+						final html = res['d'] as String? ?? '';
+						final receipt = _parseSuccessHtml(post, encoded, html);
+						if (!completer.isCompleted) {
+							completer.complete(receipt);
+						}
+						cleanup();
+						applyDeferredCookieLater(res['c'] as int?);
+					}
+					catch (e) {
+						if (!completer.isCompleted) {
+							completer.completeError(e);
+						}
+						cleanup();
+						applyDeferredCookieLater(res['c'] as int?);
+					}
+					break;
+				case 'error':
+					responseStarted = true;
+					final html = res['d'] as String? ?? 'Post failed';
+					if (!completer.isCompleted) {
+						completer.completeError(OwoVgException(_extractErrorMessage(html)));
+					}
+					cleanup();
+					applyDeferredCookieLater(res['c'] as int?);
+					break;
 			}
 		}
 
@@ -356,111 +495,10 @@ class OwoVgService {
 				}
 			);
 
-			subscription = channel!.stream.listen((event) async {
-				if (completer.isCompleted) {
-					return;
-				}
-				Map res;
-				try {
-					res = jsonDecode(event as String) as Map;
-				}
-				catch (e) {
-					return;
-				}
-				switch (res['t']) {
-					case 'hb':
-						break;
-					case 'info':
-						_notify(res['d'] as String? ?? '');
-						break;
-					case 'tag':
-						_notify(res['d'] as String? ?? '');
-						break;
-					case 'warn':
-						_notify(res['d'] as String? ?? '', warning: true);
-						break;
-					case 'email_hcaptcha':
-						final data = res['d'];
-						final context = ImageboardRegistry.instance.context;
-						if (context == null || !context.mounted) {
-							completer.completeError(const OwoVgException('hCaptcha required but no UI context available'));
-							cleanup();
-							return;
-						}
-						if (data is! Map) {
-							completer.completeError(const OwoVgException('Invalid hCaptcha prompt'));
-							cleanup();
-							return;
-						}
-						final prompt = OwoVgEmailHcaptchaPrompt.fromJson(data.cast<String, dynamic>());
-						if (!prompt.isValid) {
-							completer.completeError(const OwoVgException('Invalid hCaptcha prompt'));
-							cleanup();
-							return;
-						}
-						final solved = await showOwoVgEmailHcaptchaDialog(
-							context: context,
-							prompt: prompt,
-							sendMessage: (payload) {
-								channel?.sink.add(jsonEncode(payload));
-							}
-						);
-						if (!solved) {
-							completer.completeError(const OwoVgException('hCaptcha cancelled'));
-							cleanup();
-						}
-						break;
-					case 'interactive':
-						final html = res['d'] as String? ?? '';
-						final context = ImageboardRegistry.instance.context;
-						if (context == null || !context.mounted) {
-							completer.completeError(const OwoVgException('Captcha required but no UI context available'));
-							cleanup();
-							return;
-						}
-						final solved = await showOwoVgCaptchaDialog(
-							context: context,
-							site: site,
-							request: site.makeCaptchaRequest(post.board, post.threadId),
-							html: html,
-							sendMessage: (payload) {
-								channel?.sink.add(jsonEncode(payload));
-							}
-						);
-						if (!solved) {
-							completer.completeError(const OwoVgException('Captcha cancelled'));
-							cleanup();
-						}
-						break;
-					case 'res':
-						responseStarted = true;
-						try {
-							final html = res['d'] as String? ?? '';
-							final receipt = _parseSuccessHtml(post, encoded, html);
-							if (!completer.isCompleted) {
-								completer.complete(receipt);
-							}
-							cleanup();
-							applyDeferredCookieLater(res['c'] as int?);
-						}
-						catch (e) {
-							if (!completer.isCompleted) {
-								completer.completeError(e);
-							}
-							cleanup();
-							applyDeferredCookieLater(res['c'] as int?);
-						}
-						break;
-					case 'error':
-						responseStarted = true;
-						final html = res['d'] as String? ?? 'Post failed';
-						if (!completer.isCompleted) {
-							completer.completeError(OwoVgException(_extractErrorMessage(html)));
-						}
-						cleanup();
-						applyDeferredCookieLater(res['c'] as int?);
-						break;
-				}
+			subscription = channel!.stream.listen((event) {
+				wsEventChain = wsEventChain.then((_) => handleWsEvent(event)).catchError((Object e, StackTrace st) {
+					Future<void>.error(e, st);
+				});
 			}, onError: (Object e) {
 				if (!completer.isCompleted) {
 					cleanup();
@@ -487,7 +525,7 @@ class OwoVgService {
 				}
 			}));
 
-			_notify('Submitting post via owo.vg...');
+			notify('Submitting post via owo.vg...');
 			return await completer.future;
 		}
 		catch (e) {
