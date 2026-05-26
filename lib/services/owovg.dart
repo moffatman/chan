@@ -20,6 +20,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:html/parser.dart' show parse, parseFragment;
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 enum OwoVgPostingBackend {
 	direct,
@@ -242,13 +243,7 @@ class OwoVgService {
 		return (body, contentType);
 	}
 
-	static void _notify(
-		String message, {
-		bool warning = false,
-		bool error = false,
-		String? lastStatusPlain,
-		void Function(String plain)? onStatusShown,
-	}) {
+	static void _notify(String message, {bool warning = false, bool error = false}) {
 		final context = ImageboardRegistry.instance.context;
 		final plain = _plainNotificationText(message);
 		if (plain.isEmpty) {
@@ -259,9 +254,6 @@ class OwoVgService {
 			return;
 		}
 		final isStatus = !warning && !error;
-		if (isStatus && lastStatusPlain != null && lastStatusPlain == plain) {
-			return;
-		}
 		final lower = plain.toLowerCase();
 		final duration = error
 			? const Duration(seconds: 5)
@@ -274,7 +266,6 @@ class OwoVgService {
 			final fToast = FToast().init(context);
 			fToast.removeQueuedCustomToasts();
 			fToast.removeCustomToast();
-			onStatusShown?.call(plain);
 		}
 		showToast(
 			context: context,
@@ -343,17 +334,10 @@ class OwoVgService {
 		WebSocketChannel? channel;
 		StreamSubscription? subscription;
 		var responseStarted = false;
-		String? lastStatusPlain;
 		Future<void> wsEventChain = Future.value();
 
 		void notify(String message, {bool warning = false, bool error = false}) {
-			_notify(
-				message,
-				warning: warning,
-				error: error,
-				lastStatusPlain: warning || error ? null : lastStatusPlain,
-				onStatusShown: warning || error ? null : (plain) => lastStatusPlain = plain,
-			);
+			_notify(message, warning: warning, error: error);
 		}
 
 		void cleanup() {
@@ -485,6 +469,7 @@ class OwoVgService {
 			}
 		});
 
+		await WakelockPlus.enable();
 		try {
 			channel = IOWebSocketChannel.connect(
 				Uri.parse('wss://${site.owoVgUrl}/ws'),
@@ -492,7 +477,8 @@ class OwoVgService {
 					'user-agent': userAgentFor(site),
 					'origin': _baseUri(site).origin,
 					if (cookieHeader.isNotEmpty) 'cookie': cookieHeader,
-				}
+				},
+				pingInterval: const Duration(seconds: 20),
 			);
 
 			subscription = channel!.stream.listen((event) {
@@ -531,6 +517,9 @@ class OwoVgService {
 		catch (e) {
 			cleanup();
 			rethrow;
+		}
+		finally {
+			await WakelockPlus.disable();
 		}
 	}
 
