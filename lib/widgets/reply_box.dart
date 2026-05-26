@@ -19,7 +19,11 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/linkifier.dart';
 import 'package:chan/services/md5.dart';
 import 'package:chan/services/media.dart';
+import 'package:chan/models/owovg_post_extras.dart';
 import 'package:chan/services/outbox.dart';
+import 'package:chan/services/owovg.dart';
+import 'package:chan/sites/4chan.dart';
+import 'package:chan/widgets/owovg_reply_extras.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
@@ -131,6 +135,9 @@ class ReplyBoxState extends State<ReplyBox> {
 	PickedAttachment? _originalAttachment;
 	String? get attachmentExt => attachment?.file.path.afterLast('.').toLowerCase();
 	bool _showOptions = false;
+	bool _showOwoVgExtras = false;
+	bool get showOwoVgExtras => _showOwoVgExtras && !loading;
+	OwoVgPostExtras _owoVgExtras = OwoVgPostExtras.empty;
 	bool get showOptions => _showOptions && !loading;
 	bool _showAttachmentOptions = false;
 	bool get showAttachmentOptions => _showAttachmentOptions && !loading && attachment != null;
@@ -394,15 +401,8 @@ class ReplyBoxState extends State<ReplyBox> {
 		_textFieldController.addListener(_onTextChanged);
 		_subjectFieldController.addListener(_didUpdateDraft);
 		_filenameController.addListener(_onFilenameChanged);
-		context.read<ImageboardSite>().getBoardFlags(widget.board.s).then((flags) {
-			if (!mounted) return;
-			setState(() {
-				_flags = flags;
-			});
-		}).catchError((Object e, StackTrace st) {
-			Future.error(e, st); // Crashlytics
-			print('Error getting flags for ${widget.board}: $e');
-		});
+		Settings.instance.addListener(_onPostingBackendChanged);
+		_loadBoardFlags();
 		if (_nameFieldController.text.isNotEmpty || _optionsFieldController.text.isNotEmpty || (_disableLoginSystem && hasLoginSystem)) {
 			_showOptions = true;
 		}
@@ -417,12 +417,26 @@ class ReplyBoxState extends State<ReplyBox> {
 			draft = widget.initialDraft;
 		}
 		if (oldWidget.board != widget.board) {
-			context.read<ImageboardSite>().getBoardFlags(widget.board.s).then((flags) {
-				setState(() {
-					_flags = flags;
-				});
-			});
+			_loadBoardFlags();
 		}
+	}
+
+	void _loadBoardFlags() {
+		context.read<ImageboardSite>().getBoardFlags(widget.board.s).then((flags) {
+			if (!mounted) return;
+			setState(() {
+				_flags = flags;
+			});
+		}).catchError((Object e, StackTrace st) {
+			Future.error(e, st);
+			print('Error getting flags for ${widget.board}: $e');
+		});
+	}
+
+	void _onPostingBackendChanged() {
+		if (!mounted) return;
+		_loadBoardFlags();
+		setState(() {});
 	}
 
 	void _tryUsingInitialFile(DraftPost? draft) async {
@@ -1046,12 +1060,19 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 		return justOnce ?? Settings.autoLoginOnMobileNetworkSetting.value ?? false;
 	}
 
+	void _setPendingOwoVgExtrasIfNeeded(Imageboard imageboard) {
+		if (imageboard.site is Site4Chan && Settings.instance.fourChanPostingBackend == OwoVgPostingBackend.owoVg) {
+			OwoVgService.pendingExtras = _owoVgExtras;
+		}
+	}
+
 	Future<void> _submit() async {
 		final shouldUseLoginSystem = await _shouldUseLoginSystem();
 		if (!mounted) {
 			return;
 		}
 		final imageboard = context.read<Imageboard>();
+		_setPendingOwoVgExtrasIfNeeded(imageboard);
 		lightHapticFeedback();
 		final post = _makeDraft();
 		post.name = _nameFieldController.text;
@@ -1078,6 +1099,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 						),
 						AdaptiveDialogAction(
 							onPressed: () {
+								_setPendingOwoVgExtrasIfNeeded(imageboard);
 								imageboard.persistence.browserState.outbox.add(post);
 								runWhenIdle(const Duration(milliseconds: 500), imageboard.persistence.didUpdateBrowserState);
 								final entry = Outbox.instance.submitPost(imageboard.key, post, QueueStateIdle());
@@ -2481,6 +2503,19 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 		);
 	}
 
+	Widget _buildOwoVgExtras(BuildContext context) {
+		final site = context.read<ImageboardSite>();
+		if (site is! Site4Chan) {
+			return const SizedBox.shrink();
+		}
+		return OwoVgReplyExtrasPanel(
+			site: site,
+			board: widget.board.s,
+			extras: _owoVgExtras,
+			onChanged: (extras) => setState(() => _owoVgExtras = extras)
+		);
+	}
+
 	Widget _buildButtons(BuildContext context) {
 		void expandAttachmentOptions() {
 			setState(() {
@@ -2493,11 +2528,18 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 				_showOptions = !_showOptions;
 			});
 		}
+		void expandOwoVgExtras() {
+			setState(() {
+				_showOwoVgExtras = !_showOwoVgExtras;
+			});
+		}
 		final imageboard = context.read<Imageboard>();
 		final emotes = imageboard.site.getEmotes();
 		final snippets = context.read<ImageboardSite>().getBoardSnippets(widget.board.s);
 		final defaultTextStyle = DefaultTextStyle.of(context).style;
 		final settings = context.watch<Settings>();
+		final isSite4Chan = imageboard.site is Site4Chan;
+		final useOwoVgPosting = isSite4Chan && settings.fourChanPostingBackend == OwoVgPostingBackend.owoVg;
 		return Row(
 			mainAxisAlignment: MainAxisAlignment.end,
 			children: [
@@ -2628,7 +2670,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 									icon: const Icon(CupertinoIcons.smiley)
 								)
 							),
-							if (snippets.isNotEmpty || _flags.isNotEmpty || emotes.isNotEmpty) Container(
+							if (snippets.isNotEmpty || _flags.isNotEmpty || emotes.isNotEmpty || isSite4Chan) Container(
 								margin: const EdgeInsets.symmetric(horizontal: 8),
 								width: 1,
 								height: 32,
@@ -2762,6 +2804,16 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 						].reversed.toList()
 					)
 				),
+				if (isSite4Chan) AdaptiveIconButton(
+					onPressed: loading ? null : expandOwoVgExtras,
+					icon: Text(
+						'🐾',
+						style: TextStyle(
+							fontSize: 20,
+							color: useOwoVgPosting ? ChanceTheme.primaryColorOf(context) : null
+						)
+					)
+				),
 				AdaptiveIconButton(
 					onPressed: loading ? null : expandOptions,
 					icon: const Icon(CupertinoIcons.gear)
@@ -2783,6 +2835,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 						final persistence = context.read<Persistence>();
 						final post = _makeDraft();
 						post.name = _nameFieldController.text;
+						_setPendingOwoVgExtrasIfNeeded(imageboard);
 						persistence.browserState.outbox.add(post);
 						runWhenIdle(const Duration(milliseconds: 500), persistence.didUpdateBrowserState);
 						final entry = Outbox.instance.submitPost(imageboard.key, post, QueueStateIdle());
@@ -2856,6 +2909,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 		}
 		// Add the old content as a draft to the outbox, if non-trivial
 		if (_isNonTrivial(old) && old != entry.post) {
+			_setPendingOwoVgExtrasIfNeeded(context.read<Imageboard>());
 			Outbox.instance.submitPost(context.read<Imageboard>().key, old, QueueStateIdle());
 		}
 		setState(() {});
@@ -2865,6 +2919,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 	Widget build(BuildContext context) {
 		_chanTabs = context.watchIdentity<ChanTabs?>();
 		final settings = context.watch<Settings>();
+		final isSite4Chan = context.read<ImageboardSite>() is Site4Chan;
 		return Focus(
 			focusNode: _rootFocusNode,
 			child: TransformedMediaQuery(
@@ -2888,6 +2943,12 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 								bottomSafe: true,
 								curve: Curves.ease,
 								child: _buildAttachmentOptions(context)
+							),
+							Expander(
+								expanded: show && showOwoVgExtras && isSite4Chan,
+								bottomSafe: true,
+								curve: Curves.ease,
+								child: _buildOwoVgExtras(context)
 							),
 							Expander(
 								expanded: show && showOptions,
@@ -2944,6 +3005,16 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 										child: Focus(
 											descendantsAreFocusable: showAttachmentOptions && show,
 											child: _buildAttachmentOptions(context)
+										)
+									)
+								),
+								SliverToBoxAdapter(
+									child: Expander(
+										expanded: showOwoVgExtras && show && isSite4Chan,
+										bottomSafe: true,
+										child: Focus(
+											descendantsAreFocusable: showOwoVgExtras && show,
+											child: _buildOwoVgExtras(context)
 										)
 									)
 								),
@@ -3074,6 +3145,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 				widget.onDraftChanged(null);
 			}
 		}
+		Settings.instance.removeListener(_onPostingBackendChanged);
 		_textFieldController.dispose();
 		_nameFieldController.dispose();
 		_subjectFieldController.dispose();

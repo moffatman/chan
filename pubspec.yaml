@@ -99,6 +99,7 @@ dependencies:
   path_provider: ^2.0.10
   path_provider_ios: ^2.0.11
   async: ^2.9.0
+  web_socket_channel: ^3.0.1
   flutter_email_sender: ^6.0.3
   dynamic_color: ^1.5.2
   flutter:

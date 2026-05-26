@@ -2808,6 +2808,105 @@ class SavedSettingsFields {
     fieldName: 'didHideTabPopupAutomatically',
     merger: PrimitiveMerger(),
   );
+  static int getFourChanPostingBackend(SavedSettings x) =>
+      x.fourChanPostingBackend;
+  static void setFourChanPostingBackend(SavedSettings x, int v) =>
+      x.fourChanPostingBackend = v;
+  static const int kFourChanPostingBackend = 217;
+  static const fourChanPostingBackend = HiveFieldAdapter<SavedSettings, int>(
+    getter: getFourChanPostingBackend,
+    setter: setFourChanPostingBackend,
+    fieldNumber: kFourChanPostingBackend,
+    fieldName: 'fourChanPostingBackend',
+    merger: PrimitiveMerger(),
+  );
+  static String getOwoVgPool(SavedSettings x) => x.owoVgPool;
+  static void setOwoVgPool(SavedSettings x, String v) => x.owoVgPool = v;
+  static const int kOwoVgPool = 218;
+  static const owoVgPool = HiveFieldAdapter<SavedSettings, String>(
+    getter: getOwoVgPool,
+    setter: setOwoVgPool,
+    fieldNumber: kOwoVgPool,
+    fieldName: 'owoVgPool',
+    merger: PrimitiveMerger(),
+  );
+  static bool getOwoVgEmailIps(SavedSettings x) => x.owoVgEmailIps;
+  static void setOwoVgEmailIps(SavedSettings x, bool v) => x.owoVgEmailIps = v;
+  static const int kOwoVgEmailIps = 219;
+  static const owoVgEmailIps = HiveFieldAdapter<SavedSettings, bool>(
+    getter: getOwoVgEmailIps,
+    setter: setOwoVgEmailIps,
+    fieldNumber: kOwoVgEmailIps,
+    fieldName: 'owoVgEmailIps',
+    merger: PrimitiveMerger(),
+  );
+  static bool getOwoVgManualCaptcha(SavedSettings x) => x.owoVgManualCaptcha;
+  static void setOwoVgManualCaptcha(SavedSettings x, bool v) =>
+      x.owoVgManualCaptcha = v;
+  static const int kOwoVgManualCaptcha = 220;
+  static const owoVgManualCaptcha = HiveFieldAdapter<SavedSettings, bool>(
+    getter: getOwoVgManualCaptcha,
+    setter: setOwoVgManualCaptcha,
+    fieldNumber: kOwoVgManualCaptcha,
+    fieldName: 'owoVgManualCaptcha',
+    merger: PrimitiveMerger(),
+  );
+  static String getOwoVgRecycleIps(SavedSettings x) => x.owoVgRecycleIps;
+  static void setOwoVgRecycleIps(SavedSettings x, String v) =>
+      x.owoVgRecycleIps = v;
+  static const int kOwoVgRecycleIps = 221;
+  static const owoVgRecycleIps = HiveFieldAdapter<SavedSettings, String>(
+    getter: getOwoVgRecycleIps,
+    setter: setOwoVgRecycleIps,
+    fieldNumber: kOwoVgRecycleIps,
+    fieldName: 'owoVgRecycleIps',
+    merger: PrimitiveMerger(),
+  );
+  static String getOwoVgEmailVerificationStock(SavedSettings x) =>
+      x.owoVgEmailVerificationStock;
+  static void setOwoVgEmailVerificationStock(SavedSettings x, String v) =>
+      x.owoVgEmailVerificationStock = v;
+  static const int kOwoVgEmailVerificationStock = 222;
+  static const owoVgEmailVerificationStock =
+      HiveFieldAdapter<SavedSettings, String>(
+    getter: getOwoVgEmailVerificationStock,
+    setter: setOwoVgEmailVerificationStock,
+    fieldNumber: kOwoVgEmailVerificationStock,
+    fieldName: 'owoVgEmailVerificationStock',
+    merger: PrimitiveMerger(),
+  );
+  static int? getOwoVgInstallDate(SavedSettings x) => x.owoVgInstallDate;
+  static void setOwoVgInstallDate(SavedSettings x, int? v) =>
+      x.owoVgInstallDate = v;
+  static const int kOwoVgInstallDate = 223;
+  static const owoVgInstallDate = HiveFieldAdapter<SavedSettings, int?>(
+    getter: getOwoVgInstallDate,
+    setter: setOwoVgInstallDate,
+    fieldNumber: kOwoVgInstallDate,
+    fieldName: 'owoVgInstallDate',
+    merger: NullableMerger(PrimitiveMerger()),
+  );
+  static bool getOwoVgRecompression(SavedSettings x) => x.owoVgRecompression;
+  static void setOwoVgRecompression(SavedSettings x, bool v) =>
+      x.owoVgRecompression = v;
+  static const int kOwoVgRecompression = 224;
+  static const owoVgRecompression = HiveFieldAdapter<SavedSettings, bool>(
+    getter: getOwoVgRecompression,
+    setter: setOwoVgRecompression,
+    fieldNumber: kOwoVgRecompression,
+    fieldName: 'owoVgRecompression',
+    merger: PrimitiveMerger(),
+  );
+  static bool getOwoVgAntiphash(SavedSettings x) => x.owoVgAntiphash;
+  static void setOwoVgAntiphash(SavedSettings x, bool v) => x.owoVgAntiphash = v;
+  static const int kOwoVgAntiphash = 225;
+  static const owoVgAntiphash = HiveFieldAdapter<SavedSettings, bool>(
+    getter: getOwoVgAntiphash,
+    setter: setOwoVgAntiphash,
+    fieldNumber: kOwoVgAntiphash,
+    fieldName: 'owoVgAntiphash',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -3024,13 +3123,22 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     213: SavedSettingsFields.cachedWebViewTlsHello,
     214: SavedSettingsFields.cachedWebViewHeaders,
     215: SavedSettingsFields.showTabPopup,
-    216: SavedSettingsFields.didHideTabPopupAutomatically
+    216: SavedSettingsFields.didHideTabPopupAutomatically,
+    217: SavedSettingsFields.fourChanPostingBackend,
+    218: SavedSettingsFields.owoVgPool,
+    219: SavedSettingsFields.owoVgEmailIps,
+    220: SavedSettingsFields.owoVgManualCaptcha,
+    221: SavedSettingsFields.owoVgRecycleIps,
+    222: SavedSettingsFields.owoVgEmailVerificationStock,
+    223: SavedSettingsFields.owoVgInstallDate,
+    224: SavedSettingsFields.owoVgRecompression,
+    225: SavedSettingsFields.owoVgAntiphash
   };
 
   @override
   SavedSettings read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final List<dynamic> fields = List.filled(217, null);
+    final List<dynamic> fields = List.filled(226, null);
     for (int i = 0; i < numOfFields; i++) {
       final int fieldId = reader.readByte();
       final dynamic value = reader.read();
@@ -3260,13 +3368,22 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       cachedWebViewHeaders: (fields[214] as Map?)?.cast<String, String>(),
       showTabPopup: fields[215] as bool?,
       didHideTabPopupAutomatically: fields[216] as bool?,
+      fourChanPostingBackend: fields[217] as int?,
+      owoVgPool: fields[218] as String?,
+      owoVgEmailIps: fields[219] as bool?,
+      owoVgManualCaptcha: fields[220] as bool?,
+      owoVgRecycleIps: fields[221] as String?,
+      owoVgEmailVerificationStock: fields[222] as String?,
+      owoVgInstallDate: fields[223] as int?,
+      owoVgRecompression: fields[224] as bool?,
+      owoVgAntiphash: fields[225] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(204)
+      ..writeByte(213)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -3674,7 +3791,25 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(215)
       ..write(obj.showTabPopup)
       ..writeByte(216)
-      ..write(obj.didHideTabPopupAutomatically);
+      ..write(obj.didHideTabPopupAutomatically)
+      ..writeByte(217)
+      ..write(obj.fourChanPostingBackend)
+      ..writeByte(218)
+      ..write(obj.owoVgPool)
+      ..writeByte(219)
+      ..write(obj.owoVgEmailIps)
+      ..writeByte(220)
+      ..write(obj.owoVgManualCaptcha)
+      ..writeByte(221)
+      ..write(obj.owoVgRecycleIps)
+      ..writeByte(222)
+      ..write(obj.owoVgEmailVerificationStock)
+      ..writeByte(223)
+      ..write(obj.owoVgInstallDate)
+      ..writeByte(224)
+      ..write(obj.owoVgRecompression)
+      ..writeByte(225)
+      ..write(obj.owoVgAntiphash);
   }
 
   @override

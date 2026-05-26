@@ -2889,6 +2889,7 @@ ImageboardSite makeSite(Map data) {
 			spamFilterCaptchaDelayYellow: Duration(milliseconds: data['spamFilterCaptchaDelayYellow'] as int? ?? 5000),
 			spamFilterCaptchaDelayRed: Duration(milliseconds: data['spamFilterCaptchaDelayRed'] as int? ?? 12000),
 			stickyCloudflare: data['stickyCloudflare'] as bool? ?? false,
+			owoVgUrl: data['owoVgUrl'] as String? ?? 'owo.vg',
 			subjectCharacterLimit: data['subjectCharacterLimit'] as int?,
 			overrideUserAgent: overrideUserAgent,
 			addIntrospectedHeaders: addIntrospectedHeaders,

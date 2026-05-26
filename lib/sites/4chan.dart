@@ -9,6 +9,8 @@ import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/services/auth_page_helper.dart';
+import 'package:chan/services/owovg.dart';
+import 'package:chan/sites/owovg_login.dart';
 import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/linkifier.dart';
 import 'package:chan/services/persistence.dart';
@@ -120,9 +122,11 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 	final Map<String, Map<String, String>>? boardFlags;
 	final bool stickyCloudflare;
 	final String? hCaptchaKey;
+	final String owoVgUrl;
 
 	@override
 	late final Site4ChanPassLoginSystem loginSystem = Site4ChanPassLoginSystem(this);
+	late final SiteOwoVgGoldLoginSystem owoVgLoginSystem = SiteOwoVgGoldLoginSystem(this);
 
 	void resetCaptchaTicketTimer([Duration? overrideDuration]) {
 		_captchaTicketTimer?.cancel();
@@ -801,9 +805,16 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 
 	@override
 	Future<CaptchaRequest> getCaptchaRequest(String board, int? threadId, {CancelToken? cancelToken}) async {
+		if (Settings.instance.fourChanPostingBackend == OwoVgPostingBackend.owoVg) {
+			return const NoCaptchaRequest();
+		}
 		if (loginSystem.isLoggedIn(Persistence.currentCookies)) {
 			return const NoCaptchaRequest();
 		}
+		return makeCaptchaRequest(board, threadId);
+	}
+
+	Chan4CustomCaptchaRequest makeCaptchaRequest(String board, int? threadId) {
 		final userAgent = captchaUserAgents[Platform.operatingSystem];
 		return Chan4CustomCaptchaRequest(
 			challengeUrl: Uri.https(sysUrl, '/captcha', {
@@ -859,6 +870,24 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 	@override
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
 		final encoded = await encodePostForWeb(post, captchaSolution: captchaSolution);
+		if (Settings.instance.fourChanPostingBackend == OwoVgPostingBackend.owoVg) {
+			final savedFields = owoVgLoginSystem.getSavedLoginFields();
+			if (savedFields != null) {
+				try {
+					await owoVgLoginSystem.login(savedFields, cancelToken).timeout(const Duration(seconds: 15));
+				}
+				catch (e) {
+					print('owo.vg auto-login failed: $e');
+				}
+			}
+			return OwoVgService.submitPost(
+				site: this,
+				post: post,
+				encoded: encoded,
+				captchaSolution: captchaSolution,
+				cancelToken: cancelToken
+			);
+		}
 		final file = post.file;
 		final response = await client.postUri(
 			Uri.https(sysUrl, '/${post.board}/post'),
@@ -1181,6 +1210,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 		required this.spamFilterCaptchaDelayYellow,
 		required this.spamFilterCaptchaDelayRed,
 		required this.stickyCloudflare,
+		this.owoVgUrl = 'owo.vg',
 	}) : _alternateBaseUrl = baseUrl.contains('chan') ? baseUrl.replaceFirst('chan', 'channel') : null;
 
 	@override
@@ -1213,31 +1243,48 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 	final Map<String, AsyncMemoizer<List<ImageboardBoardFlag>>> _boardFlags = {};
 	@override
 	Future<List<ImageboardBoardFlag>> getBoardFlags(String board) {
-		return _boardFlags.putIfAbsent(board, () => AsyncMemoizer<List<ImageboardBoardFlag>>()).runOnce(() async {
-			Map<String, String> flagMap = boardFlags?[board] ?? {};
-			if (boardFlags == null) {
-				// Only fetch flags if 'boardFlags' is missing in sites.json
-				try {
-					final response = await client.getUri(Uri.https(baseUrl, '/$board/'), options: Options(
-						responseType: ResponseType.plain
-					)).timeout(const Duration(seconds: 5));
-					final doc = parse(response.data);
-					flagMap = {
-						for (final e in doc.querySelector('select[name="flag"]')?.querySelectorAll('option') ?? <dom.Element>[])
-							(e.attributes['value'] ?? '0'): e.text
-					};
-				}
-				catch (e, st) {
-					print('Failed to fetch flags for $name ${formatBoardName(board)}: ${e.toStringDio()}');
-					Future.error(e, st); // crashlytics
-				}
+		final cacheKey = '${board}_${Settings.instance.fourChanPostingBackend.index}';
+		return _boardFlags.putIfAbsent(cacheKey, () => AsyncMemoizer<List<ImageboardBoardFlag>>()).runOnce(() async {
+			if (Settings.instance.fourChanPostingBackend == OwoVgPostingBackend.owoVg) {
+				return getOwoVgBoardFlags(board);
 			}
-			return flagMap.entries.map((entry) => ImageboardBoardFlag(
-				code: entry.key,
-				name: entry.value,
-				imageUrl: Uri.https(staticUrl, '/image/flags/$board/${entry.key.toLowerCase()}.gif').toString()
-			)).toList();
+			return _fetchBoardFlags(board);
 		});
+	}
+
+	Future<List<ImageboardBoardFlag>> getOwoVgBoardFlags(String board) async {
+		return _fetchBoardFlags(board, fromOwoVg: true);
+	}
+
+	Future<List<ImageboardBoardFlag>> _fetchBoardFlags(String board, {bool fromOwoVg = false}) async {
+		Map<String, String> flagMap = fromOwoVg ? {} : (boardFlags?[board] ?? {});
+		if (fromOwoVg || boardFlags == null) {
+			try {
+				final host = fromOwoVg ? owoVgUrl : baseUrl;
+				final response = await client.getUri(Uri.https(host, '/$board/'), options: Options(
+					responseType: ResponseType.plain,
+					headers: fromOwoVg ? {
+						'user-agent': OwoVgService.userAgentFor(this),
+						'origin': Uri.https(owoVgUrl).origin,
+						'referer': '${Uri.https(owoVgUrl).origin}/',
+					} : null
+				)).timeout(const Duration(seconds: 5));
+				final doc = parse(response.data);
+				flagMap = {
+					for (final e in doc.querySelector('select[name="flag"]')?.querySelectorAll('option') ?? <dom.Element>[])
+						(e.attributes['value'] ?? ''): e.text.trim().isEmpty ? 'Random flag' : e.text.trim()
+				};
+			}
+			catch (e, st) {
+				print('Failed to fetch flags for $name ${formatBoardName(board)}${fromOwoVg ? ' (owo.vg)' : ''}: ${e.toStringDio()}');
+				Future.error(e, st); // crashlytics
+			}
+		}
+		return flagMap.entries.map((entry) => ImageboardBoardFlag(
+			code: entry.key,
+			name: entry.value,
+			imageUrl: Uri.https(staticUrl, '/image/flags/$board/${entry.key.toLowerCase()}.gif').toString()
+		)).toList();
 	}
 
 	@override

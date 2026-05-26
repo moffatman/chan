@@ -300,43 +300,15 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 		final challenge = data['challenge'] as String;
 		final lifetime = Duration(seconds: (data['ttl'] as num).toInt());
 		if (data['tasks'] case List rawTasks) {
-			final tasks = <Captcha4ChanCustomChallengeTasksTask>[];
-			for (final rawTask in rawTasks) {
-				final choices = <ui.Image>[];
-				for (final item in (rawTask as Map)['items'] as List) {
-					final completer = Completer<ui.Image>();
-					Base64ImageProvider(item as String).resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
-						completer.complete(info.image);
-					}, onError: (e, st) {
-						completer.completeError(e, st);
-					}));
-					choices.add(await completer.future);
-				}
-				if (rawTask['str'] case String str) {
-					tasks.add((choices: choices, question: _buildQuestion(str)));
-				}
-				else if (rawTask['img'] case String img) {
-					tasks.add((choices: choices, question: ConstrainedBox(
-						constraints: const BoxConstraints(
-							minWidth: 100,
-							minHeight: 100
-						),
-						child: Image(
-							image: Base64ImageProvider(img),
-							fit: BoxFit.contain
-						)
-					)));
-				}
-			}
-			return Captcha4ChanCustomChallengeTasks(
+			return buildCaptcha4ChanCustomChallengeTasks(
 				request: request,
 				challenge: challenge,
+				rawTasks: rawTasks,
 				acquiredAt: acquiredAt,
 				tryAgainAt: tryAgainAt,
 				lifetime: lifetime,
 				cloudflare: challengeResponse.cloudflare,
-				originalData: data,
-				tasks: tasks
+				originalData: data
 			);
 		}
 		Completer<ui.Image>? foregroundImageCompleter;
@@ -372,6 +344,60 @@ Future<Captcha4ChanCustomChallenge> requestCaptcha4ChanCustomChallenge({
 			originalData: data
 		);
 	});
+}
+
+Future<Captcha4ChanCustomChallengeTasks> buildCaptcha4ChanCustomChallengeTasks({
+	required Chan4CustomCaptchaRequest request,
+	required String challenge,
+	required List rawTasks,
+	required DateTime acquiredAt,
+	required DateTime? tryAgainAt,
+	required Duration lifetime,
+	required bool cloudflare,
+	required Map originalData,
+	List<int?> taskHints = const [],
+	bool autoApplyHints = false
+}) async {
+	final tasks = <Captcha4ChanCustomChallengeTasksTask>[];
+	for (final rawTask in rawTasks) {
+		final choices = <ui.Image>[];
+		for (final item in (rawTask as Map)['items'] as List) {
+			final completer = Completer<ui.Image>();
+			Base64ImageProvider(item as String).resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
+				completer.complete(info.image);
+			}, onError: (e, st) {
+				completer.completeError(e, st);
+			}));
+			choices.add(await completer.future);
+		}
+		if (rawTask['str'] case String str) {
+			tasks.add((choices: choices, question: _buildQuestion(str)));
+		}
+		else if (rawTask['img'] case String img) {
+			tasks.add((choices: choices, question: ConstrainedBox(
+				constraints: const BoxConstraints(
+					minWidth: 100,
+					minHeight: 100
+				),
+				child: Image(
+					image: Base64ImageProvider(img),
+					fit: BoxFit.contain
+				)
+			)));
+		}
+	}
+	return Captcha4ChanCustomChallengeTasks(
+		request: request,
+		challenge: challenge,
+		acquiredAt: acquiredAt,
+		tryAgainAt: tryAgainAt,
+		lifetime: lifetime,
+		cloudflare: cloudflare,
+		originalData: originalData,
+		tasks: tasks,
+		taskHints: taskHints,
+		autoApplyHints: autoApplyHints
+	);
 }
 
 Future<int> _alignImage(Captcha4ChanCustomChallengeText challenge) async {
@@ -824,6 +850,7 @@ class Captcha4ChanCustom extends StatefulWidget {
 	final Captcha4ChanCustomChallenge? initialChallenge;
 	final (Object, StackTrace)? initialChallengeException;
 	final ValueChanged<DateTime>? onTryAgainAt;
+	final bool allowChallengeRefresh;
 
 	const Captcha4ChanCustom({
 		required this.site,
@@ -833,6 +860,7 @@ class Captcha4ChanCustom extends StatefulWidget {
 		this.initialChallenge,
 		this.initialChallengeException,
 		this.onTryAgainAt,
+		this.allowChallengeRefresh = true,
 		Key? key
 	}) : super(key: key);
 
@@ -950,6 +978,8 @@ typedef Captcha4ChanCustomChallengeTasksTask = ({List<ui.Image> choices, Widget 
 
 class Captcha4ChanCustomChallengeTasks extends Captcha4ChanCustomChallenge {
 	final List<Captcha4ChanCustomChallengeTasksTask> tasks;
+	final List<int?> taskHints;
+	final bool autoApplyHints;
 	({List<int?> taskChoices, List<bool> collapseTasks})? _wipAnswer;
 
 	Captcha4ChanCustomChallengeTasks({
@@ -960,7 +990,9 @@ class Captcha4ChanCustomChallengeTasks extends Captcha4ChanCustomChallenge {
 		required super.lifetime,
 		required super.cloudflare,
 		required super.originalData,
-		required this.tasks
+		required this.tasks,
+		this.taskHints = const [],
+		this.autoApplyHints = false
 	});
 
 	@override
@@ -1034,6 +1066,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	final Map<Chan4CustomCaptchaLetterKey, _PickerStuff> _pickerStuff = {};
 	final List<_PickerStuff> _orphanPickerStuff = [];
 	List<int?> _taskChoices = [];
+	List<int?> _taskHints = [];
 	List<bool> _collapseTasks = [];
 	bool _cloudGuessFailed = false;
 	String? _lastCloudGuess;
@@ -1253,6 +1286,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			}
 		}
 		else if (challenge case Captcha4ChanCustomChallengeTasks challenge) {
+			_taskHints = challenge.taskHints.length == challenge.tasks.length
+				? challenge.taskHints.toList()
+				: List.filled(challenge.tasks.length, null);
 			if (challenge._wipAnswer case final wip? when wip.collapseTasks.length == challenge.tasks.length &&
 																										wip.taskChoices.length == challenge.tasks.length
 			) {
@@ -1261,10 +1297,35 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			}
 			else {
 				_taskChoices = List.filled(challenge.tasks.length, null);
+				if (challenge.autoApplyHints) {
+					for (var i = 0; i < _taskChoices.length; i++) {
+						_taskChoices[i] = _taskHints[i];
+					}
+				}
 				_collapseTasks = List.filled(challenge.tasks.length, false);
 			}
 			setState(() {});
 		}
+	}
+
+	BoxDecoration _taskChoiceDecoration(int taskIndex, int choiceIndex) {
+		final selected = _taskChoices[taskIndex] == choiceIndex;
+		final hinted = taskIndex < _taskHints.length && _taskHints[taskIndex] == choiceIndex;
+		if (selected) {
+			return BoxDecoration(
+				border: Border.all(color: const Color(0xFFADFF2F), width: 3),
+				borderRadius: BorderRadius.circular(4)
+			);
+		}
+		if (hinted) {
+			return BoxDecoration(
+				border: Border.all(color: Colors.orange, width: 3),
+				borderRadius: BorderRadius.circular(4)
+			);
+		}
+		return const BoxDecoration(
+			borderRadius: BorderRadius.all(Radius.circular(4))
+		);
 	}
 
 	String _previousText = "000000";
@@ -1397,6 +1458,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	}
 
 	Widget _cooldownedRetryButton(BuildContext context) {
+		if (!widget.allowChallengeRefresh) {
+			return const SizedBox.shrink();
+		}
 		if (tryAgainAt != null) {
 			return TimedRebuilder(
 				interval: () => const Duration(seconds: 1),
@@ -1953,10 +2017,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 														},
 														child: Container(
 															padding: const EdgeInsets.all(8),
-															decoration: BoxDecoration(
-																color: _taskChoices[task.$1] == choice.$1 ? theme.primaryColorWithBrightness(0.7) : null,
-																borderRadius: const BorderRadius.all(Radius.circular(4)),
-															),
+															decoration: _taskChoiceDecoration(task.$1, choice.$1),
 															constraints: const BoxConstraints(
 																minWidth: 100,
 																minHeight: 100
@@ -2001,10 +2062,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 																padding: activeSingleChoice ? const EdgeInsets.only(bottom: 8) : EdgeInsets.zero,
 																child: Container(
 																	padding: const EdgeInsets.symmetric(horizontal: 8),
-																	decoration: BoxDecoration(
-																		color: _taskChoices[task.$1] == choice.$1 ? theme.primaryColorWithBrightness(0.7) : null,
-																		borderRadius: const BorderRadius.all(Radius.circular(4)),
-																	),
+																	decoration: _taskChoiceDecoration(task.$1, choice.$1),
 																	child: Column(
 																		mainAxisSize: MainAxisSize.min,
 																		children: [

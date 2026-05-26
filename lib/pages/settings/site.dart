@@ -7,6 +7,8 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/json_cache.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
+import 'package:chan/services/owovg.dart';
+import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
@@ -100,6 +102,77 @@ final siteSettings = [
 													)
 												)
 											),
+										if (imageboard.site case Site4Chan site4chan) ...[
+											Padding(
+												padding: const EdgeInsets.symmetric(vertical: 12),
+												child: AnimatedBuilder(
+													animation: imageboard.persistence,
+													builder: (context, _) => AdaptiveThinButton(
+														filled: site4chan.owoVgLoginSystem.getSavedLoginFields() != null,
+														padding: const EdgeInsets.all(6),
+														child: Row(
+															mainAxisSize: MainAxisSize.min,
+															children: [
+																ImageboardSiteLoginSystemIcon(
+																	loginSystem: site4chan.owoVgLoginSystem,
+																	color: site4chan.owoVgLoginSystem.getSavedLoginFields() != null ? ChanceTheme.backgroundColorOf(context) : ChanceTheme.primaryColorOf(context)
+																),
+																Text(site4chan.owoVgLoginSystem.name)
+															]
+														),
+														onPressed: () => _showLoginSystemPopup(context, site4chan.owoVgLoginSystem)
+													)
+												)
+											),
+											AdaptiveIconButton(
+												icon: const Icon(CupertinoIcons.cloud),
+												onPressed: () => openCookieBrowser(
+													context,
+													Uri.https(site4chan.owoVgUrl, '/'),
+													useFullWidthGestures: false
+												)
+											),
+											AdaptiveIconButton(
+												icon: const Icon(CupertinoIcons.exclamationmark_bubble),
+												onPressed: () async {
+													final controller = TextEditingController();
+													final message = await showAdaptiveDialog<String>(
+														context: context,
+														builder: (context) => AdaptiveAlertDialog(
+															title: const Text('Complain'),
+															content: TextField(
+																controller: controller,
+																maxLines: 4,
+																decoration: const InputDecoration(
+																	hintText: 'Complain about owo.vg bugs and posting issues here.'
+																)
+															),
+															actions: [
+																AdaptiveDialogAction(
+																	child: const Text('Cancel'),
+																	onPressed: () => Navigator.pop(context)
+																),
+																AdaptiveDialogAction(
+																	child: const Text('Send'),
+																	onPressed: () => Navigator.pop(context, controller.text)
+																)
+															]
+														)
+													);
+													controller.dispose();
+													if (message == null || !context.mounted) return;
+													try {
+														final response = await OwoVgService.submitFeedback(site4chan, message);
+														if (!context.mounted) return;
+														showToast(context: context, message: response, icon: CupertinoIcons.checkmark_circle);
+													}
+													catch (e) {
+														if (!context.mounted) return;
+														showToast(context: context, message: e.toString(), icon: CupertinoIcons.exclamationmark_triangle);
+													}
+												}
+											)
+										],
 										if (imageboard.site.authPage != null && imageboard.site.hasLinkCookieAuth) AdaptiveIconButton(
 											icon: const Icon(CupertinoIcons.link),
 											onPressed: () => showAuthPageHelperPopup(context, imageboard)

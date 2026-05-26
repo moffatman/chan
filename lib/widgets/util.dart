@@ -25,6 +25,7 @@ import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/css_colors.dart';
 import 'package:chan/widgets/cupertino_inkwell.dart';
+import 'package:chan/widgets/html_rich_text.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:dio/dio.dart';
@@ -44,7 +45,7 @@ Future<void> alert(BuildContext context, String title, String message, {
 	Map<String, FutureOr<void> Function()> actions = const {},
 	bool barrierDismissible = true
 }) async {
-	final looksForeign = title.looksForeign || message.looksForeign;
+	final looksForeign = !containsHtml(message) && (title.looksForeign || message.looksForeign);
 	bool translating = false;
 	String? translatedTitle;
 	String? translatedMessage;
@@ -55,7 +56,13 @@ Future<void> alert(BuildContext context, String title, String message, {
 		builder: (context) => StatefulBuilder(
 			builder: (context, setState) => AdaptiveAlertDialog(
 				title: Text(translatedTitle ?? title),
-				content: Text(translatedMessage ?? message),
+				content: () {
+					final body = translatedMessage ?? message;
+					if (containsHtml(body)) {
+						return HtmlRichText(html: body);
+					}
+					return Text(body);
+				}(),
 				actions: [
 					for (final action in actions.entries) AdaptiveDialogAction(
 						onPressed: () async {

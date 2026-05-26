@@ -16,6 +16,7 @@ import 'package:chan/services/http_client.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/json_cache.dart';
 import 'package:chan/services/network_logging.dart';
+import 'package:chan/services/owovg.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/request_fixup.dart';
 import 'package:chan/services/storage.dart';
@@ -1268,6 +1269,24 @@ class SavedSettings extends HiveObject {
 	bool showTabPopup;
 	@HiveField(216)
 	bool didHideTabPopupAutomatically;
+	@HiveField(217)
+	int fourChanPostingBackend;
+	@HiveField(218)
+	String owoVgPool;
+	@HiveField(219)
+	bool owoVgEmailIps;
+	@HiveField(220)
+	bool owoVgManualCaptcha;
+	@HiveField(221)
+	String owoVgRecycleIps;
+	@HiveField(222)
+	String owoVgEmailVerificationStock;
+	@HiveField(223)
+	int? owoVgInstallDate;
+	@HiveField(224)
+	bool owoVgRecompression;
+	@HiveField(225)
+	bool owoVgAntiphash;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1486,6 +1505,15 @@ class SavedSettings extends HiveObject {
 		this.cachedWebViewHeaders,
 		bool? showTabPopup,
 		bool? didHideTabPopupAutomatically,
+		int? fourChanPostingBackend,
+		String? owoVgPool,
+		bool? owoVgEmailIps,
+		bool? owoVgManualCaptcha,
+		String? owoVgRecycleIps,
+		String? owoVgEmailVerificationStock,
+		int? owoVgInstallDate,
+		bool? owoVgRecompression,
+		bool? owoVgAntiphash,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1720,7 +1748,16 @@ class SavedSettings extends HiveObject {
 		doubleTapToSeekVideo = doubleTapToSeekVideo ?? false,
 		showHotPostsInScrollbar = showHotPostsInScrollbar ?? false,
 		showTabPopup = showTabPopup ?? false,
-		didHideTabPopupAutomatically = didHideTabPopupAutomatically ?? false {
+		didHideTabPopupAutomatically = didHideTabPopupAutomatically ?? false,
+		fourChanPostingBackend = fourChanPostingBackend ?? 0,
+		owoVgPool = owoVgPool ?? 's',
+		owoVgEmailIps = owoVgEmailIps ?? false,
+		owoVgManualCaptcha = owoVgManualCaptcha ?? false,
+		owoVgRecycleIps = owoVgRecycleIps ?? 'all',
+		owoVgEmailVerificationStock = owoVgEmailVerificationStock ?? '',
+		owoVgInstallDate = owoVgInstallDate,
+		owoVgRecompression = owoVgRecompression ?? false,
+		owoVgAntiphash = owoVgAntiphash ?? false {
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
@@ -3098,6 +3135,42 @@ class Settings extends ChangeNotifier {
 
 	static const showHotPostsInScrollbarSetting = SavedSetting(SavedSettingsFields.showHotPostsInScrollbar);
 	bool get showHotPostsInScrollbar => showHotPostsInScrollbarSetting(this);
+
+	static const fourChanPostingBackendSetting = SavedSetting(SavedSettingsFields.fourChanPostingBackend);
+	OwoVgPostingBackend get fourChanPostingBackend => OwoVgPostingBackend.fromIndex(fourChanPostingBackendSetting(this));
+	set fourChanPostingBackend(OwoVgPostingBackend backend) => fourChanPostingBackendSetting.set(this, backend.index);
+
+	static const owoVgPoolSetting = SavedSetting(SavedSettingsFields.owoVgPool);
+	String get owoVgPool => owoVgPoolSetting(this);
+	set owoVgPool(String value) => owoVgPoolSetting.set(this, value);
+
+	static const owoVgEmailIpsSetting = SavedSetting(SavedSettingsFields.owoVgEmailIps);
+	bool get owoVgEmailIps => owoVgEmailIpsSetting(this);
+	set owoVgEmailIps(bool value) => owoVgEmailIpsSetting.set(this, value);
+
+	static const owoVgManualCaptchaSetting = SavedSetting(SavedSettingsFields.owoVgManualCaptcha);
+	bool get owoVgManualCaptcha => owoVgManualCaptchaSetting(this);
+	set owoVgManualCaptcha(bool value) => owoVgManualCaptchaSetting.set(this, value);
+
+	static const owoVgRecycleIpsSetting = SavedSetting(SavedSettingsFields.owoVgRecycleIps);
+	String get owoVgRecycleIps => owoVgRecycleIpsSetting(this);
+	set owoVgRecycleIps(String value) => owoVgRecycleIpsSetting.set(this, value);
+
+	static const owoVgEmailVerificationStockSetting = SavedSetting(SavedSettingsFields.owoVgEmailVerificationStock);
+	String get owoVgEmailVerificationStock => owoVgEmailVerificationStockSetting(this);
+	set owoVgEmailVerificationStock(String value) => owoVgEmailVerificationStockSetting.set(this, value);
+
+	static const owoVgInstallDateSetting = SavedSetting(SavedSettingsFields.owoVgInstallDate);
+	int? get owoVgInstallDate => owoVgInstallDateSetting(this);
+	set owoVgInstallDate(int? value) => owoVgInstallDateSetting.set(this, value);
+
+	static const owoVgRecompressionSetting = SavedSetting(SavedSettingsFields.owoVgRecompression);
+	bool get owoVgRecompression => owoVgRecompressionSetting(this);
+	set owoVgRecompression(bool value) => owoVgRecompressionSetting.set(this, value);
+
+	static const owoVgAntiphashSetting = SavedSetting(SavedSettingsFields.owoVgAntiphash);
+	bool get owoVgAntiphash => owoVgAntiphashSetting(this);
+	set owoVgAntiphash(bool value) => owoVgAntiphashSetting.set(this, value);
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {
