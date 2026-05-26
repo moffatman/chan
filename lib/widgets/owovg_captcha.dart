@@ -117,6 +117,14 @@ Duration _extractLifetime(String html) {
 	return const Duration(minutes: 2);
 }
 
+bool isOwoVgEmailInteractiveCaptcha(String html) {
+	return html.contains("'solve_email'") || html.contains('"solve_email"');
+}
+
+String owoVgInteractiveCaptchaSolveType(String html) {
+	return isOwoVgEmailInteractiveCaptcha(html) ? 'solve_email' : 'solve';
+}
+
 Future<bool> showOwoVgCaptchaDialog({
 	required BuildContext context,
 	required Site4Chan site,
@@ -153,6 +161,7 @@ Future<bool> showOwoVgCaptchaDialog({
 		challenge.dispose();
 		return false;
 	}
+	final solveType = owoVgInteractiveCaptchaSolveType(html);
 	final solved = await Navigator.of(context, rootNavigator: true).push<bool>(TransparentRoute(
 		builder: (dialogContext) => OverscrollModalPage(
 			increasePopDifficulty: true,
@@ -164,7 +173,7 @@ Future<bool> showOwoVgCaptchaDialog({
 				onCaptchaSolved: (solution) {
 					if (solution != null) {
 						sendMessage({
-							't': 'solve',
+							't': solveType,
 							't-response': solution.response,
 							't-challenge': solution.challenge,
 						});

@@ -7,11 +7,11 @@ import 'package:chan/models/owovg_post_extras.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
-import 'package:chan/services/util.dart';
 import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/owovg_captcha.dart';
+import 'package:chan/widgets/owovg_hcaptcha.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
@@ -248,11 +248,19 @@ class OwoVgService {
 			print('[owo.vg] $plain');
 			return;
 		}
+		final lower = plain.toLowerCase();
+		final duration = error
+			? const Duration(seconds: 5)
+			: warning
+				? const Duration(seconds: 4)
+				: (lower.contains('waiting') || lower.contains('verifying') || lower.contains('visiting') || lower.contains('loading') || lower.contains('getting email') || lower.contains('solving'))
+					? const Duration(seconds: 8)
+					: const Duration(seconds: 3);
 		showToast(
 			context: context,
 			message: plain,
 			icon: error ? CupertinoIcons.xmark_circle : warning ? CupertinoIcons.exclamationmark_triangle : CupertinoIcons.info,
-			duration: error ? const Duration(seconds: 5) : const Duration(seconds: 2)
+			duration: duration
 		);
 	}
 
@@ -370,6 +378,37 @@ class OwoVgService {
 						break;
 					case 'warn':
 						_notify(res['d'] as String? ?? '', warning: true);
+						break;
+					case 'email_hcaptcha':
+						final data = res['d'];
+						final context = ImageboardRegistry.instance.context;
+						if (context == null || !context.mounted) {
+							completer.completeError(const OwoVgException('hCaptcha required but no UI context available'));
+							cleanup();
+							return;
+						}
+						if (data is! Map) {
+							completer.completeError(const OwoVgException('Invalid hCaptcha prompt'));
+							cleanup();
+							return;
+						}
+						final prompt = OwoVgEmailHcaptchaPrompt.fromJson(data.cast<String, dynamic>());
+						if (!prompt.isValid) {
+							completer.completeError(const OwoVgException('Invalid hCaptcha prompt'));
+							cleanup();
+							return;
+						}
+						final solved = await showOwoVgEmailHcaptchaDialog(
+							context: context,
+							prompt: prompt,
+							sendMessage: (payload) {
+								channel?.sink.add(jsonEncode(payload));
+							}
+						);
+						if (!solved) {
+							completer.completeError(const OwoVgException('hCaptcha cancelled'));
+							cleanup();
+						}
 						break;
 					case 'interactive':
 						final html = res['d'] as String? ?? '';
