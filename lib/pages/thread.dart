@@ -3922,16 +3922,14 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 											)
 										)
 									];
-									return Padding(
+									return SingleChildScrollView(
 										padding: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
-										child: SingleChildScrollView(
-											scrollDirection: Axis.horizontal,
-											reverse: true,
-											child: Row(
-												mainAxisSize: MainAxisSize.min,
-												crossAxisAlignment: CrossAxisAlignment.center,
-												children: widget.reversed ? children.reversed.toList() : children
-											)
+										scrollDirection: Axis.horizontal,
+										reverse: true,
+										child: Row(
+											mainAxisSize: MainAxisSize.min,
+											crossAxisAlignment: CrossAxisAlignment.center,
+											children: widget.reversed ? children.reversed.toList() : children
 										)
 									);
 								}
