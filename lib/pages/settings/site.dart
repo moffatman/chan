@@ -218,7 +218,7 @@ final siteSettings = [
 										),
 										AdaptiveIconButton(
 											icon: const Icon(CupertinoIcons.delete),
-											onPressed: () async {
+											onPressed: ImageboardRegistry.instance.count < 2 ? null : () async {
 												final really = await confirm(context, 'Really delete ${imageboard.site.name}? Data will be gone forever.', actionName: 'Delete');
 												if (really && context.mounted) {
 													await modalLoad(context, 'Cleaning up...', (_) async {
