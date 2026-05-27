@@ -3136,7 +3136,7 @@ class _ReplyBoxLayoutDelegate extends MultiChildLayoutDelegate {
 		final replyBoxSize = layoutChild(_ReplyBoxLayoutId.replyBox, BoxConstraints(
 			minWidth: size.width,
 			maxWidth: size.width,
-			maxHeight: size.height - topPadding
+			maxHeight: size.height - topPadding - bottomPadding
 		));
 		final threadHeight = size.height - replyBoxSize.height;
 		positionChild(_ReplyBoxLayoutId.replyBox, Offset(0, threadHeight - bottomPadding));
@@ -3169,7 +3169,7 @@ class ReplyBoxLayout extends StatelessWidget {
 		final padding = MediaQuery.paddingOf(context);
 		return CustomMultiChildLayout(
 			delegate: _ReplyBoxLayoutDelegate(
-				topPadding: padding.top + 110, // Don't let thread get so small
+				topPadding: padding.top + 80, // Don't let thread get so small
 				bottomPadding: padding.bottom
 			),
 			children: [
