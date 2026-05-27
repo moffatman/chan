@@ -103,7 +103,7 @@ enum PostSpanFormat {
 	int get _makeSpanVersion => 4 + switch (this) {
 		chan4 => 4,
 		foolFuuka => 1,
-		lainchan => 3,
+		lainchan => 4,
 		fuuka => 1,
 		futaba => 1,
 		reddit => 5,

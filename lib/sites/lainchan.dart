@@ -162,34 +162,17 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 						yield const PostLineBreakSpan();
 					}
 					else if (node.localName == 'a' && node.attributes['href'] != null) {
-						final onclick = node.attributes['onclick'];
-						int? postId;
-						if (onclick != null && onclick.length > 18 && onclick.startsWith('highlightReply(\'')) {
-							final closingQuoteIndex = onclick.indexOf('\'', 16);
-							if (closingQuoteIndex != -1) {
-								postId = onclick.substring(16, closingQuoteIndex).tryParseInt;
-							}
-						}
-						if (postId != null) {
+						final match = _quoteLinkPattern.firstMatch(node.attributes['href']!);
+						// Make sure this isn't just a link to another imageboard
+						if (match != null && (Uri.tryParse(node.attributes['href']!)?.host.isEmpty ?? true)) {
 							yield PostQuoteLinkSpan(
-								board: board,
-								threadId: threadId,
-								postId: postId
+								board: match.group(1)!,
+								threadId: int.parse(match.group(2)!),
+								postId: int.parse(match.group(3)!)
 							);
 						}
 						else {
-							final match = _quoteLinkPattern.firstMatch(node.attributes['href']!);
-							// Make sure this isn't just a link to another imageboard
-							if (match != null && (Uri.tryParse(node.attributes['href']!)?.host.isEmpty ?? true)) {
-								yield PostQuoteLinkSpan(
-									board: match.group(1)!,
-									threadId: int.parse(match.group(2)!),
-									postId: int.parse(match.group(3)!)
-								);
-							}
-							else {
-								yield PostLinkSpan(node.attributes['href']!, name: node.text.nonEmptyOrNull);
-							}
+							yield PostLinkSpan(node.attributes['href']!, name: node.text.nonEmptyOrNull);
 						}
 					}
 					else if (node.localName == 'strong' || node.localName == 'b') {
