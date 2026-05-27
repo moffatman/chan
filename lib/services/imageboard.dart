@@ -636,10 +636,6 @@ class ImageboardRegistry extends ChangeNotifier {
 					initializations.add(_sites[entry.key]!.initialize());
 				}
 				await Future.wait(initializations);
-				if (Persistence.settings.automaticCacheClearDays < 100000) {
-					await dev?._initializedCompleter.future;
-					await Persistence.cleanupThreads(imageboardsIncludingDev.toList(), Duration(days: Persistence.settings.automaticCacheClearDays));
-				}
 				final initialTabsLength = Persistence.tabs.length;
 				final initialTab = Persistence.tabs[Persistence.currentTabIndex];
 				final initialTabIndex = Persistence.currentTabIndex;
@@ -661,7 +657,11 @@ class ImageboardRegistry extends ChangeNotifier {
 				await Future.wait(Persistence.tabs.map((tab) => tab.initialize()));
 				if (initialTabsLength != Persistence.tabs.length) {
 					Persistence.saveTabs();
-				Persistence.globalTabMutator.value = Persistence.currentTabIndex;
+					Persistence.globalTabMutator.value = Persistence.currentTabIndex;
+				}
+				if (Persistence.settings.automaticCacheClearDays < 100000) {
+					await dev?._initializedCompleter.future;
+					await Persistence.cleanupThreads(imageboardsIncludingDev.toList(), Duration(days: Persistence.settings.automaticCacheClearDays));
 				}
 			}
 			catch (e, st) {
