@@ -61,7 +61,6 @@ class ScrollTracker {
 			}
 			else if (notification is ScrollUpdateNotification) {
 				_thisScrollHasDragDetails |= notification.dragDetails != null;
-				print('_thisScrollHasDragDetails=$_thisScrollHasDragDetails');
 				if (notification.metrics.axis == Axis.vertical && _thisScrollHasDragDetails && isMeaningfullyScrollable) {
 					final delta = notification.scrollDelta ?? 0;
 					final isOverscrollBottom = notification.metrics.pixels > notification.metrics.minScrollExtent;
