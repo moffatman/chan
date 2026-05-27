@@ -33,8 +33,12 @@ class ScrollTracker {
 			if (notification.context case final context?) {
 				final primaryMetrics = PrimaryScrollController.maybeOf(context)?.tryPosition;
 				if (primaryMetrics?.viewportDimension != notification.metrics.viewportDimension
-						&& primaryMetrics?.pixels != notification.metrics.pixels) {
+						|| primaryMetrics?.pixels != notification.metrics.pixels) {
 					// Not a real scroll of primary scrollable
+					return false;
+				}
+				if (!TickerMode.of(context)) {
+					// Background tab or something
 					return false;
 				}
 			}
@@ -57,6 +61,7 @@ class ScrollTracker {
 			}
 			else if (notification is ScrollUpdateNotification) {
 				_thisScrollHasDragDetails |= notification.dragDetails != null;
+				print('_thisScrollHasDragDetails=$_thisScrollHasDragDetails');
 				if (notification.metrics.axis == Axis.vertical && _thisScrollHasDragDetails && isMeaningfullyScrollable) {
 					final delta = notification.scrollDelta ?? 0;
 					final isOverscrollBottom = notification.metrics.pixels > notification.metrics.minScrollExtent;
@@ -83,6 +88,16 @@ class ScrollTracker {
 			}
 		}
 		else if (notification is ScrollMetricsNotification) {
+			final primaryMetrics = PrimaryScrollController.maybeOf(notification.context)?.tryPosition;
+			if (primaryMetrics?.viewportDimension != notification.metrics.viewportDimension
+					|| primaryMetrics?.pixels != notification.metrics.pixels) {
+				// Not a real scroll of primary scrollable
+				return false;
+			}
+			if (!TickerMode.of(notification.context)) {
+				// Background tab or something
+				return false;
+			}
 			final isMeaningfullyScrollable = (notification.metrics.extentBefore + notification.metrics.extentAfter) > 500;
 			if (!isMeaningfullyScrollable && notification.metrics.axis == Axis.vertical) {
 				// Scrollable size has shrunk, show the bars
