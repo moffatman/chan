@@ -4265,8 +4265,8 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			if (_isDisposed) {
 				return;
 			}
-			double atAlignment0 = _items[targetIndex].cachedOffset!;
-			final alignmentSlidingWindow = scrollController!.position.viewportDimension - _items[targetIndex].cachedHeight! - topOffset - bottomOffset;
+			double atAlignment0 = _items[targetIndex].cachedOffset! - topOffset;
+			final alignmentSlidingWindow = scrollController!.position.viewportDimension - (_items[targetIndex].cachedHeight! + topOffset + bottomOffset);
 			if (targetIndex == _items.length - 1) {
 				// add offset to reveal the full footer
 				atAlignment0 += 110;
