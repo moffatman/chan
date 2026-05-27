@@ -4213,10 +4213,12 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				final originalEstimate = _estimateOffset(targetIndex);
 				double estimate = switch (originalEstimate) {
 					double e => e - topOffset,
-					null => switch (scrollController!.position.maxScrollExtent) {
-						double.infinity => 200 * _items.length, // make it sane
-						double ok => ok
-					} * (targetIndex / max(1, _items.length - 1))
+					null => switch ((scrollController!.position.maxScrollExtent, _items.tryFirst?.cachedHeight)) {
+						(double.infinity, null) => 200.0 * targetIndex, // make it sane
+						(double.infinity, double opHeight) => max(opHeight, 200.0 * targetIndex),
+						(double total, null) => total * (targetIndex / max(1, _items.length - 1)),
+						(double total, double opHeight) => opHeight + ((total - opHeight) * ((targetIndex - 1) / max(1, _items.length - 2)))
+					}
 				};
 				if (_items.last.cachedOffset != null) {
 					// prevent overscroll
