@@ -119,7 +119,12 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 			}
 			return [PostTextSpan(text)];
 		}
-		return linkify(text, linkifiers: const [ChanceLinkifier(), LooseUrlLinkifier(), LineBreakLinkifier()], options: const LinkifyOptions(
+		return linkify(text, linkifiers: const [
+			MagnetLinkifier(),
+			ChanceLinkifier(),
+			LooseUrlLinkifier(),
+			LineBreakLinkifier()
+		], options: const LinkifyOptions(
 			defaultToHttps: true,
 			humanize: false
 		)).map((elem) {

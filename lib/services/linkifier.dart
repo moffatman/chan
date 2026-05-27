@@ -299,3 +299,34 @@ class LineBreakLinkifier extends Linkifier {
     return list;
   }
 }
+
+class MagnetLinkifier extends Linkifier {
+  const MagnetLinkifier();
+
+	static final _pattern = RegExp(r'magnet:\?xt=urn:[^\s]*');
+
+  @override
+  List<LinkifyElement> parse(elements, options) {
+    final list = <LinkifyElement>[];
+
+    for (final element in elements) {
+      if (element is TextElement) {
+        int lastEnd = 0;
+        for (final match in _pattern.allMatches(element.text)) {
+          if (match.start > lastEnd) {
+            list.add(TextElement(element.text.substring(lastEnd, match.start)));
+          }
+          list.add(UrlElement(element.text.substring(match.start, match.end)));
+          lastEnd = match.end;
+        }
+        if (lastEnd < element.text.length) {
+          list.add(TextElement(element.text.substring(lastEnd)));
+        }
+      } else {
+        list.add(element);
+      }
+    }
+
+    return list;
+  }
+}

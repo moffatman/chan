@@ -279,16 +279,19 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 			}
 		}
 		return linkify(text, linkifiers: fromSearchThread != null ? const [
+			MagnetLinkifier(),
 			LooseUrlLinkifier(),
 			ChanceLinkifier(),
 			LineBreakLinkifier(),
 			_QuoteLinkLinkifier(fake: false)
 		] : (findFakeQuotelinksOnBoard != null ? const [
+			MagnetLinkifier(),
 			LooseUrlLinkifier(),
 			ChanceLinkifier(),
 			LineBreakLinkifier(),
 			_QuoteLinkLinkifier(fake: true)
 		] : const [
+			MagnetLinkifier(),
 			LooseUrlLinkifier(),
 			ChanceLinkifier(),
 			LineBreakLinkifier()
