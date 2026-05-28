@@ -104,10 +104,23 @@ class OverscrollModalPageState extends State<OverscrollModalPage> {
 
 	// To fix behavior when stopping the scroll-in with tap event
 	void _onScrollUpdate() {
-		if (!_popping && (!widget.increasePopDifficulty || _pointersDown.values.any((p) => p.$4.atEdge))) {
+		if (!_popping) {
 			final overscrollTop = _controller.position.minScrollExtent - _controller.position.pixels;
 			final overscrollBottom = _controller.position.pixels - _controller.position.maxScrollExtent;
-			_opacity.value = 1 - (((max(overscrollTop, overscrollBottom) + _scrollStopPosition) - 40) / 100).clamp(0, 1);
+			final newOpacity = 1.0 - (((max(overscrollTop, overscrollBottom) + _scrollStopPosition) - 40) / 100).clamp(0, 1);
+			if (
+				// Always allow increasing opacity even if popping is not allowed (overscroll bounceback)
+				newOpacity > _opacity.value
+				// Always allow in easy mode
+				|| !widget.increasePopDifficulty
+				// Allow if would pop
+				|| _pointersDown.values.any(
+					(p) => ((overscrollTop > -_scrollStopPosition) && p.$4.extentBefore <= 0)
+							|| ((overscrollBottom > -_scrollStopPosition) && p.$4.extentAfter <= 0)
+				)
+			) {
+				_opacity.value = newOpacity;
+			}
 		}
 		if (!_finishedPopIn && _scrollStopPosition != 0 && _controller.position.pixels > _scrollStopPosition) {
 			_scrollStopPosition = _controller.position.pixels;
