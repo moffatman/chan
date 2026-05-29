@@ -106,7 +106,7 @@ class _RenderCheatingParagraph extends RenderBox with SlottedContainerRenderObje
 		double decorationTop = math.min(math.max(decoration.height, paragraphHeight), biggest.height - decoration.height);
 		final minDecorationTop = math.max(0.0, paragraphHeight - decoration.height);
 		while (decorationTop > minDecorationTop) {
-			final position = hitTest(Offset(biggest.width - decoration.width, decorationTop - 2.0 /* some small delta to go into next line */));
+			final position = hitTest(Offset(biggest.width - 0.5, decorationTop - 2.0 /* some small delta to go into next line */));
 			if (position == lastPosition) {
 				// Avoid infinite loop
 				break;
