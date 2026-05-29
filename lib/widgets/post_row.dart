@@ -542,7 +542,7 @@ class PostRow extends StatelessWidget {
 									child: overrideReplyCount!
 								)
 							) : ((settings.cloverStyleRepliesButton || replyIds.isEmpty) ? null :
-								SizedBox(width: (4 + replyIds.length.numberOfDigitsLinear) * 8, height: 44)
+								SizedBox(width: (replyIds.length.numberOfDigitsLinear * 8 * settings.textScale) + 32, height: 44)
 							)) : null,
 							overflow: TextOverflow.fade
 						)
