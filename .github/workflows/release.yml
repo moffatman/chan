@@ -1,1 +1,70 @@
-bmFtZTogQnVpbGQgJiBSZWxlYXNlIEFQSwoKb246CiAgd29ya2Zsb3dfZGlzcGF0Y2g6CiAgICBpbnB1dHM6CiAgICAgIHRhZzoKICAgICAgICBkZXNjcmlwdGlvbjogJ1JlbGVhc2UgdGFnIChlLmcuIHYxLjAuMCknCiAgICAgICAgcmVxdWlyZWQ6IHRydWUKICAgICAgICBkZWZhdWx0OiAndjEuMC4wJwoKam9iczoKICBidWlsZDoKICAgIHJ1bnMtb246IHVidW50dS1sYXRlc3QKICAgIHN0ZXBzOgogICAgICAtIG5hbWU6IENoZWNrb3V0CiAgICAgICAgdXNlczogYWN0aW9ucy9jaGVja291dEB2NAoKICAgICAgLSBuYW1lOiBTZXQgdXAgSmF2YQogICAgICAgIHVzZXM6IGFjdGlvbnMvc2V0dXAtamF2YUB2NAogICAgICAgIHdpdGg6CiAgICAgICAgICBqYXZhLXZlcnNpb246ICcyMScKICAgICAgICAgIGRpc3RyaWJ1dGlvbjogJ3RlbXVyaW4nCgogICAgICAtIG5hbWU6IFNldCB1cCBGbHV0dGVyCiAgICAgICAgdXNlczogc3Vib3NpdG8vZmx1dHRlci1hY3Rpb25AdjIKICAgICAgICB3aXRoOgogICAgICAgICAgY2hhbm5lbDogJ3N0YWJsZScKCiAgICAgIC0gbmFtZTogR2VuZXJhdGUgc2lnbmluZyBrZXlzdG9yZQogICAgICAgIHJ1bjogfAogICAgICAgICAga2V5dG9vbCAtZ2Vua2V5cGFpciAtdiBcCiAgICAgICAgICAgIC1rZXlzdG9yZSBhbmRyb2lkL3JlbGVhc2Uta2V5LmprcyBcCiAgICAgICAgICAgIC1hbGlhcyBjaGFuIC1rZXlhbGcgUlNBIC1rZXlzaXplIDIwNDggLXZhbGlkaXR5IDEwMDAwIFwKICAgICAgICAgICAgLXN0b3JlcGFzcyBjaGFucmVsZWFzZSAta2V5cGFzcyBjaGFucmVsZWFzZSBcCiAgICAgICAgICAgIC1kbmFtZSAiQ049Q2hhbiBGb3JrLCBPVT1EZXYsIE89Rm9yaywgTD1Vbmtub3duLCBTVD1Vbmtub3duLCBDPVVTIgoKICAgICAgLSBuYW1lOiBXcml0ZSBrZXkucHJvcGVydGllcwogICAgICAgIHJ1bjogfAogICAgICAgICAgY2F0ID4gYW5kcm9pZC9rZXkucHJvcGVydGllcyA8PEVPRgogICAgICAgICAgc3RvcmVQYXNzd29yZD1jaGFucmVsZWFzZQogICAgICAgICAga2V5UGFzc3dvcmQ9Y2hhbnJlbGVhc2UKICAgICAgICAgIGtleUFsaWFzPWNoYW4KICAgICAgICAgIHN0b3JlRmlsZT0uLi9yZWxlYXNlLWtleS5qa3MKICAgICAgICAgIEVPRgoKICAgICAgLSBuYW1lOiBGbHV0dGVyIHB1YiBnZXQKICAgICAgICBydW46IGZsdXR0ZXIgcHViIGdldAoKICAgICAgLSBuYW1lOiBCdWlsZCByZWxlYXNlIEFQSwogICAgICAgIHJ1bjogZmx1dHRlciBidWlsZCBhcGsgLS1yZWxlYXNlCgogICAgICAtIG5hbWU6IFJlbmFtZSBBUEsKICAgICAgICBydW46IHwKICAgICAgICAgIG12IGJ1aWxkL2FwcC9vdXRwdXRzL2ZsdXR0ZXItYXBrL2FwcC1yZWxlYXNlLmFwayBcCiAgICAgICAgICAgICBidWlsZC9hcHAvb3V0cHV0cy9mbHV0dGVyLWFway9jaGFuLSR7eyBnaXRodWIuZXZlbnQuaW5wdXRzLnRhZyB9fS5hcGsKCiAgICAgIC0gbmFtZTogQ3JlYXRlIEdpdEh1YiBSZWxlYXNlCiAgICAgICAgdXNlczogc29mdHByb3BzL2FjdGlvbi1naC1yZWxlYXNlQHYyCiAgICAgICAgd2l0aDoKICAgICAgICAgIHRhZzogJHt7IGdpdGh1Yi5ldmVudC5pbnB1dHMudGFnIH19CiAgICAgICAgICBuYW1lOiBDaGFuICR7eyBnaXRodWIuZXZlbnQuaW5wdXRzLnRhZyB9fQogICAgICAgICAgYm9keTogfAogICAgICAgICAgICAjIyBDaGFuZ2VzCiAgICAgICAgICAgIC0gRml4IEFuZHJvaWQgaW1hZ2UgcGlja2VyIG5vdCBzaG93aW5nIHRoaXJkLXBhcnR5IGdhbGxlcnkgYXBwcyAoIzMxMikKICAgICAgICAgICAgLSBQYXVzZSB2aWRlbyB3aGVuIHRodW1ibmFpbCBncmlkIG9wZW5zICgjMjg0KQogICAgICAgICAgICAtIEFkZCBrb2hsY2hhbi5uZXQsIGtyYXV0Y2hhbi5vcmcsIGVqY2hhbi5uZXQgc3VwcG9ydCAoIzI4OSwgIzI4NSwgIzMwNikKICAgICAgICAgIGZpbGVzOiBidWlsZC9hcHAvb3V0cHV0cy9mbHV0dGVyLWFway9jaGFuLSR7eyBnaXRodWIuZXZlbnQuaW5wdXRzLnRhZyB9fS5hcGsKICAgICAgICAgIGdlbmVyYXRlX3JlbGVhc2Vfbm90ZXM6IGZhbHNlCiAgICAgICAgZW52OgogICAgICAgICAgR0lUSFVCX1RPS0VOOiAke3sgc2VjcmV0cy5HSVRIVUJfVE9LRU4gfX0K
+name: Build & Release APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Generate signing keystore
+        run: |
+          keytool -genkeypair -v \
+            -keystore android/release-key.jks \
+            -alias chan -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass chanrelease -keypass chanrelease \
+            -dname "CN=Chan Fork, OU=Dev, O=Fork, L=Unknown, ST=Unknown, C=US"
+
+      - name: Write key.properties
+        run: |
+          cat > android/key.properties <<KEYEOF
+          storePassword=chanrelease
+          keyPassword=chanrelease
+          keyAlias=chan
+          storeFile=../release-key.jks
+          KEYEOF
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Rename APK
+        run: |
+          mv build/app/outputs/flutter-apk/app-release.apk \
+             build/app/outputs/flutter-apk/chan-${{ github.event.inputs.tag }}.apk
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag }}
+          name: Chan ${{ github.event.inputs.tag }}
+          body: |
+            ## Changes
+            - Fix Android image picker not showing third-party gallery apps (#312)
+            - Pause video when thumbnail grid opens (#284)
+            - Add kohlchan.net, krautchan.org, ejchan.net support (#289, #285, #306)
+          files: build/app/outputs/flutter-apk/chan-${{ github.event.inputs.tag }}.apk
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
