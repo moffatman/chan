@@ -182,6 +182,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	final _draggableScrollableSheetKey = GlobalKey(debugLabel: 'GalleryPage._draggableScrollableSheetKey');
 	bool _gridViewDesynced = false;
 	bool _thumbnailsDesynced = false;
+	bool _gridWasOpen = false;
 	/// To prevent Hero when entering with grid initially enabled
 	bool _doneInitialTransition = false;
 	bool _autoRotate = Settings.instance.autoRotateInGallery;
@@ -235,6 +236,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		_shouldShowPosition = ValueNotifier(false);
 		_currentAttachmentChanged = EasyListenable();
 		_scrollSheetController = DraggableScrollableController();
+		_scrollSheetController.addListener(_onScrollSheetSizeChanged);
 		showChrome = widget.initiallyShowGrid || widget.initiallyShowChrome;
 		currentIndex = (widget.initialAttachment != null) ? max(0, widget.attachments.indexOf(widget.initialAttachment!)) : 0;
 		pageController = ExtendedPageController(keepPage: true, initialPage: currentIndex);
@@ -330,6 +332,15 @@ class _GalleryPageState extends State<GalleryPage> {
 	void _onGridViewScrollControllerUpdate() {
 		// ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
 		_gridViewDesynced |= _gridViewScrollController.position.activity is DragScrollActivity;
+	}
+
+	void _onScrollSheetSizeChanged() {
+		if (!_scrollSheetController.isAttached) return;
+		final isOpen = _scrollSheetController.size > 0.5;
+		if (isOpen && !_gridWasOpen) {
+			currentController.videoPlayerController?.player.pause();
+		}
+		_gridWasOpen = isOpen;
 	}
 
 	bool _isAttachmentAlreadyDownloaded(Attachment attachment) {
@@ -1497,6 +1508,7 @@ class _GalleryPageState extends State<GalleryPage> {
 
 	@override
 	void dispose() {
+		_scrollSheetController.removeListener(_onScrollSheetSizeChanged);
 		pageController.dispose();
 		_scrollCoalescer.dispose();
 		_currentAttachmentChanged.dispose();

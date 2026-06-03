@@ -110,7 +110,27 @@ const defaultSite = {
 	'maxUploadSizeBytes': 8000000
 };
 const defaultSites = {
-	kTestchanKey: defaultSite
+	kTestchanKey: defaultSite,
+};
+
+/// Sites added by this fork that should always be available, even when the
+/// remote site list from the API is loaded (API entries take precedence).
+const forkDefaultSites = <String, Map>{
+	'kohlchan': {
+		'type': 'lynxchan',
+		'name': 'kohlchan',
+		'baseUrl': 'kohlchan.net',
+	},
+	'krautchan': {
+		'type': 'lynxchan',
+		'name': 'krautchan',
+		'baseUrl': 'krautchan.org',
+	},
+	'ejchan': {
+		'type': 'lainchan',
+		'name': 'ejchan',
+		'baseUrl': 'ejchan.net',
+	},
 };
 final defaultLightTheme = SavedTheme(
 	primaryColor: Colors.black,

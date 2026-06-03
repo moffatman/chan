@@ -350,7 +350,7 @@ class _ChanAppState extends State<ChanApp> {
 	@override
 	void initState() {
 		super.initState();
-		_lastSites = Map.from(JsonCache.instance.sites.value ?? defaultSites);
+		_lastSites = Map.from({...forkDefaultSites, ...(JsonCache.instance.sites.value ?? defaultSites)});
 		_lastSiteKeys = Set.from(Settings.instance.settings.contentSettings.siteKeys);
 		ImageboardRegistry.instance.addListener(_onImageboardRegistryUpdate);
 		SchedulerBinding.instance.addPostFrameCallback((_) async {
@@ -379,7 +379,7 @@ class _ChanAppState extends State<ChanApp> {
 
 	void _onSitesUpdate() {
 		if (!mapEquals(JsonCache.instance.sites.value, _lastSites)) {
-			_lastSites = Map.from(JsonCache.instance.sites.value ?? _lastSites);
+			_lastSites = Map.from({...forkDefaultSites, ...(JsonCache.instance.sites.value ?? _lastSites)});
 			ImageboardRegistry.instance.handleSites(
 				context: context,
 				sites: _lastSites,

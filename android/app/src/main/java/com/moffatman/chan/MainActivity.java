@@ -312,7 +312,8 @@ public class MainActivity extends FlutterFragmentActivity {
                         PackageManager pm = getApplicationContext().getPackageManager();
                         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                         intent.addCategory(Intent.CATEGORY_OPENABLE);
-                        intent.setType("image/*,video/*");
+                        intent.setType("*/*");
+                        intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"image/*", "video/*"});
                         result.success(pm.queryIntentActivities(intent, 0).stream().map(resolveInfo -> {
                             Drawable icon = resolveInfo.loadIcon(pm);
                             Bitmap bitmap = null;
