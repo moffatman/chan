@@ -131,6 +131,11 @@ const forkDefaultSites = <String, Map>{
 		'name': 'ejchan',
 		'baseUrl': 'ejchan.net',
 	},
+	'sushigirl': {
+		'type': 'lainchan',
+		'name': 'sushigirl',
+		'baseUrl': 'sushigirl.cafe',
+	},
 };
 final defaultLightTheme = SavedTheme(
 	primaryColor: Colors.black,
