@@ -864,96 +864,100 @@ class Persistence extends ChangeNotifier {
 			// The temporary directory is shared between applications, it's not safe to clear it. 
 			return;
 		}
-		DateTime? deadline;
-		if (olderThan != null) {
-			deadline = DateTime.now().subtract(olderThan);
-		}
-		int deletedSize = 0;
-		int deletedCount = 0;
-		await for (final child in temporaryDirectory.list(recursive: true).handleError(
-			(e) => print('Ignoring list error $e'),
-			test: (e) => e is FileSystemException)
-		) {
-			final stat = await child.stat();
-			if (stat.type == FileSystemEntityType.file) {
-				// Probably something from file_pickers
-				if ((deadline == null || stat.accessed.compareTo(deadline) < 0)) {
-					deletedSize += stat.size;
-					deletedCount++;
-					try {
-						await child.delete();
-					}
-					catch (e) {
-						print('Error deleting file: $e');
-					}
-				}
+		try {
+			DateTime? deadline;
+			if (olderThan != null) {
+				deadline = DateTime.now().subtract(olderThan);
 			}
-			else if (stat.type == FileSystemEntityType.directory) {
-				final dir = Directory(child.path);
-				if (!await dir.exists()) {
-					// Might have been deleted already, and we are in a cached recursive listing
-					continue;
-				}
-				try {
-					if (!await dir.list().isEmpty) {
-						// Don't delete non-empty directories
-						continue;
-					}
-				}
-				on PathNotFoundException {
-					// Race condition - deleted already?
-					continue;
-				}
-				if ((deadline == null || stat.accessed.isBefore(deadline))) {
-					deletedCount++;
-					try {
-						await dir.delete();
-					}
-					catch (e) {
-						print('Error deleting directory: $e');
-					}
-				}
-			}
-		}
-		final oldSavedThumbnailsDir = documentsDirectory.dir('saved_attachments_thumbs');
-		if ((await oldSavedThumbnailsDir.stat()).type == FileSystemEntityType.directory) {
-			// No longer needed, thumbnails handled via MediaConversion from full file
-			try {
-				await oldSavedThumbnailsDir.delete(recursive: true);
-			}
-			catch (e, st) {
-				Future.error(e, st); // crashlytics
-			}
-		}
-		if (Platform.isIOS) {
-			// FlutterEXIFRotation left various discarded JPEGs in the documentsDirectory
-			await for (final child in documentsDirectory.list().handleError(
+			int deletedSize = 0;
+			int deletedCount = 0;
+			await for (final child in temporaryDirectory.list(recursive: true).handleError(
 				(e) => print('Ignoring list error $e'),
-				test: (e) => e is FileSystemException
-			)) {
-				if (!child.path.endsWith('.jpg') && !child.path.endsWith('.jpeg')) {
-					continue;
-				}
+				test: (e) => e is FileSystemException)
+			) {
 				final stat = await child.stat();
 				if (stat.type == FileSystemEntityType.file) {
-					try {
-						await child.delete();
+					// Probably something from file_pickers
+					if ((deadline == null || stat.accessed.compareTo(deadline) < 0)) {
+						deletedSize += stat.size;
+						deletedCount++;
+						try {
+							await child.delete();
+						}
+						catch (e) {
+							print('Error deleting file: $e');
+						}
 					}
-					on FileSystemException catch (e) {
-						print('Failed to delete junk JPEG ${child.path}: $e');
+				}
+				else if (stat.type == FileSystemEntityType.directory) {
+					final dir = Directory(child.path);
+					if (!await dir.exists()) {
+						// Might have been deleted already, and we are in a cached recursive listing
+						continue;
+					}
+					try {
+						if (!await dir.list().isEmpty) {
+							// Don't delete non-empty directories
+							continue;
+						}
+					}
+					on PathNotFoundException {
+						// Race condition - deleted already?
+						continue;
+					}
+					if ((deadline == null || stat.accessed.isBefore(deadline))) {
+						deletedCount++;
+						try {
+							await dir.delete();
+						}
+						catch (e) {
+							print('Error deleting directory: $e');
+						}
 					}
 				}
 			}
+			final oldSavedThumbnailsDir = documentsDirectory.dir('saved_attachments_thumbs');
+			if ((await oldSavedThumbnailsDir.stat()).type == FileSystemEntityType.directory) {
+				// No longer needed, thumbnails handled via MediaConversion from full file
+				try {
+					await oldSavedThumbnailsDir.delete(recursive: true);
+				}
+				catch (e, st) {
+					Future.error(e, st); // crashlytics
+				}
+			}
+			if (Platform.isIOS) {
+				// FlutterEXIFRotation left various discarded JPEGs in the documentsDirectory
+				await for (final child in documentsDirectory.list().handleError(
+					(e) => print('Ignoring list error $e'),
+					test: (e) => e is FileSystemException
+				)) {
+					if (!child.path.endsWith('.jpg') && !child.path.endsWith('.jpeg')) {
+						continue;
+					}
+					final stat = await child.stat();
+					if (stat.type == FileSystemEntityType.file) {
+						try {
+							await child.delete();
+						}
+						on FileSystemException catch (e) {
+							print('Failed to delete junk JPEG ${child.path}: $e');
+						}
+					}
+				}
+			}
+			if (deletedCount > 0) {
+				print('Deleted $deletedCount files totalling ${(deletedSize / kMB).toStringAsFixed(1)} MB');
+			}
+			if ((await FilePicker.platform.clearTemporaryFiles()) ?? false) {
+				print('Deleted FilePicker junk');
+			}
 		}
-		if (deletedCount > 0) {
-			print('Deleted $deletedCount files totalling ${(deletedSize / kMB).toStringAsFixed(1)} MB');
+		finally {
+			ensureTemporaryDirectoriesExist();
+			// Needs to recreate its file
+			await LoggingInterceptor.instance.initialize();
 		}
-		if ((await FilePicker.platform.clearTemporaryFiles()) ?? false) {
-			print('Deleted FilePicker junk');
-		}
-		ensureTemporaryDirectoriesExist();
-		// Needs to recreate its file
-		await LoggingInterceptor.instance.initialize();
 	}
 
 	static Future<void> cleanupThreads(List<Imageboard> imageboards, Duration olderThan) async {
