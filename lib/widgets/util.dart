@@ -669,8 +669,7 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 	else if (context.mounted) {
 		if (isMediaLink) {
 			final attachment = Attachment(
-				type: url.path.endsWith('.webm') ? AttachmentType.webm :
-					['.png', '.jpg', '.jpeg', '.gif'].any((e) => url.path.endsWith(e)) ? AttachmentType.image : AttachmentType.mp4,
+				type: AttachmentType.fromFilename(url.pathSegments.last),
 				board: '',
 				id: url.toString(),
 				ext: '.${url.path.afterLast('.')}',
@@ -686,7 +685,7 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 			await showGalleryPretagged(
 				context: context,
 				attachments: [TaggedAttachment(
-					imageboard: context.read<Imageboard>(),
+					imageboard: context.read<Imageboard?>() ?? Persistence.tabs[Persistence.currentTabIndex].imageboard ?? ImageboardRegistry.instance.dev ?? ImageboardRegistry.instance.imageboards.first,
 					attachment: attachment,
 					semanticParentIds: [],
 					postId: 0

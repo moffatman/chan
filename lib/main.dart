@@ -1613,6 +1613,19 @@ class ChanTabs extends ChangeNotifier {
 			if (!_homePageState.mounted) {
 				return;
 			}
+			if ([
+				'.webm',
+				'.mkv',
+				'.mov',
+				'.mp4',
+				'.png',
+				'.jpg',
+				'.jpeg',
+				'.gif'
+			].any(link.endsWith)) {
+				openBrowser(_homePageState.context, Uri.parse(link));
+				return;
+			}
 			final open = await showAdaptiveDialog<bool>(
 				context: _homePageState.context,
 				barrierDismissible: true,
