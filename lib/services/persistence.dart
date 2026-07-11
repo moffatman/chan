@@ -2244,7 +2244,10 @@ class PersistentBrowserTab extends EasyListenable {
 			}
 		}
 		else if (thread != null) {
-			await persistence?.getThreadStateIfExists(thread!)?.ensureThreadLoaded(preinit: false, syncIO: true);
+			final state = persistence?.getThreadStateIfExists(thread!);
+			if (state != null && (state.unseenPostIds.data.isNotEmpty || state.lastSeenPostId == null)) {
+				await state.ensureThreadLoaded(preinit: false, syncIO: true);
+			}
 		}
 	}
 
