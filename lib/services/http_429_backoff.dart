@@ -90,12 +90,7 @@ class HTTP429BackoffInterceptor extends InterceptorBase {
 		if (response.statusCode == 429) {
 			final delay = get429Delay(response.headers.value('retry-after'), currentRetries);
 			if (response.requestOptions.priority == RequestPriority.lowest || currentRetries >= maxRetries) {
-				handler.reject(DioError(
-					requestOptions: response.requestOptions,
-					response: response,
-					error: Http429Exception(DateTime.now().add(delay), currentRetries)
-				), true);
-				return;
+				throw Http429Exception(DateTime.now().add(delay), currentRetries);
 			}
 			print('[HTTP429BackoffInterceptor] Waiting $delay due to server-side rate-limiting (url: ${response.requestOptions.uri}, currentRetries: $currentRetries)');
 			_maybeShowToast(response.requestOptions.uri, delay);
@@ -134,12 +129,7 @@ class HTTP429BackoffInterceptor extends InterceptorBase {
 					err.response?.statusCode == 429) {
 				final delay = get429Delay(err.response?.headers.value('retry-after'), currentRetries);
 				if (err.requestOptions.priority == RequestPriority.lowest || currentRetries >= maxRetries) {
-					handler.reject(DioError(
-						requestOptions: err.requestOptions,
-						response: err.response,
-						error: Http429Exception(DateTime.now().add(delay), currentRetries)
-					), true);
-					return;
+					throw Http429Exception(DateTime.now().add(delay), currentRetries);
 				}
 				print('[HTTP429BackoffInterceptor] Waiting $delay due to server-side rate-limiting (url: ${err.requestOptions.uri}, currentRetries: $currentRetries)');
 				_maybeShowToast(err.requestOptions.uri, delay);

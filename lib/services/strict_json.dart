@@ -45,20 +45,15 @@ class StrictJsonInterceptor extends InterceptorBase {
 					< 400 => true,
 					int _ => false
 				}) {
-			handler.reject(DioError(
-				requestOptions: response.requestOptions,
-				response: response,
-				error: InvalidJsonException(
-					data: switch (response.data) {
-						String x => x,
-						List<int> l => utf8.decode(l),
-						dynamic other => 'Unknown data<${other.runtimeType}>: $other'
-					},
-					uri: response.requestOptions.uri,
-					statusCode: response.statusCode
-				)
-			), true);
-			return;
+			throw InvalidJsonException(
+				data: switch (response.data) {
+					String x => x,
+					List<int> l => utf8.decode(l),
+					dynamic other => 'Unknown data<${other.runtimeType}>: $other'
+				},
+				uri: response.requestOptions.uri,
+				statusCode: response.statusCode
+			);
 		}
 		handler.next(response);
 	}

@@ -763,21 +763,11 @@ class CloudflareInterceptor extends InterceptorBase {
 	@override
 	Future<void> onResponseImpl(Response response, ResponseInterceptorHandler handler) async {
 		if (await _responseMatchesBlock(response)) {
-			handler.reject(DioError(
-				requestOptions: response.requestOptions,
-				response: response,
-				error: const CloudflareHandlerBlockedException()
-			), true);
-			return;
+			throw const CloudflareHandlerBlockedException();
 		}
 		if (await _responseMatches(response)) {
 			if (!response.requestOptions.priority.shouldPopupCloudflare) {
-				handler.reject(DioError(
-					requestOptions: response.requestOptions,
-					response: response,
-					error: const CloudflareHandlerNotAllowedException()
-				), true);
-				return;
+				throw const CloudflareHandlerNotAllowedException();
 			}
 			final _CloudflareResponse data;
 			final gateway = await site?.getRedirectGateway(response.redirects.tryLast?.location.fillInFrom(response.requestOptions.uri) ?? response.realUri, () => response.htmlTitle, () async => response.html);
@@ -843,23 +833,13 @@ class CloudflareInterceptor extends InterceptorBase {
 		if (err.type == DioErrorType.response &&
 				err.response != null &&
 				await _responseMatchesBlock(err.response!)) {
-			handler.reject(DioError(
-				requestOptions: err.requestOptions,
-				response: err.response,
-				error: const CloudflareHandlerBlockedException()
-			), true);
-			return;
+			throw  const CloudflareHandlerBlockedException();
 		}
 		if (err.type == DioErrorType.response &&
 				err.response != null &&
 				await _responseMatches(err.response!)) {
 			if (!err.requestOptions.priority.shouldPopupCloudflare) {
-				handler.reject(DioError(
-					requestOptions: err.requestOptions,
-					response: err.response,
-					error: const CloudflareHandlerNotAllowedException()
-				), true);
-				return;
+				throw const CloudflareHandlerNotAllowedException();
 			}
 			final data = await _useWebviewForCloudflare(
 				handler: _buildHandler(err.requestOptions.uri),
