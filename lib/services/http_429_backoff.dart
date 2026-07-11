@@ -87,46 +87,42 @@ class HTTP429BackoffInterceptor extends InterceptorBase {
 	@override
 	Future<void> onResponseImpl(Response response, ResponseInterceptorHandler handler) async {
 		final currentRetries = response.requestOptions.retries;
-		try {
-			if (response.statusCode == 429) {
-				final delay = get429Delay(response.headers.value('retry-after'), currentRetries);
-				if (response.requestOptions.priority == RequestPriority.lowest || currentRetries >= maxRetries) {
-					handler.reject(DioError(
-						requestOptions: response.requestOptions,
-						response: response,
-						error: Http429Exception(DateTime.now().add(delay), currentRetries)
-					), true);
-					return;
-				}
-				print('[HTTP429BackoffInterceptor] Waiting $delay due to server-side rate-limiting (url: ${response.requestOptions.uri}, currentRetries: $currentRetries)');
-				_maybeShowToast(response.requestOptions.uri, delay);
-				await http429Queue.delay(response.requestOptions.uri, delay);
-				final response2 = await client.requestUri(
-					response.requestOptions.uri,
-					data: response.requestOptions.data,
-					cancelToken: response.requestOptions.cancelToken,
-					options: Options(
-						method: response.requestOptions.method,
-						headers: response.requestOptions.headers,
-						extra: {
-							...response.requestOptions.extra,
-							_kExtraRetriesKey: currentRetries + 1
-						},
-						responseType: response.requestOptions.responseType,
-						contentType: response.requestOptions.contentType,
-						validateStatus: response.requestOptions.validateStatus
-					)
-				);
-				handler.next(response2);
+		if (response.statusCode == 429) {
+			final delay = get429Delay(response.headers.value('retry-after'), currentRetries);
+			if (response.requestOptions.priority == RequestPriority.lowest || currentRetries >= maxRetries) {
+				handler.reject(DioError(
+					requestOptions: response.requestOptions,
+					response: response,
+					error: Http429Exception(DateTime.now().add(delay), currentRetries)
+				), true);
+				return;
 			}
-			else {
-				handler.next(response);
-			}
+			print('[HTTP429BackoffInterceptor] Waiting $delay due to server-side rate-limiting (url: ${response.requestOptions.uri}, currentRetries: $currentRetries)');
+			_maybeShowToast(response.requestOptions.uri, delay);
+			await http429Queue.delay(response.requestOptions.uri, delay);
+			final response2 = await client.requestUri(
+				response.requestOptions.uri,
+				data: response.requestOptions.data,
+				cancelToken: response.requestOptions.cancelToken,
+				options: Options(
+					method: response.requestOptions.method,
+					headers: response.requestOptions.headers,
+					extra: {
+						...response.requestOptions.extra,
+						_kExtraRetriesKey: currentRetries + 1
+					},
+					responseType: response.requestOptions.responseType,
+					contentType: response.requestOptions.contentType,
+					validateStatus: response.requestOptions.validateStatus
+				)
+			);
+			handler.next(response2);
 		}
-		finally {
-			if (currentRetries == 0) {
-				http429Queue.end(response.requestOptions.uri);
-			}
+		else {
+			handler.next(response);
+		}
+		if (currentRetries == 0) {
+			http429Queue.end(response.requestOptions.uri);
 		}
 	}
 
