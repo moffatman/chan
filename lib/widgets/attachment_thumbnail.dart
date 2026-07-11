@@ -225,7 +225,7 @@ class AttachmentThumbnail extends StatelessWidget {
 			)?.toString() ?? '';
 		}
 		if (url.isEmpty) {
-			final icon = spoiler ? CupertinoIcons.eye_slash : (attachment.icon ?? CupertinoIcons.exclamationmark_triangle_fill);
+			final icon = spoiler ? CupertinoIcons.eye_slash : (attachment.icon ?? Adaptive.icons.photo);
 			final theme = context.watch<SavedTheme>();
 			return _maybeHero(context, SizedBox(
 				width: effectiveWidth,
