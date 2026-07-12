@@ -1242,7 +1242,7 @@ Future<_ReplyBoxFile?> _makeAttachment(PickedAttachment? originalAttachment, Fil
 			return true;
 		}
 		final postsNeeded = _makeDraft().calculateNeededPosts(board);
-		final minimumPosts = (_attachments.length / board.filesPerPost).ceil();
+		final minimumPosts = math.max(1, (_attachments.length / board.filesPerPost).ceil());
 		if (postsNeeded > minimumPosts) {
 			final shrink = await showAdaptiveDialog<bool>(
 				barrierDismissible: true,
