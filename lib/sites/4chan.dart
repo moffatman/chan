@@ -52,7 +52,7 @@ class _QuoteLinkLinkifier extends Linkifier {
 	final bool fake;
   const _QuoteLinkLinkifier({required this.fake});
 
-	static final _pattern1 = RegExp(r'(?:^|(?<= ))>(\d+)');
+	static final _pattern1 = RegExp(r'(?:^|(?<= ))>(\d{8,})');
 	static final _pattern2 = RegExp(r'(?:^|(?<= ))>>(\d+)');
 
   @override
