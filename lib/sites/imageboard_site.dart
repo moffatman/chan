@@ -1863,8 +1863,8 @@ abstract class ImageboardSiteArchive {
 		/// 15 seconds should be well long enough for initial TCP handshake
 		connectTimeout: 15000
 	));
-	final Map<String, Map<String, Catalog>> _catalogCache = {};
-	final Map<String, Map<String, CatalogPageMap>> _catalogPageMapCache = {};
+	final Map<BoardKey, Map<String, Catalog>> _catalogCache = {};
+	final Map<BoardKey, Map<String, CatalogPageMap>> _catalogPageMapCache = {};
 	final Map<ThreadIdentifier, _TemporaryThread> _temporaryThreadCache = {};
 	static const _kCacheLifetime = Duration(minutes: 10);
 	Timer? _cacheGarbageCollectionTimer;
@@ -1927,7 +1927,8 @@ abstract class ImageboardSiteArchive {
 	/// Exported to handle pageMap with same request as catalog, when pageMap is requested first
 	@protected
 	void insertCatalogIntoCache(String board, CatalogVariant? variant, Catalog catalog) {
-		final oldCatalog = _catalogCache[board]?[variant.dataId];
+		final key = ImageboardBoard.getKey(board);
+		final oldCatalog = _catalogCache[key]?[variant.dataId];
 		if (oldCatalog != null) {
 			for (final oldThread in oldCatalog.threads.values) {
 				if (!catalog.threads.containsKey(oldThread.id)) {
@@ -1936,10 +1937,10 @@ abstract class ImageboardSiteArchive {
 				}
 			}
 		}
-		(_catalogCache[board] ??= {})[variant.dataId] = catalog;
+		(_catalogCache[key] ??= {})[variant.dataId] = catalog;
 	}
 	void ensureCatalogCached(Thread thread, DateTime fetchedTime) {
-		if (_catalogCache[thread.board]?.values.any((c) => c.threads.containsKey(thread.id)) ?? false) {
+		if (_catalogCache[ImageboardBoard.getKey(thread.board)]?.values.any((c) => c.threads.containsKey(thread.id)) ?? false) {
 			// Already cached
 			return;
 		}
@@ -1957,7 +1958,7 @@ abstract class ImageboardSiteArchive {
 		CancelToken? cancelToken
 	}) async {
 		return runEphemerallyLocked('getCatalog($name,$board)', (_) async {
-			final entry = _catalogCache[board]?[variant.dataId];
+			final entry = _catalogCache[ImageboardBoard.getKey(board)]?[variant.dataId];
 			if (acceptCached != null && entry != null && entry.satisfiesConstraints(acceptCached)) {
 				return entry;
 			}
@@ -1980,7 +1981,7 @@ abstract class ImageboardSiteArchive {
 		if (board == null) {
 			return null;
 		}
-		final catalog = _catalogCache[board]?[variant.dataId];
+		final catalog = _catalogCache[ImageboardBoard.getKey(board)]?[variant.dataId];
 		if (constraints == null || catalog == null || catalog.satisfiesConstraints(constraints)) {
 			return catalog;
 		}
@@ -2039,13 +2040,14 @@ abstract class ImageboardSiteArchive {
 		CancelToken? cancelToken
 	}) async {
 		return runEphemerallyLocked('getCatalogPageMap($name,$board)', (_) async {
-			final entry = _catalogPageMapCache[board]?[variant.dataId];
+			final key = ImageboardBoard.getKey(board);
+			final entry = _catalogPageMapCache[key]?[variant.dataId];
 			if (acceptCached != null) {
 				if (entry != null && entry.satisfiesConstraints(acceptCached)) {
 					return entry;
 				}
 				// Try to steal from getCatalog() caching
-				final catalogEntry = _catalogCache[board]?[variant.dataId];
+				final catalogEntry = _catalogCache[key]?[variant.dataId];
 				if (catalogEntry != null && catalogEntry.satisfiesConstraints(acceptCached)) {
 					return CatalogPageMap(
 						pageMap: {
@@ -2069,7 +2071,7 @@ abstract class ImageboardSiteArchive {
 				);
 			}
 			pageMap ??= await getCatalogPageMapImpl(board, variant: variant, priority: priority, cancelToken: cancelToken);
-			(_catalogPageMapCache[board] ??= {})[variant.dataId] = pageMap;
+			(_catalogPageMapCache[key] ??= {})[variant.dataId] = pageMap;
 			return pageMap;
 		});
 	}
@@ -2079,7 +2081,7 @@ abstract class ImageboardSiteArchive {
 	Future<List<Thread>> getMoreCatalog(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final fetchedTime = DateTime.now();
 		final moreCatalog = await getMoreCatalogImpl(board, after, variant: variant, priority: priority, cancelToken: cancelToken);
-		final entry = (_catalogCache[board] ??= {})[variant.dataId] ??= Catalog(
+		final entry = (_catalogCache[ImageboardBoard.getKey(board)] ??= {})[variant.dataId] ??= Catalog(
 			threads: LinkedHashMap(),
 			lastModified: null,
 			fetchedTime: fetchedTime
@@ -2094,7 +2096,7 @@ abstract class ImageboardSiteArchive {
 		if (identifier == null) {
 			return null;
 		}
-		final caches = _catalogCache[identifier.board]?.values ?? [];
+		final caches = _catalogCache[ImageboardBoard.getKey(identifier.board)]?.values ?? [];
 		for (final cache in caches) {
 			if (constraints != null && !cache.satisfiesConstraints(constraints)) {
 				continue;
@@ -2112,9 +2114,10 @@ abstract class ImageboardSiteArchive {
 	}
 	@protected
 	void bumpCatalogInCache(String board, CatalogVariant? variant, DateTime fetchedTime, DateTime? lastModified) {
-		final oldCatalog = _catalogCache[board]?[variant.dataId];
+		final key = ImageboardBoard.getKey(board);
+		final oldCatalog = _catalogCache[key]?[variant.dataId];
 		if (oldCatalog != null && oldCatalog.fetchedTime.isBefore(fetchedTime) && oldCatalog.lastModified == lastModified) {
-			(_catalogCache[board] ??= {})[variant.dataId] = Catalog(
+			(_catalogCache[key] ??= {})[variant.dataId] = Catalog(
 				threads: oldCatalog.threads,
 				lastModified: oldCatalog.lastModified,
 				fetchedTime: fetchedTime
