@@ -1945,7 +1945,7 @@ class PostLinkSpan extends PostTerminalSpan {
 				if (imageboardTarget != null && (imageboardTarget.$1 ?? zone.imageboard.key) == zone.imageboard.key) {
 					final thread = imageboardTarget.$2.threadIdentifier;
 					if (thread != null) {
-						if (zone.imageboard.site.explicitIds) {
+						if (zone.imageboard.site.explicitIds || thread == zone.primaryThread) {
 							return PostQuoteLinkSpan(
 								board: imageboardTarget.$2.board,
 								threadId: thread.id,
@@ -2249,7 +2249,10 @@ class PostLinkSpan extends PostTerminalSpan {
 			),
 			_ => null
 		};
-		if (snapshot case final data? when data.thumbnailUrl != null || data.thumbnailWidget != null || data.imageboardTarget != null) {
+		if (snapshot?.imageboardTarget?.$2.threadIdentifier case final thread? when estimator.zone?.imageboard.key == snapshot?.imageboardTarget?.$1 && ((estimator.zone?.imageboard.site.explicitIds ?? false) || estimator.post.threadIdentifier == thread)) {
+			estimator.addCharacters(2 + (snapshot?.imageboardTarget?.$2.postId ?? thread.id).numberOfDigits + (thread.board == estimator.post.board ? 0 : thread.board.length));
+		}
+		else if (snapshot case final data? when data.thumbnailUrl != null || data.thumbnailWidget != null || data.imageboardTarget != null) {
 			final Size imageSize;
 			if (data.thumbnailUrl != null) {
 				imageSize = const Size(75, 75);
