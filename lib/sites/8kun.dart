@@ -34,7 +34,10 @@ class Site8Kun extends SiteLainchan2 {
 		super.boardsPath,
 		super.boards,
 		super.defaultUsername
-	});
+	}) : super(
+		maxUploadSizeBytes: 16000000,
+		filesPerPost: 5
+	);
 
 	@override
 	Uri getAttachmentUrl(String board, String filename) => Uri.https(imageUrl ?? baseUrl, '/file_store/$filename');
@@ -68,7 +71,8 @@ class Site8Kun extends SiteLainchan2 {
 				int count => count,
 				String str => int.tryParse(str),
 				_ => null
-			}
+			},
+			filesPerPost: filesPerPost
 		)).toList();
 	}
 
@@ -102,7 +106,8 @@ class Site8Kun extends SiteLainchan2 {
 				int count => count,
 				String str => int.tryParse(str),
 				_ => null
-			}
+			},
+			filesPerPost: filesPerPost
 		)).toList();
 	}
 

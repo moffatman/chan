@@ -113,6 +113,8 @@ class SiteLainchan2 extends SiteLainchanOrg {
 		required this.boardsWithHtmlOnlyFlags,
 		required this.boardsWithMemeFlags,
 		required super.turnstileSiteKey,
+		required super.maxUploadSizeBytes,
+		required super.filesPerPost,
 		super.faviconPath,
 		super.boardsPath,
 		this.boards,

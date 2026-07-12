@@ -546,7 +546,8 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 						return (value * multiplier).round();
 					}
 					return null;
-				})
+				}),
+				filesPerPost: 0
 			);
 		}).toList();
   }

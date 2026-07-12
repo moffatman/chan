@@ -93,7 +93,8 @@ void main() async {
               name: id.board,
               title: 'Fake board "${id.board}"',
               isWorksafe: false,
-              webmAudioAllowed: false
+              webmAudioAllowed: false,
+              filesPerPost: 1
             ));
             await Persistence.sharedThreadStateBox.put(
               '${imageboard.key}/${ImageboardBoard.getKey(id.board)}/${id.threadId ?? 0}',
@@ -124,6 +125,8 @@ void main() async {
         imageUrl: null,
         overrideUserAgent: null,
         addIntrospectedHeaders: false,
+        maxUploadSizeBytes: null,
+        filesPerPost: 1,
         archives: const [],
         imageHeaders: const {},
         videoHeaders: const {},

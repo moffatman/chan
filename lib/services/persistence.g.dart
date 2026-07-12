@@ -1541,6 +1541,19 @@ class PersistentBrowserStateFields {
     fieldName: 'postingFlags',
     merger: MapMerger(AdaptedMerger(ImageboardBoardFlagAdapter.kTypeId)),
   );
+  static bool getFilesPerPostMigrated(PersistentBrowserState x) =>
+      x.filesPerPostMigrated;
+  static void setFilesPerPostMigrated(PersistentBrowserState x, bool v) =>
+      x.filesPerPostMigrated = v;
+  static const int kFilesPerPostMigrated = 34;
+  static const filesPerPostMigrated =
+      HiveFieldAdapter<PersistentBrowserState, bool>(
+    getter: getFilesPerPostMigrated,
+    setter: setFilesPerPostMigrated,
+    fieldNumber: kFilesPerPostMigrated,
+    fieldName: 'filesPerPostMigrated',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class PersistentBrowserStateAdapter
@@ -1581,13 +1594,14 @@ class PersistentBrowserStateAdapter
     30: PersistentBrowserStateFields.postSortingMethod,
     31: PersistentBrowserStateFields.postSortingMethodPerBoard,
     32: PersistentBrowserStateFields.downloadSubfoldersPerBoard,
-    33: PersistentBrowserStateFields.postingFlags
+    33: PersistentBrowserStateFields.postingFlags,
+    34: PersistentBrowserStateFields.filesPerPostMigrated
   };
 
   @override
   PersistentBrowserState read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final List<dynamic> fields = List.filled(34, null);
+    final List<dynamic> fields = List.filled(35, null);
     fields[2] = <String, List<int>>{};
     fields[3] = <String>[];
     fields[5] = <String, List<int>>{};
@@ -1613,6 +1627,7 @@ class PersistentBrowserStateAdapter
     fields[31] = <dynamic, dynamic>{};
     fields[32] = <dynamic, dynamic>{};
     fields[33] = <dynamic, dynamic>{};
+    fields[34] = false;
     for (int i = 0; i < numOfFields; i++) {
       final int fieldId = reader.readByte();
       final dynamic value = reader.read();
@@ -1658,13 +1673,14 @@ class PersistentBrowserStateAdapter
           (fields[31] as Map).cast<BoardKey, PostSortingMethod>(),
       downloadSubfoldersPerBoard: (fields[32] as Map).cast<BoardKey, String>(),
       postingFlags: (fields[33] as Map).cast<BoardKey, ImageboardBoardFlag>(),
+      filesPerPostMigrated: fields[34] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, PersistentBrowserState obj) {
     writer
-      ..writeByte(26)
+      ..writeByte(27)
       ..writeByte(0)
       ..write(obj.deprecatedTabs)
       ..writeByte(2)
@@ -1716,7 +1732,9 @@ class PersistentBrowserStateAdapter
       ..writeByte(32)
       ..write(obj.downloadSubfoldersPerBoard)
       ..writeByte(33)
-      ..write(obj.postingFlags);
+      ..write(obj.postingFlags)
+      ..writeByte(34)
+      ..write(obj.filesPerPostMigrated);
   }
 
   @override

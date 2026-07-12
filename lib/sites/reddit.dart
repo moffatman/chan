@@ -674,7 +674,8 @@ class SiteReddit extends ImageboardSite {
 			String x => Uri.parse(x),
 			_ => null
 		},
-		popularity: data['subscribers'] as int?
+		popularity: data['subscribers'] as int?,
+		filesPerPost: 0
 	);
 
 	Future<String> _getRedgifsToken() async {
@@ -1202,7 +1203,8 @@ class SiteReddit extends ImageboardSite {
 					title: 'Top posts across $board subreddits',
 					isWorksafe: true,
 					webmAudioAllowed: true,
-					additionalDataTime: DateTime.now()
+					additionalDataTime: DateTime.now(),
+					filesPerPost: 0
 				);
 			}
 			else {

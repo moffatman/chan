@@ -103,6 +103,39 @@ extension FileBasename on FileSystemEntity {
 	String get basename => get(path);
 }
 
+extension FileExtension on File {
+	static String getBaseameWithoutExtension(String path) {
+		final lastSlash = path.lastIndexOf('/');
+		final lastDotAfterLastSlash = path.lastIndexOf('.');
+		if (lastSlash >= lastDotAfterLastSlash) {
+			// No file extension
+			return path.substring(lastSlash + 1);
+		}
+		return path.substring(lastSlash + 1, lastDotAfterLastSlash);
+	}
+	static String? getExtensionWithDot(String path) {
+		final lastSlash = path.lastIndexOf('/');
+		final lastDotAfterLastSlash = path.lastIndexOf('.');
+		if (lastSlash >= lastDotAfterLastSlash) {
+			// No file extension
+			return null;
+		}
+		return path.substring(lastDotAfterLastSlash);
+	}
+	static String? getExtensionWithoutDot(String path) {
+		final lastSlash = path.lastIndexOf('/');
+		final lastDotAfterLastSlash = path.lastIndexOf('.');
+		if (lastSlash >= lastDotAfterLastSlash) {
+			// No file extension
+			return null;
+		}
+		return path.substring(lastDotAfterLastSlash + 1);
+	}
+	String get basenameWithoutExtension => getBaseameWithoutExtension(path);
+	String? get extensionWithDot => getExtensionWithDot(path);
+	String? get extensionWithoutDot => getExtensionWithoutDot(path);
+}
+
 extension Copy on Directory {
 	Future<Directory> copy(String newPath) async {
 		final cleanSrc = path.withoutTrailingSlash;

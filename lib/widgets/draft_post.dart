@@ -31,6 +31,20 @@ class DraftPostWidget extends StatelessWidget {
 		super.key
 	});
 
+	Widget _buildFile(DraftPostFile file) => ClipRRect(
+		borderRadius: BorderRadius.circular(8),
+		child: ConstrainedBox(
+			constraints: const BoxConstraints(
+				maxWidth: 64,
+				maxHeight: 64
+			),
+			child: MediaThumbnail(
+				uri: Uri.file(file.path),
+				fontSize: 10
+			)
+		)
+	);
+
 	@override
 	Widget build(BuildContext context) {
 		final thread = imageboard.persistence.getThreadStateIfExists(post.thread)?.thread;
@@ -44,82 +58,87 @@ class DraftPostWidget extends StatelessWidget {
 			}
 			title = '${title?.substring(0, firstSpaceBefore25)}...';
 		}
-		final file = post.file;
-		return Row(
+		final text = Column(
+			mainAxisSize: MainAxisSize.min,
+			crossAxisAlignment: CrossAxisAlignment.stretch,
 			children: [
-				if (file != null) Padding(
-					padding: const EdgeInsets.only(right: 12),
-					child: ClipRRect(
-						borderRadius: BorderRadius.circular(8),
-						child: ConstrainedBox(
-							constraints: const BoxConstraints(
-								maxWidth: 64,
-								maxHeight: 64
-							),
-							child: MediaThumbnail(
-								uri: Uri.file(file)
-							)
-						)
+				Text.rich(
+					buildDraftInfoRow(
+						imageboard: imageboard,
+						post: post,
+						settings: context.watch<Settings>(),
+						theme: context.watch<SavedTheme>(),
+						time: time,
+						id: id
 					)
 				),
-				Expanded(
-					child: Builder(
-						builder: (context) => Column(
-							mainAxisSize: MainAxisSize.min,
-							crossAxisAlignment: CrossAxisAlignment.stretch,
+				Padding(
+					padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
+					child: Text.rich(
+						TextSpan(
 							children: [
-								Text.rich(
-									buildDraftInfoRow(
-										imageboard: imageboard,
-										post: post,
-										settings: context.watch<Settings>(),
-										theme: context.watch<SavedTheme>(),
-										time: time,
-										id: id
-									)
-								),
-								Padding(
-									padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
-									child: Text.rich(
+							buildHighlightedCommentTextSpan(
+								text: post.text,
+								site: imageboard.site
+							),
+							if (origin != DraftPostWidgetOrigin.none) TextSpan(
+								children: [
+									if (post.text.isNotEmpty) const TextSpan(text: '\n'),
+									if (origin == DraftPostWidgetOrigin.inCurrentThread)
+										if (post.threadId == null)
+											const TextSpan(text: 'In current catalog')
+										else
+											const TextSpan(text: 'In current thread')
+									else if (post.threadId == null)
+										TextSpan(text: 'New thread on ${imageboard.site.formatBoardName(post.board)}')
+									else ...[
+										const TextSpan(text: 'In '),
 										TextSpan(
-											children: [
-											buildHighlightedCommentTextSpan(
-												text: post.text,
-												site: imageboard.site
-											),
-											if (origin != DraftPostWidgetOrigin.none) TextSpan(
-												children: [
-													if (post.text.isNotEmpty) const TextSpan(text: '\n'),
-													if (origin == DraftPostWidgetOrigin.inCurrentThread)
-														if (post.threadId == null)
-															const TextSpan(text: 'In current catalog')
-														else
-															const TextSpan(text: 'In current thread')
-													else if (post.threadId == null)
-														TextSpan(text: 'New thread on ${imageboard.site.formatBoardName(post.board)}')
-													else ...[
-														const TextSpan(text: 'In '),
-														TextSpan(
-															text: '>>>${imageboard.site.formatBoardNameWithoutTrailingSlash(post.board)}/${post.threadId}${isArchived ? ' (Archived)' : ''}',
-															style: TextStyle(
-																color: Settings.instance.theme.secondaryColor,
-																decoration: TextDecoration.underline
-															)
-														),
-														if (title != null) TextSpan(text: ' ($title)')
-													]
-												],
-												style: TextStyle(color: Settings.instance.theme.primaryColorWithBrightness(0.5))
+											text: '>>>${imageboard.site.formatBoardNameWithoutTrailingSlash(post.board)}/${post.threadId}${isArchived ? ' (Archived)' : ''}',
+											style: TextStyle(
+												color: Settings.instance.theme.secondaryColor,
+												decoration: TextDecoration.underline
 											)
-										],
-										style: TextStyle(color: Settings.instance.theme.primaryColor)
-										)
-									)
-								)
-							]
+										),
+										if (title != null) TextSpan(text: ' ($title)')
+									]
+								],
+								style: TextStyle(color: Settings.instance.theme.primaryColorWithBrightness(0.5))
+							)
+						],
+						style: TextStyle(color: Settings.instance.theme.primaryColor)
 						)
 					)
 				)
+			]
+		);
+		if (post.files.isEmpty) {
+			return text;
+		}
+		if (post.files.trySingle case final file?) {
+			return Row(
+				children: [
+					Padding(
+						padding: const EdgeInsets.only(right: 12),
+						child: _buildFile(file)
+					),
+					Expanded(
+						child: text
+					)
+				]
+			);
+		}
+		return Column(
+			mainAxisSize: MainAxisSize.min,
+			children: [
+				Wrap(
+					spacing: 12,
+					runSpacing: 12,
+					crossAxisAlignment: WrapCrossAlignment.center,
+					children: post.files.map(_buildFile).toList()
+				),
+				const SizedBox(height: 12),
+				text
 			]
 		);
 	}

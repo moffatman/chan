@@ -193,6 +193,14 @@ class ImageboardBoardFields {
     fieldName: 'popularity',
     merger: PrimitiveMerger(),
   );
+  static int getFilesPerPost(ImageboardBoard x) => x.filesPerPost;
+  static const int kFilesPerPost = 20;
+  static const filesPerPost = ReadOnlyHiveFieldAdapter<ImageboardBoard, int>(
+    getter: getFilesPerPost,
+    fieldNumber: kFilesPerPost,
+    fieldName: 'filesPerPost',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class ImageboardBoardAdapter extends TypeAdapter<ImageboardBoard> {
@@ -225,13 +233,15 @@ class ImageboardBoardAdapter extends TypeAdapter<ImageboardBoard> {
     16: ImageboardBoardFields.subdomain,
     17: ImageboardBoardFields.icon,
     18: ImageboardBoardFields.captchaMode,
-    19: ImageboardBoardFields.popularity
+    19: ImageboardBoardFields.popularity,
+    20: ImageboardBoardFields.filesPerPost
   };
 
   @override
   ImageboardBoard read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final List<dynamic> fields = List.filled(20, null);
+    final List<dynamic> fields = List.filled(21, null);
+    fields[20] = 1;
     if (numOfFields == 255) {
       // Dynamic number of fields
       while (true) {
@@ -258,6 +268,7 @@ class ImageboardBoardAdapter extends TypeAdapter<ImageboardBoard> {
       title: fields[1] as String,
       isWorksafe: fields[2] as bool,
       webmAudioAllowed: fields[3] as bool,
+      filesPerPost: fields[20] as int,
       maxImageSizeBytes: fields[4] as int?,
       maxWebmSizeBytes: fields[5] as int?,
       maxWebmDurationSeconds: fields[6] as int?,
@@ -300,6 +311,7 @@ class ImageboardBoardAdapter extends TypeAdapter<ImageboardBoard> {
       if (obj.icon != null) 17: obj.icon,
       if (obj.captchaMode != null) 18: obj.captchaMode,
       if (obj.popularity != null) 19: obj.popularity,
+      20: obj.filesPerPost,
     };
     writer.writeByte(fields.length);
     for (final MapEntry<int, dynamic> entry in fields.entries) {

@@ -449,7 +449,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				name: archive['shortname'] as String,
 				title: archive['name'] as String,
 				isWorksafe: !(archive['is_nsfw'] as bool),
-				webmAudioAllowed: false
+				webmAudioAllowed: false,
+				filesPerPost: 1
 			);
 		}).toList();
 	}

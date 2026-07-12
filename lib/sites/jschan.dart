@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
@@ -13,6 +15,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
+import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:html/dom.dart' as dom;
@@ -268,8 +271,10 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 					title: (board['settings'] as Map)['name'] as String,
 					isWorksafe: (board['settings'] as Map)['sfw'] as bool,
 					webmAudioAllowed: true,
-					maxImageSizeBytes: 16000000,
-					maxWebmSizeBytes: 16000000,
+					// Different per site. but these should be safe enough.
+					maxImageSizeBytes: 40000000,
+					maxWebmSizeBytes: 40000000,
+					filesPerPost: 5,
 					popularity: postsCount
 				);
 			}));
@@ -286,8 +291,10 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 			title: name,
 			isWorksafe: false,
 			webmAudioAllowed: true,
-			maxImageSizeBytes: 16000000,
-			maxWebmSizeBytes: 16000000,
+			// Different per site. but these should be safe enough.
+			maxImageSizeBytes: 40000000,
+			maxWebmSizeBytes: 40000000,
+			filesPerPost: 5,
 			popularity: totalPostsCount > 0 ? totalPostsCount : null
 		));
 		return list;
@@ -440,7 +447,6 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 	@override
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
 		final password = makeRandomBase64String(28);
-		final file = post.file;
 		final response = await client.postUri<Map>(
 			Uri.https(baseUrl, '/forms/board/${post.board}/post'),
 			data: FormData.fromMap({
@@ -450,11 +456,21 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 				if (post.subject != null) 'subject': post.subject,
 				'message': post.text,
 				'postpassword': password,
-				if (file != null) 'file': await MultipartFile.fromFile(
-					file,
-					filename: post.overrideFilename,
-					contentType: MediaScan.guessMimeTypeFromPath(file)
-				),
+				if (post.files.isNotEmpty) ...{
+					'file': [
+						for (final file in post.files) await MultipartFile.fromFile(
+							file.path,
+							filename: file.overrideFilename,
+							contentType: MediaScan.guessMimeTypeFromPath(file.path)
+						)
+					],
+					'spoiler': [
+						// List of sha256 to spoiler
+						for (final file in post.files)
+							if (file.spoiler)
+								(await sha256.bind(File(file.path).openRead()).first).bytes.map((b) => b.toRadixString(16)).join()
+					]
+				},
 				if (captchaSolution is JsChanGridCaptchaSolution) 'captcha': captchaSolution.selected.toList()..sort()
 				else if (captchaSolution is JsChanTextCaptchaSolution) 'captcha': captchaSolution.text
 			}),

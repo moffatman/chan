@@ -4309,8 +4309,10 @@ TextSpan buildDraftInfoRow({
 	final combineFlagNames = settings.postDisplayFieldOrder.indexOf(PostDisplayField.countryName) == settings.postDisplayFieldOrder.indexOf(PostDisplayField.flag) + 1;
 	const lineBreak = TextSpan(text: '\n');
 	final name = post.name ?? imageboard.site.defaultUsername;
-	final file = post.file;
-	final scan = file == null ? null : MediaScan.peekCachedFileScan(file);
+	final scans = {
+		for (final file in post.files)
+			file: MediaScan.peekCachedFileScan(file.path)
+	};
 	final children = [
 		if (post.threadId == null && (post.subject?.isNotEmpty ?? false)) TextSpan(
 			text: '${post.subject}\n',
@@ -4346,15 +4348,15 @@ TextSpan buildDraftInfoRow({
 				),
 				const TextSpan(text: ' ')
 			]
-			else if (field == PostDisplayField.attachmentInfo && file != null) TextSpan(
+			else if (field == PostDisplayField.attachmentInfo && post.files.isNotEmpty) TextSpan(
 				children: _makeAttachmentInfo(
 					context: null,
 					metadata: [
-						(
-							filename: post.overrideFilename ?? FileBasename.get(file),
-							sizeInBytes: scan?.sizeInBytes,
-							width: scan?.width,
-							height: scan?.height
+						for (final file in post.files) (
+							filename: (settings.randomizeFilenames && !file.overrideRandomizeFilenames) ? '[random].${file.fileExt}' : (file.overrideFilename ?? FileBasename.get(file.path)),
+							sizeInBytes: scans[file]?.sizeInBytes,
+							width: scans[file]?.width,
+							height: scans[file]?.height
 						)
 					],
 					settings: settings

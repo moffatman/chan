@@ -21,7 +21,9 @@ class SiteFrenschan extends SiteLainchan2 {
 		faviconPath: '/favicon.ico',
 		defaultUsername: 'Fren',
 		formBypass: {},
-		imageThumbnailExtension: ''
+		imageThumbnailExtension: '',
+		maxUploadSizeBytes: null,
+		filesPerPost: 1
 	);
 
 	@override

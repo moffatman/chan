@@ -124,8 +124,9 @@ class Imageboard extends ChangeNotifier {
 				notifications.localWatcher = threadWatcher;
 				await threadWatcher.setInitialCounts(syncIO: true);
 				_threadWatcherInitialized = true;
-				if (persistence.boards.isEmpty) {
+				if (persistence.boards.isEmpty || persistence.browserState.filesPerPostMigrated) {
 					await setupBoards();
+					persistence.browserState.filesPerPostMigrated = true;
 				}
 			}
 			site.initState();
@@ -209,7 +210,7 @@ class Imageboard extends ChangeNotifier {
 		}
 	}
 
-	void _listenForSpamFilter(DraftPost submittedPost, PostReceipt receipt, CaptchaSolution captchaSolution, bool showToastOnSuccess) async {
+	void _listenForSpamFilter(DraftPost submittedPost, PostReceipt receipt, CaptchaSolution captchaSolution, String? showToastOnSuccess) async {
 		final threadIdentifier =
 			// Reply
 			submittedPost.thread ??
@@ -298,10 +299,10 @@ class Imageboard extends ChangeNotifier {
 		if (postShowedUp) {
 			onSuccessfulCaptchaSubmitted(captchaSolution);
 			receipt.spamFiltered = false;
-			if (showToastOnSuccess) {
+			if (showToastOnSuccess != null) {
 				showToast(
 					context: ImageboardRegistry.instance.context!,
-					message: 'Post successful',
+					message: 'Post successful$showToastOnSuccess',
 					icon: captchaSolution.autoSolved ? CupertinoIcons.checkmark_seal : CupertinoIcons.check_mark,
 					hapticFeedback: false
 				);
@@ -334,7 +335,7 @@ class Imageboard extends ChangeNotifier {
 	}
 
 	void listenToReplyPosting(QueuedPost post) {
-		QueueState<PostReceipt>? lastState;
+		QueueState<QueuedPost, PostReceipt>? lastState;
 		void listener() async {
 			final state = post.state;
 			if (state == lastState) {
@@ -342,12 +343,12 @@ class Imageboard extends ChangeNotifier {
 				return;
 			}
 			lastState = state;
-			if (state is QueueStateDeleted<PostReceipt>) {
+			if (state is QueueStateDeleted<QueuedPost, PostReceipt>) {
 				// Don't remove listener, in case undeleted
 				// Who cares about a leak....
 				return;
 			}
-			if (state is QueueStateDone<PostReceipt>) {
+			if (state is QueueStateDone<QueuedPost, PostReceipt>) {
 				post.removeListener(listener);
 				print(state.result);
 				mediumHapticFeedback();
@@ -355,15 +356,23 @@ class Imageboard extends ChangeNotifier {
 				if (state.captchaSolution.autoSolved) {
 					Outbox.instance.headlessSolveFailed = false;
 				}
+				String suffix = '';
+				if (state.next != null) {
+					suffix = ' (${post.post.sequenceNumber}/${post.post.sequenceNumber + (post.post.calculateNeededPosts(persistence.getBoard(post.post.board)) - 1)})';
+				}
+				else if (post.post.sequenceNumber > 1) {
+					// Last post in sequence
+					suffix = ' (${post.post.sequenceNumber}/${post.post.sequenceNumber})';
+				}
 				if (state.result.spamFiltered) {
-					_listenForSpamFilter(post.post, state.result, state.captchaSolution, showTwoToasts);
+					_listenForSpamFilter(post.post, state.result, state.captchaSolution, showTwoToasts ? suffix : null);
 				}
 				else {
 					onSuccessfulCaptchaSubmitted(state.captchaSolution);
 				}
 				showToast(
 					context: ImageboardRegistry.instance.context!,
-					message: showTwoToasts ? 'Post submitted' : 'Post successful',
+					message: showTwoToasts ? 'Post submitted$suffix' : 'Post successful$suffix',
 					icon: showTwoToasts ? CupertinoIcons.clock : (state.captchaSolution.autoSolved ? CupertinoIcons.checkmark_seal : CupertinoIcons.check_mark),
 					hapticFeedback: false
 				);
@@ -394,7 +403,7 @@ class Imageboard extends ChangeNotifier {
 					);
 				}
 			}
-			else if (state is QueueStateFailed<PostReceipt>) {
+			else if (state is QueueStateFailed<QueuedPost, PostReceipt>) {
 				final e = state.error;
 				if (e is BannedException) {
 					final url = e.url;
@@ -487,9 +496,10 @@ class Imageboard extends ChangeNotifier {
 	}
 
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, dio.CancelToken cancelToken) async {
-		final path = post.file;
-		if (path != null && !File(path).existsSync()) {
-			throw Exception('Selected file not found: $path');
+		for (final file in post.files) {
+			if (!File(file.path).existsSync()) {
+				throw Exception('Selected file not found: ${file.path}');
+			}
 		}
 		if (!persistence.browserState.outbox.contains(post)) {
 			// It may already be in the outbox if it's a draft
@@ -563,7 +573,8 @@ final kDevBoard = ImageboardBoard(
 	maxWebmDurationSeconds: 120,
 	webmAudioAllowed: false,
 	maxImageSizeBytes: 8000000,
-	maxWebmSizeBytes: 8000000
+	maxWebmSizeBytes: 8000000,
+	filesPerPost: 3
 );
 
 class ImageboardRegistry extends ChangeNotifier {
@@ -604,6 +615,7 @@ class ImageboardRegistry extends ChangeNotifier {
 		await tmpDev.initialize(
 			threadWatcherWatchForStickyOnBoards: [kDevBoard.name]
 		);
+		await tmpDev.persistence.setBoard(kDevBoard.name, kDevBoard);
 		notifyListeners();
 	}
 

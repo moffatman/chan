@@ -49,6 +49,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_exif_rotation/flutter_exif_rotation.dart';
 import 'package:linkify/linkify.dart';
+import 'package:mutex/mutex.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_heic_to_jpg/flutter_heic_to_jpg.dart';
 
@@ -88,6 +89,27 @@ class ReplyBoxZone {
 
 const _kNonWebmVideoExts = {'mp4', 'mov', 'm4v', 'mkv', 'mpeg', 'avi', '3gp', 'm2ts'};
 
+class _ReplyBoxFile {
+	PickedAttachment current;
+	PickedAttachment original;
+	final TextEditingController filenameController;
+	String? get ext => current.file.extensionWithoutDot?.toLowerCase();
+	bool overrideRandomizeFilenames = false;
+	bool spoiler = false;
+
+	_ReplyBoxFile({
+		required this.current,
+		required this.original,
+		String? initialFilename,
+		this.overrideRandomizeFilenames = false,
+		this.spoiler = false
+	}) : filenameController = TextEditingController(text: initialFilename);
+
+	void dispose() {
+		filenameController.dispose();
+	}
+}
+
 class ReplyBox extends StatefulWidget {
 	final BoardKey board;
 	final int? threadId;
@@ -122,23 +144,18 @@ class ReplyBoxState extends State<ReplyBox> {
 	late final TextEditingController _nameFieldController;
 	late final TextEditingController _subjectFieldController;
 	late final TextEditingController _optionsFieldController;
-	late final TextEditingController _filenameController;
 	late final FocusNode _textFocusNode;
 	late final ValueNotifier<QueuedPost?> postingPost;
 	bool get loading => postingPost.value != null;
-	Size _lastAttachmentSize = const Size(1, 1);
-	PickedAttachment? attachment;
-	PickedAttachment? _originalAttachment;
-	String? get attachmentExt => attachment?.file.path.afterLast('.').toLowerCase();
+	final List<_ReplyBoxFile> _attachments = [];
 	bool _showOptions = false;
 	bool get showOptions => _showOptions && !loading;
 	bool _showAttachmentOptions = false;
-	bool get showAttachmentOptions => _showAttachmentOptions && !loading && attachment != null;
+	bool get showAttachmentOptions => _showAttachmentOptions && !loading && _attachments.isNotEmpty;
 	bool _show = false;
 	bool get show => widget.fullyExpanded || (_show && !_willHideOnPanEnd);
 	String? _lastFoundUrl;
 	({String text, String imageUrl, int size})? _proposedAttachmentUrl;
-	bool spoiler = false;
 	List<ImageboardBoardFlag> _flags = [];
 	ImageboardBoardFlag? flag;
 	double _panStartDy = 0;
@@ -153,8 +170,10 @@ class ReplyBoxState extends State<ReplyBox> {
 	final Map<ImageboardSnippet, TextEditingController> _snippetControllers = {};
 	final List<QueuedPost> _submittingPosts = [];
 	bool _showSubmittingPosts = false;
-	bool _overrideRandomizeFilenames = false;
 	ChanTabs? _chanTabs;
+	final _makeAttachmentLock = Mutex();
+	final _attachmentsLock = Mutex();
+	int _neededPosts = 1;
 
 	ThreadIdentifier? get thread => switch (widget.threadId) {
 		int threadId => ThreadIdentifier(widget.board.s, threadId),
@@ -170,6 +189,99 @@ class ReplyBoxState extends State<ReplyBox> {
 
 	String get defaultName => context.read<Persistence?>()?.browserState.postingNames[widget.board] ?? '';
 	ImageboardBoardFlag? get defaultFlag => context.read<Persistence?>()?.browserState.postingFlags[widget.board];
+	
+	Future<void> _setInitialAttachments(List<DraftPostFile> files)
+		=> _attachmentsLock.protect(() async {
+		// Maybe it changed while waiting for lock
+		final newFiles = files.where((f) => !_attachments.any((a) => a.current.file.path == f.path));
+		_attachments.removeWhere((a) {
+			if (!files.any((f) => f.path == a.current.file.path)) {
+				a.dispose();
+				return true;
+			}
+			return false;
+		});
+		if (newFiles.isEmpty) {
+			return;
+		}
+		for (final newFile in newFiles) {
+			bool retry;
+			do {
+				retry = false;
+				try {
+					final file = File(newFile.path);
+					if (!file.existsSync()) {
+						showToast(
+							context: context,
+							icon: Icons.broken_image,
+							message: 'Previously-selected file is no longer accessible'
+						);
+						continue;
+					}
+					final attachment = await _makeAttachment(
+						null,
+						file,
+						filenameWithoutExtension: newFile.overrideFilenameWithoutExtension,
+						overrideRandomizeFilenames: newFile.overrideRandomizeFilenames,
+						spoiler: newFile.spoiler,
+						checkForDuplicateFile: false
+					);
+					if (!mounted || attachment == null) {
+						return;
+					}
+					attachment.filenameController.addListener(() {
+						_onFilenameChanged(attachment);
+					});
+					_attachments.add(attachment);
+					setState(() {});
+				}
+				catch (e, st) {
+					if (mounted) {
+						await alertError(context, e, st, actions: {
+							'Retry': () {
+								retry = true;
+							}
+						});
+						// Due to stupid alertError order, the action() will be after the pop
+						await Future.delayed(const Duration(milliseconds: 50));
+					}
+				}
+			} while (retry);
+		}
+		_didUpdateDraft();
+		_updateNeededPosts();
+	});
+
+	Future<void> _addAttachment(File file) => _attachmentsLock.protect(() async {
+		bool retry;
+		do {
+			retry = false;
+			try {
+				final attachment = await _makeAttachment(null, file, checkForDuplicateFile: true);
+				if (!mounted || attachment == null) {
+					return;
+				}
+				attachment.filenameController.addListener(() {
+					_onFilenameChanged(attachment);
+				});
+				_attachments.add(attachment);
+				setState(() {});
+				_didUpdateDraft();
+				_updateNeededPosts();
+			}
+			catch (e, st) {
+				if (mounted) {
+					await alertError(context, e, st, actions: {
+						'Retry': () {
+							retry = true;
+						}
+					});
+					// Due to stupid alertError order, the action() will be after the pop
+					await Future.delayed(const Duration(milliseconds: 50));
+				}
+			}
+		} while (retry);
+	});
 
 	static final _quotelinkPattern = RegExp(r'>>(\d+)');
 	set draft(DraftPost? draft) {
@@ -183,7 +295,6 @@ class ReplyBoxState extends State<ReplyBox> {
 			}
 			_textFieldController.text = text;
 			_optionsFieldController.text = draft.options ?? '';
-			_filenameController.text = draft.overrideFilenameWithoutExtension ?? '';
 			_nameFieldController.text = draft.name ?? defaultName;
 			flag = draft.flag ?? defaultFlag;
 			final subject = draft.subject;
@@ -194,7 +305,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				false => true,
 				null || true => false
 			};
-			_overrideRandomizeFilenames = draft.overrideRandomizeFilenames;
+			_setInitialAttachments(draft.files);
 		}
 		else {
 			_textFieldController.clear();
@@ -203,18 +314,11 @@ class ReplyBoxState extends State<ReplyBox> {
 			_nameFieldController.text = defaultName;
 			flag = defaultFlag;
 			// Don't clear disableLoginSystem
-			_overrideRandomizeFilenames = false;
-		}
-		final file = draft?.file;
-		if (file == attachment?.file.path) {
-			// Do nothing
-		}
-		else {
-			attachment = null;
-			_originalAttachment = null;
-			_showAttachmentOptions = false;
-			_filenameController.clear();
-			_tryUsingInitialFile(draft);
+			for (final a in _attachments) {
+				a.dispose();
+			}
+			_attachments.clear();
+			_neededPosts = 1;
 		}
 	}
 
@@ -277,10 +381,10 @@ class ReplyBoxState extends State<ReplyBox> {
 		runWhenIdle(const Duration(milliseconds: 50), _scanForUrl);
 	}
 
-	void _onFilenameChanged() {
-		if (_filenameController.selection.isValid && _filenameController.text.isNotEmpty && Settings.instance.randomizeFilenames && !_overrideRandomizeFilenames) {
+	void _onFilenameChanged(_ReplyBoxFile file) {
+		if (file.filenameController.selection.isValid && file.filenameController.text.isNotEmpty && Settings.instance.randomizeFilenames && !file.overrideRandomizeFilenames) {
 			setState(() {
-				_overrideRandomizeFilenames = true;
+				file.overrideRandomizeFilenames = true;
 			});
 		}
 		_didUpdateDraft();
@@ -356,16 +460,22 @@ class ReplyBoxState extends State<ReplyBox> {
 		name: null, // It will be stored in postingNames[board]
 		options: _optionsFieldController.text,
 		text: _textFieldController.text,
-		file: attachment?.file.path,
-		spoiler: spoiler,
-		overrideFilenameWithoutExtension: _filenameController.text,
-		overrideRandomizeFilenames: _overrideRandomizeFilenames,
+		files: _attachments.map((a) => DraftPostFile(
+			path: a.current.file.path,
+			spoiler: a.spoiler,
+			overrideFilenameWithoutExtension: a.filenameController.text,
+			overrideRandomizeFilenames: a.overrideRandomizeFilenames
+		)).toList(),
 		flag: null, // It will be stored in postingFlags[board]
 		useLoginSystem: switch (_disableLoginSystem) {
 			true => false,
 			_ => null
 		}
 	);
+
+	void _updateNeededPosts() {
+		_neededPosts = _makeDraft().calculateNeededPosts(context.read<Imageboard>().persistence.getBoard(widget.board.s));
+	}
 
 	void _didUpdateDraft() {
 		final draft = _makeDraft();
@@ -381,21 +491,18 @@ class ReplyBoxState extends State<ReplyBox> {
 		_textIsEmpty = text.isEmpty;
 		_subjectFieldController = TextEditingController(text: widget.initialDraft?.subject);
 		_optionsFieldController = TextEditingController(text: widget.initialDraft?.options);
-		_filenameController = TextEditingController(text: widget.initialDraft?.overrideFilenameWithoutExtension);
 		_nameFieldController = TextEditingController(text: persistence.browserState.postingNames[widget.board]);
-		spoiler = widget.initialDraft?.spoiler ?? false;
 		flag = widget.initialDraft?.flag ?? persistence.browserState.postingFlags[widget.board];
 		if (widget.initialDraft?.useLoginSystem == false) {
 			_disableLoginSystem = true;
 		}
-		_overrideRandomizeFilenames = widget.initialDraft?.overrideRandomizeFilenames ?? false;
 		_textFocusNode = FocusNode();
 		_rootFocusNode = FocusNode();
 		_textFieldController.addListener(_onTextChanged);
 		_subjectFieldController.addListener(_didUpdateDraft);
-		_filenameController.addListener(_onFilenameChanged);
+		final initialBoard = widget.board;
 		context.read<ImageboardSite>().getBoardFlags(widget.board.s).then((flags) {
-			if (!mounted) return;
+			if (!mounted || widget.board != initialBoard) return;
 			setState(() {
 				_flags = flags;
 			});
@@ -406,7 +513,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		if (_nameFieldController.text.isNotEmpty || _optionsFieldController.text.isNotEmpty || (_disableLoginSystem && hasLoginSystem)) {
 			_showOptions = true;
 		}
-		_tryUsingInitialFile(widget.initialDraft);
+		_setInitialAttachments(widget.initialDraft?.files ?? []);
 		widget.onInitState?.call(this);
 	}
 
@@ -422,25 +529,6 @@ class ReplyBoxState extends State<ReplyBox> {
 					_flags = flags;
 				});
 			});
-		}
-	}
-
-	void _tryUsingInitialFile(DraftPost? draft) async {
-		final path = draft?.file;
-		if (path != null) {
-			final file = File(path);
-			if (await file.exists()) {
-				setAttachment(true, file, overrideFilenameWithoutExtension: draft?.overrideFilenameWithoutExtension);
-			}
-			else if (mounted) {
-				// Clear the bad file
-				draft?.file = null;
-				showToast(
-					context: context,
-					icon: Icons.broken_image,
-					message: 'Previously-selected file is no longer accessible'
-				);
-			}
 		}
 	}
 
@@ -671,7 +759,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 		try {
 			final file = await getClipboardImageAsFile(context);
 			if (file != null) {
-				await setAttachment(true, file);
+				_addAttachment(file);
 				return true;
 			}
 			else if (manual && mounted) {
@@ -690,17 +778,21 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 		return false;
 	}
 
-	Future<void> setAttachment(bool isOriginal, File newAttachment, {
+Future<_ReplyBoxFile?> _makeAttachment(PickedAttachment? originalAttachment, File newAttachment, {
+		required bool checkForDuplicateFile,
+		bool spoiler = false,
 		bool forceRandomizeChecksum = false,
 		int? forceMaximumDimension,
+		int? forceMaximumSizeInBytes,
 		bool forcePngToJpg = false,
 		bool forceWebpToPng = false,
 		bool forceMp4ToWebm = false,
 		bool forceVideoToGif = false,
 		bool forceGifToMp4 = false,
 		bool forceConvert = false,
-		String? overrideFilenameWithoutExtension
-	}) async {
+		String? filenameWithoutExtension,
+		bool overrideRandomizeFilenames = false
+	}) => _makeAttachmentLock.protect(() async {
 		File? file = newAttachment;
 		final settings = Settings.instance;
 		final randomizeChecksum = forceRandomizeChecksum || settings.randomizeChecksumOnUploadedFiles;
@@ -730,7 +822,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 				}
 				if (image != null && video != null) {
 					if (!mounted) {
-						return;
+						return null;
 					}
 					file = await showAdaptiveDialog<File>(
 						context: context,
@@ -755,7 +847,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 					);
 					if (file == null) {
 						// User cancelled
-						return;
+						return null;
 					}
  				}
 				else {
@@ -796,29 +888,38 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 					size -= audioSize;
 				}
 			}
-			final originalAttachment = (
+			final originalAttachment2 = originalAttachment ?? (
 				file: file,
 				scan: scan,
 				stat: stat,
 				md5: await calculateMD5(file)
 			);
+			if (checkForDuplicateFile && _attachments.any((a) => a.original.md5 == originalAttachment2.md5 && a.original.stat.size == originalAttachment2.stat.size)) {
+				if (!mounted || !await confirm(
+					context, 'Add duplicate file?',
+					actionName: 'Add',
+					content: 'This file is already attached to the draft'
+				) || !mounted) {
+					return null;
+				}
+			}
 			if (ext == 'jpg' || ext == 'jpeg' || ext == 'webp' || ext == 'avif') {
 				file = await _showTranscodeWindow(
 					source: file,
 					size: size,
-					maximumSize: board.maxImageSizeBytes,
+					maximumSize: forceMaximumSizeInBytes ?? board.maxImageSizeBytes,
 					width: scan.width,
 					height: scan.height,
 					maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
 					transcode: forceWebpToPng ? MediaConversion.toPng(
 						file.uri,
-						maximumSizeInBytes: board.maxImageSizeBytes,
+						maximumSizeInBytes: forceMaximumSizeInBytes ?? board.maxImageSizeBytes,
 						maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
 						removeMetadata: settings.removeMetadataOnUploadedFiles,
 						randomizeChecksum: randomizeChecksum
 					): MediaConversion.toJpg(
 						file.uri,
-						maximumSizeInBytes: board.maxImageSizeBytes,
+						maximumSizeInBytes: forceMaximumSizeInBytes ?? board.maxImageSizeBytes,
 						maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
 						removeMetadata: settings.removeMetadataOnUploadedFiles,
 						randomizeChecksum: randomizeChecksum
@@ -827,26 +928,26 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 					metadataAllowed: !settings.removeMetadataOnUploadedFiles,
 					randomizeChecksum: randomizeChecksum,
 					force: forceConvert,
-					showToastIfLong: _originalAttachment == null
+					showToastIfLong: originalAttachment == null
 				);
 			}
 			else if (ext == 'png') {
 				file = await _showTranscodeWindow(
 					source: file,
 					size: size,
-					maximumSize: board.maxImageSizeBytes,
+					maximumSize: forceMaximumSizeInBytes ?? board.maxImageSizeBytes,
 					width: scan.width,
 					height: scan.height,
 					maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
 					transcode: forcePngToJpg ? MediaConversion.toJpg(
 						file.uri,
-						maximumSizeInBytes: board.maxImageSizeBytes,
+						maximumSizeInBytes: forceMaximumSizeInBytes ?? board.maxImageSizeBytes,
 						maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
 						removeMetadata: settings.removeMetadataOnUploadedFiles,
 						randomizeChecksum: randomizeChecksum
 					) : MediaConversion.toPng(
 						file.uri,
-						maximumSizeInBytes: board.maxImageSizeBytes,
+						maximumSizeInBytes: forceMaximumSizeInBytes ?? board.maxImageSizeBytes,
 						maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
 						removeMetadata: settings.removeMetadataOnUploadedFiles,
 						randomizeChecksum: randomizeChecksum
@@ -855,7 +956,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 					metadataAllowed: !settings.removeMetadataOnUploadedFiles,
 					randomizeChecksum: randomizeChecksum,
 					force: forceConvert,
-					showToastIfLong: _originalAttachment == null
+					showToastIfLong: originalAttachment == null
 				);
 			}
 			else if (ext == 'gif') {
@@ -864,20 +965,20 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 					metadataPresent: scan.hasMetadata,
 					metadataAllowed: !settings.removeMetadataOnUploadedFiles,
 					size: size,
-					maximumSize: board.maxImageSizeBytes,
+					maximumSize: forceMaximumSizeInBytes ?? board.maxImageSizeBytes,
 					randomizeChecksum: randomizeChecksum,
 					force: forceConvert,
-					showToastIfLong: _originalAttachment == null,
+					showToastIfLong: originalAttachment == null,
 					transcode: forceGifToMp4 ? MediaConversion.toMp4(
 						file.uri,
-						maximumSizeInBytes: board.maxWebmSizeBytes ?? board.maxImageSizeBytes,
+						maximumSizeInBytes: forceMaximumSizeInBytes ?? board.maxWebmSizeBytes ?? board.maxImageSizeBytes,
 						maximumDimension: settings.maximumImageUploadDimension,
 						maximumDurationInSeconds: board.maxWebmDurationSeconds?.toDouble(),
 						removeMetadata: settings.removeMetadataOnUploadedFiles,
 						randomizeChecksum: randomizeChecksum
 					) : MediaConversion.toGif(
 						file.uri,
-						maximumSizeInBytes: board.maxWebmSizeBytes ?? board.maxImageSizeBytes,
+						maximumSizeInBytes: forceMaximumSizeInBytes ?? board.maxWebmSizeBytes ?? board.maxImageSizeBytes,
 						maximumDimension: settings.maximumImageUploadDimension,
 						removeMetadata: settings.removeMetadataOnUploadedFiles,
 						randomizeChecksum: randomizeChecksum
@@ -890,7 +991,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 					audioAllowed: board.webmAudioAllowed,
 					audioPresent: scan.hasAudio,
 					size: size,
-					maximumSize: board.maxWebmSizeBytes,
+					maximumSize: forceMaximumSizeInBytes ?? board.maxWebmSizeBytes ?? board.maxImageSizeBytes,
 					durationInSeconds: scan.duration?.inSeconds,
 					maximumDurationInSeconds: board.maxWebmDurationSeconds,
 					width: scan.width,
@@ -898,14 +999,14 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 					maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
 					transcode: forceVideoToGif ? MediaConversion.toGif(
 						file.uri,
-						maximumSizeInBytes: board.maxWebmSizeBytes,
+						maximumSizeInBytes: forceMaximumSizeInBytes ?? board.maxWebmSizeBytes,
 						maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
 						removeMetadata: settings.removeMetadataOnUploadedFiles,
 						randomizeChecksum: randomizeChecksum
 					) : MediaConversion.toWebm(
 						file.uri,
 						stripAudio: !board.webmAudioAllowed,
-						maximumSizeInBytes: board.maxWebmSizeBytes,
+						maximumSizeInBytes: forceMaximumSizeInBytes ?? board.maxWebmSizeBytes,
 						maximumDurationInSeconds: board.maxWebmDurationSeconds?.toDouble(),
 						maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
 						removeMetadata: settings.removeMetadataOnUploadedFiles,
@@ -915,7 +1016,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 					metadataAllowed: !settings.removeMetadataOnUploadedFiles,
 					randomizeChecksum: randomizeChecksum,
 					force: forceConvert,
-					showToastIfLong: _originalAttachment == null
+					showToastIfLong: originalAttachment == null
 				);
 			}
 			else if (_kNonWebmVideoExts.contains(ext)) {
@@ -931,17 +1032,17 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 					height: scan.height,
 					maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
 					size: size,
-					maximumSize: board.maxWebmSizeBytes,
+					maximumSize: forceMaximumSizeInBytes ?? board.maxWebmSizeBytes,
 					transcode: forceVideoToGif ? MediaConversion.toGif(
 						file.uri,
-						maximumSizeInBytes: board.maxWebmSizeBytes,
+						maximumSizeInBytes: forceMaximumSizeInBytes ?? board.maxWebmSizeBytes,
 						maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
 						removeMetadata: settings.removeMetadataOnUploadedFiles,
 						randomizeChecksum: randomizeChecksum
 					) : (forceMp4ToWebm ? MediaConversion.toWebm(
 						file.uri,
 						stripAudio: !board.webmAudioAllowed,
-						maximumSizeInBytes: board.maxWebmSizeBytes,
+						maximumSizeInBytes: forceMaximumSizeInBytes ?? board.maxWebmSizeBytes,
 						maximumDurationInSeconds: board.maxWebmDurationSeconds?.toDouble(),
 						maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
 						removeMetadata: settings.removeMetadataOnUploadedFiles,
@@ -949,7 +1050,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 					) : MediaConversion.toMp4(
 						file.uri,
 						stripAudio: !board.webmAudioAllowed,
-						maximumSizeInBytes: board.maxWebmSizeBytes,
+						maximumSizeInBytes: forceMaximumSizeInBytes ?? board.maxWebmSizeBytes,
 						maximumDurationInSeconds: board.maxWebmDurationSeconds?.toDouble(),
 						maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
 						removeMetadata: settings.removeMetadataOnUploadedFiles,
@@ -959,7 +1060,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 					metadataAllowed: !settings.removeMetadataOnUploadedFiles,
 					randomizeChecksum: randomizeChecksum,
 					force: forceConvert,
-					showToastIfLong: _originalAttachment == null
+					showToastIfLong: originalAttachment == null
 				);
 			}
 			else {
@@ -972,29 +1073,26 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 					stat: await file.stat(),
 					md5: await calculateMD5(file)
 				);
-				setState(() {
-					attachment = newAttachment;
-					if ((scan.width, scan.height) case (int width, int height)) {
-						_lastAttachmentSize = Size(width.toDouble(), height.toDouble());
-					}
-					if (isOriginal) {
-						_originalAttachment = originalAttachment;
-					}
-				});
-				_filenameController.text = overrideFilenameWithoutExtension ?? file.uri.pathSegments.last.replaceAll(RegExp('.$attachmentExt\$'), '');
-				_didUpdateDraft();
+				return _ReplyBoxFile(
+					current: newAttachment,
+					original: originalAttachment2,
+					initialFilename: filenameWithoutExtension ?? file.basenameWithoutExtension,
+					spoiler: spoiler,
+					overrideRandomizeFilenames: overrideRandomizeFilenames
+				);
 			}
+			return null;
 		}
 		on MediaConversionCancelledException {
 			// Don't throw, the user started it
+			return null;
 		}
 		finally {
-			_attachmentProgress = null;
-			if (mounted) {
-				setState(() {});
-			}
+			setState(() {
+				_attachmentProgress = null;
+			});
 		}
-	}
+	});
 
 	Future<bool?> _shouldUseLoginSystem() async {
 		final site = context.read<ImageboardSite>();
@@ -1046,17 +1144,144 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 		return justOnce ?? Settings.autoLoginOnMobileNetworkSetting.value ?? false;
 	}
 
+	Future<void> _shrinkFilesToFitMultiPosts(ImageboardBoard board) async {
+		for (int i = 0; i < _attachments.length; i += board.filesPerPost) {
+			final end = math.min(_attachments.length, i + board.filesPerPost);
+			final batchSize = end - i;
+			// Allow each image to take half of an equal share
+			// Then split the other half (or more) proportionally
+			int limit = 1 << 50;
+			for (int j = i; j < end; j++) {
+				final ext = _attachments[j].ext;
+				final thisLimit = ((ext == 'webm' || _kNonWebmVideoExts.contains(ext)) ? board.maxWebmSizeBytes : board.maxImageSizeBytes) ?? limit;
+				if (thisLimit < limit) {
+					limit = thisLimit;
+				}
+			}
+			final minQuota = limit ~/ (2 * batchSize);
+			int bytesAvailable = limit ~/ 2;
+			int bytesNeeded = 0;
+			for (int j = i; j < end; j++) {
+				final size = _attachments[j].current.stat.size;
+				if (size > minQuota) {
+					bytesNeeded += (size - minQuota);
+				}
+				else {
+					// More quota to share
+					bytesAvailable += (minQuota - size);
+				}
+			}
+			for (int j = i; j < end; j++) {
+				final file = _attachments[j];
+				final size = file.current.stat.size;
+				if (size > minQuota) {
+					final targetSize = ((size / bytesNeeded) * bytesAvailable).floor();
+					if (targetSize < size) {
+						double quality = 1.0;
+						final originalWidth = file.original.scan.width;
+						final originalHeight = file.original.scan.height;
+						if (originalWidth == null || originalHeight == null) {
+							throw Exception('Failed to get width and/or height');
+						}
+						if (originalWidth > originalHeight) {
+							if (file.current.scan.width case final newWidth?) {
+								quality = newWidth / originalWidth;
+							}
+						}
+						else {
+							if (file.current.scan.height case final newHeight?) {
+								quality = newHeight / originalHeight;
+							}
+						}
+						final currentExt = file.current.file.path.afterLast('.').toLowerCase();
+						final originalExt = file.original.file.path.afterLast('.').toLowerCase();
+						final offerJpg = originalExt == 'png';
+						final offerPng = originalExt == 'webp';
+						final offerWebm = _kNonWebmVideoExts.contains(originalExt);
+						final offerGif = offerWebm || originalExt == 'webm';
+						final offerMp4 = originalExt == 'gif';
+						bool forcePngToJpg = offerJpg && currentExt == 'jpg';
+						bool forceWebpToPng = offerPng && currentExt == 'png';
+						bool forceMp4ToWebm = offerWebm && currentExt == 'webm';
+						bool forceVideoToGif = offerGif && currentExt == 'gif';
+						bool forceGifToMp4 = offerMp4 && currentExt == 'mp4';
+						final newAttachment = await _makeAttachment(
+							file.original,
+							// Convert from original always
+							file.original.file,
+							forceMaximumSizeInBytes: targetSize,
+							// Need to keep current other settings though
+							forceMaximumDimension: (math.max(originalWidth, originalHeight) * quality).ceil(),
+							forcePngToJpg: forcePngToJpg,
+							forceWebpToPng: forceWebpToPng,
+							forceMp4ToWebm: forceMp4ToWebm,
+							forceVideoToGif: forceVideoToGif,
+							forceGifToMp4: forceGifToMp4,
+							forceConvert: true,
+							checkForDuplicateFile: false
+						);
+						if (newAttachment != null) {
+							file.current = newAttachment.current;
+							newAttachment.dispose();
+							_didUpdateDraft();
+							_updateNeededPosts();
+						}
+					}
+				}
+			}
+		}
+	}
+
+	Future<bool> _handleMultiFileResizing() async {
+		final imageboard = context.read<Imageboard>();
+		final board = imageboard.persistence.getBoard(widget.board.s);
+		if (board.filesPerPost == 0) {
+			if (_attachments.isNotEmpty) {
+				throw Exception('Posting files not allowed');
+			}
+			return true;
+		}
+		final postsNeeded = _makeDraft().calculateNeededPosts(board);
+		final minimumPosts = (_attachments.length / board.filesPerPost).ceil();
+		if (postsNeeded > minimumPosts) {
+			final shrink = await showAdaptiveDialog<bool>(
+				barrierDismissible: true,
+				context: context,
+				builder: (context) => AdaptiveAlertDialog(
+					title: const Text('Shrink files?'),
+					content: Text('Currently $postsNeeded posts would be needed to post the files as-is. Files could be shrunk to fit into ${describeCount(minimumPosts, 'post')}.'),
+					actions: [
+						AdaptiveDialogAction(
+							onPressed: () => Navigator.pop(context, true),
+							child: Text('Shrink (${describeCount(minimumPosts, 'post')})')
+						),
+						AdaptiveDialogAction(
+							onPressed: () => Navigator.pop(context, false),
+							child: Text('Keep ($postsNeeded posts)')
+						),
+						AdaptiveDialogAction(
+							onPressed: () => Navigator.pop(context),
+							child: const Text('Cancel')
+						)
+					]
+				)
+			);
+			if (shrink == null) {
+				return false;
+			}
+			if (shrink) {
+				await _shrinkFilesToFitMultiPosts(board);
+			}
+		}
+		return true;
+	}
+
 	Future<void> _submit() async {
 		final shouldUseLoginSystem = await _shouldUseLoginSystem();
 		if (!mounted) {
 			return;
 		}
 		final imageboard = context.read<Imageboard>();
-		lightHapticFeedback();
-		final post = _makeDraft();
-		post.name = _nameFieldController.text;
-		post.useLoginSystem = shouldUseLoginSystem;
-		post.flag = defaultFlag;
 		if (widget.isArchived) {
 			showAdaptiveDialog(
 				barrierDismissible: true,
@@ -1066,10 +1291,10 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 					actions: [
 						AdaptiveDialogAction(
 							onPressed: () {
-								Clipboard.setData(ClipboardData(text: post.text));
+								Clipboard.setData(ClipboardData(text: _textFieldController.text));
 								showToast(
 									context: context,
-									message: 'Copied "${post.text}" to clipboard',
+									message: 'Copied "${_textFieldController.text}" to clipboard',
 									icon: CupertinoIcons.doc_on_clipboard
 								);
 								Navigator.pop(context);
@@ -1078,12 +1303,17 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 						),
 						AdaptiveDialogAction(
 							onPressed: () {
+								final post = _makeDraft();
+								post.name = _nameFieldController.text;
+								post.useLoginSystem = shouldUseLoginSystem;
+								post.flag = defaultFlag;
 								imageboard.persistence.browserState.outbox.add(post);
 								runWhenIdle(const Duration(milliseconds: 500), imageboard.persistence.didUpdateBrowserState);
 								final entry = Outbox.instance.submitPost(imageboard.key, post, QueueStateIdle());
 								_submittingPosts.add(entry);
 								_listenToReplyPosting(entry);
 								draft = null; // Clear
+								widget.onDraftChanged(null);
 								showToast(
 									context: context,
 									icon: CupertinoIcons.tray_arrow_up,
@@ -1103,8 +1333,16 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 			);
 			return;
 		}
+		if (!await _handleMultiFileResizing() || !mounted) {
+			return;
+		}
+		lightHapticFeedback();
+		final post = _makeDraft();
+		post.name = _nameFieldController.text;
+		post.useLoginSystem = shouldUseLoginSystem;
+		post.flag = defaultFlag;
 		bool autohid = false;
-		final entry = Outbox.instance.submitPost(imageboard.key, post, QueueStateNeedsCaptcha(context,
+		final entry = Outbox.instance.submitPost(imageboard.key, post, QueueStateNeedsCaptcha(
 			beforeModal: () {
 				if (mounted && show) {
 					autohid = true;
@@ -1142,12 +1380,12 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 		flag = defaultFlag;
 		// Don't clear options field, it should be remembered
 		_subjectFieldController.clear();
-		_filenameController.clear();
-		attachment = null;
-		_originalAttachment = null;
-		_overrideRandomizeFilenames = false;
-		spoiler = false;
+		for (final a in _attachments) {
+			a.dispose();
+		}
+		_attachments.clear();
 		_didUpdateDraft();
+		_neededPosts = 1;
 	}
 
 	void _postInBackground() {
@@ -1177,7 +1415,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 	}
 
 	void _listenToReplyPosting(QueuedPost post) {
-		QueueState<PostReceipt>? lastState;
+		QueueState<QueuedPost, PostReceipt>? lastState;
 		void listener() async {
 			if (!mounted) {
 				post.removeListener(listener);
@@ -1189,7 +1427,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 				return;
 			}
 			lastState = state;
-			if (state is QueueStateDeleted<PostReceipt>) {
+			if (state is QueueStateDeleted<QueuedPost, PostReceipt>) {
 				// Don't remove listener, in case undeleted
 				_submittingPosts.remove(post);
 				if (post == postingPost.value) {
@@ -1205,24 +1443,39 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 				_submittingPosts.add(post);
 				setState(() {});
 			}
-			if (state is QueueStateDone<PostReceipt>) {
+			if (state is QueueStateDone<QueuedPost, PostReceipt>) {
 				post.removeListener(listener);
 				_submittingPosts.remove(post);
 				widget.onReplyPosted(post.post.board, state.result);
 				mediumHapticFeedback();
+				final nextPost = state.next;
 				if (post == postingPost.value) {
-					_reset();
-					_rootFocusNode.unfocus();
+					if (nextPost != null) {
+						// Show next post in the box
+						draft = nextPost.post;
+					}
+					else {
+						_rootFocusNode.unfocus();
+						_reset();
+					}
 					// Hide reply box
 					setState(() {
-						postingPost.value = null;
+						postingPost.value = nextPost;
 					});
-					if (context.read<Settings>().closeReplyBoxAfterSubmitting) {
+					if (nextPost != null) {
+						// This needs to happen last so it doesn't eagerly assume this is an undeletion
+						_listenToReplyPosting(nextPost);
+					}
+					else if (context.read<Settings>().closeReplyBoxAfterSubmitting) {
 						hideReplyBox();
 					}
 				}
+				else if (nextPost != null) {
+					_submittingPosts.add(nextPost);
+					_listenToReplyPosting(nextPost);
+				}
 			}
-			else if (state is QueueStateFailed<PostReceipt> && post == postingPost.value) {
+			else if (state is QueueStateFailed<QueuedPost, PostReceipt> && post == postingPost.value) {
 				post.removeListener(listener);
 				post.delete();
 				setState(() {
@@ -1232,7 +1485,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 					showReplyBox();
 				}
 			}
-			else if (state is QueueStateIdle<PostReceipt> && post == postingPost.value) {
+			else if (state is QueueStateIdle<QueuedPost, PostReceipt> && post == postingPost.value) {
 				// User cancelled captcha
 				post.removeListener(listener);
 				post.delete();
@@ -1466,23 +1719,23 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 		) : const SizedBox(width: double.infinity)
 	);
 
-	Widget _buildAttachmentOptions(BuildContext context) {
+	Widget _buildAttachmentOptions(BuildContext context, _ReplyBoxFile file) {
 		final board = context.read<Persistence>().getBoard(widget.board.s);
 		final settings = context.watch<Settings>();
 		final fakeAttachment = Attachment(
-			ext: '.$attachmentExt',
+			ext: '.${file.ext}',
 			url: '',
-			type: attachmentExt == 'webm' ?
+			type: file.ext == 'webm' ?
 				AttachmentType.webm :
-				(attachmentExt == 'mp4' ? AttachmentType.mp4 : AttachmentType.image),
-			md5: attachment?.md5 ?? '',
-			id: '${identityHashCode(attachment)}',
-			filename: attachment?.file.uri.pathSegments.last ?? '',
+				(file.ext == 'mp4' ? AttachmentType.mp4 : AttachmentType.image),
+			md5: file.current.md5,
+			id: '${identityHashCode(file)}',
+			filename: file.current.file.uri.pathSegments.last,
 			thumbnailUrl: '',
 			board: widget.board.s,
-			width: attachment?.scan.width,
-			height: attachment?.scan.height,
-			sizeInBytes: attachment?.stat.size,
+			width: file.current.scan.width,
+			height: file.current.scan.height,
+			sizeInBytes: file.current.stat.size,
 			threadId: null
 		);
 		final decoration = BoxDecoration(
@@ -1506,11 +1759,18 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 									children: [
 										Flexible(
 											child: Opacity(
-												opacity: settings.randomizeFilenames && !_overrideRandomizeFilenames ? 0.5 : 1.0,
+												opacity: settings.randomizeFilenames && !file.overrideRandomizeFilenames ? 0.5 : 1.0,
 												child: AdaptiveTextField(
 													enabled: !loading,
-													controller: _filenameController,
-													placeholder: attachment == null ? '' : attachment!.file.uri.pathSegments.last.replaceAll(RegExp('.$attachmentExt\$'), ''),
+													controller: file.filenameController,
+													onTap: () {
+														if (settings.randomizeFilenames && !file.overrideRandomizeFilenames) {
+															setState(() {
+																file.overrideRandomizeFilenames = true;
+															});
+														}
+													},
+													placeholder: file.current.file.basenameWithoutExtension,
 													maxLines: 1,
 													textCapitalization: TextCapitalization.none,
 													autocorrect: false,
@@ -1522,21 +1782,21 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 											)
 										),
 										const SizedBox(width: 8),
-										Text('.$attachmentExt'),
+										Text('.${file.ext}'),
 										const SizedBox(width: 8),
 										AdaptiveIconButton(
 											padding: EdgeInsets.zero,
 											minimumSize: const Size.square(30),
 											icon: const Icon(CupertinoIcons.xmark),
 											onPressed: () {
-												setState(() {
-													attachment = null;
-													_originalAttachment = null;
+												_attachments.remove(file);
+												file.dispose();
+												if (_attachments.isEmpty) {
 													_showAttachmentOptions = false;
-													_overrideRandomizeFilenames = false;
-													_filenameController.clear();
-												});
+												}
+												setState(() {});
 												_didUpdateDraft();
+												_updateNeededPosts();
 											}
 										)
 									]
@@ -1557,7 +1817,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 												children: [
 													Icon(
 														settings.randomizeFilenames ?
-															(_overrideRandomizeFilenames ?
+															(file.overrideRandomizeFilenames ?
 																CupertinoIcons.minus_square :
 																CupertinoIcons.checkmark_square
 															) : CupertinoIcons.square
@@ -1568,9 +1828,9 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 												]
 											),
 											onPressed: () {
-												if (_overrideRandomizeFilenames) {
+												if (file.overrideRandomizeFilenames) {
 													setState(() {
-														_overrideRandomizeFilenames = false;
+														file.overrideRandomizeFilenames = false;
 													});
 												}
 												else {
@@ -1586,21 +1846,21 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 											icon: Row(
 												mainAxisSize: MainAxisSize.min,
 												children: [
-													Icon(spoiler ? CupertinoIcons.checkmark_square : CupertinoIcons.square),
+													Icon(file.spoiler ? CupertinoIcons.checkmark_square : CupertinoIcons.square),
 													const Text('Spoiler')
 												]
 											),
 											onPressed: () {
 												setState(() {
-													spoiler = !spoiler;
+													file.spoiler = !file.spoiler;
 												});
 											}
 										),
-										if (attachment case final attachment?) AdaptiveThinButton(
+										AdaptiveThinButton(
 											padding: const EdgeInsets.all(4),
 											onPressed: () async {
-												final originalWidth = (_originalAttachment ?? attachment).scan.width;
-												final originalHeight = (_originalAttachment ?? attachment).scan.height;
+												final originalWidth = file.original.scan.width;
+												final originalHeight = file.original.scan.height;
 												if (originalWidth == null || originalHeight == null) {
 													throw Exception('Failed to get width and/or height');
 												}
@@ -1608,25 +1868,25 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 												final double qualityStep;
 												if (originalWidth > originalHeight) {
 													qualityStep = 2 / originalWidth;
-													if (attachment.scan.width case final newWidth?) {
+													if (file.current.scan.width case final newWidth?) {
 														quality = newWidth / originalWidth;
 													}
 												}
 												else {
 													qualityStep = 2 / originalHeight;
-													if (attachment.scan.height case final newHeight?) {
+													if (file.current.scan.height case final newHeight?) {
 														quality = newHeight / originalHeight;
 													}
 												}
 												quality = math.min(quality, 1.0); // Floating point error or rounding or idk
 												final initialQuality = quality;
-												final currentExt = attachment.file.path.afterLast('.').toLowerCase();
-												final originalExt = _originalAttachment?.file.path.afterLast('.').toLowerCase();
-												final offerJpg = (originalExt ?? currentExt) == 'png';
-												final offerPng = (originalExt ?? currentExt) == 'webp';
-												final offerWebm = _kNonWebmVideoExts.contains(originalExt ?? currentExt);
-												final offerGif = offerWebm || (originalExt ?? currentExt) == 'webm';
-												final offerMp4 = (originalExt ?? currentExt) == 'gif';
+												final currentExt = file.current.file.path.afterLast('.').toLowerCase();
+												final originalExt = file.original.file.path.afterLast('.').toLowerCase();
+												final offerJpg = originalExt == 'png';
+												final offerPng = originalExt == 'webp';
+												final offerWebm = _kNonWebmVideoExts.contains(originalExt);
+												final offerGif = offerWebm || originalExt == 'webm';
+												final offerMp4 = originalExt == 'gif';
 												bool forcePngToJpg = offerJpg && currentExt == 'jpg';
 												bool forceWebpToPng = offerPng && currentExt == 'png';
 												bool forceMp4ToWebm = offerWebm && currentExt == 'webm';
@@ -1670,7 +1930,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 																						color: Colors.red,
 																						width: originalWidth * quality,
 																						height: originalHeight * quality,
-																						child: MediaThumbnail(uri: attachment.file.uri, fit: BoxFit.contain)
+																						child: MediaThumbnail(uri: file.current.file.uri, fit: BoxFit.contain)
 																					)
 																				]
 																			)
@@ -1749,7 +2009,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 																		}
 																		Navigator.pop(context, true);
 																	},
-																	child: forceVideoToGif ? Text('Restore to ${originalExt?.toUpperCase()}') : const Text('Convert to GIF')
+																	child: forceVideoToGif ? Text('Restore to ${originalExt.toUpperCase()}') : const Text('Convert to GIF')
 																),
 																if (offerPng) AdaptiveDialogAction(
 																	onPressed: () {
@@ -1790,17 +2050,24 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 														_showAttachmentOptions = false;
 													});
 													try {
-														await setAttachment(
-															false,
-															_originalAttachment?.file ?? attachment.file,
+														final newAttachment = await _makeAttachment(
+															file.original,
+															file.original.file,
 															forceMaximumDimension: (math.max(originalWidth, originalHeight) * quality).ceil(),
 															forcePngToJpg: forcePngToJpg,
 															forceWebpToPng: forceWebpToPng,
 															forceMp4ToWebm: forceMp4ToWebm,
 															forceVideoToGif: forceVideoToGif,
 															forceGifToMp4: forceGifToMp4,
-															forceConvert: forceConvert
+															forceConvert: forceConvert,
+															checkForDuplicateFile: false
 														);
+														if (newAttachment != null) {
+															file.current = newAttachment.current;
+															newAttachment.dispose();
+															_didUpdateDraft();
+															_updateNeededPosts();
+														}
 													}
 													finally {
 														setState(() {
@@ -1811,15 +2078,15 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 											},
 											child: Text(
 												[
-													if (attachmentExt == 'mp4' || attachmentExt == 'webm') ...[
-														if (attachment.scan.codec != null) attachment.scan.codec!.toUpperCase(),
-														if (attachment.scan.hasAudio == true) 'with audio'
+													if (file.ext == 'mp4' || file.ext == 'webm') ...[
+														if (file.current.scan.codec != null) file.current.scan.codec!.toUpperCase(),
+														if (file.current.scan.hasAudio == true) 'with audio'
 														else 'no audio',
-														if (attachment.scan.duration != null) formatDuration(attachment.scan.duration!),
-														if (attachment.scan.bitrate != null) '${(attachment.scan.bitrate! / (1024 * 1024)).toStringAsFixed(1)} Mbps',
+														if (file.current.scan.duration != null) formatDuration(file.current.scan.duration!),
+														if (file.current.scan.bitrate != null) '${(file.current.scan.bitrate! / (1024 * 1024)).toStringAsFixed(1)} Mbps',
 													],
-													if (attachment.scan.width != null && attachment.scan.height != null) '${attachment.scan.width}x${attachment.scan.height}',
-													formatFilesize(attachment.stat.size)
+													if (file.current.scan.width != null && file.current.scan.height != null) '${file.current.scan.width}x${file.current.scan.height}',
+													formatFilesize(file.current.stat.size)
 												].join(', '),
 												maxLines: null,
 												textAlign: TextAlign.right
@@ -1835,7 +2102,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 														child: Text('MD5', style: TextStyle(fontSize: 9))
 													),
 													const SizedBox(width: 2),
-													Text('${attachment?.md5.substring(0, 6)}', textAlign: TextAlign.center)
+													Text(file.current.md5.substring(0, 6).toLowerCase(), textAlign: TextAlign.center)
 												]
 											),
 											onPressed: () async {
@@ -1843,7 +2110,25 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 													_showAttachmentOptions = false;
 												});
 												try {
-													await setAttachment(false, attachment!.file, forceRandomizeChecksum: true);
+													final newAttachment = await _makeAttachment(
+														file.original, file.current.file, forceRandomizeChecksum: true,
+														spoiler: file.spoiler,
+														filenameWithoutExtension: file.filenameController.text,
+														overrideRandomizeFilenames: file.overrideRandomizeFilenames,
+														checkForDuplicateFile: false
+													);
+													if (newAttachment != null) {
+														file.current = newAttachment.current;
+														newAttachment.dispose();
+														_didUpdateDraft();
+														_updateNeededPosts();
+													}
+												}
+												catch (e, st) {
+													Future.error(e, st); // crashlytics
+													if (context.mounted) {
+														alertError(context, e, st);
+													}
 												}
 												finally {
 													setState(() {
@@ -1858,10 +2143,12 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 						)
 					),
 					const SizedBox(width: 8),
-					(attachment != null) ? ConstrainedBox(
-						constraints: const BoxConstraints(
+					ConstrainedBox(
+						constraints: BoxConstraints(
 							maxWidth: 100,
-							maxHeight: 100
+							maxHeight: 100,
+							// Make all thumbnails as wide as the widest one
+							minWidth: 100 * math.min(1, _attachments.fold(0, (ratio, file) => math.max(ratio, (file.current.scan.width ?? 0) / (file.current.scan.height ?? 1)))),
 						),
 						child: GestureDetector(
 							child: Hero(
@@ -1876,7 +2163,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 								},
 								createRectTween: (startRect, endRect) {
 									if (startRect != null && endRect != null) {
-										if (attachmentExt != 'webm') {
+										if (file.ext != 'webm') {
 											// Need to deflate the original startRect because it has inbuilt layoutInsets
 											// This SavedAttachmentThumbnail will always fill its size
 											final rootPadding = MediaQueryData.fromView(View.of(context)).padding - sumAdditionalSafeAreaInsets();
@@ -1885,7 +2172,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 									}
 									return CurvedRectTween(curve: Curves.ease, begin: startRect, end: endRect);
 								},
-								child: MediaThumbnail(uri: attachment!.file.uri, fit: BoxFit.contain)
+								child: MediaThumbnail(uri: file.current.file.uri, fit: BoxFit.contain)
 							),
 							onTap: () async {
 								showGalleryPretagged(
@@ -1897,7 +2184,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 									)],
 									context: context,
 									overrideSources: {
-										fakeAttachment: attachment!.file.uri
+										fakeAttachment: file.current.file.uri
 									},
 									allowChrome: true,
 									allowContextMenu: true,
@@ -1906,8 +2193,6 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 								);
 							}
 						)
-					) : SizedBox.fromSize(
-						size: applyBoxFit(BoxFit.contain, _lastAttachmentSize, const Size.square(100)).destination
 					)
 				]
 			)
@@ -2013,9 +2298,15 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 						padding: const EdgeInsets.only(left: 8),
 						child: AdaptiveThinButton(
 							padding: const EdgeInsets.all(4),
-							onPressed: (_attachmentProgress != null || (!kDebugMode && _textIsEmpty && attachment == null)) ? null : () async {
+							onPressed: (_attachmentProgress != null || (!kDebugMode && _textIsEmpty && _attachments.isEmpty)) ? null : () async {
+								if (!await _handleMultiFileResizing()) {
+									return;
+								}
 								final draft = _makeDraft();
 								draft.name = _nameFieldController.text;
+								final board = imageboard.persistence.getBoard(widget.board.s);
+								final (currentFiles, nextFiles) = draft.splitFiles(board);
+								draft.files = currentFiles;
 								final encoded = await site.encodePostForWeb(draft);
 								if (encoded == null) {
 									throw Exception('Post was not encoded');
@@ -2057,9 +2348,34 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 								));
 								if (receipt != null) {
 									await imageboard.didSubmitPost(draft, receipt);
+									if (nextFiles.isNotEmpty) {
+										// Not as easy to reassemble attachment objects. Just remove by order.
+										for (int i = 0; i < draft.files.length; i++) {
+											_attachments.removeAt(0).dispose();
+										}
+										if (widget.threadId != null) {
+											// Additional reply in same thread, put it in the reply box
+											_textFieldController.text = '>>${receipt.id}';
+											_didUpdateDraft();
+											_updateNeededPosts();
+										}
+										else {
+											// Additional post(s) needed in the newly created thread
+											// Add it as the current draft (no auto submission as we are in web posting flow)
+											final nextPost = _makeDraft();
+											nextPost.threadId = receipt.id;
+											nextPost.name = _nameFieldController.text;
+											nextPost.subject = null;
+											final threadState = imageboard.persistence.getThreadState(ThreadIdentifier(widget.board.s, receipt.id));
+											threadState.draft = nextPost;
+											_reset();
+										}
+									}
+									else {
+										_reset();
+									}
 									widget.onReplyPosted(draft.board, receipt);
 									mediumHapticFeedback();
-									_reset();
 									_rootFocusNode.unfocus();
 									if (Settings.instance.closeReplyBoxAfterSubmitting) {
 										hideReplyBox();
@@ -2155,8 +2471,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 							if (newFile == null) {
 								return;
 							}
-							await setAttachment(true, newFile);
-							_filenameController.text = proposed.imageUrl.afterLast('/').split('.').reversed.skip(1).toList().reversed.join('.');
+							await _addAttachment(newFile);
 							if (proposed.text == proposed.imageUrl) {
 								final original = _textFieldController.text;
 								final replaced = original.replaceFirst(proposed.text, '');
@@ -2216,7 +2531,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 						try {
 							final image = await getClipboardImageAsFile(context);
 							if (image != null) {
-								await setAttachment(true, image);
+								_addAttachment(image);
 							}
 						}
 						catch (e, st) {
@@ -2336,7 +2651,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 															final f = Persistence.shareCacheDirectory.file('${DateTime.now().millisecondsSinceEpoch}/$filename');
 															await f.create(recursive: true);
 															await f.writeAsBytes(data, flush: true);
-															await setAttachment(true, f);
+															await _addAttachment(f);
 														}
 														catch (e, st) {
 															if (context.mounted) {
@@ -2494,6 +2809,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 			});
 		}
 		final imageboard = context.read<Imageboard>();
+		final board = imageboard.persistence.getBoard(widget.board.s);
 		final emotes = imageboard.site.getEmotes();
 		final snippets = context.read<ImageboardSite>().getBoardSnippets(widget.board.s);
 		final defaultTextStyle = DefaultTextStyle.of(context).style;
@@ -2670,93 +2986,111 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 											)
 										)
 									]
-								) : attachment != null ? AdaptiveIconButton(
-									padding: const EdgeInsets.only(left: 8, right: 8),
-									onPressed: loading ? null : expandAttachmentOptions,
-									icon: Row(
-										mainAxisSize: MainAxisSize.min,
-										children: [
-											showAttachmentOptions ? const Icon(CupertinoIcons.chevron_down) : const Icon(CupertinoIcons.chevron_up),
-											const SizedBox(width: 8),
-											ClipRRect(
-												borderRadius: BorderRadius.circular(4),
-												child: ConstrainedBox(
-													constraints: const BoxConstraints(
-														maxWidth: 32,
-														maxHeight: 32
+								) : Row(
+									children: [
+										if (_attachments.isNotEmpty) AdaptiveIconButton(
+											padding: const EdgeInsets.only(left: 8, right: 8),
+											onPressed: loading ? null : expandAttachmentOptions,
+											icon: Row(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													if (showAttachmentOptions)
+														const Icon(CupertinoIcons.chevron_down)
+													else
+														const Icon(CupertinoIcons.chevron_up),
+													for (final attachment in _attachments) ...[
+														const SizedBox(width: 8),
+														ClipRRect(
+															borderRadius: BorderRadius.circular(4),
+															child: ConstrainedBox(
+																constraints: const BoxConstraints(
+																	maxWidth: 32,
+																	maxHeight: 32
+																),
+																child: MediaThumbnail(uri: attachment.current.file.uri, fontSize: 12)
+															)
+														),
+													]
+												]
+											)
+										),
+										if (_attachments.isNotEmpty) Container(
+											margin: const EdgeInsets.symmetric(horizontal: 8),
+											width: 1,
+											height: 32,
+											color: settings.theme.primaryColorWithBrightness(0.2)
+										),
+										if (board.filesPerPost > 0) AnimatedBuilder(
+											animation: attachmentSourceNotifier,
+											builder: (context, _) => Row(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													for (final file in receivedFilePaths.reversed) GestureDetector(
+														onLongPress: loading ? null : () async {
+															if (await confirm(context, 'Remove received file?')) {
+																receivedFilePaths.remove(file);
+																setState(() {});
+															}
+														},
+														child: AdaptiveIconButton(
+															onPressed: loading ? null : () => _addAttachment(File(file)),
+															icon: ClipRRect(
+																borderRadius: BorderRadius.circular(4),
+																child: ConstrainedBox(
+																	constraints: const BoxConstraints(
+																		maxWidth: 32,
+																		maxHeight: 32
+																	),
+																	child: MediaThumbnail(
+																		uri: Uri.file(file)
+																	)
+																)
+															)
+														)
 													),
-													child: MediaThumbnail(uri: attachment!.file.uri, fontSize: 12)
-												)
-											),
-										]
-									)
-								) : AnimatedBuilder(
-									animation: attachmentSourceNotifier,
-									builder: (context, _) => Row(
-										mainAxisSize: MainAxisSize.min,
-										children: [
-											for (final file in receivedFilePaths.reversed) GestureDetector(
-												onLongPress: loading ? null : () async {
-													if (await confirm(context, 'Remove received file?')) {
-														receivedFilePaths.remove(file);
-														setState(() {});
-													}
-												},
-												child: AdaptiveIconButton(
-													onPressed: loading ? null : () => setAttachment(true, File(file)),
-													icon: ClipRRect(
-														borderRadius: BorderRadius.circular(4),
-														child: ConstrainedBox(
-															constraints: const BoxConstraints(
-																maxWidth: 32,
-																maxHeight: 32
-															),
-															child: MediaThumbnail(
-																uri: Uri.file(file)
+													for (final picker in getAttachmentSources(includeClipboard: false)) GestureDetector(
+														onLongPress: picker.onLongPress?.bind1(this.context),
+														child: AdaptiveIconButton(
+															onPressed: loading ? null : () async {
+																final focusToRestore = FocusScope.of(this.context).focusedChild;
+																_attachmentProgress = ('Picking', null);
+																setState(() {});
+																// Local [context] is not safe. It will die when we go to 'Picking'
+																try {
+																	final paths = await picker.pick(this.context, true);
+																	if (paths.isNotEmpty) {
+																		for (final path in paths) {
+																			await _addAttachment(File(path));
+																		}
+																	}
+																	else {
+																		_attachmentProgress = null;
+																	}
+																}
+																catch (e, st) {
+																	Future.error(e, st);
+																	// Local [context] is not safe. It will die when we go to 'Picking'
+																	final context = this.context;
+																	if (context.mounted) {
+																		alertError(context, e, st);
+																	}
+																	_attachmentProgress = null;
+																}
+																focusToRestore?.requestFocus();
+																if (mounted) {
+																	setState(() {});
+																}
+															},
+															icon: Transform.scale(
+																scale: picker.iconSizeMultiplier,
+																child: Icon(picker.icon)
 															)
 														)
 													)
-												)
-											),
-											for (final picker in getAttachmentSources(includeClipboard: false)) GestureDetector(
-												onLongPress: picker.onLongPress?.bind1(this.context),
-												child: AdaptiveIconButton(
-													onPressed: loading ? null : () async {
-														final focusToRestore = FocusScope.of(this.context).focusedChild;
-														_attachmentProgress = ('Picking', null);
-														setState(() {});
-														// Local [context] is not safe. It will die when we go to 'Picking'
-														try {
-															final path = await picker.pick(this.context);
-															if (path != null) {
-																await setAttachment(true, File(path));
-															}
-															else {
-																_attachmentProgress = null;
-															}
-														}
-														catch (e, st) {
-															Future.error(e, st);
-															// Local [context] is not safe. It will die when we go to 'Picking'
-															final context = this.context;
-															if (context.mounted) {
-																alertError(context, e, st);
-															}
-															_attachmentProgress = null;
-														}
-														focusToRestore?.requestFocus();
-														if (mounted) {
-															setState(() {});
-														}
-													},
-													icon: Transform.scale(
-														scale: picker.iconSizeMultiplier,
-														child: Icon(picker.icon)
-													)
-												)
+												]
 											)
-										]
-									)
+										)
+									]
 								)
 							)
 						].reversed.toList()
@@ -2789,6 +3123,7 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 						_submittingPosts.add(entry);
 						_listenToReplyPosting(entry);
 						draft = null; // Clear
+						widget.onDraftChanged(null);
 						showToast(
 							context: context,
 							icon: CupertinoIcons.tray_arrow_up,
@@ -2799,19 +3134,22 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 					child: Opacity(
 						opacity: widget.isArchived ? 0.5 : 1,
 						child: AdaptiveIconButton(
-							onPressed: _attachmentProgress != null ? null : (loading ? _cancel : switch ((kDebugMode, _textIsEmpty, attachment)) {
+							onPressed: _attachmentProgress != null ? null : (loading ? _cancel : switch ((kDebugMode, _textIsEmpty, _attachments)) {
 								// Don't allow empty post in release mode
-								(false, true, null) => null,
+								(false, true, []) => null,
 								_ => _submit
 							}),
 							icon: Row(
 								mainAxisSize: MainAxisSize.min,
 								children: [
+									const SizedBox(width: 8),
 									if (widget.isArchived) const Text('Thread is archived'),
-									SizedBox(
-										width: 44,
-										child: Icon(loading ? CupertinoIcons.xmark : CupertinoIcons.paperplane)
-									)
+									if (loading) const Icon(CupertinoIcons.xmark)
+									else ...[
+										const Icon(CupertinoIcons.paperplane),
+										if (_neededPosts > 1) Text(' ($_neededPosts)')
+									],
+									const SizedBox(width: 8)
 								]
 							)
 						)
@@ -2827,10 +3165,8 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 			draft.name != _nameFieldController.text ||
 			// Non-default options
 			draft.options != _optionsFieldController.text ||
-			(draft.file?.isNotEmpty ?? false) ||
+			draft.files.isNotEmpty ||
 			draft.flag != null ||
-			(draft.overrideFilenameWithoutExtension?.isNotEmpty ?? false) ||
-			draft.overrideRandomizeFilenames ||
 			(draft.subject?.isNotEmpty ?? false) ||
 			draft.text.isNotEmpty;
 	}
@@ -2887,7 +3223,16 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 								expanded: show && showAttachmentOptions,
 								bottomSafe: true,
 								curve: Curves.ease,
-								child: _buildAttachmentOptions(context)
+								child: Focus(
+									descendantsAreFocusable: showAttachmentOptions && show,
+									child: Column(
+										mainAxisSize: MainAxisSize.min,
+										children: [
+											for (final attachment in _attachments)
+												_buildAttachmentOptions(context, attachment)
+										]
+									)
+								)
 							),
 							Expander(
 								expanded: show && showOptions,
@@ -2943,7 +3288,46 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 										bottomSafe: true,
 										child: Focus(
 											descendantsAreFocusable: showAttachmentOptions && show,
-											child: _buildAttachmentOptions(context)
+											child: ReorderableListView(
+												shrinkWrap: true,
+												primary: false,
+												// Default proxyDecorator causes font size to jump (change in Material.elevation I guess?)
+												proxyDecorator: (child, index, animation) => AnimatedBuilder(
+													animation: animation,
+													builder: (BuildContext context, Widget? child) {
+														final double animValue = Curves.easeInOut.transform(animation.value);
+														return ClipRect(
+															child: ColorFiltered(
+																colorFilter: ColorFilter.mode(
+																	settings.theme.primaryColor.withValues(alpha: 0.1 * animValue),
+																	BlendMode.srcOver
+																),
+																child: child
+															)
+														);
+													},
+													child: child,
+												),
+												onReorder: (oldIndex, newIndex) {
+													if (oldIndex < newIndex) {
+														newIndex -= 1;
+													}
+													final item = _attachments.removeAt(oldIndex);
+													_attachments.insert(newIndex, item);
+													setState(() {});
+													_didUpdateDraft();
+													_updateNeededPosts();
+												},
+												children: [
+													for (final (i, attachment) in _attachments.indexed)
+														ReorderableDelayedDragStartListener(
+															index: i,
+															enabled: _attachments.length > 1,
+															key: ValueKey(attachment),
+															child: _buildAttachmentOptions(context, attachment)
+														)
+												]
+											)
 										)
 									)
 								),
@@ -3066,7 +3450,8 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 					useLoginSystem: switch (_disableLoginSystem) {
 						true => false,
 						false => null
-					}
+					},
+					files: []
 				));
 			}
 			else {
@@ -3078,7 +3463,9 @@ Future<bool> _handleImagePaste({bool manual = true}) async {
 		_nameFieldController.dispose();
 		_subjectFieldController.dispose();
 		_optionsFieldController.dispose();
-		_filenameController.dispose();
+		for (final attachment in _attachments) {
+			attachment.dispose();
+		}
 		_textFocusNode.dispose();
 		_rootFocusNode.dispose();
 		for (final controller in _snippetControllers.values) {

@@ -26,7 +26,6 @@ Future<void> reportPost({
 			(c) => site.getPostReportMethod(post, cancelToken: c.cancelToken),
 			wait: const Duration(milliseconds: 100)
 		);
-		final outerContext = context;
 		if (!context.mounted) {
 			return;
 		}
@@ -101,7 +100,7 @@ Future<void> reportPost({
 								AdaptiveDialogAction(
 									isDefaultAction: true,
 									onPressed: choice == null ? null : () async {
-										Navigator.pop(context, Outbox.instance.submitReport(outerContext, site.imageboard!.key, method, choice!, useLoginSystem));
+										Navigator.pop(context, Outbox.instance.submitReport(site.imageboard!.key, method, choice!, useLoginSystem));
 									},
 									child: const Text('Submit')
 								),
@@ -116,7 +115,7 @@ Future<void> reportPost({
 				if (!context.mounted || entry == null) {
 					return;
 				}
-				QueueState<void>? lastState;
+				QueueState<QueuedReport, void>? lastState;
 				void listener() {
 					if (!context.mounted) {
 						entry.removeListener(listener);
@@ -128,7 +127,7 @@ Future<void> reportPost({
 						return;
 					}
 					lastState = state;
-					if (state is QueueStateDone<void>) {
+					if (state is QueueStateDone<QueuedReport, void>) {
 						onSuccessfulCaptchaSubmitted(state.captchaSolution);
 						entry.removeListener(listener);
 						showToast(
@@ -137,7 +136,7 @@ Future<void> reportPost({
 							message: 'Report submitted'
 						);
 					}
-					else if (state is QueueStateFailed<void>) {
+					else if (state is QueueStateFailed<QueuedReport, void>) {
 						alertError(context, state.error, state.stackTrace, actions: {
 							'More info': () => showOutboxModalForThread(
 								context: context,

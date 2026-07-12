@@ -7,7 +7,6 @@ import 'package:chan/services/captcha.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
-import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/util.dart';
@@ -18,7 +17,7 @@ import 'package:mutex/mutex.dart';
 
 typedef QueueEntryActionKey = (String imageboardKey, BoardKey board, ImageboardAction action);
 
-sealed class QueueState<T> {
+sealed class QueueState<P extends QueueEntry<P, T>, T> {
 	QueueState();
 	bool get isIdle;
 	bool get isSubmittable;
@@ -29,7 +28,7 @@ sealed class QueueState<T> {
 	void _dispose() {}
 }
 
-class QueueStateIdle<T> extends QueueState<T> {
+class QueueStateIdle<P extends QueueEntry<P, T>, T> extends QueueState<P, T> {
 	QueueStateIdle();
 	@override
 	bool get isIdle => true;
@@ -39,11 +38,10 @@ class QueueStateIdle<T> extends QueueState<T> {
 	String get idleName => 'Idle';
 }
 
-class QueueStateNeedsCaptcha<T> extends QueueState<T> {
-	final BuildContext? context;
+class QueueStateNeedsCaptcha<P extends QueueEntry<P, T>, T> extends QueueState<P, T> {
 	final VoidCallback? beforeModal;
 	final VoidCallback? afterModal;
-	QueueStateNeedsCaptcha(this.context, {this.beforeModal, this.afterModal});
+	QueueStateNeedsCaptcha({this.beforeModal, this.afterModal});
 	@override
 	bool get isIdle => false;
 	@override
@@ -54,7 +52,7 @@ class QueueStateNeedsCaptcha<T> extends QueueState<T> {
 	String get idleName => 'Needs captcha';
 }
 
-class QueueStateGettingCaptcha<T> extends QueueState<T> {
+class QueueStateGettingCaptcha<P extends QueueEntry<P, T>, T> extends QueueState<P, T> {
 	final CancelToken? cancelToken;
 	QueueStateGettingCaptcha({
 		this.cancelToken
@@ -69,7 +67,7 @@ class QueueStateGettingCaptcha<T> extends QueueState<T> {
 	String get idleName => 'Getting captcha';
 }
 
-class QueueStateWaitingWithCaptcha<T> extends QueueState<T> {
+class QueueStateWaitingWithCaptcha<P extends QueueEntry<P, T>, T> extends QueueState<P, T> {
 	final DateTime submittedAt;
 	final CaptchaSolution captchaSolution;
 	QueueStateWaitingWithCaptcha(this.submittedAt, this.captchaSolution);
@@ -87,7 +85,7 @@ class QueueStateWaitingWithCaptcha<T> extends QueueState<T> {
 
 typedef WaitMetadata = ({DateTime until, VoidCallback skip});
 
-class QueueStateSubmitting<T> extends QueueState<T> {
+class QueueStateSubmitting<P extends QueueEntry<P, T>, T> extends QueueState<P, T> {
 	final String? message;
 	/// Can be called to skip current step (arbitrary delay?)
 	final WaitMetadata? wait;
@@ -107,7 +105,7 @@ class QueueStateSubmitting<T> extends QueueState<T> {
 	String get idleName => message ?? 'Submitting';
 }
 
-class QueueStateFailed<T> extends QueueState<T> {
+class QueueStateFailed<P extends QueueEntry<P, T>, T> extends QueueState<P, T> {
 	final Object error;
 	final StackTrace stackTrace;
 	final CaptchaSolution? captchaSolution;
@@ -124,11 +122,12 @@ class QueueStateFailed<T> extends QueueState<T> {
 	String get idleName => 'Failed';
 }
 
-class QueueStateDone<T> extends QueueState<T> {
+class QueueStateDone<P extends QueueEntry<P, T>, T> extends QueueState<P, T> {
 	final DateTime time;
 	final CaptchaSolution captchaSolution;
 	final T result;
-	QueueStateDone(this.time, this.result, this.captchaSolution);
+	final P? next;
+	QueueStateDone(this.time, this.result, this.next, this.captchaSolution);
 	@override
 	bool get isIdle => true;
 	@override
@@ -139,7 +138,7 @@ class QueueStateDone<T> extends QueueState<T> {
 	String get idleName => 'Done';
 }
 
-class QueueStateDeleted<T> extends QueueState<T> {
+class QueueStateDeleted<P extends QueueEntry<P, T>, T> extends QueueState<P, T> {
 	QueueStateDeleted();
 	@override
 	bool get isIdle => true;
@@ -149,16 +148,25 @@ class QueueStateDeleted<T> extends QueueState<T> {
 	String get idleName => 'Deleted';
 }
 
-sealed class QueueEntry<T> extends ChangeNotifier {
+final class QueueSubmissionResult<P extends QueueEntry<P, T>, T> {
+	final T result;
+	final P? next;
+	const QueueSubmissionResult(this.result, this.next);
+
+	@override
+	String toString() => 'QueueSubmissionResult($result, next: $next)';
+}
+
+sealed class QueueEntry<S extends QueueEntry<S, T>, T> extends ChangeNotifier {
 	final _lock = Mutex();
 	bool get isActivelyProcessing => _lock.isLocked;
 	String get statusText => state.idleName;
 	final String imageboardKey;
 	Imageboard get imageboard => ImageboardRegistry.instance.getImageboard(imageboardKey)!;
 	ImageboardSite get site => imageboard.site;
-	Future<T> _submitImpl(CaptchaSolution captchaSolution, CancelToken cancelToken);
-	QueueState<T> _state;
-	QueueState<T> get state => _state;
+	Future<QueueSubmissionResult<S, T>> _submitImpl(CaptchaSolution captchaSolution, CancelToken cancelToken);
+	QueueState<S, T> _state;
+	QueueState<S, T> get state => _state;
 	bool get useLoginSystem;
 	bool get isArchived;
 	void setUseLoginSystem(bool newUseLoginSystem);
@@ -172,7 +180,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 
 	QueueEntry({
 		required this.imageboardKey,
-		required QueueState<T> state
+		required QueueState<S, T> state
 	}) : _state = state;
 
 	BoardKey get _board;
@@ -188,8 +196,8 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 
 	bool shouldReplace(QueueEntry other);
 
-	bool _transitionIfActive(QueueState<T> newState) {
-		if (_state is QueueStateDeleted<T>) {
+	bool _transitionIfActive(QueueState<S, T> newState) {
+		if (_state is QueueStateDeleted<S, T>) {
 			return false;
 		}
 		_state._dispose();
@@ -198,11 +206,11 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 		return true;
 	}
 
-	Future<void> submit(BuildContext? context) async {
+	Future<void> submit() async {
 		// Note -- if we are failed here. we might have a captcha.
 		// But just throw it away, it avoids tracking captcha problems.
 		try {
-			if (_transitionIfActive(QueueStateNeedsCaptcha(context))) {
+			if (_transitionIfActive(QueueStateNeedsCaptcha())) {
 				if (queue?.captchaAllowedTime.isAfter(DateTime.now()) == false) {
 					// Grab the new captcha right away
 					await _preSubmit();
@@ -217,10 +225,10 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 	@mustCallSuper
 	void delete({bool isReplacement = false}) {
 		final state = this.state;
-		if (state is QueueStateSubmitting<T>) {
+		if (state is QueueStateSubmitting<S, T>) {
 			state.cancelToken?.cancel();
 		}
-		else if (state is QueueStateGettingCaptcha<T>) {
+		else if (state is QueueStateGettingCaptcha<S, T>) {
 			state.cancelToken?.cancel();
 		}
 		if (_transitionIfActive(QueueStateDeleted())) {
@@ -238,11 +246,11 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 	void cancel() {
 		print('$this::cancel()');
 		final state = this.state;
-		if (_transitionIfActive(QueueStateIdle<T>())) {
-			if (state is QueueStateSubmitting<T>) {
+		if (_transitionIfActive(QueueStateIdle<S, T>())) {
+			if (state is QueueStateSubmitting<S, T>) {
 				state.cancelToken?.cancel();
 			}
-			else if (state is QueueStateGettingCaptcha<T>) {
+			else if (state is QueueStateGettingCaptcha<S, T>) {
 				state.cancelToken?.cancel();
 			}
 			Future.microtask(Outbox.instance._process);
@@ -258,7 +266,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 	})? get pair {
 		final state = _state;
 		final queue = this.queue;
-		if (state is QueueStateNeedsCaptcha<T> && queue != null && queue.captchaAllowedTime.isAfter(DateTime.now())) {
+		if (state is QueueStateNeedsCaptcha<S, T> && queue != null && queue.captchaAllowedTime.isAfter(DateTime.now())) {
 			if (
 				imageboard.site.authPage != null &&
 				imageboard.site.hasLinkCookieAuth &&
@@ -283,7 +291,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 				highPriority: false
 			);
 		}
-		else if (state is QueueStateWaitingWithCaptcha<T> && queue != null && queue.allowedTime.isAfter(DateTime.now())) {
+		else if (state is QueueStateWaitingWithCaptcha<S, T> && queue != null && queue.allowedTime.isAfter(DateTime.now())) {
 			return (
 				deadline: queue.allowedTime,
 				action: (_) => queue.allowedTime = DateTime.now(),
@@ -291,7 +299,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 				highPriority: false
 			);
 		}
-		else if (state is QueueStateSubmitting<T>) {
+		else if (state is QueueStateSubmitting<S, T>) {
 			final wait = state.wait;
 			if (wait != null) {
 				return (
@@ -307,8 +315,8 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 
 	Future<void> _preSubmit() => _lock.protect(() async {
 		final initialState = state;
-		final QueueStateNeedsCaptcha<T>? initialNeedsCaptchaState;
-		if (initialState is QueueStateNeedsCaptcha<T>) {
+		final QueueStateNeedsCaptcha<S, T>? initialNeedsCaptchaState;
+		if (initialState is QueueStateNeedsCaptcha<S, T>) {
 			initialNeedsCaptchaState = initialState;
 			final cancelToken = CancelToken();
 			try {
@@ -319,7 +327,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 						await site.loginSystem?.login(savedFields, cancelToken).timeout(const Duration(seconds: 15));
 					}
 					catch (e) {
-						final context = initialState.context?.ifMounted ?? ImageboardRegistry.instance.context;
+						final context = ImageboardRegistry.instance.context;
 						if (context != null && context.mounted) {
 							showToast(
 								context: context,
@@ -336,7 +344,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 				DateTime? tryAgainAt0;
 				final request = await _getCaptchaRequest(cancelToken);
 				final captcha = await solveCaptcha(
-					getContext: () => initialState.context?.ifMounted ?? ImageboardRegistry.instance.context,
+					getContext: () => ImageboardRegistry.instance.context,
 					beforeModal: initialState.beforeModal,
 					afterModal: initialState.afterModal,
 					site: site,
@@ -345,7 +353,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 					onTryAgainAt: (x) => tryAgainAt0 = x,
 					forceHeadless: null, // Try headless solver
 				);
-				if (_state is QueueStateIdle<T>) {
+				if (_state is QueueStateIdle<S, T>) {
 					// Cancelled in the meantime
 					return;
 				}
@@ -365,7 +373,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 			}
 			on CooldownException catch (e) {
 				print('Got cooldown in $this:_preSubmit() to try again in ${e.tryAgainAt.difference(DateTime.now())}');
-				final context = initialState.context?.ifMounted ?? ImageboardRegistry.instance.context;
+				final context = ImageboardRegistry.instance.context;
 				if (context != null && context.mounted) {
 					showToast(
 						context: context,
@@ -377,13 +385,13 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 				_transitionIfActive(initialNeedsCaptchaState);
 			}
 			on HeadlessSolveNotPossibleException {
-				final context = initialState.context?.ifMounted ?? ImageboardRegistry.instance.context;
+				final context = ImageboardRegistry.instance.context;
 				if (context != null && context.mounted) {
 					showToast(
 						context: context,
 						message: 'Captcha needed',
 						icon: CupertinoIcons.checkmark_shield,
-						easyButton: ('Solve', () => submit(context))
+						easyButton: ('Solve', submit)
 					);
 				}
 				if (_transitionIfActive(QueueStateIdle())) {
@@ -400,22 +408,22 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 		else {
 			initialNeedsCaptchaState = null;
 		}
-		if (initialState is QueueStateWaitingWithCaptcha<T> && _state is! QueueStateIdle<T>) {
+		if (initialState is QueueStateWaitingWithCaptcha<S, T> && _state is! QueueStateIdle<S, T>) {
 			final deadline = DateTime.now().add(const Duration(seconds: 5));
 			final expiresAt = initialState.captchaSolution.expiresAt;
 			if (expiresAt != null && expiresAt.isBefore(deadline)) {
 				initialState.captchaSolution.dispose();
-				_transitionIfActive(initialNeedsCaptchaState ?? QueueStateNeedsCaptcha(null));
+				_transitionIfActive(initialNeedsCaptchaState ?? QueueStateNeedsCaptcha());
 			}
 		}
 	});
 
-	Future<bool> _submit() async {
+	Future<Wrapper<QueueEntry<S, T>?>?> _submit() async {
 		// _lock is not re-entrant...
 		await _preSubmit();
 		return await _lock.protect(() async {
 			final initialState = state;
-			if (initialState is QueueStateWaitingWithCaptcha<T>) {
+			if (initialState is QueueStateWaitingWithCaptcha<S, T>) {
 				final cancelToken = CancelToken();
 				final captchaSolution = initialState.captchaSolution;
 				try {
@@ -437,7 +445,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 								_state = QueueStateIdle();
 								notifyListeners();
 							}
-							return false;
+							return null;
 						}
 					}
 					final delay = site.getCaptchaUsableTime(captchaSolution).difference(DateTime.now());
@@ -458,7 +466,7 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 								_state = QueueStateIdle();
 								notifyListeners();
 							}
-							return false;
+							return null;
 						}
 					}
 					_state = QueueStateSubmitting(
@@ -467,9 +475,9 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 					);
 					notifyListeners();
 					final result = await _submitImpl(captchaSolution, cancelToken);
-					_state = QueueStateDone(DateTime.now(), result, captchaSolution);
+					_state = QueueStateDone(DateTime.now(), result.result, result.next, captchaSolution);
 					notifyListeners();
-					return true;
+					return Wrapper(result.next);
 				}
 				on CooldownException catch (e) {
 					print('got cd $e');
@@ -495,12 +503,12 @@ sealed class QueueEntry<T> extends ChangeNotifier {
 					_transitionIfActive(QueueStateFailed(e, st, captchaSolution: captchaSolution));
 				}
 			}
-			return false;
+			return null;
 		});
 	}
 }
 
-class QueuedPost extends QueueEntry<PostReceipt> {
+class QueuedPost extends QueueEntry<QueuedPost, PostReceipt> {
 	final DraftPost post;
 	@override
 	bool get useLoginSystem => post.useLoginSystem ?? true;
@@ -508,8 +516,35 @@ class QueuedPost extends QueueEntry<PostReceipt> {
 	void setUseLoginSystem(bool newUseLoginSystem) => post.useLoginSystem = newUseLoginSystem;
 
 	@override
-	Future<PostReceipt> _submitImpl(CaptchaSolution captchaSolution, CancelToken cancelToken) async {
-		return await imageboard.submitPost(post, captchaSolution, cancelToken);
+	Future<QueueSubmissionResult<QueuedPost, PostReceipt>> _submitImpl(CaptchaSolution captchaSolution, CancelToken cancelToken) async {
+		final board = imageboard.persistence.getBoard(post.board);
+		final originalFiles = post.files;
+		final (currentFiles, nextFiles) = post.splitFiles(board);
+		// Need to mutate and restore same DraftPost object as it is tracked in browser state .outbox by identity only
+		post.files = currentFiles;
+		final PostReceipt receipt;
+		try {
+			receipt = await imageboard.submitPost(post, captchaSolution, cancelToken);
+		}
+		catch (_) {
+			post.files = originalFiles;
+			rethrow;
+		}
+		QueuedPost? next;
+		if (nextFiles.isNotEmpty) {
+			final nextPost = post.clone();
+			// In case we just posted OP
+			nextPost.threadId ??= receipt.id;
+			nextPost.text = '>>${receipt.id}';
+			nextPost.files = nextFiles;
+			nextPost.sequenceNumber = post.sequenceNumber + 1;
+			next = QueuedPost(
+				imageboardKey: imageboardKey,
+				post: nextPost,
+				state: QueueStateNeedsCaptcha()
+			);
+		}
+		return QueueSubmissionResult(receipt, next);
 	}
 
 	@override
@@ -565,7 +600,7 @@ class QueuedPost extends QueueEntry<PostReceipt> {
 	}
 }
 
-class QueuedReport extends QueueEntry<void> {
+class QueuedReport extends QueueEntry<QueuedReport, void> {
 	final ChoiceReportMethod method;
 	final ChoiceReportMethodChoice choice;
 	bool _useLoginSystem;
@@ -583,8 +618,9 @@ class QueuedReport extends QueueEntry<void> {
 	}) : _useLoginSystem = useLoginSystem;
 
 	@override
-	Future<void> _submitImpl(CaptchaSolution captchaSolution, CancelToken cancelToken) async {
+	Future<QueueSubmissionResult<QueuedReport, void>> _submitImpl(CaptchaSolution captchaSolution, CancelToken cancelToken) async {
 		await method.onSubmit(choice, captchaSolution, cancelToken: cancelToken);
+		return const QueueSubmissionResult(null, null);
 	}
 
 	@override
@@ -613,7 +649,7 @@ class QueuedReport extends QueueEntry<void> {
 	}
 }
 
-class QueuedDeletion extends QueueEntry<void> {
+class QueuedDeletion extends QueueEntry<QueuedDeletion, void> {
 	@override
 	final ThreadIdentifier thread;
 	final PostReceipt receipt;
@@ -633,8 +669,9 @@ class QueuedDeletion extends QueueEntry<void> {
 	}) : _useLoginSystem = true;
 
 	@override
-	Future<void> _submitImpl(CaptchaSolution captchaSolution, CancelToken cancelToken) async {
+	Future<QueueSubmissionResult<QueuedDeletion, void>> _submitImpl(CaptchaSolution captchaSolution, CancelToken cancelToken) async {
 		await site.deletePost(thread, receipt, captchaSolution, cancelToken, imageOnly: imageOnly);
+		return const QueueSubmissionResult(null, null);
 	}
 
 	@override
@@ -759,7 +796,7 @@ class Outbox extends ChangeNotifier {
 				icon: CupertinoIcons.wifi_exclamationmark,
 				easyButton: ('Resubmit', () {
 					for (final e in toIdle) {
-						e.submit(null);
+						e.submit();
 					}
 				})
 			);
@@ -771,7 +808,7 @@ class Outbox extends ChangeNotifier {
 		Future.microtask(_process);
 	}
 
-	Future<void> _process<T>([QueueEntry<T>? newEntry]) => _lock.protect(() async {
+	Future<void> _process([QueueEntry? newEntry]) => _lock.protect(() async {
 		try {
 			print('Woken up!');
 			if (newEntry != null) {
@@ -825,7 +862,7 @@ class Outbox extends ChangeNotifier {
 				// Submit the post
 				final submitted = await queue.value.list.first._submit();
 				if (queue.value.list.length > 1 && !queue.value.list[1].state.isIdle) {
-					if (submitted) {
+					if (submitted != null) {
 						queue.value.allowedTime = DateTime.now().add(queue.value.list[1]._cooldown);
 					}
 					// Retrigger wakeup immediately to look at next post for captcha purposes
@@ -833,11 +870,14 @@ class Outbox extends ChangeNotifier {
 				}
 				else {
 					// Just use current queue subitem type. It could be corrected if a different subtype is submitted
-					if (submitted) {
+					if (submitted != null) {
 						queue.value.allowedTime = DateTime.now().add(queue.value.list.first._cooldown);
 					}
 					// Mainly to notifyListeners() and freshen up widgets that show timer 
 					nextWakeups.add(queue.value.allowedTime);
+				}
+				if (submitted?.value case final next?) {
+					queue.value.list.insert(0, next);
 				}
 			}
 			if (nextWakeups.isNotEmpty) {
@@ -862,7 +902,7 @@ class Outbox extends ChangeNotifier {
 		}
 	});
 
-	QueuedPost submitPost(String imageboardKey, DraftPost post, QueueState<PostReceipt> initialState) {
+	QueuedPost submitPost(String imageboardKey, DraftPost post, QueueState<QueuedPost, PostReceipt> initialState) {
 		final entry = QueuedPost(
 			imageboardKey: imageboardKey,
 			post: post,
@@ -872,24 +912,24 @@ class Outbox extends ChangeNotifier {
 		return entry;
 	}
 
-	QueuedReport submitReport(BuildContext context, String imageboardKey, ChoiceReportMethod method, ChoiceReportMethodChoice choice, bool useLoginSystem) {
+	QueuedReport submitReport(String imageboardKey, ChoiceReportMethod method, ChoiceReportMethodChoice choice, bool useLoginSystem) {
 		final entry = QueuedReport(
 			imageboardKey: imageboardKey,
 			method: method,
 			choice: choice,
-			state: QueueStateNeedsCaptcha(context),
+			state: QueueStateNeedsCaptcha(),
 			useLoginSystem: useLoginSystem
 		);
 		Future.microtask(() => _process(entry));
 		return entry;
 	}
 
-	QueuedDeletion submitDeletion(BuildContext context, String imageboardKey, ThreadIdentifier thread, PostReceipt receipt, {required bool imageOnly}) {
+	QueuedDeletion submitDeletion(String imageboardKey, ThreadIdentifier thread, PostReceipt receipt, {required bool imageOnly}) {
 		final entry = QueuedDeletion(
 			imageboardKey: imageboardKey,
 			thread: thread,
 			receipt: receipt,
-			state: QueueStateNeedsCaptcha(context),
+			state: QueueStateNeedsCaptcha(),
 			imageOnly: imageOnly
 		);
 		Future.microtask(() => _process(entry));
@@ -924,7 +964,7 @@ class Outbox extends ChangeNotifier {
 		for (final queue in queues.values) {
 			for (final entry in queue.list) {
 				if (entry is QueuedPost &&
-				    entry.state is! QueueStateDone<PostReceipt> &&
+				    entry.state is! QueueStateDone<QueuedPost, PostReceipt> &&
 						entry.imageboardKey == imageboardKey &&
 						entry.post.board == board &&
 						entry.post.threadId == threadId) {

@@ -36,6 +36,10 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 	@override
 	final bool allowsArbitraryBoards;
 	final bool hasBlockBypassJson;
+	final int filesPerPost;
+	/// Lynxchan supports higher max for multi files than single files.
+	/// Don't implement that yet.
+	final int? maxUploadSizeBytes;
 
 	static final _quoteLinkPattern = RegExp(r'^\/([^\/]+)\/\/?res\/(\d+).html#(\d+)');
 
@@ -108,7 +112,9 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 		required this.hasLinkCookieAuth,
 		required this.hasPagedCatalog,
 		required this.allowsArbitraryBoards,
-		required this.hasBlockBypassJson
+		required this.hasBlockBypassJson,
+		required this.filesPerPost,
+		required this.maxUploadSizeBytes
 	});
 
 	ImageboardFlag? _makeFlag(Map data) {
@@ -203,13 +209,14 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 	Future<EncodedWebPost> encodePostForWeb(DraftPost post) async {
 		final password = makeRandomBase64String(8);
 		final javascript = StringBuffer('document.querySelector("#newPostFieldHide").click()');
-		if (post.file case final file?) {
+		for (final (i, file) in post.files.indexed) {
 			final stringBuffer = StringBuffer();
-			await base64.encoder.bind(File(file).openRead()).forEach(stringBuffer.write);
-			final mimeType = lookupMimeType(file) ?? 'application/octet-stream';
+			await base64.encoder.bind(File(file.path).openRead()).forEach(stringBuffer.write);
+			final mimeType = lookupMimeType(file.path) ?? 'application/octet-stream';
 			final base64String = stringBuffer.toString();
-			javascript.write(';var file = new File([Uint8Array.fromBase64("$base64String")], "${post.overrideFilename ?? FileBasename.get(file)}", {options: {type: "$mimeType"}})');
+			javascript.write(';var file = new File([Uint8Array.fromBase64("$base64String")], "${file.overrideFilename ?? file.basename}", {options: {type: "$mimeType"}})');
 			javascript.write(';postCommon.addSelectedFile(file)');
+			javascript.write(';document.querySelector(".spoilerCheckBox")[$i].checked = ${file.spoiler}');
 		}
 		return (
 			password: password,
@@ -217,8 +224,6 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 				'message': post.text,
 				'password': password,
 				if (post.threadId == null) 'subject': post.subject,
-				if (post.spoiler == true) 'spoiler': 'on'
-				else 'spoiler': null,
 				'name': post.name,
 				'email': post.options,
 				if (post.flag case final flag?) 'flag': flag.code
@@ -234,10 +239,26 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 			await handleBlockBypassJson(post, captchaSolution, cancelToken);
 		}
 		final password = makeRandomBase64String(8);
-		String? fileSha256;
-		final file = post.file;
-		if (file != null) {
-			fileSha256 = sha256.convert(await File(file).readAsBytes()).bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+		final sha256Map = <DraftPostFile, String>{
+			for (final file in post.files)
+				file: (await sha256.bind(File(file.path).openRead()).first).bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join()
+		};
+		final sha256AlreadyUploaded = <DraftPostFile, bool>{};
+		for (final entry in sha256Map.entries) {
+			final fileSha256 = entry.value;
+			final filePresentResponse = await client.getUri(Uri.https(baseUrl, '/checkFileIdentifier.js', {
+				'json': '1',
+				'identifier': fileSha256
+			}), cancelToken: cancelToken, options: Options(responseType: ResponseType.json));
+			if (filePresentResponse.data case bool x) {
+				sha256AlreadyUploaded[entry.key] = x;
+			}
+			else if (filePresentResponse.data case Map map) {
+				if (map['status'] != 'ok') {
+					throw PostFailedException('Error checking if file was already uploaded: ${map['error'] ?? map}');
+				}
+				sha256AlreadyUploaded[entry.key] = map['data'] as bool;
+			}
 		}
 		final flag = post.flag;
 		final response = await client.postUri(Uri.https(baseUrl, post.threadId == null ? '/newThread.js' : '/replyThread.js', {
@@ -254,14 +275,17 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 				'captchaId': captchaSolution.id,
 				'captcha': captchaSolution.answer
 			},
-			if (post.spoiler ?? false) 'spoiler': 'spoiler',
 			if (flag != null) 'flag': flag.code,
-			if (file != null) ...{
-				'fileSha256': fileSha256,
-				'fileMime': lookupMimeType(file),
-				'fileSpoiler': (post.spoiler ?? false) ? 'spoiler': '',
-				'fileName': post.overrideFilename ?? file.afterLast('/'),
-				'files': await MultipartFile.fromFile(file, filename: post.overrideFilename)
+			if (post.files.isNotEmpty) ...{
+				'fileSha256': post.files.map((file) => sha256Map[file]).toList(),
+				'fileMime': post.files.map((file) => lookupMimeType(file.path)).toList(),
+				'fileSpoiler': post.files.map((file) => file.spoiler ? 'spoiler': '').toList(),
+				'fileName': post.files.map((file) => file.overrideFilename ?? file.basename),
+				'files': [
+					for (final file in post.files)
+						if (sha256AlreadyUploaded[file] != true)
+							await MultipartFile.fromFile(file.path, filename: file.overrideFilename)
+				]
 			}
 		}), options: Options(
 			validateStatus: (x) => true,
@@ -379,7 +403,10 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 				isWorksafe: col1.querySelector('.indicatorSfw') != null,
 				webmAudioAllowed: true,
 				popularity: cell.querySelector('.labelPostCount')?.text.tryParseInt,
-				spoilers: true
+				spoilers: true,
+				maxImageSizeBytes: maxUploadSizeBytes ?? 32000000,
+				maxWebmSizeBytes: maxUploadSizeBytes ?? 32000000,
+				filesPerPost: filesPerPost
 			));
 		}
 		if (list.isEmpty) {
@@ -395,7 +422,10 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 					isWorksafe: col1.querySelector('.indicatorSfw') != null,
 					webmAudioAllowed: true,
 					popularity: cell.querySelector('.labelPostCount')?.text.tryParseInt,
-					spoilers: true
+					spoilers: true,
+					maxImageSizeBytes: maxUploadSizeBytes ?? 32000000,
+					maxWebmSizeBytes: maxUploadSizeBytes ?? 32000000,
+					filesPerPost: filesPerPost
 				));
 			}
 		}

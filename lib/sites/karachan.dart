@@ -230,7 +230,8 @@ class SiteKarachan extends ImageboardSite with DecodeGenericUrlMixin {
 			isWorksafe: false,
 			webmAudioAllowed: true,
 			maxImageSizeBytes: 6000000,
-			maxWebmSizeBytes: 6000000
+			maxWebmSizeBytes: 6000000,
+			filesPerPost: 1
 		)).toList();
 	}
 
@@ -449,7 +450,7 @@ class SiteKarachan extends ImageboardSite with DecodeGenericUrlMixin {
 
 	@override
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
-		final file = post.file;
+		final file = post.files.tryFirst;
 		final password = makeRandomBase64String(8);
 		final response = await client.postUri<String>(
 			Uri.https(baseUrl, '/imgboard.php'),
@@ -460,7 +461,7 @@ class SiteKarachan extends ImageboardSite with DecodeGenericUrlMixin {
 				'board': post.board,
 				'resto': post.threadId?.toString() ?? '',
 				'com': post.text,
-				if (file != null) 'upfile': await MultipartFile.fromFile(file, filename: post.overrideFilename),
+				if (file != null) 'upfile': await MultipartFile.fromFile(file.path, filename: file.overrideFilename),
 				'embed': '',
 				'pwd': password,
 				'format': 'json',

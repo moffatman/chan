@@ -790,7 +790,8 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 				threadCooldown: cooldowns['threads'] as int?,
 				replyCooldown: cooldowns['replies'] as int?,
 				imageCooldown: cooldowns['images'] as int?,
-				spoilers: board['spoilers'] == 1
+				spoilers: board['spoilers'] == 1,
+				filesPerPost: 1
 			);
 		})).toList();
 	}
@@ -830,6 +831,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 	@override
 	Future<EncodedWebPost> encodePostForWeb(DraftPost post, {CaptchaSolution? captchaSolution}) async {
 		final password = makeRandomBase64String(88);
+		final file = post.files.tryFirst;
 		return (
 			password: password,
 			fields: {
@@ -845,9 +847,9 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 				},
 				if (post.flag case final flag?) 'flag': flag.code
 				else 'flag': null,
-				if (post.file case final file?) 'upfile': await MultipartFile.fromFile(file, filename: post.overrideFilename)
+				if (file case final file?) 'upfile': await MultipartFile.fromFile(file.path, filename: file.overrideFilename)
 				else 'upfile': null,
-				if (post.spoiler == true) 'spoiler': 'on'
+				if (file?.spoiler == true) 'spoiler': 'on'
 				else 'spoiler': null,
 			},
 			javascript: '''
@@ -863,7 +865,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 	@override
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
 		final encoded = await encodePostForWeb(post, captchaSolution: captchaSolution);
-		final file = post.file;
+		final file = post.files.tryFirst;
 		final response = await client.postUri(
 			Uri.https(sysUrl, '/${post.board}/post'),
 			data: FormData.fromMap({

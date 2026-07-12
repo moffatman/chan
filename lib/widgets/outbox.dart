@@ -101,7 +101,6 @@ class QueueEntryWidget extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		final queue = entry.queue;
-		final aboveAnimatedBuilderContext = context;
 		return AnimatedBuilder(
 			animation: entry,
 			builder: (context, _) {
@@ -290,7 +289,7 @@ class QueueEntryWidget extends StatelessWidget {
 													)
 													else if (state.isSubmittable) AdaptiveIconButton(
 														icon: const Icon(CupertinoIcons.paperplane, size: 20),
-														onPressed: entry.isArchived ? null : () => entry.submit(aboveAnimatedBuilderContext)
+														onPressed: entry.isArchived ? null : entry.submit
 													),
 													const SizedBox(width: 16)
 												]

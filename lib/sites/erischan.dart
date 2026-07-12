@@ -21,7 +21,9 @@ class SiteErischan extends SiteLainchan2 {
 		basePath: '',
 		defaultUsername: '',
 		formBypass: {},
-		imageThumbnailExtension: ''
+		imageThumbnailExtension: '',
+		maxUploadSizeBytes: 10000000,
+		filesPerPost: 5
 	);
 
 	@override

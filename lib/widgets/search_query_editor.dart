@@ -164,9 +164,9 @@ class _SearchQueryEditorState extends State<SearchQueryEditor> {
 											AdaptiveDialogAction(	
 												child: const Text('Pick file'),
 												onPressed: () async {
-													final file = await pickAttachment(context: context);
-													if (file != null && context.mounted) {
-														controller.text = await calculateMD5(file);
+													final file = await pickAttachment(context: context, allowMultiple: false);
+													if (file.length == 1 && context.mounted) {
+														controller.text = await calculateMD5(file.single);
 													}
 												}
 											),

@@ -23,14 +23,16 @@ class SiteSoyjak extends SiteLainchan2 {
 		required super.archives,
 		required super.imageHeaders,
 		required super.videoHeaders,
-		required super.turnstileSiteKey
+		required super.turnstileSiteKey,
+		required super.maxUploadSizeBytes
 	}) : super(
 		basePath: '',
 		formBypass: {},
 		imageThumbnailExtension: null,
 		faviconPath: '/favicon.ico',
 		defaultUsername: 'Chud',
-		res: 'thread'
+		res: 'thread',
+		filesPerPost: 4
 	);
 
 	@override

@@ -50,6 +50,7 @@ import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:chan/widgets/post_spans.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -1477,32 +1478,98 @@ enum ImageboardBoardPopularityType {
 	postsCount
 }
 
-@HiveType(typeId: 47)
+@HiveType(typeId: 51)
+class DraftPostFile {
+	@HiveField(0)
+	String path;
+	@HiveField(1)
+	String? overrideFilenameWithoutExtension;
+	@HiveField(2)
+	bool overrideRandomizeFilenames;
+	@HiveField(3)
+	bool spoiler;
+
+	DraftPostFile({
+		required this.path,
+		this.overrideFilenameWithoutExtension,
+		this.overrideRandomizeFilenames = false,
+		this.spoiler = false
+	});
+
+	String? get fileExt => path.afterLast('.').toLowerCase();
+
+	String? get overrideFilename {
+		if (Settings.instance.randomizeFilenames && !overrideRandomizeFilenames) {
+			return '${DateTime.now().subtract(const Duration(days: 365) * random.nextDouble()).microsecondsSinceEpoch}.$fileExt';
+		}
+		final override = overrideFilenameWithoutExtension;
+		if (override == null || override.isEmpty) {
+			return null;
+		}
+		return '${SoundpostAttachment.encodeSoundSourceFilename(override)}.$fileExt';
+	}
+
+	String get basename => FileBasename.get(path);
+
+	@override
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is DraftPostFile &&
+		other.path == path &&
+		other.overrideFilenameWithoutExtension == overrideFilenameWithoutExtension &&
+		other.overrideRandomizeFilenames == overrideRandomizeFilenames &&
+		other.spoiler == spoiler;
+	
+	@override
+	int get hashCode => Object.hash(path, overrideFilenameWithoutExtension, overrideRandomizeFilenames, spoiler);
+
+	@override
+	String toString() => 'DraftPostFile(path: $path, overrideFilenameWithoutExtension: $overrideFilenameWithoutExtension, overrideRandomizeFilenames: $overrideRandomizeFilenames, spoiler: $spoiler)';
+}
+
+void _readHookDraftPostFields(List<dynamic> fields) {
+	fields[DraftPostFields.files.fieldNumber] ??= () {
+		final deprecatedFile = fields[6] as String?;
+		final deprecatedSpoiler = fields[7] as bool?;
+		final deprecatedOverrideFilenameWithoutExtension = fields[8] as String?;
+		final deprecatedOverrideRandomizeFilenames = fields[11] as bool?;
+		return [
+			if (deprecatedFile != null) DraftPostFile(
+				path: deprecatedFile,
+				overrideFilenameWithoutExtension: deprecatedOverrideFilenameWithoutExtension,
+				spoiler: deprecatedSpoiler ?? false,
+				overrideRandomizeFilenames: deprecatedOverrideRandomizeFilenames ?? false
+			)
+		];
+	}();
+}
+
+@HiveType(typeId: 47, readHook: _readHookDraftPostFields)
 class DraftPost {
 	@HiveField(0)
 	final String board;
 	@HiveField(1)
-	final int? threadId;
+	int? threadId;
 	@HiveField(2)
 	String? name;
 	@HiveField(3)
 	final String? options;
 	@HiveField(4)
-	final String? subject;
+	String? subject;
 	@HiveField(5)
-	final String text;
-	@HiveField(6)
-	String? file;
-	@HiveField(7)
-	final bool? spoiler;
-	@HiveField(8)
-	final String? overrideFilenameWithoutExtension;
+	String text;
 	@HiveField(9)
 	ImageboardBoardFlag? flag;
 	@HiveField(10)
 	bool? useLoginSystem;
-	@HiveField(11, defaultValue: false)
-	bool overrideRandomizeFilenames;
+	@HiveField(12, merger: MapLikeListMerger<DraftPostFile, String>(
+		childMerger: AdaptedMerger<DraftPostFile>(DraftPostFileAdapter.kTypeId),
+		keyer: DraftPostFileFields.getPath,
+		maintainOrder: true
+	))
+	List<DraftPostFile> files;
+	// Do not persist
+	int sequenceNumber = 1;
 
 	DraftPost({
 		required this.board,
@@ -1511,35 +1578,86 @@ class DraftPost {
 		required this.options,
 		this.subject,
 		required this.text,
-		this.file,
-		this.spoiler,
-		this.overrideFilenameWithoutExtension,
 		this.flag,
 		required this.useLoginSystem,
-		this.overrideRandomizeFilenames = false
+		required this.files
 	});
+
+	DraftPost clone() => DraftPost(
+		board: board,
+		threadId: threadId,
+		name: name,
+		options: options,
+		subject: subject,
+		text: text,
+		flag: flag,
+		useLoginSystem: useLoginSystem,
+		files: files.toList()
+	);
+
+	static const _kVideoExtensions = {
+		'webm', 'mp4', 'mov', 'm4v', 'mkv', 'mpeg', 'avi', '3gp', 'm2ts'
+	};
+
+	static (List<DraftPostFile>, List<DraftPostFile>) _splitFiles(ImageboardBoard board, List<DraftPostFile> files) {
+		if (board.filesPerPost == 0 && files.isNotEmpty) {
+			throw Exception('Posting files not allowed');
+		}
+		if (files.length <= 1) {
+			return (files, []);
+		}
+		final currentFiles = files.toList();
+		final List<DraftPostFile> remainingFiles;
+		if (currentFiles.length > board.filesPerPost) {
+			remainingFiles = currentFiles.sublist(board.filesPerPost);
+			currentFiles.removeRange(board.filesPerPost, currentFiles.length);
+		}
+		else {
+			remainingFiles = [];
+		}
+		int limit = 1 << 50;
+		int size = 0;
+		for (int i = 0; i < currentFiles.length; i++) {
+			final thisLimit = (_kVideoExtensions.contains(currentFiles[i].fileExt) ? board.maxWebmSizeBytes : board.maxImageSizeBytes) ?? limit;
+			if (thisLimit < limit) {
+				limit = thisLimit;
+			}
+			final thisSize = File(currentFiles[i].path).statSync().size;
+			if (size + thisSize > limit) {
+				remainingFiles.insertAll(0, currentFiles.sublist(i));
+				currentFiles.removeRange(i, currentFiles.length);
+				break;
+			}
+			size += thisSize;
+		}
+		if (currentFiles.isEmpty) {
+			throw Exception('All files removed due to size limit ${formatFilesize(limit)}');
+		}
+		return (currentFiles, remainingFiles);
+	}
+
+	(List<DraftPostFile>, List<DraftPostFile>) splitFiles(ImageboardBoard board) {
+		return _splitFiles(board, files);
+	}
+
+	int calculateNeededPosts(ImageboardBoard board) {
+		int needed = 1;
+		List<DraftPostFile> nextFiles = splitFiles(board).$2;
+		while (nextFiles.isNotEmpty) {
+			needed++;
+			nextFiles = _splitFiles(board, nextFiles).$2;
+		}
+		return needed;
+	}
 
 	ImageboardAction get action =>
 		threadId == null ?
 			ImageboardAction.postThread :
-			(file != null) ?
+			files.isNotEmpty ?
 				ImageboardAction.postReplyWithImage :
 				ImageboardAction.postReply;
 	
 	ThreadIdentifier? get thread => threadId == null ? null : ThreadIdentifier(board, threadId!);
-
-	String? get fileExt => file?.afterLast('.').toLowerCase();
-
-	String? get overrideFilename {
-		if (Settings.instance.randomizeFilenames && !overrideRandomizeFilenames) {
-			return '${DateTime.now().subtract(const Duration(days: 365) * random.nextDouble()).microsecondsSinceEpoch}.$fileExt';
-		}
-		final override = overrideFilenameWithoutExtension;
-		if (override == null || override.isEmpty || file == null) {
-			return null;
-		}
-		return '${SoundpostAttachment.encodeSoundSourceFilename(override)}.$fileExt';
-	}
 
 	@override
 	bool operator == (Object other) =>
@@ -1551,18 +1669,15 @@ class DraftPost {
 		other.options == options &&
 		other.subject == subject &&
 		other.text == text &&
-		other.file == file &&
-		other.spoiler == spoiler &&
-		other.overrideFilenameWithoutExtension == overrideFilenameWithoutExtension &&
+		listEquals(other.files, files) &&
 		other.flag == flag &&
-		other.useLoginSystem == useLoginSystem &&
-		other.overrideRandomizeFilenames == overrideRandomizeFilenames;
+		other.useLoginSystem == useLoginSystem;
 	
 	@override
-	int get hashCode => Object.hash(board, threadId, name, options, subject, text, file, spoiler, overrideFilenameWithoutExtension, flag, useLoginSystem, overrideRandomizeFilenames);
+	int get hashCode => Object.hash(board, threadId, name, options, subject, text, files, flag, useLoginSystem);
 
 	@override
-	String toString() => 'DraftPost(board: $board, threadId: $threadId, name: $name, options: $options, subject: $subject, text: $text, file: $file, spoiler: $spoiler, overrideFilenameWithoutExtension: $overrideFilenameWithoutExtension, flag: $flag, useLoginSystem: $useLoginSystem, overrideRandomizeFilenames: $overrideRandomizeFilenames)';
+	String toString() => 'DraftPost(board: $board, threadId: $threadId, name: $name, options: $options, subject: $subject, text: $text, files: $files, flag: $flag, useLoginSystem: $useLoginSystem)';
 }
 
 @HiveType(typeId: 48)
@@ -2677,6 +2792,7 @@ ImageboardSiteArchive? makeArchive(Map archive) {
 		title: b['title'] as String,
 		name: b['name'] as String,
 		isWorksafe: b['isWorksafe'] as bool,
+		filesPerPost: (b['filesPerPost'] as int?) ?? 1,
 		webmAudioAllowed: false
 	)).toList();
 	if (archive['type'] == 'foolfuuka') {
@@ -2720,6 +2836,7 @@ ImageboardSite makeSite(Map data) {
 		title: b['title'] as String,
 		name: b['name'] as String,
 		isWorksafe: b['isWorksafe'] as bool,
+		filesPerPost: (b['filesPerPost'] as int?) ?? 1,
 		webmAudioAllowed: true
 	)).toList();
 	if (data['type'] == 'lainchan') {
@@ -2728,6 +2845,7 @@ ImageboardSite makeSite(Map data) {
 			baseUrl: data['baseUrl'] as String,
 			imageUrl: data['imageUrl'] as String?,
 			maxUploadSizeBytes: data['maxUploadSizeBytes'] as int?,
+			filesPerPost: (data['filesPerPost'] as int?) ?? 1,
 			overrideUserAgent: overrideUserAgent,
 			addIntrospectedHeaders: addIntrospectedHeaders,
 			archives: archives,
@@ -2741,6 +2859,7 @@ ImageboardSite makeSite(Map data) {
 			name: data['name'] as String,
 			baseUrl: data['baseUrl'] as String,
 			imageUrl: data['imageUrl'] as String?,
+			maxUploadSizeBytes: data['maxUploadSizeBytes'] as int?,
 			overrideUserAgent: overrideUserAgent,
 			addIntrospectedHeaders: addIntrospectedHeaders,
 			archives: archives,
@@ -2775,6 +2894,7 @@ ImageboardSite makeSite(Map data) {
 			name: data['name'] as String,
 			baseUrl: data['baseUrl'] as String,
 			imageUrl: data['imageUrl'] as String?,
+			maxUploadSizeBytes: data['maxUploadSizeBytes'] as int?,
 			overrideUserAgent: overrideUserAgent,
 			addIntrospectedHeaders: addIntrospectedHeaders,
 			archives: archives,
@@ -2790,6 +2910,8 @@ ImageboardSite makeSite(Map data) {
 			imageUrl: data['imageUrl'] as String?,
 			faviconPath: data['faviconPath'] as String? ?? '/favicon.ico',
 			defaultUsername: data['defaultUsername'] as String? ?? 'Anonymous',
+			maxUploadSizeBytes: data['maxUploadSizeBytes'] as int?,
+			filesPerPost: (data['filesPerPost'] as int?) ?? 1,
 			overrideUserAgent: overrideUserAgent,
 			addIntrospectedHeaders: addIntrospectedHeaders,
 			archives: archives,
@@ -2914,7 +3036,9 @@ ImageboardSite makeSite(Map data) {
 			hasLinkCookieAuth: data['hasLinkCookieAuth'] as bool? ?? false,
 			hasPagedCatalog: data['hasPagedCatalog'] as bool? ?? true,
 			allowsArbitraryBoards: data['allowsArbitraryBoards'] as bool? ?? false,
-			hasBlockBypassJson: data['hasBlockBypassJson'] as bool? ?? false
+			hasBlockBypassJson: data['hasBlockBypassJson'] as bool? ?? false,
+			filesPerPost: (data['filesPerPost'] as int?) ?? 5,
+			maxUploadSizeBytes: data['maxUploadSizeBytes'] as int?
 		);
 	}
 	else if (data['type'] == '8chan') {
@@ -2930,7 +3054,9 @@ ImageboardSite makeSite(Map data) {
 			defaultUsername: data['defaultUsername'] as String? ?? 'Anonymous',
 			hasLinkCookieAuth: data['hasLinkCookieAuth'] as bool? ?? false,
 			hasPagedCatalog: data['hasPagedCatalog'] as bool? ?? true,
-			allowsArbitraryBoards: data['allowsArbitraryBoards'] as bool? ?? false
+			allowsArbitraryBoards: data['allowsArbitraryBoards'] as bool? ?? false,
+			filesPerPost: (data['filesPerPost'] as int?) ?? 5,
+			maxUploadSizeBytes: data['maxUploadSizeBytes'] as int?
 		);
 	}
 	else if (data['type'] == 'lainchan2') {
@@ -2943,6 +3069,8 @@ ImageboardSite makeSite(Map data) {
 			faviconPath: data['faviconPath'] as String?,
 			boardsPath: data['boardsPath'] as String,
 			defaultUsername: data['defaultUsername'] as String,
+			maxUploadSizeBytes: data['maxUploadSizeBytes'] as int?,
+			filesPerPost: (data['filesPerPost'] as int?) ?? 1,
 			overrideUserAgent: overrideUserAgent,
 			addIntrospectedHeaders: addIntrospectedHeaders,
 			archives: archives,

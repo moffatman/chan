@@ -66,6 +66,16 @@ extension SafeWhere<T> on Iterable<T> {
 	}
 }
 
+extension WhereNotNull<T extends Object> on Iterable<T?> {
+	Iterable<T> get whereNotNull sync* {
+		for (final v in this) {
+			if (v != null) {
+				yield v;
+			}
+		}
+	}
+}
+
 extension SafeRemove<T> on List<T> {
 	T? tryRemoveFirst() {
 		if (isEmpty) {

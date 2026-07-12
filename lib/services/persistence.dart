@@ -545,6 +545,7 @@ class Persistence extends ChangeNotifier {
 		Hive.registerAdapter(const ImageboardPollRowAdapter());
 		Hive.registerAdapter(const ImageboardPollAdapter());
 		Hive.registerAdapter(const TlsClientHelloAdapter());
+		Hive.registerAdapter(const DraftPostFileAdapter());
 	}
 
 	static Future<void> initializeForTesting() async {
@@ -695,7 +696,11 @@ class Persistence extends ChangeNotifier {
 					options: tab.deprecatedDraftOptions,
 					text: tab.deprecatedDraftThread ?? '',
 					subject: tab.deprecatedDraftSubject,
-					file: tab.deprecatedDraftFilePath,
+					files: [
+						if (tab.deprecatedDraftFilePath case String path) DraftPostFile(
+							path: path
+						)
+					],
 					useLoginSystem: null
 				);
 				tab.deprecatedDraftThread = '';
@@ -1121,7 +1126,8 @@ class Persistence extends ChangeNotifier {
 			disabledArchiveNames: {},
 			postSortingMethodPerBoard: {},
 			downloadSubfoldersPerBoard: {},
-			postingFlags: {}
+			postingFlags: {},
+			filesPerPostMigrated: true
 		));
 		if (browserState.deprecatedTabs.isNotEmpty && ImageboardRegistry.instance.getImageboardUnsafe(imageboardKey) != null) {
 			print('Migrating tabs');
@@ -1261,6 +1267,7 @@ class Persistence extends ChangeNotifier {
 					board: threadState.board,
 					threadId: threadState.id,
 					name: null,
+					files: [],
 					options: options,
 					text: reply ?? '',
 					useLoginSystem: null
@@ -1314,7 +1321,8 @@ class Persistence extends ChangeNotifier {
 				isWorksafe: true,
 				maxWebmDurationSeconds: 120,
 				maxImageSizeBytes: 4000000,
-				maxWebmSizeBytes: 4000000
+				maxWebmSizeBytes: 4000000,
+				filesPerPost: 1
 			);
 		}
 	}
@@ -2362,6 +2370,8 @@ class PersistentBrowserState {
 	final Map<BoardKey, String> downloadSubfoldersPerBoard;
 	@HiveField(33, defaultValue: {})
 	final Map<BoardKey, ImageboardBoardFlag> postingFlags;
+	@HiveField(34, defaultValue: false)
+	bool filesPerPostMigrated;
 	
 	PersistentBrowserState({
 		this.deprecatedTabs = const [],
@@ -2393,7 +2403,8 @@ class PersistentBrowserState {
 		this.postSortingMethod,
 		required this.postSortingMethodPerBoard,
 		required this.downloadSubfoldersPerBoard,
-		required this.postingFlags
+		required this.postingFlags,
+		required this.filesPerPostMigrated
 	}) : notificationsId = notificationsId ?? (const Uuid()).v4();
 
 	final Map<BoardKey, Filter> _catalogFilters = {};

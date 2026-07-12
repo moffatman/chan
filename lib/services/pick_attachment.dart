@@ -141,7 +141,7 @@ Future<File?> downloadToShareCache({
 class AttachmentPickingSource {
 	final String name;
 	final IconData icon;
-	final Future<String?> Function(BuildContext context) pick;
+	final Future<List<String>> Function(BuildContext context, bool allowMultiple) pick;
 	final Future<void> Function(BuildContext context)? onLongPress;
 	final double iconSizeMultiplier;
 
@@ -193,14 +193,14 @@ Future<String?> chooseAndroidPicker(BuildContext context) async {
 	return null;
 }
 
-Future<String?> _galleryPicker(BuildContext context) async {
+Future<List<String>> _galleryPicker(BuildContext context, bool allowMultiple) async {
 	String? androidPackage;
 	if (Platform.isAndroid) {
 		try {
 			androidPackage = Settings.instance.androidGalleryPicker ??= await chooseAndroidPicker(context);
 			if (androidPackage == null) {
 				// User cancelled
-				return null;
+				return [];
 			}
 		}
 		catch (e, st) {
@@ -213,10 +213,13 @@ Future<String?> _galleryPicker(BuildContext context) async {
 			type: FileType.media,
 			compressionQuality: 0,
 			allowCompression: false,
+			allowMultiple: allowMultiple,
 			androidPackage: androidPackage?.nonEmptyOrNull
 		);
-		final path = await _stripFileTimestamp(result?.files.trySingle?.path);
-		return _copyFileToSafeLocation(path);
+		return (await Future.wait((result?.files ?? []).map((file) async {
+			final path = await _stripFileTimestamp(file.path);
+			return _copyFileToSafeLocation(path);
+		}))).whereNotNull.toList();
 	}
 	on PlatformException catch (e) {
 		if (e.code == 'invalid_format_type' && (androidPackage?.isNotEmpty ?? false) && context.mounted) {
@@ -228,7 +231,7 @@ Future<String?> _galleryPicker(BuildContext context) async {
 			);
 			// Try again without a default
 			Settings.instance.androidGalleryPicker = null;
-			return await _galleryPicker(context);
+			return await _galleryPicker(context, allowMultiple);
 		}
 		rethrow;
 	}
@@ -478,7 +481,7 @@ List<AttachmentPickingSource> getAttachmentSources({
 	final camera = AttachmentPickingSource(
 		name: 'Camera',
 		icon: CupertinoIcons.camera,
-		pick: (context) async {
+		pick: (context, allowMultiple) async {
 			final video = await showAdaptiveDialog<bool>(
 				context: context,
 				barrierDismissible: true,
@@ -495,48 +498,73 @@ List<AttachmentPickingSource> getAttachmentSources({
 				)
 			);
 			if (video == null) {
-				return null;
+				return [];
 			}
-			return (video ?
+			final file = await (video ?
 				picker.pickVideo(source: ImageSource.camera) :
 				picker.pickImage(source: ImageSource.camera))
 				.then((x) => _copyFileToSafeLocation(x?.path));
+			if (file == null) {
+				return [];
+			}
+			return [file];
 		}
 	);
 	final web = AttachmentPickingSource(
 		name: 'Web',
 		icon: CupertinoIcons.globe,
-		pick: (context) => Navigator.of(context, rootNavigator: true).push<File>(CupertinoModalPopupRoute(
+		pick: (context, allowMultiple) => Navigator.of(context, rootNavigator: true).push<File>(CupertinoModalPopupRoute(
 			builder: (_) => const WebImagePickerPage()
-		)).then((x) => x?.path)
+		)).then((x) {
+			if (x == null) {
+				return [];
+			}
+			return [x.path];
+		})
 	);
 	final file = AttachmentPickingSource(
 		name: 'File',
 		icon: CupertinoIcons.folder,
-		pick: (context) => FilePicker.platform.pickFiles(type: FileType.any, compressionQuality: 0, allowCompression: false).then((x) => _copyFileToSafeLocation(x?.files.single.path))
+		pick: (context, allowMultiple) => FilePicker.platform.pickFiles(
+			type: FileType.any,
+			compressionQuality: 0,
+			allowCompression: false,
+			allowMultiple: allowMultiple
+		).then((x) async {
+			return (await Future.wait((x?.files ?? []).map((file) {
+				return _copyFileToSafeLocation(file.path);
+			}))).whereNotNull.toList();
+		})
 	);
 	final clipboard = AttachmentPickingSource(
 		name: 'Clipboard',
 		icon: CupertinoIcons.doc_on_clipboard,
-		pick: (context) => getClipboardImageAsFile(context).then((x) {
-			if (x == null && context.mounted) {
-				showToast(
-					context: context,
-					message: 'No image in clipboard',
-					icon: CupertinoIcons.xmark
-				);
+		pick: (context, allowMultiple) => getClipboardImageAsFile(context).then((x) {
+			if (x == null) {
+				if (context.mounted) {
+					showToast(
+						context: context,
+						message: 'No image in clipboard',
+						icon: CupertinoIcons.xmark
+					);
+				}
+				return [];
 			}
-			return x?.path;
+			return [x.path];
 		})
 	);
 	final anySaved = ImageboardRegistry.instance.imageboards.any((i) => i.persistence.savedAttachments.isNotEmpty);
 	final saved = AttachmentPickingSource(
 		name: 'Saved Attachments',
 		icon: Adaptive.icons.bookmark,
-		pick: (context) {
-			return Navigator.of(context).push<String>(TransparentRoute(
+		pick: (context, allowMultiple) async {
+			final x = await Navigator.of(context).push<String>(TransparentRoute(
 				builder: (context) => const SavedAttachmentsModal()
 			));
+			if (x == null) {
+				return [];
+			}
+			return [x];
 		}
 	);
 	if (Platform.isIOS) {
@@ -568,13 +596,14 @@ List<AttachmentPickingSource> getAttachmentSources({
 	}
 }
 
-Future<File?> pickAttachment({
-	required BuildContext context
+Future<List<File>> pickAttachment({
+	required BuildContext context,
+	required bool allowMultiple
 }) async {
 	final sources = getAttachmentSources(includeClipboard: true);
 	bool loadingPick = false;
 	final theme = context.read<SavedTheme>();
-	return Navigator.of(context).push<File>(TransparentRoute(
+	final picked = await Navigator.of(context).push<List<File>>(TransparentRoute(
 		builder: (context) => StatefulBuilder(
 			builder: (context, setPickerDialogState) => OverscrollModalPage(
 				child: Container(
@@ -604,11 +633,11 @@ Future<File?> pickAttachment({
 												loadingPick = true;
 												setPickerDialogState(() {});
 												try {
-													final path = await entry.pick(context);
+													final paths = await entry.pick(context, allowMultiple);
 													loadingPick = false;
 													setPickerDialogState(() {});
-													if (path != null && context.mounted) {
-														Navigator.of(context).pop<File>(File(path));
+													if (paths.isNotEmpty && context.mounted) {
+														Navigator.of(context).pop<List<File>>(paths.map(File.new).toList());
 													}
 												}
 												catch (e, st) {
@@ -680,4 +709,5 @@ Future<File?> pickAttachment({
 			)
 		)
 	));
+	return picked ?? [];
 }

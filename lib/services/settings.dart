@@ -107,7 +107,8 @@ const defaultSite = {
 	'type': 'lainchan',
 	'name': kTestchanKey,
 	'baseUrl': 'boards.chance.surf',
-	'maxUploadSizeBytes': 8000000
+	'maxUploadSizeBytes': 8000000,
+	'filesPerPost': 3
 };
 const defaultSites = {
 	kTestchanKey: defaultSite

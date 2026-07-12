@@ -183,7 +183,8 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 							name: '',
 							title: imageboard.site.name,
 							isWorksafe: false,
-							webmAudioAllowed: false
+							webmAudioAllowed: false,
+							filesPerPost: 1
 						)));
 					}
 				}
@@ -543,7 +544,8 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 					name: searchString,
 					title: '',
 					isWorksafe: false,
-					webmAudioAllowed: true
+					webmAudioAllowed: true,
+					filesPerPost: 1
 				);
 				if (ret.isEmpty) {
 					return [currentImageboard.scope(fakeBoard)];

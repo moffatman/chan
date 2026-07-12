@@ -90,6 +90,116 @@ class ImageboardBoardFlagAdapter extends TypeAdapter<ImageboardBoardFlag> {
           typeId == other.typeId;
 }
 
+class DraftPostFileFields {
+  static String getPath(DraftPostFile x) => x.path;
+  static void setPath(DraftPostFile x, String v) => x.path = v;
+  static const int kPath = 0;
+  static const path = HiveFieldAdapter<DraftPostFile, String>(
+    getter: getPath,
+    setter: setPath,
+    fieldNumber: kPath,
+    fieldName: 'path',
+    merger: PrimitiveMerger(),
+  );
+  static String? getOverrideFilenameWithoutExtension(DraftPostFile x) =>
+      x.overrideFilenameWithoutExtension;
+  static void setOverrideFilenameWithoutExtension(DraftPostFile x, String? v) =>
+      x.overrideFilenameWithoutExtension = v;
+  static const int kOverrideFilenameWithoutExtension = 1;
+  static const overrideFilenameWithoutExtension =
+      HiveFieldAdapter<DraftPostFile, String?>(
+    getter: getOverrideFilenameWithoutExtension,
+    setter: setOverrideFilenameWithoutExtension,
+    fieldNumber: kOverrideFilenameWithoutExtension,
+    fieldName: 'overrideFilenameWithoutExtension',
+    merger: PrimitiveMerger(),
+  );
+  static bool getOverrideRandomizeFilenames(DraftPostFile x) =>
+      x.overrideRandomizeFilenames;
+  static void setOverrideRandomizeFilenames(DraftPostFile x, bool v) =>
+      x.overrideRandomizeFilenames = v;
+  static const int kOverrideRandomizeFilenames = 2;
+  static const overrideRandomizeFilenames =
+      HiveFieldAdapter<DraftPostFile, bool>(
+    getter: getOverrideRandomizeFilenames,
+    setter: setOverrideRandomizeFilenames,
+    fieldNumber: kOverrideRandomizeFilenames,
+    fieldName: 'overrideRandomizeFilenames',
+    merger: PrimitiveMerger(),
+  );
+  static bool getSpoiler(DraftPostFile x) => x.spoiler;
+  static void setSpoiler(DraftPostFile x, bool v) => x.spoiler = v;
+  static const int kSpoiler = 3;
+  static const spoiler = HiveFieldAdapter<DraftPostFile, bool>(
+    getter: getSpoiler,
+    setter: setSpoiler,
+    fieldNumber: kSpoiler,
+    fieldName: 'spoiler',
+    merger: PrimitiveMerger(),
+  );
+}
+
+class DraftPostFileAdapter extends TypeAdapter<DraftPostFile> {
+  const DraftPostFileAdapter();
+
+  static const int kTypeId = 51;
+
+  @override
+  final int typeId = kTypeId;
+
+  @override
+  final Map<int, ReadOnlyHiveFieldAdapter<DraftPostFile, dynamic>> fields =
+      const {
+    0: DraftPostFileFields.path,
+    1: DraftPostFileFields.overrideFilenameWithoutExtension,
+    2: DraftPostFileFields.overrideRandomizeFilenames,
+    3: DraftPostFileFields.spoiler
+  };
+
+  @override
+  DraftPostFile read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final List<dynamic> fields = List.filled(4, null);
+    for (int i = 0; i < numOfFields; i++) {
+      final int fieldId = reader.readByte();
+      final dynamic value = reader.read();
+      if (fieldId < fields.length) {
+        fields[fieldId] = value;
+      }
+    }
+    return DraftPostFile(
+      path: fields[0] as String,
+      overrideFilenameWithoutExtension: fields[1] as String?,
+      overrideRandomizeFilenames: fields[2] as bool,
+      spoiler: fields[3] as bool,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, DraftPostFile obj) {
+    writer
+      ..writeByte(4)
+      ..writeByte(0)
+      ..write(obj.path)
+      ..writeByte(1)
+      ..write(obj.overrideFilenameWithoutExtension)
+      ..writeByte(2)
+      ..write(obj.overrideRandomizeFilenames)
+      ..writeByte(3)
+      ..write(obj.spoiler);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DraftPostFileAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
 class DraftPostFields {
   static String getBoard(DraftPost x) => x.board;
   static const int kBoard = 0;
@@ -100,9 +210,11 @@ class DraftPostFields {
     merger: PrimitiveMerger(),
   );
   static int? getThreadId(DraftPost x) => x.threadId;
+  static void setThreadId(DraftPost x, int? v) => x.threadId = v;
   static const int kThreadId = 1;
-  static const threadId = ReadOnlyHiveFieldAdapter<DraftPost, int?>(
+  static const threadId = HiveFieldAdapter<DraftPost, int?>(
     getter: getThreadId,
+    setter: setThreadId,
     fieldNumber: kThreadId,
     fieldName: 'threadId',
     merger: PrimitiveMerger(),
@@ -126,47 +238,23 @@ class DraftPostFields {
     merger: PrimitiveMerger(),
   );
   static String? getSubject(DraftPost x) => x.subject;
+  static void setSubject(DraftPost x, String? v) => x.subject = v;
   static const int kSubject = 4;
-  static const subject = ReadOnlyHiveFieldAdapter<DraftPost, String?>(
+  static const subject = HiveFieldAdapter<DraftPost, String?>(
     getter: getSubject,
+    setter: setSubject,
     fieldNumber: kSubject,
     fieldName: 'subject',
     merger: PrimitiveMerger(),
   );
   static String getText(DraftPost x) => x.text;
+  static void setText(DraftPost x, String v) => x.text = v;
   static const int kText = 5;
-  static const text = ReadOnlyHiveFieldAdapter<DraftPost, String>(
+  static const text = HiveFieldAdapter<DraftPost, String>(
     getter: getText,
+    setter: setText,
     fieldNumber: kText,
     fieldName: 'text',
-    merger: PrimitiveMerger(),
-  );
-  static String? getFile(DraftPost x) => x.file;
-  static void setFile(DraftPost x, String? v) => x.file = v;
-  static const int kFile = 6;
-  static const file = HiveFieldAdapter<DraftPost, String?>(
-    getter: getFile,
-    setter: setFile,
-    fieldNumber: kFile,
-    fieldName: 'file',
-    merger: PrimitiveMerger(),
-  );
-  static bool? getSpoiler(DraftPost x) => x.spoiler;
-  static const int kSpoiler = 7;
-  static const spoiler = ReadOnlyHiveFieldAdapter<DraftPost, bool?>(
-    getter: getSpoiler,
-    fieldNumber: kSpoiler,
-    fieldName: 'spoiler',
-    merger: PrimitiveMerger(),
-  );
-  static String? getOverrideFilenameWithoutExtension(DraftPost x) =>
-      x.overrideFilenameWithoutExtension;
-  static const int kOverrideFilenameWithoutExtension = 8;
-  static const overrideFilenameWithoutExtension =
-      ReadOnlyHiveFieldAdapter<DraftPost, String?>(
-    getter: getOverrideFilenameWithoutExtension,
-    fieldNumber: kOverrideFilenameWithoutExtension,
-    fieldName: 'overrideFilenameWithoutExtension',
     merger: PrimitiveMerger(),
   );
   static ImageboardBoardFlag? getFlag(DraftPost x) => x.flag;
@@ -189,17 +277,18 @@ class DraftPostFields {
     fieldName: 'useLoginSystem',
     merger: PrimitiveMerger(),
   );
-  static bool getOverrideRandomizeFilenames(DraftPost x) =>
-      x.overrideRandomizeFilenames;
-  static void setOverrideRandomizeFilenames(DraftPost x, bool v) =>
-      x.overrideRandomizeFilenames = v;
-  static const int kOverrideRandomizeFilenames = 11;
-  static const overrideRandomizeFilenames = HiveFieldAdapter<DraftPost, bool>(
-    getter: getOverrideRandomizeFilenames,
-    setter: setOverrideRandomizeFilenames,
-    fieldNumber: kOverrideRandomizeFilenames,
-    fieldName: 'overrideRandomizeFilenames',
-    merger: PrimitiveMerger(),
+  static List<DraftPostFile> getFiles(DraftPost x) => x.files;
+  static void setFiles(DraftPost x, List<DraftPostFile> v) => x.files = v;
+  static const int kFiles = 12;
+  static const files = HiveFieldAdapter<DraftPost, List<DraftPostFile>>(
+    getter: getFiles,
+    setter: setFiles,
+    fieldNumber: kFiles,
+    fieldName: 'files',
+    merger: MapLikeListMerger<DraftPostFile, String>(
+        childMerger: AdaptedMerger<DraftPostFile>(DraftPostFileAdapter.kTypeId),
+        keyer: DraftPostFileFields.getPath,
+        maintainOrder: true),
   );
 }
 
@@ -219,19 +308,15 @@ class DraftPostAdapter extends TypeAdapter<DraftPost> {
     3: DraftPostFields.options,
     4: DraftPostFields.subject,
     5: DraftPostFields.text,
-    6: DraftPostFields.file,
-    7: DraftPostFields.spoiler,
-    8: DraftPostFields.overrideFilenameWithoutExtension,
     9: DraftPostFields.flag,
     10: DraftPostFields.useLoginSystem,
-    11: DraftPostFields.overrideRandomizeFilenames
+    12: DraftPostFields.files
   };
 
   @override
   DraftPost read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final List<dynamic> fields = List.filled(12, null);
-    fields[11] = false;
+    final List<dynamic> fields = List.filled(13, null);
     for (int i = 0; i < numOfFields; i++) {
       final int fieldId = reader.readByte();
       final dynamic value = reader.read();
@@ -239,6 +324,7 @@ class DraftPostAdapter extends TypeAdapter<DraftPost> {
         fields[fieldId] = value;
       }
     }
+    _readHookDraftPostFields(fields);
     return DraftPost(
       board: fields[0] as String,
       threadId: fields[1] as int?,
@@ -246,19 +332,16 @@ class DraftPostAdapter extends TypeAdapter<DraftPost> {
       options: fields[3] as String?,
       subject: fields[4] as String?,
       text: fields[5] as String,
-      file: fields[6] as String?,
-      spoiler: fields[7] as bool?,
-      overrideFilenameWithoutExtension: fields[8] as String?,
       flag: fields[9] as ImageboardBoardFlag?,
       useLoginSystem: fields[10] as bool?,
-      overrideRandomizeFilenames: fields[11] as bool,
+      files: (fields[12] as List).cast<DraftPostFile>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, DraftPost obj) {
     writer
-      ..writeByte(12)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.board)
       ..writeByte(1)
@@ -271,18 +354,12 @@ class DraftPostAdapter extends TypeAdapter<DraftPost> {
       ..write(obj.subject)
       ..writeByte(5)
       ..write(obj.text)
-      ..writeByte(6)
-      ..write(obj.file)
-      ..writeByte(7)
-      ..write(obj.spoiler)
-      ..writeByte(8)
-      ..write(obj.overrideFilenameWithoutExtension)
       ..writeByte(9)
       ..write(obj.flag)
       ..writeByte(10)
       ..write(obj.useLoginSystem)
-      ..writeByte(11)
-      ..write(obj.overrideRandomizeFilenames);
+      ..writeByte(12)
+      ..write(obj.files);
   }
 
   @override

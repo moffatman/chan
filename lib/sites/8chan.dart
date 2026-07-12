@@ -130,7 +130,9 @@ class Site8Chan extends SiteLynxchan {
 		required super.videoHeaders,
 		required super.hasLinkCookieAuth,
 		required super.hasPagedCatalog,
-		required super.allowsArbitraryBoards
+		required super.allowsArbitraryBoards,
+		required super.filesPerPost,
+		required super.maxUploadSizeBytes
 	}) : super(
 		hasBlockBypassJson: true
 	) {

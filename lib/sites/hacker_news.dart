@@ -434,7 +434,8 @@ class SiteHackerNews extends ImageboardSite {
 			name: '',
 			title: 'Hacker News',
 			isWorksafe: true,
-			webmAudioAllowed: true
+			webmAudioAllowed: true,
+			filesPerPost: 0
 		)];
 	}
 

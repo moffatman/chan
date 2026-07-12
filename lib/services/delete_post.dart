@@ -19,8 +19,8 @@ Future<void> deletePost({
 	required bool imageOnly
 }) async {
 	try {
-		final entry = Outbox.instance.submitDeletion(context, imageboard.key, thread, receipt, imageOnly: imageOnly);
-		QueueState<void>? lastState;
+		final entry = Outbox.instance.submitDeletion(imageboard.key, thread, receipt, imageOnly: imageOnly);
+		QueueState<QueuedDeletion, void>? lastState;
 		void listener() {
 			if (!context.mounted) {
 				entry.removeListener(listener);
@@ -32,12 +32,12 @@ Future<void> deletePost({
 				return;
 			}
 			lastState = state;
-			if (state is QueueStateDone<void>) {
+			if (state is QueueStateDone<QueuedDeletion, void>) {
 				onSuccessfulCaptchaSubmitted(state.captchaSolution);
 				entry.removeListener(listener);
 				showToast(context: context, message: 'Deleted ${imageOnly ? 'file(s) from' : 'post'} /${thread.board}/${receipt.id}', icon: CupertinoIcons.delete);
 			}
-			else if (state is QueueStateFailed<void>) {
+			else if (state is QueueStateFailed<QueuedDeletion, void>) {
 				alertError(context, state.error, state.stackTrace, actions: {
 					'More info': () => showOutboxModalForThread(
 						context: context,

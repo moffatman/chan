@@ -88,6 +88,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 	@override
 	final String name;
 	final int? maxUploadSizeBytes;
+	final int filesPerPost;
 	final String? faviconPath;
 	@override
 	final String defaultUsername;
@@ -100,7 +101,8 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 		required this.baseUrl,
 		required this.name,
 		required this.imageUrl,
-		this.maxUploadSizeBytes,
+		required this.maxUploadSizeBytes,
+		required this.filesPerPost,
 		required super.overrideUserAgent,
 		required super.addIntrospectedHeaders,
 		required super.archives,
@@ -645,7 +647,8 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 			isWorksafe: board['ws_board'] == 1,
 			webmAudioAllowed: board['webm_audio'] == 1,
 			maxImageSizeBytes: maxUploadSizeBytes,
-			maxWebmSizeBytes: maxUploadSizeBytes
+			maxWebmSizeBytes: maxUploadSizeBytes,
+			filesPerPost: filesPerPost
 		)).toList();
 	}
 
@@ -693,10 +696,22 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 				'body': post.text,
 				'password': password,
 				if (post.threadId == null) 'subject': post.subject,
-				if (post.file case final file?) 'file': await MultipartFile.fromFile(file, filename: post.overrideFilename)
-				else 'file': null,
-				if (post.spoiler == true) 'spoiler': 'on'
-				else 'spoiler': null,
+				if (post.files.trySingle case DraftPostFile file) ...{
+					'file': await MultipartFile.fromFile(file.path, filename: file.overrideFilename),
+					if (file.spoiler == true) 'spoiler': 'on'
+				}
+				else if (post.files.isNotEmpty) ...{
+					'file': await MultipartFile.fromFile(post.files.first.path, filename: post.files.first.overrideFilename),
+					if (post.files.first.spoiler) 'file-spoilered': 'true',
+					for (int i = 1; i < post.files.length; i++) ...{
+						'file${i + 1}': await MultipartFile.fromFile(post.files[i].path, filename: post.files[i].overrideFilename),
+						if (post.files[i].spoiler) 'file${i + 1}-spoilered': 'true'
+					}
+				}
+				else ...{
+					'file': null,
+					'spoiler': null
+				},
 				'name': post.name,
 				'email': post.options,
 				if (post.flag case final flag?) 'flag': flag.code
@@ -762,12 +777,20 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 		if (post.subject != null) {
 			fields['subject'] = post.subject;
 		}
-		final file = post.file;
-		if (file != null) {
-			fields['file'] = await MultipartFile.fromFile(file, filename: post.overrideFilename);
+		if (post.files.trySingle case DraftPostFile file) {
+			fields['file'] = await MultipartFile.fromFile(file.path, filename: file.overrideFilename);
+			if (file.spoiler == true) {
+				fields['spoiler'] = 'on';
+			}
 		}
-		if (post.spoiler == true) {
-			fields['spoiler'] = 'on';
+		else {
+			for (int i = 0; i < post.files.length; i++) {
+				final key = i == 0 ? 'file' : 'file${i + 1}';
+				if (post.files[i].spoiler) {
+					fields['$key-spoilered'] = 'true';
+				}
+				fields[key] = await MultipartFile.fromFile(post.files[i].path, filename: post.files[i].overrideFilename);
+			}
 		}
 		if (post.name?.isNotEmpty ?? false) {
 			fields['name'] = post.name;

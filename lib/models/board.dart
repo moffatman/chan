@@ -51,12 +51,15 @@ class ImageboardBoard extends HiveObject {
 	final BoardKey boardKey;
 	@HiveField(19, isOptimized: true)
 	final int? popularity;
+	@HiveField(20, defaultValue: 1)
+	final int filesPerPost;
 
 	ImageboardBoard({
 		required String name,
 		required this.title,
 		required this.isWorksafe,
 		required this.webmAudioAllowed,
+		required this.filesPerPost,
 		this.maxImageSizeBytes,
 		this.maxWebmSizeBytes,
 		this.maxWebmDurationSeconds,
@@ -76,7 +79,29 @@ class ImageboardBoard extends HiveObject {
 	}) : name = intern(name), boardKey = getKey(name);
 
 	@override
-	String toString() => '/$name/';
+	String toString() => 'ImageboardBoard(${{
+		'name': name,
+		'title': title,
+		'isWorksafe': '$isWorksafe',
+		'webmAudioAllowed': '$webmAudioAllowed',
+		'filesPerPost': '$filesPerPost',
+		if (maxImageSizeBytes != null) 'maxImageSizeBytes': '$maxImageSizeBytes',
+		if (maxWebmSizeBytes != null) 'maxWebmSizeBytes': '$maxWebmSizeBytes',
+		if (maxWebmDurationSeconds != null) 'maxWebmDurationSeconds': '$maxWebmDurationSeconds',
+		if (maxCommentCharacters != null) 'maxCommentCharacters': '$maxCommentCharacters',
+		if (threadCommentLimit != null) 'threadCommentLimit': '$threadCommentLimit',
+		if (threadImageLimit != null) 'threadImageLimit': '$threadImageLimit',
+		if (pageCount != null) 'pageCount': '$pageCount',
+		if (threadCooldown != null) 'threadCooldown': '$threadCooldown',
+		if (replyCooldown != null) 'replyCooldown': '$replyCooldown',
+		if (imageCooldown != null) 'imageCooldown': '$imageCooldown',
+		if (spoilers != null) 'spoilers': '$spoilers',
+		if (additionalDataTime != null) 'additionalDataTime': '$additionalDataTime',
+		if (subdomain != null) 'subdomain': '$subdomain',
+		if (icon != null) 'icon': '$icon',
+		if (captchaMode != null) 'captchaMode': '$captchaMode',
+		if (popularity != null) 'popularity': '$popularity',
+	}})';
 
 	@override
 	bool operator == (Object other) =>
@@ -101,10 +126,11 @@ class ImageboardBoard extends HiveObject {
 		(other.subdomain == subdomain) &&
 		(other.icon == icon) &&
 		(other.captchaMode == captchaMode) &&
-		(other.popularity == popularity);
+		(other.popularity == popularity) &&
+		(other.filesPerPost == filesPerPost);
 
 	@override
-	int get hashCode => Object.hash(name, title, isWorksafe, webmAudioAllowed, maxImageSizeBytes, maxWebmSizeBytes, maxWebmDurationSeconds, maxCommentCharacters, threadCommentLimit, threadImageLimit, pageCount, threadCooldown, replyCooldown, imageCooldown, spoilers, additionalDataTime, subdomain, icon, captchaMode, popularity);
+	int get hashCode => Object.hash(name, title);
 
 	static final _keys = Map<String, BoardKey>.identity();
 	static BoardKey getKey(String board) {

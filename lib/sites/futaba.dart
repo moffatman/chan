@@ -196,7 +196,8 @@ class SiteFutaba extends ImageboardSite {
 				webmAudioAllowed: true,
 				maxImageSizeBytes: maxUploadSizeBytes,
 				maxWebmSizeBytes: maxUploadSizeBytes,
-				subdomain: urlParts[urlParts.length - 3]
+				subdomain: urlParts[urlParts.length - 3],
+				filesPerPost: 1
 			);
 		}).toList();
 	}

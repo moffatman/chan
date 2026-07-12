@@ -259,7 +259,8 @@ class SiteJForum extends ImageboardSite with ForumSite {
 				title: description,
 				isWorksafe: true,
 				webmAudioAllowed: true,
-				popularity: postCount
+				popularity: postCount,
+				filesPerPost: 0
 			);
 		}).toList();
 	}
@@ -623,7 +624,7 @@ class SiteJForum extends ImageboardSite with ForumSite {
 
 	@override
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken) async {
-		if (post.file != null) {
+		if (post.files.isNotEmpty) {
 			throw Exception('Media posting not supported on JForum');
 		}
 		// TODO: implement submitPost
