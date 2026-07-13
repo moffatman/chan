@@ -576,6 +576,9 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	}
 
 	Future<void> _pop(ImageboardScoped<ImageboardBoard> item) async {
+		if (_popping) {
+			return;
+		}
 		_popping = true;
 		_poppingWithSelected = true;
 		if (item.imageboard.persistence.maybeGetBoard(item.item.name) == null) {
