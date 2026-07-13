@@ -1945,7 +1945,7 @@ class PostLinkSpan extends PostTerminalSpan {
 				if (imageboardTarget != null && (imageboardTarget.$1 ?? zone.imageboard.key) == zone.imageboard.key) {
 					final thread = imageboardTarget.$2.threadIdentifier;
 					if (thread != null) {
-						if (zone.imageboard.site.explicitIds || thread == zone.primaryThread) {
+						if (zone.imageboard.site.explicitIds || (thread == zone.primaryThread && (imageboardTarget.$2.postId ?? thread.id) != post.id)) {
 							return PostQuoteLinkSpan(
 								board: imageboardTarget.$2.board,
 								threadId: thread.id,
@@ -2173,7 +2173,11 @@ class PostLinkSpan extends PostTerminalSpan {
 					}
 					onTap() {
 						final imageboardTarget = snapshot.data?.imageboardTarget;
-						if (imageboardTarget != null) {
+						final isSelfLink =
+								(imageboardTarget?.$1 == zone.imageboard.key) &&
+								(imageboardTarget?.$2.threadIdentifier == post.threadIdentifier) &&
+								((imageboardTarget?.$2.postId ?? imageboardTarget?.$2.threadId) == post.id);
+						if (imageboardTarget != null && !isSelfLink) {
 							openImageboardTarget(context, (ImageboardRegistry.instance.getImageboard(imageboardTarget.$1) ?? zone.imageboard, imageboardTarget.$2, imageboardTarget.$3));
 						}
 						else if (snapshot.data?.attachments case final attachments?) {
@@ -2193,7 +2197,7 @@ class PostLinkSpan extends PostTerminalSpan {
 							);
 						}
 						else {
-							openBrowser(context, cleanedUri!);
+							openBrowser(context, cleanedUri!, useChanceIfPossible: !isSelfLink);
 						}
 					}
 					return WidgetSpan(
@@ -2249,7 +2253,7 @@ class PostLinkSpan extends PostTerminalSpan {
 			),
 			_ => null
 		};
-		if (snapshot?.imageboardTarget?.$2.threadIdentifier case final thread? when estimator.zone?.imageboard.key == snapshot?.imageboardTarget?.$1 && ((estimator.zone?.imageboard.site.explicitIds ?? false) || estimator.post.threadIdentifier == thread)) {
+		if (snapshot?.imageboardTarget?.$2.threadIdentifier case final thread? when estimator.zone?.imageboard.key == snapshot?.imageboardTarget?.$1 && ((estimator.zone?.imageboard.site.explicitIds ?? false) || (estimator.post.threadIdentifier == thread && estimator.post.id != (snapshot?.imageboardTarget?.$2.postId ?? thread.id)))) {
 			estimator.addCharacters(2 + (snapshot?.imageboardTarget?.$2.postId ?? thread.id).numberOfDigits + (thread.board == estimator.post.board ? 0 : thread.board.length));
 		}
 		else if (snapshot case final data? when data.thumbnailUrl != null || data.thumbnailWidget != null || data.imageboardTarget != null) {

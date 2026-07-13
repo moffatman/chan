@@ -610,7 +610,7 @@ Future<void> openImageboardTarget(BuildContext context, (Imageboard, BoardThread
 	));
 }
 
-Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = false, bool useCooperativeBrowser = false, bool useGalleryIfPossible = true}) async {
+Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = false, bool useCooperativeBrowser = false, bool useGalleryIfPossible = true, bool useChanceIfPossible = true}) async {
 	if (url.isScheme('chance')) {
 		fakeLinkStream.add(url.toString());
 		return;
@@ -628,7 +628,7 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 		url = url.replace(host: context.read<Imageboard?>()?.site.baseUrl);
 	}
 	final settings = Settings.instance;
-	final imageboardTarget = await modalLoad(context, 'Checking url...', (_) => ImageboardRegistry.instance.decodeUrl(url), wait: const Duration(milliseconds: 50));
+	final imageboardTarget = useChanceIfPossible ? await modalLoad(context, 'Checking url...', (_) => ImageboardRegistry.instance.decodeUrl(url), wait: const Duration(milliseconds: 50)) : null;
 	openInChance() {
 		openImageboardTarget(context, imageboardTarget!);
 	}
