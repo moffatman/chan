@@ -7,6 +7,8 @@ import WebKit
 import SwiftUI
 import Translation
 import NaturalLanguage
+import MobileCoreServices
+import UniformTypeIdentifiers
 
 class MyFolderPickerDelegate : NSObject, UIDocumentPickerDelegate {
   private var onResult: ((Any?) -> Void)
@@ -232,6 +234,34 @@ class MyFileExportDelegate : NSObject, UIDocumentPickerDelegate {
         }
         else {
           result(UIPasteboard.general.string)
+        }
+      }
+      else if (call.method == "setClipboardImage") {
+        guard let args = call.arguments as? Dictionary<String, Any>,
+              let path = args["path"] as? String,
+              let mimeType = args["mimeType"] as? String,
+              mimeType.hasPrefix("image/") else {
+          result(FlutterError.init(code: "BAD_ARGS", message: "Expected an image path and MIME type", details: nil))
+          return
+        }
+        do {
+          let data = try Data(contentsOf: URL(fileURLWithPath: path), options: .mappedIfSafe)
+          let pasteboardType: String?
+          if #available(iOS 14.0, *) {
+            pasteboardType = UTType(mimeType: mimeType)?.identifier
+          }
+          else {
+            pasteboardType = UTTypeCreatePreferredIdentifierForTag(kUTTagClassMIMEType, mimeType as CFString, nil)?.takeRetainedValue() as String?
+          }
+          guard let pasteboardType else {
+            result(FlutterError.init(code: "IMAGE_TYPE", message: "Could not determine the pasteboard type", details: nil))
+            return
+          }
+          UIPasteboard.general.setData(data, forPasteboardType: pasteboardType)
+          result(nil)
+        }
+        catch {
+          result(FlutterError.init(code: "FILE_ERROR", message: "Could not read image file", details: error.localizedDescription))
         }
       }
       else {

@@ -1676,6 +1676,31 @@ class _SavedPageState extends State<SavedPage> {
 														controller.dispose();
 													}
 												),
+												if (item.item.attachment.type == AttachmentType.image) ContextMenuAction(
+													trailingIcon: CupertinoIcons.doc_on_clipboard,
+													onPressed: () async {
+														final controller = makeController();
+														try {
+															await controller.copyImage();
+															if (context.mounted) {
+																showToast(
+																	context: context,
+																	message: 'Copied image to clipboard',
+																	icon: CupertinoIcons.doc_on_clipboard
+																);
+															}
+														}
+														catch (e, st) {
+															if (context.mounted) {
+																alertError(context, e, st);
+															}
+														}
+														finally {
+															controller.dispose();
+														}
+													},
+													child: const Text('Copy image')
+												),
 												...buildImageSearchActions(context, item.imageboard, [item.item.attachment]),
 												_makeFindSavedAttachmentInThreadAction(
 													attachment: item.item.attachment,
