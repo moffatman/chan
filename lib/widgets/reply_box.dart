@@ -3025,29 +3025,30 @@ Future<_ReplyBoxFile?> _makeAttachment(PickedAttachment? originalAttachment, Fil
 											builder: (context, _) => Row(
 												mainAxisSize: MainAxisSize.min,
 												children: [
-													for (final file in receivedFilePaths.reversed) GestureDetector(
-														onLongPress: loading ? null : () async {
-															if (await confirm(context, 'Remove received file?')) {
-																receivedFilePaths.remove(file);
-																setState(() {});
-															}
-														},
-														child: AdaptiveIconButton(
-															onPressed: loading ? null : () => _addAttachment(File(file)),
-															icon: ClipRRect(
-																borderRadius: BorderRadius.circular(4),
-																child: ConstrainedBox(
-																	constraints: const BoxConstraints(
-																		maxWidth: 32,
-																		maxHeight: 32
-																	),
-																	child: MediaThumbnail(
-																		uri: Uri.file(file)
+													for (final file in receivedFilePaths.reversed)
+														if (!_attachments.any((a) => a.original.file.path == file)) GestureDetector(
+															onLongPress: loading ? null : () async {
+																if (await confirm(context, 'Remove received file?')) {
+																	receivedFilePaths.remove(file);
+																	setState(() {});
+																}
+															},
+															child: AdaptiveIconButton(
+																onPressed: loading ? null : () => _addAttachment(File(file)),
+																icon: ClipRRect(
+																	borderRadius: BorderRadius.circular(4),
+																	child: ConstrainedBox(
+																		constraints: const BoxConstraints(
+																			maxWidth: 32,
+																			maxHeight: 32
+																		),
+																		child: MediaThumbnail(
+																			uri: Uri.file(file)
+																		)
 																	)
 																)
 															)
-														)
-													),
+														),
 													for (final picker in getAttachmentSources(includeClipboard: false)) GestureDetector(
 														onLongPress: picker.onLongPress?.bind1(this.context),
 														child: AdaptiveIconButton(
