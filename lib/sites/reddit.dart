@@ -1065,7 +1065,8 @@ class SiteReddit extends ImageboardSite {
 			if (queryPosition != -1 && max(30, queryPosition) < title.length * 0.65) {
 				title = title.substring(0, queryPosition);
 			}
-			text = '<a href="${const HtmlEscape(HtmlEscapeMode.attribute).convert(url)}" noembed>${const HtmlEscape(HtmlEscapeMode.element).convert(title)}</a>';
+			final noembed = !decodeUrlPossible(Uri.parse(url));
+			text = '<a href="${const HtmlEscape(HtmlEscapeMode.attribute).convert(url)}"${noembed ? ' noembed' : ''}>${const HtmlEscape(HtmlEscapeMode.element).convert(title)}</a>';
 			if ((data['selftext'] as String? ?? '').isNotEmpty) {
 				text += '\n\n${data['selftext']}';
 			}
