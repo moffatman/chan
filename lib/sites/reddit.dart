@@ -1770,6 +1770,8 @@ class SiteReddit extends ImageboardSite {
 
 	@override
 	bool get hasExpiringThreads => false;
+	@override
+	bool get hasUnreliableThumbnails => true;
 
 	@override
 	bool operator == (Object other) =>

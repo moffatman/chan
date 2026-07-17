@@ -352,7 +352,7 @@ class AttachmentThumbnail extends StatelessWidget {
 							// Don't break the Widget tree
 							Future.microtask(() => onLoadError?.call(loadstate.lastException, loadstate.lastStack));
 						}
-						final icon = loadstate.extendedImageLoadState == LoadState.failed && url.isNotEmpty ? CupertinoIcons.exclamationmark_triangle_fill : (attachment.icon ?? Adaptive.icons.photo);
+						final icon = loadstate.extendedImageLoadState == LoadState.failed && url.isNotEmpty && !s.hasUnreliableThumbnails ? CupertinoIcons.exclamationmark_triangle_fill : (attachment.icon ?? Adaptive.icons.photo);
 						return _AttachmentThumbnailPlaceholder(
 							child: null,
 							icon: icon,

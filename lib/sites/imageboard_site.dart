@@ -2565,6 +2565,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	bool get supportsPushNotifications => false;
 	bool get supportsUserInfo => false;
 	bool get supportsUserAvatars => false;
+	bool get hasUnreliableThumbnails => false;
 	List<CatalogVariantGroup> get catalogVariantGroups => const [
 		CatalogVariantGroup(
 			name: 'Bump order',
