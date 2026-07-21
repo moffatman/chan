@@ -76,10 +76,25 @@ class HTTP429BackoffInterceptor extends InterceptorBase {
 		}
 	}
 
+	static Future<void> _handleCancelToken(Future<void> future, CancelToken? cancelToken) async {
+		if (cancelToken != null) {
+			final cancelError = await Future.any<DioError?>([
+				cancelToken.whenCancel,
+				future.then((_) => null)
+			]);
+			if (cancelError != null) {
+				throw cancelError;
+			}
+		}
+		else {
+			await future;
+		}
+	}
+
 	@override
 	Future<void> onRequestImpl(RequestOptions options, RequestInterceptorHandler handler) async {
 		if (options.retries == 0) {
-			await http429Queue.start(options.uri);
+			await _handleCancelToken(http429Queue.start(options.uri), options.cancelToken);
 		}
 		handler.next(options);
 	}
@@ -94,7 +109,7 @@ class HTTP429BackoffInterceptor extends InterceptorBase {
 			}
 			print('[HTTP429BackoffInterceptor] Waiting $delay due to server-side rate-limiting (url: ${response.requestOptions.uri}, currentRetries: $currentRetries)');
 			_maybeShowToast(response.requestOptions.uri, delay);
-			await http429Queue.delay(response.requestOptions.uri, delay);
+			await _handleCancelToken(http429Queue.delay(response.requestOptions.uri, delay), response.requestOptions.cancelToken);
 			final response2 = await client.requestUri(
 				response.requestOptions.uri,
 				data: response.requestOptions.data,
@@ -133,7 +148,7 @@ class HTTP429BackoffInterceptor extends InterceptorBase {
 				}
 				print('[HTTP429BackoffInterceptor] Waiting $delay due to server-side rate-limiting (url: ${err.requestOptions.uri}, currentRetries: $currentRetries)');
 				_maybeShowToast(err.requestOptions.uri, delay);
-				await http429Queue.delay(err.requestOptions.uri, delay);
+				await _handleCancelToken(http429Queue.delay(err.requestOptions.uri, delay), err.requestOptions.cancelToken);
 				final response = await client.requestUri(
 					err.requestOptions.uri,
 					data: err.requestOptions.data,
