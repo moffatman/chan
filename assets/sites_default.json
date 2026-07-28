@@ -1,0 +1,1235 @@
+{
+    "1500chan": {
+        "type": "lainchan2",
+        "name": "1500chan",
+        "baseUrl": "1500chan.org",
+        "imageThumbnailExtension": null,
+        "formBypass": {
+            "/404.html": {
+                "email": "",
+                "name": "Anônimo",
+                "contact": "전송",
+                "body": "",
+                "captcha": "",
+                "check": "Eu sei usar acentuação e pontuação."
+            }
+        },
+        "additionalCookies": {
+            "1500chan.org": "mc=1"
+        },
+        "boardsPath": "/news.html",
+        "faviconPath": "https://s.4cdn.org/image/country/br.gif",
+        "defaultUsername": "Anônimo",
+        "boardsWithHtmlOnlyFlags": [
+            "b",
+            "bairro"
+        ]
+    },
+    "2chan": {
+        "type": "futaba",
+        "name": "2chan",
+        "baseUrl": "www.2chan.net",
+        "maxUploadSizeBytes": 3000000
+    },
+    "4chan": {
+        "type": "4chan",
+        "name": "4chan",
+        "baseUrl": "boards.4chan.org",
+        "staticUrl": "s.4cdn.org",
+        "sysUrl": "sys.4chan.org",
+        "apiUrl": "a.4cdn.org",
+        "imageUrl": "i.4cdn.org",
+        "captchaKey": "6Ldp2bsSAAAAAAJ5uyx_lx34lJeEpTLVkP5k04qc",
+        "hCaptchaKey": "390af94e-4ca8-41e2-8dae-4a0e0efae6ae",
+        "searchUrl": "find.4chan.org",
+        "captchaUserAgents": {},
+        "captchaTicketLifetime": 1680,
+        "possibleCaptchaLetterCounts": [
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+        ],
+        "captchaLetters": [
+            "0",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "A",
+            "D",
+            "G",
+            "H",
+            "J",
+            "K",
+            "M",
+            "N",
+            "P",
+            "R",
+            "S",
+            "T",
+            "V",
+            "W",
+            "X",
+            "Y"
+        ],
+        "captchaLettersRemap": {
+            "B": "8",
+            "F": "P",
+            "U": "V",
+            "Z": "2",
+            "O": "0"
+        },
+        "reportCooldown": 20,
+        "subjectCharacterLimit": 100,
+        "spamFilterCaptchaDelayGreen": 1000,
+        "spamFilterCaptchaDelayYellow": 5000,
+        "spamFilterCaptchaDelayRed": 12001,
+        "stickyCloudflare": false,
+        "postingHeaders": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "accept-language": "en-US,en;q=0.9",
+            "cache-control": "no-cache",
+            "pragma": "no-cache",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "imageHeaders": {
+            "sec-fetch-mode": "no-cors",
+            "sec-fetch-site": "cross-site",
+            "accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+            "sec-fetch-dest": "image"
+        },
+        "videoHeaders": {
+            "referer": "https://boards.4chan.org/",
+            "sec-fetch-mode": "no-cors",
+            "sec-fetch-site": "cross-site",
+            "accept": "*/*",
+            "accept-encoding": "identity;q=1, *;q=0",
+            "sec-fetch-dest": "video"
+        },
+        "boardFlags": {
+            "pol": {
+                "0": "Geographic Location",
+                "AC": "Anarcho-Capitalist",
+                "AN": "Anarchist",
+                "BL": "Black Nationalist",
+                "CF": "Confederate",
+                "CM": "Communist",
+                "CT": "Catalonia",
+                "DM": "Democrat",
+                "EU": "European",
+                "FC": "Fascist",
+                "GN": "Gadsden",
+                "GY": "Gay",
+                "JH": "Jihadi",
+                "KN": "Kekistani",
+                "MF": "Muslim",
+                "NB": "National Bolshevik",
+                "NT": "NATO",
+                "NZ": "Nazi",
+                "PC": "Hippie",
+                "PR": "Pirate",
+                "RE": "Republican",
+                "MZ": "Task Force Z",
+                "TM": "Templar",
+                "TR": "Tree Hugger",
+                "UN": "United Nations",
+                "WP": "White Supremacist"
+            }
+        },
+        "boardsWithCountryFlags": [
+            "bant",
+            "int",
+            "pol",
+            "sp"
+        ],
+        "archives": [
+            {
+                "type": "foolfuuka",
+                "name": "4plebs",
+                "baseUrl": "archive.4plebs.org",
+                "staticUrl": "s.4cdn.org",
+                "useRandomUseragent": true
+            },
+            {
+                "type": "foolfuuka",
+                "name": "palanq.win",
+                "baseUrl": "archive.palanq.win",
+                "staticUrl": "s.4cdn.org"
+            },
+            {
+                "type": "foolfuuka",
+                "name": "Desuarchive",
+                "baseUrl": "desuarchive.org",
+                "staticUrl": "s.4cdn.org"
+            },
+            {
+                "type": "foolfuuka",
+                "name": "fireden.net",
+                "baseUrl": "boards.fireden.net",
+                "staticUrl": "s.4cdn.org",
+                "boards": [
+                    {
+                        "name": "cm",
+                        "title": "Cute/Male",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "co",
+                        "title": "Comics & Cartoons",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "ic",
+                        "title": "Artwork/Critique",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "sci",
+                        "title": "Science & Math",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "v",
+                        "title": "Video Games",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "vip",
+                        "title": "Very Important Posts",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "y",
+                        "title": "Yaoi",
+                        "isWorksafe": false
+                    }
+                ]
+            },
+            {
+                "type": "foolfuuka",
+                "name": "Archived.Moe",
+                "baseUrl": "archived.moe",
+                "staticUrl": "s.4cdn.org",
+                "platformUserAgents": {
+                    "android": "Mozilla/5.0 (X11; Linux x86_64; wv) AppleWebKit/534.24 (KHTML, like Gecko) Chrome/95.0.4638.74 Safari/534.24 XiaoMi/MiuiBrowser/13.14.2-go"
+                },
+                "boards": [
+                    {
+                        "name": "a",
+                        "title": "Anime & Manga",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "3",
+                        "title": "3DCG",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "b",
+                        "title": "Random",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "vg",
+                        "title": "Video Game Generals",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "aco",
+                        "title": "Adult Cartoons",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "adv",
+                        "title": "Advice",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "an",
+                        "title": "Animals & Nature",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "asp",
+                        "title": "Alternative Sports & Wrestling",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "biz",
+                        "title": "Business & Finance",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "c",
+                        "title": "Anime/Cute",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "co",
+                        "title": "Comics",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "cgl",
+                        "title": "Cosplay & EGL",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "ck",
+                        "title": "Food & Cooking",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "cm",
+                        "title": "Cute/Male ",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "d",
+                        "title": "Hentai/Alternative",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "diy",
+                        "title": "Do It Yourself",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "e",
+                        "title": "Ecchi",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "fa",
+                        "title": "Fashion",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "fit",
+                        "title": "Fitness",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "g",
+                        "title": "Technology",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "gd",
+                        "title": "Graphic Design",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "hc",
+                        "title": "Hardcore",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "his",
+                        "title": "History & Humanities",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "hm",
+                        "title": "Handsome Men",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "hr",
+                        "title": "High Resolution",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "ic",
+                        "title": "Artwork/Critique",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "lgbt",
+                        "title": "Lesbian, Gay, Bisexual, & Transgender",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "lit",
+                        "title": "Literature",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "mu",
+                        "title": "Music",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "q",
+                        "title": "4chan Discussion [Dead]",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "qa",
+                        "title": "Question & Answer",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "i",
+                        "title": "Oekaki",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "pol",
+                        "title": "Politically Incorrect",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "po",
+                        "title": "Papercraft & Origami",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "r",
+                        "title": "Adult Requests",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "out",
+                        "title": "Outdoors",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "qst",
+                        "title": "Quests",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "news",
+                        "title": "Current News",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "n",
+                        "title": "Transportation",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "o",
+                        "title": "Auto",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "p",
+                        "title": "Photography",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "s",
+                        "title": "Sexy Beautiful Women",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "soc",
+                        "title": "Cams & Meetups",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "t",
+                        "title": "Torrents",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "toy",
+                        "title": "Toys",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "trash",
+                        "title": "Off-Topic",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "w",
+                        "title": "Anime/Wallpapers",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "wg",
+                        "title": "Wallpapers/General",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "wsr",
+                        "title": "Worksafe Requests",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "x",
+                        "title": "Paranormal",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "y",
+                        "title": "Yaoi",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "f",
+                        "title": "Flash",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "m",
+                        "title": "Mecha",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "jp",
+                        "title": "Otaku Culture",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "k",
+                        "title": "Weapons",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "int",
+                        "title": "International",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "gif",
+                        "title": "Adult GIF",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "h",
+                        "title": "Hentai",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "mlp",
+                        "title": "My Little Pony",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "r9k",
+                        "title": "ROBOT9001",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "s4s",
+                        "title": "Sh*t 4chan Says",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "sci",
+                        "title": "Science & Math",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "sp",
+                        "title": "Sports",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "tg",
+                        "title": "Traditional Games",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "trv",
+                        "title": "Travel",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "tv",
+                        "title": "Television & Film",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "u",
+                        "title": "Yuri",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "v",
+                        "title": "Video Games",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "vp",
+                        "title": "Pokémon",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "vr",
+                        "title": "Retro Games",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "wsg",
+                        "title": "Worksafe GIF",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "con",
+                        "title": "Conventions [dead]",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "vip",
+                        "title": "Very Important Posts",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "can",
+                        "title": "Animals/Cute [1.April]",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "cock",
+                        "title": "Comics & Cartoons & Cooking [1.April]",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "fap",
+                        "title": "Fashion & Photography [1.April]",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "fitlit",
+                        "title": "Well-Rounded Citizens [1.April]",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "mo",
+                        "title": "Mecha & Auto [1.April]",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "mlpol",
+                        "title": "My Little Politics [1.April]",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "vint",
+                        "title": "International Vidya [1. April]",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "spa",
+                        "title": "Tanoshii Sport [1.April]",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "outsoc",
+                        "title": "Outdoor Socialization [1.April]",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "mtv",
+                        "title": "Video Killed The Radio Star [1.April]",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "bant",
+                        "title": "International/Random",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "vrpg",
+                        "title": "Video Games/RPG",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "vmg",
+                        "title": "Video Games/Mobile",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "qb",
+                        "title": "Quebec [1.April]",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "xs",
+                        "title": "Extreme Sports",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "vt",
+                        "title": "Virtual YouTubers",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "pw",
+                        "title": "Professional Wrestling",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "vm",
+                        "title": "Video Games/Multiplayer",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "vst",
+                        "title": "Video Games/Strategy",
+                        "isWorksafe": true
+                    }
+                ]
+            },
+            {
+                "type": "foolfuuka",
+                "name": "arch.b4k.dev",
+                "baseUrl": "arch.b4k.dev",
+                "staticUrl": "s.4cdn.org",
+                "hasAttachmentRateLimit": true
+            },
+            {
+                "type": "foolfuuka",
+                "name": "TheBArchive.com",
+                "baseUrl": "thebarchive.com",
+                "staticUrl": "s.4cdn.org",
+                "platformUserAgents": {
+                    "android": "Mozilla/5.0 (X11; Linux x86_64; wv) AppleWebKit/534.24 (KHTML, like Gecko) Chrome/95.0.4638.74 Safari/534.24 XiaoMi/MiuiBrowser/13.14.2-go"
+                },
+                "boards": [
+                    {
+                        "name": "b",
+                        "title": "Random",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "bant",
+                        "title": "International/Random",
+                        "isWorksafe": false
+                    }
+                ]
+            },
+            {
+                "type": "foolfuuka",
+                "name": "Archive Of Sins",
+                "baseUrl": "archiveofsins.com",
+                "staticUrl": "s.4cdn.org",
+                "platformUserAgents": {
+                    "android": "Mozilla/5.0 (X11; Linux x86_64; wv) AppleWebKit/534.24 (KHTML, like Gecko) Chrome/95.0.4638.74 Safari/534.24 XiaoMi/MiuiBrowser/13.14.2-go"
+                },
+                "boards": [
+                    {
+                        "name": "h",
+                        "title": "Hentai",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "hc",
+                        "title": "Hardcore",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "hm",
+                        "title": "Handsome Men",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "i",
+                        "title": "Oekaki",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "lgbt",
+                        "title": "Lesbian, Gay, Bisexual, & Transgender",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "r",
+                        "title": "Adult Requests",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "s",
+                        "title": "Sexy Beautiful Women",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "soc",
+                        "title": "Cams & Meetups",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "t",
+                        "title": "Torrents",
+                        "isWorksafe": false
+                    },
+                    {
+                        "name": "u",
+                        "title": "Yuri",
+                        "isWorksafe": false
+                    }
+                ]
+            },
+            {
+                "type": "fuuka",
+                "name": "warosu",
+                "baseUrl": "warosu.org",
+                "boards": [
+                    {
+                        "name": "3",
+                        "title": "3DCG",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "biz",
+                        "title": "Business & Finance",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "cgl",
+                        "title": "Cosplay & EGL",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "ck",
+                        "title": "Food & Cooking",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "diy",
+                        "title": "Do-It-Yourself",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "fa",
+                        "title": "Fashion",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "ic",
+                        "title": "Artwork/Critique",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "jp",
+                        "title": "Otaku Culture",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "lit",
+                        "title": "Literature",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "sci",
+                        "title": "Science & Math",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "vr",
+                        "title": "Retro Games",
+                        "isWorksafe": true
+                    },
+                    {
+                        "name": "vt",
+                        "title": "Virtual Youtubers",
+                        "isWorksafe": true
+                    }
+                ]
+            }
+        ]
+    },
+    "76chan.org": {
+        "type": "jschan",
+        "name": "76chan",
+        "baseUrl": "76chan.org",
+        "faviconPath": "/file/favicon-96x96.png",
+        "postingCaptcha": "none",
+        "deletingCaptcha": "text"
+    },
+    "8chan.moe": {
+        "type": "8chan",
+        "name": "8chan.moe",
+        "baseUrl": "8chan.moe",
+        "imageHeaders": {
+            "referer": "https://8chan.moe/"
+        },
+        "videoHeaders": {
+            "referer": "https://8chan.moe/"
+        },
+        "hasPagedCatalog": true,
+        "addIntrospectedHeaders": true
+    },
+    "8chan.se": {
+        "type": "8chan",
+        "name": "8chan.st",
+        "baseUrl": "8chan.st",
+        "imageHeaders": {
+            "referer": "https://8chan.st/"
+        },
+        "videoHeaders": {
+            "referer": "https://8chan.st/"
+        },
+        "hasPagedCatalog": true,
+        "addIntrospectedHeaders": true
+    },
+    "8kun": {
+        "type": "8kun",
+        "name": "8kun",
+        "baseUrl": "8kun.top",
+        "basePath": "",
+        "sysUrl": "sys.8kun.top",
+        "imageUrl": "nerv.8kun.top",
+        "imageThumbnailExtension": null,
+        "boardsPath": "/index.html",
+        "faviconPath": "https://nerv.8kun.top/static/favicon.ico",
+        "defaultUsername": "Anonymous"
+    },
+    "9ch": {
+        "type": "lainchan2",
+        "name": "9ch",
+        "baseUrl": "9ch.site",
+        "basePath": "",
+        "imageThumbnailExtension": ".png",
+        "boardsPath": "/",
+        "faviconPath": null,
+        "defaultUsername": "Joonas"
+    },
+    "alogsspace": {
+        "type": "8chan",
+        "name": "AlogsSpace",
+        "baseUrl": "alogs.space",
+        "defaultUsername": "Anonymous",
+        "hasPagedCatalog": true
+    },
+    "crbachan": {
+        "type": "lainchan2",
+        "name": "CRBAchan",
+        "baseUrl": "ib.crba.tw",
+        "imageThumbnailExtension": ".png",
+        "boardsPath": "/",
+        "boards": [
+            {
+                "name": "crba",
+                "title": "Canterlot Royal Ballet Academy",
+                "isWorksafe": true
+            },
+            {
+                "name": "b",
+                "title": "Random",
+                "isWorksafe": false
+            }
+        ],
+        "faviconPath": "/favicon.ico",
+        "defaultUsername": "Anonymous"
+    },
+    "dcurbanmom": {
+        "type": "jforum",
+        "name": "DC Urban Moms",
+        "baseUrl": "www.dcurbanmom.com",
+        "basePath": "/jforum",
+        "faviconPath": "/favicon.ico",
+        "threadsPerPage": 25,
+        "postsPerPage": 15,
+        "searchResultsPerPage": 25,
+        "defaultUsername": "Anonymous"
+    },
+    "dvach": {
+        "type": "dvach",
+        "name": "Dvach",
+        "baseUrl": "2ch.org",
+        "platformUserAgents": {
+            "android": "Mozilla/5.0 (X11; Linux x86_64; wv) AppleWebKit/534.24 (KHTML, like Gecko) Chrome/95.0.4638.74 Safari/534.24 XiaoMi/MiuiBrowser/13.14.2-go"
+        }
+    },
+    "endchan": {
+        "type": "lynxchan",
+        "name": "Endchan",
+        "baseUrl": "endchan.org",
+        "filesPerPost": 5,
+        "maxUploadSizeBytes": 367000000,
+        "hasPagedCatalog": true
+    },
+    "erischan": {
+        "type": "erischan",
+        "name": "Erischan",
+        "baseUrl": "erischan.org"
+    },
+    "hackernews": {
+        "type": "hackernews"
+    },
+    "holotower": {
+        "type": "lainchan2",
+        "name": "Hololive Global",
+        "baseUrl": "holotower.org",
+        "basePath": "",
+        "imageThumbnailExtension": "",
+        "boardsPath": "/",
+        "faviconPath": "/favicon.gif",
+        "defaultUsername": "Anonymous",
+        "addIntrospectedHeaders": true
+    },
+    "ign": {
+        "type": "xenforo",
+        "name": "IGN",
+        "baseUrl": "www.ignboards.com",
+        "basePath": "",
+        "faviconPath": "/favicon.ico",
+        "postsPerPage": 50
+    },
+    "karachan": {
+        "type": "karachan",
+        "name": "karachan",
+        "baseUrl": "karachan.org",
+        "captchaKey": "6Lf-C2wUAAAAAEJUDKfcR03E3XNWIDCq-MrfS2rz"
+    },
+    "kissu": {
+        "type": "lainchan2",
+        "name": "Kissu",
+        "baseUrl": "original.kissu.moe",
+        "imageThumbnailExtension": ".webp",
+        "boardsPath": "/",
+        "boards": [
+            {
+                "name": "qa",
+                "title": "Questions and Answers",
+                "isWorksafe": false
+            },
+            {
+                "name": "jp",
+                "title": "2D/Random",
+                "isWorksafe": false
+            },
+            {
+                "name": "amv",
+                "title": "Anime, Manga, Vidya",
+                "isWorksafe": false
+            },
+            {
+                "name": "spg",
+                "title": "Spring",
+                "isWorksafe": false
+            },
+            {
+                "name": "sum",
+                "title": "Summer",
+                "isWorksafe": false
+            },
+            {
+                "name": "aut",
+                "title": "Autumn",
+                "isWorksafe": false
+            },
+            {
+                "name": "win",
+                "title": "Winter",
+                "isWorksafe": false
+            },
+            {
+                "name": "f",
+                "title": "Files",
+                "isWorksafe": false
+            },
+            {
+                "name": "ec",
+                "title": "Cute",
+                "isWorksafe": false
+            },
+            {
+                "name": "b",
+                "title": "Boson Technology",
+                "isWorksafe": false
+            },
+            {
+                "name": "poll",
+                "title": "Polling and Honesty",
+                "isWorksafe": false
+            }
+        ],
+        "faviconPath": "/static/logos/favicon-old.png",
+        "defaultUsername": "Anonymous"
+    },
+    "kiwifarms": {
+        "type": "xenforo",
+        "name": "Kiwi Farms",
+        "baseUrl": "kiwifarms.st",
+        "basePath": "",
+        "faviconPath": "/styles/custom/logos/kiwi_square.og.png",
+        "postsPerPage": 20
+    },
+    "krautchan": {
+        "type": "lynxchan",
+        "name": "Krautchan",
+        "baseUrl": "krautchan.org",
+        "defaultUsername": "Bernd",
+        "platformUserAgents": {
+            "android": "Mozilla/5.0 (X11; Linux x86_64; wv) AppleWebKit/534.24 (KHTML, like Gecko) Chrome/95.0.4638.74 Safari/534.24 XiaoMi/MiuiBrowser/13.14.2-go"
+        },
+        "hasLinkCookieAuth": true,
+        "hasPagedCatalog": false,
+        "hasBlockBypassJson": true
+    },
+    "kohlchan": {
+        "type": "lynxchan",
+        "name": "Kohlchan",
+        "baseUrl": "kohlchan.net",
+        "defaultUsername": "Bernd",
+        "platformUserAgents": {
+            "android": "Mozilla/5.0 (X11; Linux x86_64; wv) AppleWebKit/534.24 (KHTML, like Gecko) Chrome/95.0.4638.74 Safari/534.24 XiaoMi/MiuiBrowser/13.14.2-go"
+        },
+        "hasLinkCookieAuth": true,
+        "hasPagedCatalog": false,
+        "hasBlockBypassJson": true
+    },
+    "lainchan": {
+        "type": "lainchan_org",
+        "name": "lainchan",
+        "baseUrl": "lainchan.org"
+    },
+    "leftypol": {
+        "type": "lainchan2",
+        "name": "leftypol",
+        "baseUrl": "leftypol.org",
+        "basePath": "",
+        "imageThumbnailExtension": "",
+        "boardsPath": "/",
+        "faviconPath": "/favicon.ico",
+        "defaultUsername": "Anonymous",
+        "boardsWithMemeFlags": []
+    },
+    "looksmax": {
+        "type": "xenforo",
+        "name": "Looksmax",
+        "baseUrl": "looksmax.org",
+        "basePath": "",
+        "faviconPath": "/img/twitter.png",
+        "postsPerPage": 50
+    },
+    "macrumors": {
+        "type": "xenforo",
+        "name": "MacRumors",
+        "baseUrl": "forums.macrumors.com",
+        "basePath": "",
+        "faviconPath": "/data/assets/logo/mr-icon-192.png",
+        "postsPerPage": 25
+    },
+    "mintboard": {
+        "type": "lainchan2",
+        "name": "Mintboard",
+        "baseUrl": "mintboard.org",
+        "basePath": "/vichan",
+        "imageThumbnailExtension": ".png",
+        "boardsPath": "/",
+        "faviconPath": "/vichan/favicon.png",
+        "defaultUsername": "Joonas"
+    },
+    "ourchan": {
+        "type": "jschan",
+        "name": "ourchan",
+        "baseUrl": "ourchan.org",
+        "faviconPath": "/file/favicon-96x96.png",
+        "postingCaptcha": "none",
+        "deletingCaptcha": "hcaptcha:11b85634-aafa-4120-9360-bdc6bc22528a"
+    },
+    "ptchan": {
+        "type": "jschan",
+        "name": "ptchan",
+        "baseUrl": "ptchan.org",
+        "imageUrl": "ptchan.org",
+        "defaultUsername": "Anónimo",
+        "faviconPath": "/file/favicon-32x32.png",
+        "postingCaptcha": "none",
+        "deletingCaptcha": "grid",
+        "bypassCaptcha": "grid",
+        "gridCaptchaQuestion": "Where are the animals?"
+    },
+    "reddit": {
+        "type": "reddit"
+    },
+    "soyjak": {
+        "type": "soyjak",
+        "name": "soyjak",
+        "baseUrl": "www.soyjak.st",
+        "platformUserAgents": {
+            "ios": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/122.0 Mobile/15E148 Safari/605.1.15",
+            "android": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/122.0 Mobile/15E148 Safari/605.1.15"
+        },
+        "boardsWithCaptcha": [
+            "q"
+        ],
+        "captchaQuestion": "Please type the name of the object/variant:",
+        "boardsWithHtmlOnlyFlags": [
+            "qa",
+            "int",
+            "pol",
+            "g",
+            "nate"
+        ]
+    },
+    "thecoli": {
+        "type": "xenforo",
+        "name": "The Coli",
+        "baseUrl": "thecoli.com",
+        "basePath": "",
+        "faviconPath": "/favicon.ico",
+        "postsPerPage": 15
+    },
+    "testchan": {
+        "type": "lainchan",
+        "name": "testchan",
+        "baseUrl": "boards.chance.surf"
+    },
+    "trashchan": {
+        "type": "jschan",
+        "name": "trashchan",
+        "baseUrl": "trashchan.xyz",
+        "faviconPath": "/file/apple-touch-icon.png",
+        "postingCaptcha": "none",
+        "deletingCaptcha": "text"
+    },
+    "tvchan": {
+        "type": "lainchan2",
+        "name": "tvchan",
+        "baseUrl": "tvch.moe",
+        "imageThumbnailExtension": ".png",
+        "boardsPath": "/",
+        "faviconPath": "/favicon.ico",
+        "defaultUsername": "Anonymous"
+    },
+    "uboachan": {
+        "type": "lainchan2",
+        "name": "uboachan",
+        "baseUrl": "uboachan.net",
+        "imageThumbnailExtension": ".png",
+        "boardsPath": "/news.html",
+        "faviconPath": "/favicon.ico",
+        "defaultUsername": "Anonymous"
+    },
+    "urbantoronto": {
+        "type": "xenforo",
+        "name": "UrbanToronto",
+        "baseUrl": "urbantoronto.ca",
+        "basePath": "/forum",
+        "faviconPath": "/icons/favicon.php",
+        "postsPerPage": 15
+    },
+    "wizchan": {
+        "type": "wizchan",
+        "name": "wizchan",
+        "baseUrl": "wizchan.org"
+    },
+    "zzzchan": {
+        "type": "jschan",
+        "name": "zzzchan",
+        "baseUrl": "zzzchan.xyz",
+        "faviconPath": "/file/favicon-16x16.png",
+        "postingCaptcha": "grid",
+        "deletingCaptcha": "grid"
+    }
+}
