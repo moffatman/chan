@@ -27,6 +27,7 @@ import 'package:chan/services/util.dart';
 import 'package:chan/services/webview_introspection.dart';
 import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/8chan.dart';
+import 'package:chan/sites/chud.dart';
 import 'package:chan/sites/8kun.dart';
 import 'package:chan/sites/dvach.dart';
 import 'package:chan/sites/erischan.dart';
@@ -2873,6 +2874,23 @@ ImageboardSite makeSite(Map data) {
 			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
 			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
 			captchaQuestion: data['captchaQuestion'] as String?,
+			additionalCookies: (data['additionalCookies'] as Map?)?.cast<String, String>() ?? {}
+		);
+	}
+	else if (data['type'] == 'chud') {
+		return SiteChud(
+			name: data['name'] as String,
+			baseUrl: data['baseUrl'] as String,
+			imageUrl: data['imageUrl'] as String?,
+			overrideUserAgent: overrideUserAgent,
+			addIntrospectedHeaders: addIntrospectedHeaders,
+			archives: archives,
+			imageHeaders: imageHeaders,
+			videoHeaders: videoHeaders,
+			turnstileSiteKey: data['turnstileSiteKey'] as String?,
+			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
+			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
+			boards: boards,
 			additionalCookies: (data['additionalCookies'] as Map?)?.cast<String, String>() ?? {}
 		);
 	}

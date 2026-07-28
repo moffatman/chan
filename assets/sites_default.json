@@ -1,4 +1,34 @@
 {
+    "chud": {
+        "type": "chud",
+        "name": "chud.win",
+        "baseUrl": "chud.win",
+        "imageUrl": "chud.win",
+        "maxUploadSizeBytes": 25000000,
+        "filesPerPost": 4,
+        "boards": [
+            {
+                "name": "chud",
+                "title": "International Politics",
+                "isWorksafe": true,
+                "filesPerPost": 4
+            },
+            {
+                "name": "tranny",
+                "title": "Off-Topic",
+                "isWorksafe": false,
+                "filesPerPost": 4
+            },
+            {
+                "name": "bint",
+                "title": "International Random",
+                "isWorksafe": true,
+                "filesPerPost": 4
+            }
+        ],
+        "boardsWithHtmlOnlyFlags": [],
+        "boardsWithMemeFlags": []
+    },
     "1500chan": {
         "type": "lainchan2",
         "name": "1500chan",
