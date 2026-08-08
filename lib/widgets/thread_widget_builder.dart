@@ -27,6 +27,7 @@ class ThreadWidgetBuilder extends StatelessWidget {
 	final ThreadIdentifier? thread;
 	final Widget Function(BuildContext, ThreadWidgetData) builder;
 	final String? initialSearch;
+	final bool suppressImageRebuild;
 
 	const ThreadWidgetBuilder({
 		required this.imageboard,
@@ -35,6 +36,7 @@ class ThreadWidgetBuilder extends StatelessWidget {
 		required this.boardName,
 		required this.thread,
 		this.initialSearch,
+		this.suppressImageRebuild = false,
 		super.key
 	});
 
@@ -83,6 +85,7 @@ class ThreadWidgetBuilder extends StatelessWidget {
 								width: 30,
 								height: 30,
 								site: imageboard?.site,
+								suppressImageRebuild: suppressImageRebuild,
 								onLoadError: (e, st) {
 									imageboard?.threadWatcher.fixBrokenThread(threadState!.identifier);
 								},
@@ -188,6 +191,7 @@ class TabWidgetBuilder extends StatelessWidget {
 					boardName: tab.board,
 					thread: tab.thread,
 					initialSearch: tab.initialSearch,
+					suppressImageRebuild: true,
 					builder: (context, data) {
 						Future.microtask(() => tab.unseen.value = data.unseenCount);
 						Future.microtask(() => tab.unseenYous.value = data.unseenYouCount);

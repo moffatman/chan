@@ -355,7 +355,7 @@ packages:
     description:
       path: "."
       ref: chan_master
-      resolved-ref: "41849f47e7118c2bec8b25ea8d0815d54cc20d26"
+      resolved-ref: "87297408e82e8dbd4242fb98be7042b790085038"
       url: "https://github.com/moffatman/extended_image.git"
     source: git
     version: "8.3.1"

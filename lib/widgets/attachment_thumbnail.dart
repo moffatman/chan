@@ -142,6 +142,7 @@ class AttachmentThumbnail extends StatelessWidget {
 	final AttachmentThumbnailCornerIcon? cornerIcon;
 	final bool expand;
 	final bool hide;
+	final bool suppressImageRebuild;
 
 	const AttachmentThumbnail({
 		required this.attachment,
@@ -160,6 +161,7 @@ class AttachmentThumbnail extends StatelessWidget {
 		this.cornerIcon,
 		this.expand = false,
 		this.hide = false,
+		this.suppressImageRebuild = false,
 		required this.mayObscure,
 		Key? key
 	}) : super(key: key);
@@ -320,6 +322,7 @@ class AttachmentThumbnail extends StatelessWidget {
 				alignment: alignment,
 				key: gaplessPlayback ? null : ValueKey(url),
 				gaplessPlayback: true,
+				suppressRebuild: suppressImageRebuild,
 				rotate90DegreesClockwise: rotate90DegreesClockwise,
 				afterPaintImage: afterPaint == null ? null : (
 					key: afterPaint.key,
