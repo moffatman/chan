@@ -104,12 +104,11 @@ final siteSettings = [
 											icon: const Icon(CupertinoIcons.link),
 											onPressed: () => showAuthPageHelperPopup(context, imageboard)
 										)
-										else if (imageboard.site.authPage case Uri url) AdaptiveIconButton(
+										else if (imageboard.site.authPage != null) AdaptiveIconButton(
 											icon: const Icon(CupertinoIcons.globe),
-											onPressed: () => openCookieBrowser(
+											onPressed: () => openCookieLoginBrowser(
 												context,
-												url,
-												useFullWidthGestures: false
+												imageboard
 											)
 										)
 										else if (imageboard.site.hasLinkCookieAuth) AdaptiveIconButton(
