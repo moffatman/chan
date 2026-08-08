@@ -73,6 +73,26 @@ class LoggingInterceptor extends Interceptor {
 
 	LoggingInterceptor._();
 
+	final _tracker = Set<RequestOptions>.identity();
+
+	static void _innerWriteRequest(IOSink file, RequestOptions options) {
+		file.writeln('== onRequest(${identityHashCode(options)}) ${DateTime.now()} ${options.uri} ${options.method} ==');
+		file.writeln(options.headers);
+		if (options.extra.isNotEmpty) {
+			file.writeln('extra: ${options.extra}');
+		}
+		final data = options.data;
+		if (data != null) {
+			if (data is FormData) {
+				file.writeln(data.fields);
+				file.writeln(data.files);
+			}
+			else {
+				file.writeln(data);
+			}
+		}
+	}
+
 	@override
 	void onRequest(
     RequestOptions options,
@@ -83,21 +103,8 @@ class LoggingInterceptor extends Interceptor {
 			if (file == null) {
 				return;
 			}
-			file.writeln('== onRequest(${identityHashCode(options)}) ${DateTime.now()} ${options.uri} ${options.method} ==');
-			file.writeln(options.headers);
-			if (options.extra.isNotEmpty) {
-				file.writeln('extra: ${options.extra}');
-			}
-			final data = options.data;
-			if (data != null) {
-				if (data is FormData) {
-					file.writeln(data.fields);
-					file.writeln(data.files);
-				}
-				else {
-					file.writeln(data);
-				}
-			}
+			_tracker.add(options);
+			_innerWriteRequest(file, options);
 			await file.flush();
 		});
 		handler.next(options);
@@ -112,6 +119,10 @@ class LoggingInterceptor extends Interceptor {
 			final file = this.file;
 			if (file == null) {
 				return;
+			}
+			if (!_tracker.remove(response.requestOptions)) {
+				// Probably resolved by request interceptor before we got there
+				_innerWriteRequest(file, response.requestOptions);
 			}
 			file.writeln('== onResponse(${identityHashCode(response.requestOptions)}) ${DateTime.now()} ${response.requestOptions.uri} ${response.requestOptions.method} ${response.statusCode} ==');
 			file.writeln(response.headers);
@@ -156,6 +167,10 @@ class LoggingInterceptor extends Interceptor {
 			final file = this.file;
 			if (file == null) {
 				return;
+			}
+			if (!_tracker.remove(err.requestOptions)) {
+				// Probably resolved by request interceptor before we got there
+				_innerWriteRequest(file, err.requestOptions);
 			}
 			file.writeln('== onError(${identityHashCode(err.requestOptions)}) ${DateTime.now()} ${err.requestOptions.uri} ${err.response?.statusCode} ==');
 			file.writeln(err.response?.headers);
