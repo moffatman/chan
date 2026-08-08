@@ -1227,10 +1227,10 @@ class SiteReddit extends ImageboardSite {
 		}
 	}
 
-	static (String, Map<String, String>) _getCatalogSuffix(CatalogVariant? variant) => const {
-			CatalogVariant.redditHot: ('/hot.json', <String, String>{}),
-			CatalogVariant.redditNew: ('/new.json', <String, String>{}),
-			CatalogVariant.redditRising: ('/rising.json', <String, String>{}),
+	static (String, Map<String, String>?) _getCatalogSuffix(CatalogVariant? variant) => const {
+			CatalogVariant.redditHot: ('/hot.json', null),
+			CatalogVariant.redditNew: ('/new.json', null),
+			CatalogVariant.redditRising: ('/rising.json', null),
 			CatalogVariant.redditControversialPastHour: ('/controversial.json', {'t': 'hour'}),
 			CatalogVariant.redditControversialPast24Hours: ('/controversial.json', {'t': 'day'}),
 			CatalogVariant.redditControversialPastWeek: ('/controversial.json', {'t': 'week'}),
@@ -1243,7 +1243,7 @@ class SiteReddit extends ImageboardSite {
 			CatalogVariant.redditTopPastMonth: ('/top.json', {'t': 'month'}),
 			CatalogVariant.redditTopPastYear: ('/top.json', {'t': 'year'}),
 			CatalogVariant.redditTopAllTime: ('/top.json', {'t': 'all'}),
-		}[variant] ?? ('.json', <String, String>{});
+		}[variant] ?? ('.json', null);
 
 	@override
 	Future<Catalog> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
@@ -1393,7 +1393,7 @@ class SiteReddit extends ImageboardSite {
 		final suffix = _getCatalogSuffix(variant);
 		final response = await client.getUri<Map>(Uri.https(baseUrl, '/r/$board${suffix.$1}', {
 			'after': 't3_${toRedditId(after.id)}',
-			...suffix.$2
+			...?suffix.$2
 		}), options: Options(
 			extra: {
 				kPriority: priority
@@ -1506,7 +1506,7 @@ class SiteReddit extends ImageboardSite {
 	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final response = await client.getThreadUri(Uri.https(baseUrl, '/r/${thread.board}/comments/${toRedditId(thread.id)}.json', {
 			if (variant?.redditApiName != null) 'sort': variant!.redditApiName!
-		}), priority: priority, responseType: ResponseType.json, cancelToken: cancelToken);
+		}.ifNotEmpty), priority: priority, responseType: ResponseType.json, cancelToken: cancelToken);
 		final (opData, repliesData) = switch(response.data) {
 			[
 				{'data': {'children': [{'data': Map data}, ...]}},

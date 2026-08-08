@@ -1391,3 +1391,11 @@ extension NumberOfDigits on int {
 		return 19;
 	}
 }
+
+extension IfNotEmptyIterable<T extends Iterable> on T {
+  T? get ifNotEmpty => isNotEmpty ? this : null;
+}
+
+extension IfNotEmptyMap<K, V> on Map<K, V> {
+  Map<K, V>? get ifNotEmpty => isNotEmpty ? this : null;
+}
