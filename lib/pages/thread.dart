@@ -597,7 +597,7 @@ class ThreadPageState extends State<ThreadPage> {
 				final items = _listController.items.toList();
 				final i0Clamped = i0.clamp(0, items.length - 1);
 				final seenIds = items.sublist(i0Clamped, i1.clamp(i0Clamped, items.length - 1) + 1)
-														 .where((p) => !_listController.isItemHidden(p).isHidden)
+														 .where((p) => !_listController.isItemHidden(p).isHidden && p.representsUnloadedPages.isEmpty)
 														 .expand((p) => [p.item.id, ...p.representsKnownStubChildren.map((s) => s.childId)]);
 				final lengthBefore = persistentState.unseenPostIds.data.length;
 				persistentState.unseenPostIds.data.removeAll(seenIds);
@@ -2640,7 +2640,9 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 		final items = widget.listController.items.toList();
 		final greyBelow = <int>{};
 		final whiteAbove = <int>{};
+		int extraWhiteAbove = 0;
 		final whiteBelow = <int>{};
+		int extraWhiteBelow = 0;
 		final redAbove = <int>{};
 		final redBelow = <int>{};
 		if (!widget.passedFirstLoad) {
@@ -2652,9 +2654,6 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 		// TODO: Determine if this needs to be / can be memoized
 		for (int i = 0; i < items.length - 1; i++) {
 			if (widget.listController.isItemHidden(items[i]).isDuplicate) {
-				continue;
-			}
-			if (items[i].item.isPageStub) {
 				continue;
 			}
 			if (i > lastVisibleIndex) {
@@ -2669,9 +2668,14 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 					}
 				}
 				else if (widget.persistentState.unseenPostIds.data.contains(items[i].item.id)) {
-					whiteBelow.add(items[i].item.id);
-					if (_youIds.contains(items[i].item.id)) {
-						redBelow.add(items[i].item.id);
+					if (items[i].representsUnloadedPages.isNotEmpty) {
+						extraWhiteBelow += (site.postsPerPage ?? 1) * items[i].representsUnloadedPages.length;
+					}
+					else {
+						whiteBelow.add(items[i].item.id);
+						if (_youIds.contains(items[i].item.id)) {
+							redBelow.add(items[i].item.id);
+						}
 					}
 				}
 				else {
@@ -2687,9 +2691,14 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 					}
 				}
 				else if (widget.persistentState.unseenPostIds.data.contains(items[i].item.id)) {
-					whiteAbove.add(items[i].item.id);
-					if (_youIds.contains(items[i].item.id)) {
-						redAbove.add(items[i].item.id);
+					if (items[i].representsUnloadedPages.isNotEmpty) {
+						extraWhiteAbove += (site.postsPerPage ?? 1) * items[i].representsUnloadedPages.length;
+					}
+					else {
+						whiteAbove.add(items[i].item.id);
+						if (_youIds.contains(items[i].item.id)) {
+							redAbove.add(items[i].item.id);
+						}
 					}
 				}
 			}
@@ -2724,8 +2733,8 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 			}
 		}
 		_greyCount = greyBelow.length;
-		_whiteCountAbove = whiteAbove.length;
-		_whiteCountBelow += whiteBelow.length; // Initialized before for-loop
+		_whiteCountAbove = whiteAbove.length + extraWhiteAbove;
+		_whiteCountBelow += whiteBelow.length + extraWhiteBelow; // Initialized before for-loop
 		_redCountAbove = redAbove.length;
 		_redCountBelow = redBelow.length;
 		setState(() {});
@@ -2915,7 +2924,11 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 		scrollToBottom() {
 			final lastVisibleIndex = widget.listController.lastVisibleIndex;
 			if (lastVisibleIndex != -1) {
-				final markAsRead = widget.listController.items.skip(lastVisibleIndex + 1).map((item) => item.item.id).toSet();
+				final markAsRead = widget.listController.items
+														.skip(lastVisibleIndex + 1)
+														.where((p) => !widget.listController.isItemHidden(p).isHidden && p.representsUnloadedPages.isEmpty)
+														.expand((p) => [p.item.id, ...p.representsKnownStubChildren.map((s) => s.childId)])
+														.toSet();
 				widget.persistentState.unseenPostIds.data.removeAll(markAsRead);
 				widget.persistentState.lastSeenPostId = markAsRead.fold<int>(0, max);
 				widget.persistentState.didUpdate();

@@ -1778,7 +1778,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 						post.id: post.isStub
 				};
 				for (final p in newThread.posts_) {
-					if (!p.isPageStub && oldIds[p.id] != p.isStub && !youIds.contains(p.id)) {
+					if (oldIds[p.id] != p.isStub && !youIds.contains(p.id)) {
 						needToSave |= unseenPostIds.data.add(p.id);
 					}
 				}
@@ -1786,7 +1786,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 			else if (newThread != null && (lastSeenPostId ?? id) == id) {
 				// First load
 				for (final p in newThread.posts_) {
-					if (!p.isPageStub && !youIds.contains(p.id)) {
+					if (!youIds.contains(p.id)) {
 						needToSave |= unseenPostIds.data.add(p.id);
 					}
 				}
@@ -1861,13 +1861,25 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 		return true;
 	}
 	List<Post>? _makeFilteredPosts() => thread?.posts.where(shouldShowPost).toList(growable: false);
-	int? unseenReplyCount() => filteredPosts()?.where((p) => unseenPostIds.data.contains(p.id)).length;
-	int? unseenImageCount() => filteredPosts()?.map((p) {
+	int? unseenReplyCount() => filteredPosts()?.fold<int>(0, (t, p) {
 		if (!unseenPostIds.data.contains(p.id)) {
-			return 0;
+			return t;
 		}
-		return p.attachments.length;
-	}).fold<int>(0, (a, b) => a + b);
+		if (p.isPageStub && p.hasOmittedReplies) {
+			if (p.id == filteredPosts()?.tryLast?.parentId) {
+				// Last page doesn't count if loaded
+				return t;
+			}
+			return t + (imageboard?.site.postsPerPage ?? 1);
+		}
+		return t + 1;
+	});
+	int? unseenImageCount() => filteredPosts()?.fold<int>(0, (t, p) {
+		if (!unseenPostIds.data.contains(p.id)) {
+			return t;
+		}
+		return t + p.attachments.length;
+	});
 
 	@override
 	String toString() => 'PersistentThreadState(key: $boxKey, lastSeenPostId: $lastSeenPostId, receipts: $receipts, lastOpenedTime: $lastOpenedTime, savedTime: $savedTime, useArchive: $useArchive, showInHistory: $showInHistory)';
