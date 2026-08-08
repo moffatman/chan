@@ -39,7 +39,6 @@ Future<void> executeTaskGraph(List<Task> tasks) async {
 		}
 		for (final task in _kSlow ? [notStarted.first] : notStarted.toList()) {
 			if (task.dependencies.every(finished.contains)) {
-				print('Starting $task because $finished');
 				notStarted.remove(task);
 				final future = task.execute().then((_) => task);
 				started[task] = future;
