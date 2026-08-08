@@ -258,7 +258,7 @@ class AttachmentThumbnail extends StatelessWidget {
 			client: s.client,
 			cache: true,
 			headers: {
-				...s.getHeaders(uri),
+				...s.getHeaders(attachment, uri),
 				if (attachment.useRandomUseragent) 'user-agent': makeRandomUserAgent()
 			},
 			afterFirstLoad: () {

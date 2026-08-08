@@ -2217,12 +2217,17 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		required super.preferHttp3WithoutAltSvc
 	});
 	/// Get headers to use to download an Attachment
-	Map<String, String> getHeaders(Uri url) {
-		final type = AttachmentType.fromFilename(FileBasename.get(url.path));
+	Map<String, String> getHeaders(Attachment attachment, [Uri? url]) {
 		return {
 			'user-agent': userAgent,
-			if (type.isVideo) ...videoHeaders
-			else if (type == AttachmentType.image) ...imageHeaders
+			if (attachment.type.isVideo) ...{
+				'accept': 'video/*',
+				...videoHeaders
+			}
+			else if (attachment.type == AttachmentType.image) ...{
+				'accept': 'image/*',
+				...imageHeaders
+			}
 		};
 	}
 	String? get imageUrl => null;
@@ -2322,7 +2327,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 				final url = Uri.parse(opAttachment.url);
 				final response = await client.head(opAttachment.url, options: Options(
 					headers: {
-						...getHeaders(url),
+						...getHeaders(opAttachment),
 						if (opAttachment.useRandomUseragent) 'user-agent': makeRandomUserAgent()
 					},
 					followRedirects: false,

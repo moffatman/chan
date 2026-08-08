@@ -2060,7 +2060,7 @@ class MissingAttachmentsControls extends StatelessWidget {
 					// Try naive URL
 					await attachment.imageboard.site.client.download(attachment.item.attachment.url, attachment.item.file.path, options: Options(
 						headers: {
-							...attachment.imageboard.site.getHeaders(Uri.parse(attachment.item.attachment.url)),
+							...attachment.imageboard.site.getHeaders(attachment.item.attachment),
 							if (attachment.item.attachment.useRandomUseragent) 'user-agent': makeRandomUserAgent()
 						}
 					));
@@ -2085,7 +2085,7 @@ class MissingAttachmentsControls extends StatelessWidget {
 							}
 							final response = await attachment.imageboard.site.client.head(found.url, options: Options(
 								headers: {
-									...attachment.imageboard.site.getHeaders(Uri.parse(found.url)),
+									...attachment.imageboard.site.getHeaders(found),
 									if (found.useRandomUseragent) 'user-agent': makeRandomUserAgent()
 								},
 								followRedirects: false,
@@ -2105,7 +2105,7 @@ class MissingAttachmentsControls extends StatelessWidget {
 						if (found != null) {
 							await attachment.imageboard.site.client.download(redirectUrls[found.url] ?? found.url, attachment.item.file.path, options: Options(
 								headers: {
-									...attachment.imageboard.site.getHeaders(Uri.parse(found.url)),
+									...attachment.imageboard.site.getHeaders(found),
 									if (found.useRandomUseragent) 'user-agent': makeRandomUserAgent()
 								}
 							));

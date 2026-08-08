@@ -531,7 +531,7 @@ class AttachmentViewerController extends ChangeNotifier {
 
 	Map<String, String> getHeaders(Uri url) {
 		return {
-			...site.getHeaders(url),
+			...site.getHeaders(attachment, url),
 			if (_useRandomUserAgent ?? attachment.useRandomUseragent) 'user-agent': makeRandomUserAgent(),
 		};
 	}

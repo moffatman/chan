@@ -771,9 +771,9 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 	String get imageUrl => baseUrl;
 
 	@override
-	Map<String, String> getHeaders(Uri url) {
-		final headers = super.getHeaders(url);
-		if (url.host == imageUrl) {
+	Map<String, String> getHeaders(Attachment attachment, [Uri? url]) {
+		final headers = super.getHeaders(attachment, url);
+		if ((url ?? Uri.parse(attachment.url)).host == imageUrl) {
 			return {
 				...headers,
 				'referer': 'https://$baseUrl/'
