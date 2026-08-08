@@ -1884,16 +1884,18 @@ abstract class ImageboardSiteArchive {
 			onRequest: (options, handler) async {
 				options.headers['user-agent'] ??= userAgent;
 				final extraCookie = getExtraCookie(options.uri);
-				options.extra.update(kExtraCookie, (existing) {
-					if (existing is String && existing.contains(extraCookie)) {
-						// Don't re-add on re-entrant request
-						return existing;
-					}
-					if (existing is String && existing.isEmpty) {
-						return extraCookie;
-					}
-					return '$existing; $extraCookie';
-				}, ifAbsent: () => extraCookie);
+				if (extraCookie.isNotEmpty) {
+					options.extra.update(kExtraCookie, (existing) {
+						if (existing is String && existing.contains(extraCookie)) {
+							// Don't re-add on re-entrant request
+							return existing;
+						}
+						if (existing is String && existing.isEmpty) {
+							return extraCookie;
+						}
+						return '$existing; $extraCookie';
+					}, ifAbsent: () => extraCookie);
+				}
 				if (addIntrospectedHeaders) {
 					for (final entry in (await WebViewIntrospection.instance.getDefaultHeaders()).entries) {
 						options.headers[entry.key] ??= entry.value;

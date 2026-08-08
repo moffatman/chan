@@ -14,13 +14,16 @@ class SeparatedCookieManager extends InterceptorBase {
 
   @override
   Future<void> onRequestImpl(RequestOptions options, RequestInterceptorHandler handler) async {
-    options.headers[HttpHeaders.cookieHeader] = await getCookies(options.uri, switch (options.extra[kExtraCookie]) {
+    final cookie = await getCookies(options.uri, switch (options.extra[kExtraCookie]) {
       String extra => extra,
       _ => ''
     }, toRemove: switch (options.extra[kExcludeCookies]) {
       List<String> exclude => exclude,
       _ => []
     });
+    if (cookie.isNotEmpty) {
+      options.headers[HttpHeaders.cookieHeader] = cookie;
+    }
     handler.next(options);
   }
 
