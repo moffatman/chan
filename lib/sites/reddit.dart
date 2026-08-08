@@ -1261,7 +1261,12 @@ class SiteReddit extends ImageboardSite {
 			},
 			responseType: ResponseType.json
 		), cancelToken: cancelToken);
-		final threads = await Future.wait(((response.data!['data'] as Map)['children'] as List).cast<Map>().map((d) async {
+		final children = ((response.data!['data'] as Map)['children'] as List).cast<Map>();
+		if (children.every((c) => c['kind'] == 't5')) {
+			// This is the subreddit search results
+			throw BoardNotFoundException(board);
+		}
+		final threads = await Future.wait(children.map((d) async {
 			final t = await _makeThread(d['data'] as Map, cancelToken: cancelToken);
 			t.currentPage = 1;
 			return t;
