@@ -9,6 +9,7 @@ import 'package:chan/services/interceptor.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/report_bug.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/tls.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
@@ -737,6 +738,7 @@ class CloudflareInterceptor extends InterceptorBase {
 				initialUrlRequest: URLRequest(
 					url: WebUri.uri(options.uri),
 					mainDocumentURL: WebUri.uri(options.uri),
+					assumesHTTP3Capable: enableQuic ? options.preferHttp3WithoutAltSvc : false,
 					method: options.method,
 					headers: {
 						for (final h in options.headers.entries)
@@ -783,6 +785,7 @@ class CloudflareInterceptor extends InterceptorBase {
 					initialUrlRequest: URLRequest(
 						url: WebUri.uri(response.requestOptions.uri),
 						mainDocumentURL: WebUri.uri(response.requestOptions.uri),
+						assumesHTTP3Capable: enableQuic ? response.requestOptions.preferHttp3WithoutAltSvc : false,
 						method: response.requestOptions.method,
 						headers: {
 							for (final h in response.requestOptions.headers.entries) h.key: h.value.toString(),
@@ -914,7 +917,8 @@ Future<T> useCloudflareClearedWebview<T>({
 	required String gatewayName,
 	CancelToken? cancelToken,
 	bool skipHeadless = false,
-	Duration? headlessTime
+	Duration? headlessTime,
+	bool assumesHTTP3Capable = false
 }) async => (await CloudflareInterceptor._useWebview<Wrapper<T>>(
 	handler: (controller, uri, isCancelledMedia, statusCode) async {
 		if (isCancelledMedia) {
@@ -928,6 +932,7 @@ Future<T> useCloudflareClearedWebview<T>({
 	initialUrlRequest: URLRequest(
 		url: WebUri.uri(uri),
 		mainDocumentURL: WebUri.uri(uri),
+		assumesHTTP3Capable: assumesHTTP3Capable,
 		method: 'GET',
 		body: null
 	),

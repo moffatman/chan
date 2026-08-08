@@ -19,5 +19,3 @@ class MyHttpClientAdapter2 extends Http2Adapter {
 		}
 	));
 }
-
-typedef MyHttpClientAdapter = MyHttpClientAdapter2;

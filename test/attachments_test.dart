@@ -48,7 +48,8 @@ class FakeImageboardSite extends ImageboardSite {
 		imageHeaders: const {},
 		videoHeaders: const {},
     overrideUserAgent: null,
-		addIntrospectedHeaders: false
+		addIntrospectedHeaders: false,
+		preferHttp3WithoutAltSvc: null
   );
   @override
   dynamic noSuchMethod(Invocation invocation) {

@@ -485,7 +485,8 @@ Future<List<ImportLog>> import(File archive) async {
 				].join('/'),
 				SavedSettingsFields.lastDefaultUserAgent.fieldName,
 				SavedSettingsFields.cachedWebViewHeaders.fieldName,
-				SavedSettingsFields.cachedWebViewTlsHello.fieldName
+				SavedSettingsFields.cachedWebViewTlsHello.fieldName,
+				SavedSettingsFields.cachedWebViewTlsHello3.fieldName
 			]
 		);
 		for (final pair in Persistence.settings.browserStateBySite.entries) {

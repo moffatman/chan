@@ -112,23 +112,24 @@ Future<void> innerMain() async {
 		final directoriesTask = Task('directories', Persistence.initializeDirectories);
 		final persistenceTask = Task('persistence', Persistence.initializeStatic, [hiveTask, directoriesTask, firebaseTask]);
 		final initializeDefaultUserAgentTask = Task('initializeDefaultUserAgent', initializeDefaultUserAgent, [persistenceTask]);
+		final tlsTask = Task('tls', initializeTls, [initializeDefaultUserAgentTask, persistenceTask]);
 		final networkLoggingTask = Task('networkLogging', LoggingInterceptor.instance.initialize, [directoriesTask]);
 		final videoServerTask = Task('videoServer', () async {
 			VideoServer.initializeStatic(Persistence.webmCacheDirectory, Persistence.httpCacheDirectory);
 		}, [directoriesTask]);
-		final notificationsTask = Task('notifications', Notifications.initializeStatic, [persistenceTask, networkLoggingTask, firebaseTask]);
+		final notificationsTask = Task('notifications', Notifications.initializeStatic, [persistenceTask, networkLoggingTask, tlsTask, firebaseTask]);
 		final updateDynamicColorsTask = Task('updateDynamicColors', updateDynamicColors, [persistenceTask]);
 		final initializeFontsTask = Task('initializeFonts', initializeFonts, [persistenceTask]);
 		final initializeNativeTranslationTask = Task('initializeNativeTranslation', initializeNativeTranslation);
 		final mediaKitTask = Task('mediaKit', MediaKit.ensureInitialized);
 		final jsonCacheTask = Task('jsonCache', JsonCache.instance.initialize, [
 			networkLoggingTask,
+			tlsTask,
 			initializeIsDevelopmentBuildTask,
 			initializeDefaultUserAgentTask,
 			// Depends on Settings.instance
 			persistenceTask
 		]);
-		final tlsTask = Task('tls', initializeTls, [initializeDefaultUserAgentTask, persistenceTask]);
 		final mediaScanTask = Task('mediaScan', MediaScan.initializeStatic, [hiveTask]);
 		await executeTaskGraph([
 			initializeIsDevelopmentBuildTask,

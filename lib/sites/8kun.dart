@@ -24,6 +24,7 @@ class Site8Kun extends SiteLainchan2 {
 		required super.imageThumbnailExtension,
 		required super.overrideUserAgent,
 		required super.addIntrospectedHeaders,
+		required super.preferHttp3WithoutAltSvc,
 		required super.boardsWithHtmlOnlyFlags,
 		required super.boardsWithMemeFlags,
 		required super.archives,
@@ -129,6 +130,11 @@ class Site8Kun extends SiteLainchan2 {
 			);
 		}
 		return null;
+	}
+
+	@override
+	bool isKnownHost(String host) {
+		return super.isKnownHost(host) || host == sysUrl;
 	}
 
 	@override

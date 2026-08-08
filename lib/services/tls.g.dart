@@ -41,6 +41,14 @@ class TlsClientHelloFields {
     fieldName: 'signatureAlgorithms',
     merger: ExactPrimitiveListMerger(),
   );
+  static bool getQuic(TlsClientHello x) => x.quic;
+  static const int kQuic = 4;
+  static const quic = ReadOnlyHiveFieldAdapter<TlsClientHello, bool>(
+    getter: getQuic,
+    fieldNumber: kQuic,
+    fieldName: 'quic',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class TlsClientHelloAdapter extends TypeAdapter<TlsClientHello> {
@@ -57,13 +65,15 @@ class TlsClientHelloAdapter extends TypeAdapter<TlsClientHello> {
     0: TlsClientHelloFields.versions,
     1: TlsClientHelloFields.ciphers,
     2: TlsClientHelloFields.extensions,
-    3: TlsClientHelloFields.signatureAlgorithms
+    3: TlsClientHelloFields.signatureAlgorithms,
+    4: TlsClientHelloFields.quic
   };
 
   @override
   TlsClientHello read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final List<dynamic> fields = List.filled(4, null);
+    final List<dynamic> fields = List.filled(5, null);
+    fields[4] = false;
     for (int i = 0; i < numOfFields; i++) {
       final int fieldId = reader.readByte();
       final dynamic value = reader.read();
@@ -76,13 +86,14 @@ class TlsClientHelloAdapter extends TypeAdapter<TlsClientHello> {
       ciphers: (fields[1] as List).cast<int>(),
       extensions: (fields[2] as List).cast<int>(),
       signatureAlgorithms: (fields[3] as List).cast<int>(),
+      quic: fields[4] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, TlsClientHello obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.versions)
       ..writeByte(1)
@@ -90,7 +101,9 @@ class TlsClientHelloAdapter extends TypeAdapter<TlsClientHello> {
       ..writeByte(2)
       ..write(obj.extensions)
       ..writeByte(3)
-      ..write(obj.signatureAlgorithms);
+      ..write(obj.signatureAlgorithms)
+      ..writeByte(4)
+      ..write(obj.quic);
   }
 
   @override

@@ -406,7 +406,8 @@ class FuukaArchive extends ImageboardSiteArchive {
 		required this.name,
 		this.boards,
 		required super.overrideUserAgent,
-		required super.addIntrospectedHeaders
+		required super.addIntrospectedHeaders,
+		required super.preferHttp3WithoutAltSvc
 	});
 
 	@override

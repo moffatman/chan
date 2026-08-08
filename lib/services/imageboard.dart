@@ -10,6 +10,7 @@ import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/cookie_browser.dart';
 import 'package:chan/services/captcha.dart';
+import 'package:chan/services/interceptor.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/outbox.dart';
 import 'package:chan/services/persistence.dart';
@@ -93,12 +94,9 @@ class Imageboard extends ChangeNotifier {
 		try {
 			final site = _site = makeSite(siteData);
 			if (forTesting) {
-				site.client.interceptors.insert(0, dio.InterceptorsWrapper(
+				site.client.interceptors.insert(0, InterceptorWrapperBase(
 					onRequest: (options, handler) {
-						handler.reject(dio.DioError(
-							requestOptions: options,
-							error: Exception('Not allowed to use network during test')
-						));
+						throw Exception('Not allowed to use network during test');
 					}
 				));
 			}

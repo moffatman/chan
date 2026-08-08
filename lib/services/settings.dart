@@ -12,8 +12,8 @@ import 'package:chan/services/cookies.dart';
 import 'package:chan/services/default_user_agent.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/http_429_backoff.dart';
-import 'package:chan/services/http_client.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/interceptor.dart';
 import 'package:chan/services/json_cache.dart';
 import 'package:chan/services/network_logging.dart';
 import 'package:chan/services/persistence.dart';
@@ -1269,6 +1269,8 @@ class SavedSettings extends HiveObject {
 	bool showTabPopup;
 	@HiveField(216)
 	bool didHideTabPopupAutomatically;
+	@HiveField(217)
+	TlsClientHello? cachedWebViewTlsHello3;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1487,6 +1489,7 @@ class SavedSettings extends HiveObject {
 		this.cachedWebViewHeaders,
 		bool? showTabPopup,
 		bool? didHideTabPopupAutomatically,
+		this.cachedWebViewTlsHello3,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -2344,7 +2347,29 @@ class Settings extends ChangeNotifier {
 	static SavedSettings get _settings => Persistence.settings;
 	SavedSettings get settings => _settings;
 
-	final client = Dio();
+	static Dio _makeClient(Settings settings) {
+		final client = Dio();
+		client.interceptors.add(CloudflareBlockingInterceptor());
+		client.interceptors.add(HTTP429BackoffInterceptor(client: client));
+		client.interceptors.add(FixupInterceptor());
+		client.interceptors.add(SeparatedCookieManager());
+		client.interceptors.add(InterceptorWrapperBase(
+			onRequest: (options, handler) async {
+				options.headers['user-agent'] ??= settings.userAgent;
+				handler.next(options);
+			}
+		));
+		client.interceptors.add(BasedFlareInterceptor(client));
+		client.interceptors.add(CloudflareInterceptor(null));
+		client.interceptors.add(RetryIfCloudflareInterceptor(client));
+		client.interceptors.add(StrictJsonInterceptor());
+		if (!kInUnitTest) {
+			client.interceptors.add(LoggingInterceptor.instance);
+		}
+		client.httpClientAdapter = myHttpClientAdapter;
+		return client;
+	}
+	late final client = _makeClient(this);
 	ConnectivityResult? _connectivity;
 	ConnectivityResult? get connectivity {
 		return _connectivity;
@@ -3270,24 +3295,6 @@ class Settings extends ChangeNotifier {
 
 	Settings._() {
 		mouseSettings = MouseSettings._(this);
-		client.interceptors.add(CloudflareBlockingInterceptor());
-		client.interceptors.add(HTTP429BackoffInterceptor(client: client));
-		client.interceptors.add(FixupInterceptor());
-		client.interceptors.add(SeparatedCookieManager());
-		client.interceptors.add(InterceptorsWrapper(
-			onRequest: (options, handler) {
-				options.headers['user-agent'] ??= userAgent;
-				handler.next(options);
-			}
-		));
-		client.interceptors.add(BasedFlareInterceptor(client));
-		client.interceptors.add(CloudflareInterceptor(null));
-		client.interceptors.add(RetryIfCloudflareInterceptor(client));
-		client.interceptors.add(StrictJsonInterceptor());
-		if (!kInUnitTest) {
-			client.interceptors.add(LoggingInterceptor.instance);
-		}
-		client.httpClientAdapter = MyHttpClientAdapter();
 		muteAudio.value = _settings.muteAudio;
 		_tryToSetupFilter();
 		JsonCache.instance.embedRegexes.addListener(_onEmbedRegexesUpdate);

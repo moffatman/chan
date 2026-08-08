@@ -106,6 +106,7 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 		required this.defaultUsername,
 		required super.overrideUserAgent,
 		required super.addIntrospectedHeaders,
+		required super.preferHttp3WithoutAltSvc,
 		required super.archives,
 		required super.imageHeaders,
 		required super.videoHeaders,

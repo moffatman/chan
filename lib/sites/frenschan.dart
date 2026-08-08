@@ -10,6 +10,7 @@ class SiteFrenschan extends SiteLainchan2 {
 		required super.imageUrl,
 		required super.overrideUserAgent,
 		required super.addIntrospectedHeaders,
+		required super.preferHttp3WithoutAltSvc,
 		required super.boardsWithHtmlOnlyFlags,
 		required super.boardsWithMemeFlags,
 		required super.archives,

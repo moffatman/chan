@@ -366,6 +366,27 @@ class AsyncByteReader extends ChangeNotifier {
 		return utf8.decode(await takeBytes(length));
 	}
 
+	Stream<Uint8List> replay() {
+		final controller = StreamController<Uint8List>();
+		() async {
+			int pos = 0;
+			while (!_done.isCompleted) {
+				if (pos < _buffer.length) {
+					controller.add(_buffer.sublist(pos));
+					pos = _buffer.length;
+				}
+				await nextEvent;
+			}
+			_done.future.then((_) {
+				controller.close();
+			}).catchError((Object e, StackTrace st) {
+				controller.addError(e, st);
+				controller.close();
+			});
+		}();
+		return controller.stream;
+	}
+
 	@override
 	String toString() => 'ByteReader(size: ${_buffer.length}, pos: $pos)';
 }

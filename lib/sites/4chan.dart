@@ -1187,6 +1187,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 		required this.spamFilterCaptchaDelayYellow,
 		required this.spamFilterCaptchaDelayRed,
 		required this.stickyCloudflare,
+		required super.preferHttp3WithoutAltSvc,
 	}) : _alternateBaseUrl = baseUrl.contains('chan') ? baseUrl.replaceFirst('chan', 'channel') : null;
 
 	@override
@@ -1499,6 +1500,11 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 			}
 		}
 		return null;
+	}
+
+	@override
+	bool isKnownHost(String host) {
+		return super.isKnownHost(host) || host == staticUrl || host == imageUrl || host == apiUrl || host == searchUrl || host == sysUrl;
 	}
 
 	@override

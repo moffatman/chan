@@ -125,6 +125,7 @@ void main() async {
         imageUrl: null,
         overrideUserAgent: null,
         addIntrospectedHeaders: false,
+        preferHttp3WithoutAltSvc: null,
         maxUploadSizeBytes: null,
         filesPerPost: 1,
         archives: const [],

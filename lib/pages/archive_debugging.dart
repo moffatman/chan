@@ -19,7 +19,8 @@ class WrappedArchive extends ImageboardSite {
     imageHeaders: const {},
     videoHeaders: const {},
     overrideUserAgent: archive.overrideUserAgent,
-    addIntrospectedHeaders: archive.addIntrospectedHeaders
+    addIntrospectedHeaders: archive.addIntrospectedHeaders,
+    preferHttp3WithoutAltSvc: archive.preferHttp3WithoutAltSvc
   );
 
   @override

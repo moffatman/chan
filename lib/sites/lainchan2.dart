@@ -107,6 +107,7 @@ class SiteLainchan2 extends SiteLainchanOrg {
 		required this.imageThumbnailExtension,
 		required super.overrideUserAgent,
 		required super.addIntrospectedHeaders,
+		required super.preferHttp3WithoutAltSvc,
 		required super.archives,
 		required super.imageHeaders,
 		required super.videoHeaders,

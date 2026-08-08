@@ -77,6 +77,7 @@ class SiteFutaba extends ImageboardSite {
 		required this.maxUploadSizeBytes,
 		required super.overrideUserAgent,
 		required super.addIntrospectedHeaders,
+		required super.preferHttp3WithoutAltSvc,
 		required super.archives,
 		required super.imageHeaders,
 		required super.videoHeaders

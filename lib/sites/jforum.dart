@@ -44,7 +44,8 @@ class SiteJForum extends ImageboardSite with ForumSite {
 		required super.imageHeaders,
 		required super.videoHeaders,
 		required super.overrideUserAgent,
-		required super.addIntrospectedHeaders
+		required super.addIntrospectedHeaders,
+		required super.preferHttp3WithoutAltSvc
 	});
 
 	static void _trim(dom.NodeList nodes) {

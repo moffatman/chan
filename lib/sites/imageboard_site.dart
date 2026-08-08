@@ -15,14 +15,15 @@ import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/cookies.dart';
 import 'package:chan/services/extendable_timeout_exception.dart';
 import 'package:chan/services/http_429_backoff.dart';
-import 'package:chan/services/http_client.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/interceptor.dart';
 import 'package:chan/services/network_logging.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/request_fixup.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/soundposts.dart';
 import 'package:chan/services/strict_json.dart';
+import 'package:chan/services/tls.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/services/webview_introspection.dart';
 import 'package:chan/sites/4chan.dart';
@@ -1871,42 +1872,37 @@ abstract class ImageboardSiteArchive {
 	String get userAgent => overrideUserAgent ?? Settings.instance.userAgent;
 	final String? overrideUserAgent;
 	final bool addIntrospectedHeaders;
+	final bool? preferHttp3WithoutAltSvc;
 	ImageboardSiteArchive({
 		required this.overrideUserAgent,
-		required this.addIntrospectedHeaders
+		required this.addIntrospectedHeaders,
+		required this.preferHttp3WithoutAltSvc
 	}) {
 		client.interceptors.add(CloudflareBlockingInterceptor());
 		client.interceptors.add(HTTP429BackoffInterceptor(client: client));
-		client.interceptors.add(InterceptorsWrapper(
+		client.interceptors.add(InterceptorWrapperBase(
 			onRequest: (options, handler) async {
-				try {
-					options.headers['user-agent'] ??= userAgent;
-					final extraCookie = getExtraCookie(options.uri);
-					options.extra.update(kExtraCookie, (existing) {
-						if (existing is String && existing.contains(extraCookie)) {
-							// Don't re-add on re-entrant request
-							return existing;
-						}
-						if (existing is String && existing.isEmpty) {
-							return extraCookie;
-						}
-						return '$existing; $extraCookie';
-					}, ifAbsent: () => extraCookie);
-					if (addIntrospectedHeaders) {
-						for (final entry in (await WebViewIntrospection.instance.getDefaultHeaders()).entries) {
-							options.headers[entry.key] ??= entry.value;
-						}
+				options.headers['user-agent'] ??= userAgent;
+				final extraCookie = getExtraCookie(options.uri);
+				options.extra.update(kExtraCookie, (existing) {
+					if (existing is String && existing.contains(extraCookie)) {
+						// Don't re-add on re-entrant request
+						return existing;
 					}
-					handler.next(options);
+					if (existing is String && existing.isEmpty) {
+						return extraCookie;
+					}
+					return '$existing; $extraCookie';
+				}, ifAbsent: () => extraCookie);
+				if (addIntrospectedHeaders) {
+					for (final entry in (await WebViewIntrospection.instance.getDefaultHeaders()).entries) {
+						options.headers[entry.key] ??= entry.value;
+					}
 				}
-				catch (e, st) {
-					handler.reject(DioError(
-						requestOptions: options,
-						response: null,
-						error: e
-					)..stackTrace = st, false);
-					return;
+				if (isKnownHost(options.uri.host)) {
+					options.preferHttp3WithoutAltSvc ??= preferHttp3WithoutAltSvc;
 				}
+				handler.next(options);
 			}
 		));
 		client.interceptors.add(SeparatedCookieManager());
@@ -1918,10 +1914,13 @@ abstract class ImageboardSiteArchive {
 		if (!kInUnitTest) {
 			client.interceptors.add(LoggingInterceptor.instance);
 		}
-		client.httpClientAdapter = MyHttpClientAdapter();
+		client.httpClientAdapter = myHttpClientAdapter;
 	}
 	String get name;
 	String get baseUrl;
+	bool isKnownHost(String host) {
+		return host == baseUrl;
+	}
 	Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority, CancelToken? cancelToken});
 	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken});
 	/// Exported to handle pageMap with same request as catalog, when pageMap is requested first
@@ -2214,7 +2213,8 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		required this.imageHeaders,
 		required this.videoHeaders,
 		required super.overrideUserAgent,
-		required super.addIntrospectedHeaders
+		required super.addIntrospectedHeaders,
+		required super.preferHttp3WithoutAltSvc
 	});
 	/// Get headers to use to download an Attachment
 	Map<String, String> getHeaders(Uri url) {
@@ -2227,6 +2227,10 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	}
 	String? get imageUrl => null;
 	Uri? get iconUrl;
+	@override
+	bool isKnownHost(String host) {
+		return super.isKnownHost(host) || host == imageUrl;
+	}
 	Future<CaptchaRequest> getCaptchaRequest(String board, int? threadId, {CancelToken? cancelToken});
 	Future<CaptchaRequest> getDeleteCaptchaRequest(ThreadIdentifier thread, {CancelToken? cancelToken}) async => const NoCaptchaRequest();
 	Future<PostReceipt> submitPost(DraftPost post, CaptchaSolution captchaSolution, CancelToken cancelToken);
@@ -2792,6 +2796,7 @@ abstract class ImageboardSiteLoginSystem {
 ImageboardSiteArchive? makeArchive(Map archive) {
 	final overrideUserAgent = archive['overrideUserAgent'] as String?;
 	final addIntrospectedHeaders = archive['addIntrospectedHeaders'] as bool? ?? false;
+	final preferHttp3WithoutAltSvc =  archive['preferHttp3WithoutAltSvc'] as bool?;
 	final boards = (archive['boards'] as List?)?.cast<Map>().map((b) => ImageboardBoard(
 		title: b['title'] as String,
 		name: b['name'] as String,
@@ -2808,7 +2813,8 @@ ImageboardSiteArchive? makeArchive(Map archive) {
 			useRandomUseragent: archive['useRandomUseragent'] as bool? ?? false,
 			hasAttachmentRateLimit: archive['hasAttachmentRateLimit'] as bool? ?? false,
 			overrideUserAgent: overrideUserAgent,
-			addIntrospectedHeaders: addIntrospectedHeaders
+			addIntrospectedHeaders: addIntrospectedHeaders,
+			preferHttp3WithoutAltSvc: preferHttp3WithoutAltSvc
 		);
 	}
 	else if (archive['type'] == 'fuuka') {
@@ -2817,7 +2823,8 @@ ImageboardSiteArchive? makeArchive(Map archive) {
 			baseUrl: archive['baseUrl'] as String,
 			boards: boards,
 			overrideUserAgent: overrideUserAgent,
-			addIntrospectedHeaders: addIntrospectedHeaders
+			addIntrospectedHeaders: addIntrospectedHeaders,
+			preferHttp3WithoutAltSvc: preferHttp3WithoutAltSvc
 		);
 	}
 	else {
@@ -2829,6 +2836,7 @@ ImageboardSiteArchive? makeArchive(Map archive) {
 ImageboardSite makeSite(Map data) {
 	final overrideUserAgent = data['overrideUserAgent'] as String?;
 	final addIntrospectedHeaders = data['addIntrospectedHeaders'] as bool? ?? false;
+	final preferHttp3WithoutAltSvc =  data['preferHttp3WithoutAltSvc'] as bool?;
 	final archives = [
 		...(data['archives'] as List? ?? []).cast<Map>().tryMap<ImageboardSiteArchive>(makeArchive),
 		// archives2 exists because old versions will crash with unsupported archives in 'archives' list
@@ -2852,6 +2860,7 @@ ImageboardSite makeSite(Map data) {
 			filesPerPost: (data['filesPerPost'] as int?) ?? 1,
 			overrideUserAgent: overrideUserAgent,
 			addIntrospectedHeaders: addIntrospectedHeaders,
+			preferHttp3WithoutAltSvc: preferHttp3WithoutAltSvc,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
@@ -2866,6 +2875,7 @@ ImageboardSite makeSite(Map data) {
 			maxUploadSizeBytes: data['maxUploadSizeBytes'] as int?,
 			overrideUserAgent: overrideUserAgent,
 			addIntrospectedHeaders: addIntrospectedHeaders,
+			preferHttp3WithoutAltSvc: preferHttp3WithoutAltSvc,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
@@ -2884,6 +2894,7 @@ ImageboardSite makeSite(Map data) {
 			imageUrl: data['imageUrl'] as String?,
 			overrideUserAgent: overrideUserAgent,
 			addIntrospectedHeaders: addIntrospectedHeaders,
+			preferHttp3WithoutAltSvc: preferHttp3WithoutAltSvc,
 			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
 			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
 			archives: archives,
@@ -2901,6 +2912,7 @@ ImageboardSite makeSite(Map data) {
 			maxUploadSizeBytes: data['maxUploadSizeBytes'] as int?,
 			overrideUserAgent: overrideUserAgent,
 			addIntrospectedHeaders: addIntrospectedHeaders,
+			preferHttp3WithoutAltSvc: preferHttp3WithoutAltSvc,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
@@ -2918,6 +2930,7 @@ ImageboardSite makeSite(Map data) {
 			filesPerPost: (data['filesPerPost'] as int?) ?? 1,
 			overrideUserAgent: overrideUserAgent,
 			addIntrospectedHeaders: addIntrospectedHeaders,
+			preferHttp3WithoutAltSvc: preferHttp3WithoutAltSvc,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
@@ -2930,6 +2943,7 @@ ImageboardSite makeSite(Map data) {
 			baseUrl: data['baseUrl'] as String,
 			overrideUserAgent: overrideUserAgent,
 			addIntrospectedHeaders: addIntrospectedHeaders,
+			preferHttp3WithoutAltSvc: preferHttp3WithoutAltSvc,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders
@@ -2942,6 +2956,7 @@ ImageboardSite makeSite(Map data) {
 			maxUploadSizeBytes: data['maxUploadSizeBytes'] as int,
 			overrideUserAgent: overrideUserAgent,
 			addIntrospectedHeaders: addIntrospectedHeaders,
+			preferHttp3WithoutAltSvc: preferHttp3WithoutAltSvc,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders
@@ -2951,6 +2966,7 @@ ImageboardSite makeSite(Map data) {
 		return SiteReddit(
 			overrideUserAgent: overrideUserAgent,
 			addIntrospectedHeaders: addIntrospectedHeaders,
+			preferHttp3WithoutAltSvc: preferHttp3WithoutAltSvc,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders
@@ -2960,6 +2976,7 @@ ImageboardSite makeSite(Map data) {
 		return SiteHackerNews(
 			overrideUserAgent: overrideUserAgent,
 			addIntrospectedHeaders: addIntrospectedHeaders,
+			preferHttp3WithoutAltSvc: preferHttp3WithoutAltSvc,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders
@@ -2972,6 +2989,7 @@ ImageboardSite makeSite(Map data) {
 			imageUrl: data['imageUrl'] as String?,
 			overrideUserAgent: overrideUserAgent,
 			addIntrospectedHeaders: addIntrospectedHeaders,
+			preferHttp3WithoutAltSvc: preferHttp3WithoutAltSvc,
 			boardsWithHtmlOnlyFlags: (data['boardsWithHtmlOnlyFlags'] as List?)?.cast<String>() ?? [],
 			boardsWithMemeFlags: (data['boardsWithMemeFlags'] as List?)?.cast<String>(),
 			archives: archives,
@@ -3018,6 +3036,7 @@ ImageboardSite makeSite(Map data) {
 			subjectCharacterLimit: data['subjectCharacterLimit'] as int?,
 			overrideUserAgent: overrideUserAgent,
 			addIntrospectedHeaders: addIntrospectedHeaders,
+			preferHttp3WithoutAltSvc: preferHttp3WithoutAltSvc,
 			boardFlags: (data['boardFlags'] as Map?)?.cast<String, Map>().map((k, v) => MapEntry(k, v.cast<String, String>())),
 			boardsWithCountryFlags: (data['boardsWithCountryFlags'] as List?)?.cast<String>() ?? [],
 			searchUrl: data['searchUrl'] as String? ?? '',
@@ -3033,6 +3052,7 @@ ImageboardSite makeSite(Map data) {
 			boards: boards,
 			overrideUserAgent: overrideUserAgent,
 			addIntrospectedHeaders: addIntrospectedHeaders,
+			preferHttp3WithoutAltSvc: preferHttp3WithoutAltSvc,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
@@ -3052,6 +3072,7 @@ ImageboardSite makeSite(Map data) {
 			boards: boards,
 			overrideUserAgent: overrideUserAgent,
 			addIntrospectedHeaders: addIntrospectedHeaders,
+			preferHttp3WithoutAltSvc: preferHttp3WithoutAltSvc,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
@@ -3077,6 +3098,7 @@ ImageboardSite makeSite(Map data) {
 			filesPerPost: (data['filesPerPost'] as int?) ?? 1,
 			overrideUserAgent: overrideUserAgent,
 			addIntrospectedHeaders: addIntrospectedHeaders,
+			preferHttp3WithoutAltSvc: preferHttp3WithoutAltSvc,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
@@ -3104,6 +3126,7 @@ ImageboardSite makeSite(Map data) {
 			defaultUsername: data['defaultUsername'] as String,
 			overrideUserAgent: overrideUserAgent,
 			addIntrospectedHeaders: addIntrospectedHeaders,
+			preferHttp3WithoutAltSvc: preferHttp3WithoutAltSvc,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders,
@@ -3127,6 +3150,7 @@ ImageboardSite makeSite(Map data) {
 			postsPerPage: data['postsPerPage'] as int,
 			overrideUserAgent: overrideUserAgent,
 			addIntrospectedHeaders: addIntrospectedHeaders,
+			preferHttp3WithoutAltSvc: preferHttp3WithoutAltSvc,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders
@@ -3140,6 +3164,7 @@ ImageboardSite makeSite(Map data) {
 			defaultUsername: data['defaultUsername'] as String? ?? 'Anonymous',
 			overrideUserAgent: overrideUserAgent,
 			addIntrospectedHeaders: addIntrospectedHeaders,
+			preferHttp3WithoutAltSvc: preferHttp3WithoutAltSvc,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders
@@ -3159,6 +3184,7 @@ ImageboardSite makeSite(Map data) {
 			textCaptchaQuestion: data['textCaptchaQuestion'] as String?,
 			overrideUserAgent: overrideUserAgent,
 			addIntrospectedHeaders: addIntrospectedHeaders,
+			preferHttp3WithoutAltSvc: preferHttp3WithoutAltSvc,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders
@@ -3176,6 +3202,7 @@ ImageboardSite makeSite(Map data) {
 			searchResultsPerPage: data['searchResultsPerPage'] as int? ?? 25,
 			overrideUserAgent: overrideUserAgent,
 			addIntrospectedHeaders: addIntrospectedHeaders,
+			preferHttp3WithoutAltSvc: preferHttp3WithoutAltSvc,
 			archives: archives,
 			imageHeaders: imageHeaders,
 			videoHeaders: videoHeaders

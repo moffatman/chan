@@ -261,11 +261,6 @@ dependency_overrides:
       url: https://github.com/moffatman/dio.git
       path: plugins/http2_adapter
       ref: develop
-  http2:
-    git:
-      url: https://github.com/moffatman/http.git
-      path: pkgs/http2
-      ref: master
   csslib:
     git:
       url: https://github.com/moffatman/dart-tools.git

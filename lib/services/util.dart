@@ -259,6 +259,24 @@ T unsafe<S, T>(S input, T Function() f) {
 	}
 }
 
+void unsafeVoid<S, T>(S input, void Function() f) {
+	try {
+		f();
+	}
+	on ExtendedException {
+		rethrow;
+	}
+	catch (e, st) {
+		print(e);
+		print(st);
+		throw UnsafeParseException<S, T>(
+			error: e,
+			stackTrace: st,
+			object: input
+		);
+	}
+}
+
 Future<T> unsafeAsync<S, T>(S input, Future<T> Function() f) async {
 	try {
 		return await f();

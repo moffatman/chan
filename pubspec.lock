@@ -321,7 +321,7 @@ packages:
     description:
       path: dio
       ref: develop
-      resolved-ref: "1d82896e75f93ee7e4a71dac5e7bd12ea7aa151b"
+      resolved-ref: c60756fab3a194c88f6aca01eb7a5e3e90cf59ea
       url: "https://github.com/moffatman/dio.git"
     source: git
     version: "4.0.6"
@@ -338,7 +338,7 @@ packages:
     description:
       path: "plugins/http2_adapter"
       ref: develop
-      resolved-ref: "1d82896e75f93ee7e4a71dac5e7bd12ea7aa151b"
+      resolved-ref: c60756fab3a194c88f6aca01eb7a5e3e90cf59ea
       url: "https://github.com/moffatman/dio.git"
     source: git
     version: "2.0.0"
@@ -807,11 +807,11 @@ packages:
     source: hosted
     version: "1.2.2"
   http2:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
       path: "pkgs/http2"
       ref: master
-      resolved-ref: "58a22ac9ec78e3f58809a475050caa90361704f9"
+      resolved-ref: "5b6d377260f0b2ceb1b3451667746c6a60b58142"
       url: "https://github.com/moffatman/http.git"
     source: git
     version: "2.3.1"

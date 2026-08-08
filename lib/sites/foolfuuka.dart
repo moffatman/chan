@@ -590,7 +590,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		this.hasAttachmentRateLimit = false,
 		this.boards,
 		required super.overrideUserAgent,
-		required super.addIntrospectedHeaders
+		required super.addIntrospectedHeaders,
+		required super.preferHttp3WithoutAltSvc
 	});
 
 	@override

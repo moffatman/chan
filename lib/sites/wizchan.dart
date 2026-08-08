@@ -7,6 +7,7 @@ class SiteWizchan extends SiteLainchanOrg {
 		required super.imageUrl,
 		required super.overrideUserAgent,
 		required super.addIntrospectedHeaders,
+		required super.preferHttp3WithoutAltSvc,
 		required super.archives,
 		required super.imageHeaders,
 		required super.videoHeaders,

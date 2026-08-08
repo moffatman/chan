@@ -266,6 +266,7 @@ class SiteReddit extends ImageboardSite {
 	SiteReddit({
 		required super.overrideUserAgent,
 		required super.addIntrospectedHeaders,
+		required super.preferHttp3WithoutAltSvc,
 		required super.archives,
 		required super.imageHeaders,
 		required super.videoHeaders
@@ -273,7 +274,11 @@ class SiteReddit extends ImageboardSite {
 		client.interceptors.add(_SiteRedditInterceptor(this));
 	}
 	@override
-	String get baseUrl => 'reddit.com';
+	String get baseUrl => 'www.reddit.com';
+	static const _apiUrl = 'api.reddit.com';
+	static const _redditUploadsUrl = 'i.reddituploads.com';
+	static const _videosUrl = 'v.redd.it';
+	static const _gifsUrl = 'i.redd.it';
 
 	static const _kDeleted = '[deleted]';
 	static const _kRemoved = '[removed]';
@@ -541,7 +546,7 @@ class SiteReddit extends ImageboardSite {
 							]);
 						}
 						else if (!src.contains('.')) {
-							final url = Uri.https('i.redd.it', '/$src.gif');
+							final url = Uri.https(_gifsUrl, '/$src.gif');
 							yield PostAttachmentsSpan([
 								Attachment(
 									board: board,
@@ -770,7 +775,7 @@ class SiteReddit extends ImageboardSite {
 					)];
 				}
 			}
-			else if (uri.host == 'i.reddituploads.com') {
+			else if (uri.host == _redditUploadsUrl) {
 				return [(
 					url: uri.toString(),
 					thumbnailUrl: null,
@@ -854,7 +859,7 @@ class SiteReddit extends ImageboardSite {
 		if (url.host == 'gfycat.com' && (url.pathSegments.trySingle?.length ?? 0) > 2) {
 			return true;
 		}
-		if (url.host == 'i.reddituploads.com') {
+		if (url.host == _redditUploadsUrl) {
 			return true;
 		}
 		if (url.host.endsWith('redgifs.com') && url.pathSegments.length == 2 && url.pathSegments[0] == 'watch' && persistence != null) {
@@ -1150,7 +1155,7 @@ class SiteReddit extends ImageboardSite {
 
 	@override
 	Map<String, String> getHeaders(Uri url) {
-		if (url.host == 'v.redd.it') {
+		if (url.host == _videosUrl) {
 			return {
 				...super.getHeaders(url),
 				'Origin': 'https://www.reddit.com',
@@ -1181,7 +1186,7 @@ class SiteReddit extends ImageboardSite {
 
 	@override
 	Future<List<ImageboardBoard>> getBoardsForQuery(String query) async {
-		final response = await client.getUri<Map>(Uri.https('api.$baseUrl', '/subreddits/search', {
+		final response = await client.getUri<Map>(Uri.https(_apiUrl, '/subreddits/search', {
 			'q': query,
 			'typeahead_active': 'true'
 		}), options: Options(responseType: ResponseType.json));
@@ -1561,6 +1566,11 @@ class SiteReddit extends ImageboardSite {
 			}
 		}
 		return s;
+	}
+
+	@override
+	bool isKnownHost(String host) {
+		return super.isKnownHost(host) || host.endsWith('.reddit.com') || host == _videosUrl || host == _gifsUrl || host == _redditUploadsUrl;
 	}
 
 	@override

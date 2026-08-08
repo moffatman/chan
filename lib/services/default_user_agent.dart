@@ -23,6 +23,7 @@ Future<void> initializeDefaultUserAgent() async {
 	if (defaultUserAgent != Persistence.settings.lastDefaultUserAgent) {
 		Persistence.settings.cachedWebViewTlsHello = null;
 		Persistence.settings.cachedWebViewHeaders = null;
+		Persistence.settings.cachedWebViewTlsHello3 = null;
 		Persistence.settings.lastDefaultUserAgent = defaultUserAgent;
 	}
 }

@@ -307,7 +307,7 @@ final siteSettings = [
 													// Must not be supported yet
 													continue;
 												}
-												if (url == site.baseUrl) {
+												if (site.isKnownHost(url)) {
 													// Cheat code
 													final ok = context.mounted && await confirm(context, 'Add ${site.name}?', actionName: 'Add');
 													if (ok) {

@@ -45,6 +45,7 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 		required this.faviconPath,
 		required super.overrideUserAgent,
 		required super.addIntrospectedHeaders,
+		required super.preferHttp3WithoutAltSvc,
 		required super.archives,
 		required super.imageHeaders,
 		required super.videoHeaders,

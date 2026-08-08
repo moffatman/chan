@@ -101,6 +101,7 @@ class SiteHackerNews extends ImageboardSite {
 		this.catalogThreadsPerPage = 30,
 		required super.overrideUserAgent,
 		required super.addIntrospectedHeaders,
+		required super.preferHttp3WithoutAltSvc,
 		required super.archives,
 		required super.imageHeaders,
 		required super.videoHeaders
