@@ -19,6 +19,7 @@ Future<void> speedTest({
 void main() {
 	final client1 = Dio()..httpClientAdapter = MyHttpClientAdapter1();
 	final client2 = Dio()..httpClientAdapter = MyHttpClientAdapter2();
+	final client3 = Dio()..httpClientAdapter = MyHttpClientAdapter3(preferHttp3WithoutAltSvc: true);
 
 	final urls = [
 		'https://i.4cdn.org/hr/1746431336713935.jpg',
@@ -47,6 +48,12 @@ void main() {
 		);
 
 		await speedTest(
+			client: client3,
+			name: 'v3 serial',
+			tasks: urls.map((url) => [url]).toList()
+		);
+
+		await speedTest(
 			client: client1,
 			name: 'v1 parallel',
 			tasks: [urls]
@@ -57,5 +64,11 @@ void main() {
 			name: 'v2 parallel',
 			tasks: [urls]
 		);
-	});
+
+		await speedTest(
+			client: client3,
+			name: 'v3 parallel',
+			tasks: [urls]
+		);
+	}, timeout: Timeout.none);
 }
