@@ -319,7 +319,7 @@ class ThreadPageState extends State<ThreadPage> {
 					parentId: -1, // Should be ignored
 					childId: postId
 				)])).tryFirstWhere((p) => p.id == postId);
-				await _listController.state?.acceptNewList(zone.findThread(persistentState.id)!.posts);
+				await _listController.state?.acceptNewList(zone.findThread(persistentState.id)!.postsToShow.toList());
 				loadedSomething = true;
 			}
 			if (post == null) {
@@ -350,7 +350,7 @@ class ThreadPageState extends State<ThreadPage> {
 					parentId: widget.thread.id,
 					childId: postId
 				)]);
-				await _listController.state?.acceptNewList(zone.findThread(persistentState.id)!.posts);
+				await _listController.state?.acceptNewList(zone.findThread(persistentState.id)!.postsToShow.toList());
 			}
 			else {
 				// Maybe not loaded yet?
@@ -717,7 +717,7 @@ class ThreadPageState extends State<ThreadPage> {
 
 	Future<void> _maybeInitialAutoTranslate(Thread? thread) async {
 		if (thread != null && persistentState.autoTranslate && persistentState.identifier == thread.identifier) {
-			_ensureAllTranslated(thread.posts_.toList(), interactive: false);
+			_ensureAllTranslated(thread.postsToShow.toList(), interactive: false);
 		}
 	}
 
@@ -807,7 +807,7 @@ class ThreadPageState extends State<ThreadPage> {
 			},
 			onNeedUpdateWithStubItems: (ids) async {
 				await _updateWithStubItems(ids);
-				await _listController.state?.acceptNewList(zone.findThread(persistentState.id)!.posts);
+				await _listController.state?.acceptNewList(zone.findThread(persistentState.id)!.postsToShow.toList());
 			}
 		);
 		_updateHotPostIds();
@@ -1077,7 +1077,7 @@ class ThreadPageState extends State<ThreadPage> {
 			zone.addThread(thread);
 			_updateHotPostIds();
 			await persistentState.didMutateThread();
-			await _listController.state?.acceptNewList(thread.posts);
+			await _listController.state?.acceptNewList(thread.postsToShow.toList());
 			setState(() {});
 		}
 	}
@@ -1317,13 +1317,54 @@ class ThreadPageState extends State<ThreadPage> {
 			try {
 				final lastUpdatedTime = oldThread?.lastUpdatedTime ?? oldThread?.posts_.tryLast?.time;
 				if (oldThread != null && oldThread.posts_.length >= (oldThread.replyCount + 1) && lastUpdatedTime != null && oldThread.archiveName == null) {
-					newThread = await site.getThreadIfModifiedSince(
-						widget.thread,
-						lastUpdatedTime,
+					final tail = await site.getThreadTail(
+						oldThread,
 						variant: tmpPersistentState.variant,
 						priority: _priority,
 						cancelToken: cancelToken
-					) ?? oldThread;
+					);
+					if (tail != null && (tail.posts.isEmpty || tail.posts.first.id <= oldThread.posts_.last.id)) {
+						if (tail.posts.isNotEmpty) {
+							// Tail is usable (overlap between posts)
+							final newThread = Thread(
+								posts_: oldThread.posts_.toList(),
+								isArchived: oldThread.isArchived,
+								isDeleted: oldThread.isDeleted,
+								replyCount: tail.replyCount,
+								imageCount: tail.imageCount,
+								id: tail.id,
+								attachmentDeleted: oldThread.attachmentDeleted,
+								board: tail.board,
+								title: oldThread.title,
+								isSticky: tail.isSticky,
+								time: oldThread.time,
+								flair: oldThread.flair,
+								currentPage: oldThread.currentPage,
+								uniqueIPCount: oldThread.uniqueIPCount,
+								customSpoilerId: oldThread.customSpoilerId,
+								attachments: oldThread.attachments,
+								suggestedVariant: oldThread.suggestedVariant,
+								poll: oldThread.poll,
+								archiveName: oldThread.archiveName,
+								isEndless: oldThread.isEndless,
+								lastUpdatedTime: tail.lastUpdatedTime,
+								isLocked: oldThread.isLocked,
+								isNsfw: oldThread.isNsfw,
+								stickyReplyCap: tail.stickyReplyCap
+							);
+							newThread.mergePosts(null, tail.posts, site);
+						}
+						newThread = oldThread;
+					}
+					else {
+						newThread = await site.getThreadIfModifiedSince(
+							widget.thread,
+							lastUpdatedTime,
+							variant: tmpPersistentState.variant,
+							priority: _priority,
+							cancelToken: cancelToken
+						) ?? oldThread;
+					}
 					await site.updatePageNumber(newThread, priority: _priority, cancelToken: cancelToken);
 				} 
 				else {
@@ -1351,7 +1392,7 @@ class ThreadPageState extends State<ThreadPage> {
 			notifications.updateLastKnownId(watch, newThread.posts_.last.id, foreground: _foreground);
 		}
 		await _listController.whenDoneAutoScrolling;
-		if (tmpPersistentState.thread != null || newThread.archiveName == null) {
+		if (tmpPersistentState.thread != null || newThread.archiveName == null && !identical(newThread, tmpPersistentState.thread)) {
 			// Don't try to merge catalogCache onto archived thread, it will think weAreOldThread
 			newThread.mergePosts(
 				tmpPersistentState.thread,
@@ -1369,7 +1410,7 @@ class ThreadPageState extends State<ThreadPage> {
 				if (firstLoad) shouldScroll = true;
 				if (persistentState.autoTranslate) {
 					// Translate new posts
-					_ensureAllTranslated(newThread.posts.toList(), interactive: false);
+					_ensureAllTranslated(newThread.postsToShow.toList(), interactive: false);
 				}
 			}
 			await tmpPersistentState.save();
@@ -1970,7 +2011,7 @@ class ThreadPageState extends State<ThreadPage> {
 																	_ => false
 																}),
 																autoUpdateDuration: persistentState.disableUpdates ? null : autoUpdateDuration,
-																initialList: persistentState.thread?.posts
+																initialList: persistentState.thread?.postsToShow.toList()
 																								?? (
 																									(
 																										site.isPaged
@@ -2187,7 +2228,7 @@ class ThreadPageState extends State<ThreadPage> {
 																		}
 																		return null;
 																	}
-																	return (await _getUpdatedThread(options.cancelToken)).posts;
+																	return (await _getUpdatedThread(options.cancelToken)).postsToShow.toList();
 																},
 																controller: _listController,
 																itemBuilder: (context, post, options) {
@@ -3521,6 +3562,10 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 										],
 										if (!widget.blocked && (widget.persistentState.thread?.isLocked ?? false)) ...[
 											Icon(CupertinoIcons.lock, color: theme.primaryColor.withValues(alpha: 0.5), applyTextScaling: true),
+											const SizedBox(width: 8)
+										],
+										if (!widget.blocked && (widget.persistentState.thread?.isSticky ?? false)) ...[
+											Icon(CupertinoIcons.pin, color: theme.primaryColor.withValues(alpha: 0.5), applyTextScaling: true),
 											const SizedBox(width: 8)
 										],
 										if (widget.listController.state?.error case ValueListenable<(Object, StackTrace)?> listenable when !widget.blocked && widget.listController.itemsLength > 0) ValueListenableBuilder(

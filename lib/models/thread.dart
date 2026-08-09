@@ -82,6 +82,8 @@ class Thread extends HiveObject implements Filterable {
 	bool isLocked;
 	@HiveField(23, isOptimized: true, defaultValue: false)
 	bool isNsfw;
+	@HiveField(24, isOptimized: true, defaultValue: null)
+	int? stickyReplyCap;
 	Thread({
 		required this.posts_,
 		this.isArchived = false,
@@ -105,7 +107,8 @@ class Thread extends HiveObject implements Filterable {
 		this.isEndless = false,
 		this.lastUpdatedTime,
 		this.isLocked = false,
-		this.isNsfw = false
+		this.isNsfw = false,
+		this.stickyReplyCap
 	}) : board = intern(board), attachments = attachments.isEmpty ? const [] : List.of(attachments, growable: false);
 	
 	bool _initialized = false;
@@ -139,6 +142,15 @@ class Thread extends HiveObject implements Filterable {
 			_initialized = true;
 		}
 		return posts_;
+	}
+
+	Iterable<Post> get postsToShow {
+		// When we go to archived, it loses iSticky + stickyReplyCap. Lazy fallback
+		final stickyReplyCap = this.stickyReplyCap ?? (isArchived && (posts.length > 2000) ? 1000 : null);
+		if (stickyReplyCap == null || posts.length < (stickyReplyCap + 1)) {
+			return posts;
+		}
+		return [posts.first].followedBy(posts.skip(1 + (posts.length - stickyReplyCap)));
 	}
 
 	void restoreSpans(ByteReader reader) {
@@ -234,6 +246,7 @@ class Thread extends HiveObject implements Filterable {
 		bool anyChanges = false;
 		if (oldThread != null) {
 			_markNewIPs(oldThread);
+			stickyReplyCap ??= oldThread.stickyReplyCap;
 		}
 		final postIdToListIndex = {
 			for (final pair in posts_.asMap().entries) pair.value.id: pair.key
@@ -371,7 +384,8 @@ class Thread extends HiveObject implements Filterable {
 		listEquals(other.posts_, posts_) &&
 		other.poll == poll &&
 		other.lastUpdatedTime == lastUpdatedTime &&
-		other.isNsfw == isNsfw;
+		other.isNsfw == isNsfw &&
+		other.stickyReplyCap == stickyReplyCap;
 	
 	bool isIdenticalForFilteringPurposes(Thread? other) {
 		if (other == null) {
@@ -390,7 +404,8 @@ class Thread extends HiveObject implements Filterable {
 			other.replyCount == replyCount &&
 			listEquals(other.attachments, attachments) &&
 			other.poll == poll &&
-			other.isNsfw == isNsfw
+			other.isNsfw == isNsfw &&
+			other.stickyReplyCap == stickyReplyCap
 		)) {
 			return false;
 		}
@@ -549,4 +564,37 @@ extension CompareTitle on Thread? {
 		}
 		return (a.title ?? a.posts_.tryFirst?.buildText() ?? '').friendlyCompareTo(b.title ?? b.posts_.tryFirst?.buildText() ?? '');
 	}
+}
+
+class ThreadTail {
+	/// If empty, no new posts since last update
+	final List<Post> posts;
+	final int id;
+	final String board;
+	final int replyCount;
+	final int imageCount;
+	final bool isSticky;
+	DateTime? lastUpdatedTime;
+	final int? stickyReplyCap;
+
+	ThreadTail({
+		required this.posts,
+		required this.id,
+		required this.board,
+		required this.replyCount,
+		required this.imageCount,
+		this.isSticky = false,
+		this.lastUpdatedTime,
+		this.stickyReplyCap
+	});
+
+	ThreadTail.empty(Thread thread) :
+		posts = [],
+		id = thread.id,
+		board = thread.board,
+		replyCount = thread.replyCount,
+		imageCount = thread.imageCount,
+		isSticky = thread.isSticky,
+		lastUpdatedTime = thread.lastUpdatedTime,
+		stickyReplyCap = thread.stickyReplyCap;
 }

@@ -226,6 +226,16 @@ class ThreadFields {
     fieldName: 'isNsfw',
     merger: PrimitiveMerger(),
   );
+  static int? getStickyReplyCap(Thread x) => x.stickyReplyCap;
+  static void setStickyReplyCap(Thread x, int? v) => x.stickyReplyCap = v;
+  static const int kStickyReplyCap = 24;
+  static const stickyReplyCap = HiveFieldAdapter<Thread, int?>(
+    getter: getStickyReplyCap,
+    setter: setStickyReplyCap,
+    fieldNumber: kStickyReplyCap,
+    fieldName: 'stickyReplyCap',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class ThreadAdapter extends TypeAdapter<Thread> {
@@ -260,13 +270,14 @@ class ThreadAdapter extends TypeAdapter<Thread> {
     20: ThreadFields.isEndless,
     21: ThreadFields.lastUpdatedTime,
     22: ThreadFields.isLocked,
-    23: ThreadFields.isNsfw
+    23: ThreadFields.isNsfw,
+    24: ThreadFields.stickyReplyCap
   };
 
   @override
   Thread read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final List<dynamic> fields = List.filled(24, null);
+    final List<dynamic> fields = List.filled(25, null);
     fields[15] = false;
     fields[20] = false;
     fields[22] = false;
@@ -317,6 +328,7 @@ class ThreadAdapter extends TypeAdapter<Thread> {
       lastUpdatedTime: fields[21] as DateTime?,
       isLocked: fields[22] as bool,
       isNsfw: fields[23] as bool,
+      stickyReplyCap: fields[24] as int?,
     );
   }
 
@@ -346,6 +358,7 @@ class ThreadAdapter extends TypeAdapter<Thread> {
       if (obj.lastUpdatedTime != null) 21: obj.lastUpdatedTime,
       if (obj.isLocked) 22: obj.isLocked,
       if (obj.isNsfw) 23: obj.isNsfw,
+      if (obj.stickyReplyCap != null) 24: obj.stickyReplyCap,
     };
     writer.writeByte(fields.length);
     for (final MapEntry<int, dynamic> entry in fields.entries) {

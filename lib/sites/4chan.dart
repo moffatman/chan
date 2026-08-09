@@ -89,7 +89,7 @@ class _QuoteLinkLinkifier extends Linkifier {
 }
 
 
-class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304CachingCatalogMixin {
+class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304CachingThreadTailMixin, Http304CachingCatalogMixin {
 	@override
 	final String name;
 	@override
@@ -608,6 +608,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 			attachmentDeleted: op['filedeleted'] == 1,
 			title: (title == null) ? null : unescape.convert(title),
 			isSticky: op['sticky'] == 1,
+			stickyReplyCap: op['sticky_cap'] as int?,
 			time: DateTimeConversion.fromSecondsSinceEpoch(op['time'] as int),
 			uniqueIPCount: op['unique_ips'] as int?,
 			customSpoilerId: op['custom_spoiler'] as int?
@@ -729,12 +730,44 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 			posts_: [threadAsPost, ...lastReplies],
 			title: (title == null) ? null : unescape.convert(title),
 			isSticky: threadData['sticky'] == 1,
+			stickyReplyCap: threadData['sticky_cap'] as int?,
 			isArchived: isArchived,
 			isLocked: threadData['closed'] == 1,
 			time: DateTimeConversion.fromSecondsSinceEpoch(threadData['time'] as int),
 			currentPage: currentPage
 		);
 	});
+
+	@override
+	RequestOptions? getThreadTailRequest(Thread thread, {ThreadVariant? variant}) {
+		if (thread.isArchived || thread.replyCount < 50) {
+			// Tail only works for live+long threads
+			return null;
+		}
+		return RequestOptions(
+			path: '/${thread.board}/thread/${thread.id}-tail.json',
+			baseUrl: 'https://$apiUrl',
+			responseType: ResponseType.json,
+			connectTimeout: 5000 // TODO: Remove this
+		);
+	}
+
+	@override
+	Future<ThreadTail> makeThreadTail(ThreadIdentifier thread, Response<dynamic> response, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+		final data = response.data as Map;
+		final op = ((data['posts'] as List)[0] as Map);
+		return ThreadTail(
+			board: thread.board,
+			replyCount: op['replies'] as int,
+			imageCount: op['images'] as int,
+			posts: (data['posts'] as List? ?? []).skip(1).map<Post>((postData) {
+				return _makePost(thread.board, thread.id, postData as Map);
+			}).toList(),
+			id: op['no'] as int,
+			isSticky: op['sticky'] == 1,
+			stickyReplyCap: op['sticky_cap'] as int?
+		);
+	}
 
 	@override
 	RequestOptions getCatalogRequest(String board, {CatalogVariant? variant}) {

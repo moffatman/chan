@@ -341,13 +341,54 @@ class ThreadWatcher extends ChangeNotifier {
 			}
 			final lastUpdatedTime = oldThread?.lastUpdatedTime ?? oldThread?.posts_.tryLast?.time;
 			if (oldThread != null && oldThread.posts_.length >= (oldThread.replyCount + 1) && lastUpdatedTime != null && oldThread.archiveName == null) {
-				newThread = await site.getThreadIfModifiedSince(
-					threadState.identifier,
-					lastUpdatedTime,
+				final tail = await site.getThreadTail(
+					oldThread,
 					variant: threadState.variant,
 					priority: RequestPriority.functional,
 					cancelToken: cancelToken
-				) ?? oldThread;
+				);
+				if (tail != null && (tail.posts.isEmpty || tail.posts.first.id <= oldThread.posts_.last.id)) {
+					if (tail.posts.isNotEmpty) {
+						// Tail is usable (overlap between posts)
+						final newThread = Thread(
+							posts_: oldThread.posts_.toList(),
+							isArchived: oldThread.isArchived,
+							isDeleted: oldThread.isDeleted,
+							replyCount: tail.replyCount,
+							imageCount: tail.imageCount,
+							id: tail.id,
+							attachmentDeleted: oldThread.attachmentDeleted,
+							board: tail.board,
+							title: oldThread.title,
+							isSticky: tail.isSticky,
+							time: oldThread.time,
+							flair: oldThread.flair,
+							currentPage: oldThread.currentPage,
+							uniqueIPCount: oldThread.uniqueIPCount,
+							customSpoilerId: oldThread.customSpoilerId,
+							attachments: oldThread.attachments,
+							suggestedVariant: oldThread.suggestedVariant,
+							poll: oldThread.poll,
+							archiveName: oldThread.archiveName,
+							isEndless: oldThread.isEndless,
+							lastUpdatedTime: tail.lastUpdatedTime,
+							isLocked: oldThread.isLocked,
+							isNsfw: oldThread.isNsfw,
+							stickyReplyCap: tail.stickyReplyCap
+						);
+						newThread.mergePosts(null, tail.posts, site);
+					}
+					newThread = oldThread;
+				}
+				else {
+					newThread = await site.getThreadIfModifiedSince(
+						threadState.identifier,
+						lastUpdatedTime,
+						variant: threadState.variant,
+						priority: RequestPriority.functional,
+						cancelToken: cancelToken
+					) ?? oldThread;
+				}
 				await site.updatePageNumber(newThread, priority: RequestPriority.functional, cancelToken: cancelToken);
 			}
 			else {

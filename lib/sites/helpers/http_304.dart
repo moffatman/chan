@@ -13,10 +13,10 @@ extension _Helper on ImageboardSite {
 		required RequestOptions baseOptions,
 		required DateTime? lastModified,
 		required Future<T> Function(Response) func,
-		required Exception on404,
+		required Future<T?> Function() on404,
 		required RequestPriority priority,
 		required CancelToken? cancelToken,
-		void Function()? on304
+		Future<T?> Function()? on304
 	}) async {
 		try {
 			final response = await client.fetch(baseOptions.copyWith(
@@ -33,14 +33,13 @@ extension _Helper on ImageboardSite {
 			));
 			final status = response.statusCode;
 			if (status == 304) {
-				on304?.call();
-				return null;
+				return on304?.call();
 			}
 			if (status != null && status >= 200 && status < 400) {
 				return await unsafeAsync(response.data, () => func(response));
 			}
 			if (status == 404) {
-				throw on404;
+				return on404();
 			}
 			throw HTTPStatusException.fromResponse(response);
 		}
@@ -51,7 +50,7 @@ extension _Helper on ImageboardSite {
 					final str = err.extractedError?.toLowerCase();
 					if (str != null && str.contains('404') && str.contains('not found')) {
 						// Should cover most common error pages
-						throw on404;
+						return on404();
 					}
 				}
 			}
@@ -84,7 +83,7 @@ mixin Http304CachingThreadMixin on ImageboardSite {
 			t.lastUpdatedTime ??= DateTimeConversion.fromHttpHeader.maybe(response.headers.value(HttpHeaders.lastModifiedHeader))?.toLocal();
 			return t;
 		},
-		on404: const ThreadNotFoundException(),
+		on404: () => throw const ThreadNotFoundException(),
 		priority: priority,
 		cancelToken: cancelToken
 	))!;
@@ -103,10 +102,48 @@ mixin Http304CachingThreadMixin on ImageboardSite {
 			t.lastUpdatedTime ??= DateTimeConversion.fromHttpHeader.maybe(response.headers.value(HttpHeaders.lastModifiedHeader))?.toLocal();
 			return t;
 		},
-		on404: const ThreadNotFoundException(),
+		on404: () => throw const ThreadNotFoundException(),
 		priority: priority,
 		cancelToken: cancelToken
 	);
+}
+
+mixin Http304CachingThreadTailMixin on ImageboardSite {
+	@protected
+	RequestOptions? getThreadTailRequest(Thread thread, {ThreadVariant? variant});
+	@protected
+	Future<ThreadTail> makeThreadTail(ThreadIdentifier thread, Response response, {
+		ThreadVariant? variant,
+		required RequestPriority priority,
+		CancelToken? cancelToken
+	});
+	@override
+	Future<ThreadTail?> getThreadTail(Thread thread, {
+		ThreadVariant? variant,
+		required RequestPriority priority,
+		CancelToken? cancelToken
+	}) async {
+		final request = getThreadTailRequest(thread, variant: variant);
+		if (request == null) {
+			return null;
+		}
+		return await _helper<ThreadTail>(
+			baseOptions: request,
+			lastModified: null,
+			func: (response) async {
+				final t = await makeThreadTail(thread.identifier, response, variant: variant, priority: priority, cancelToken: cancelToken);
+				// posts.last.time sometimes is off by 1 second. probably due to server-side processing latencies
+				// best to use the exact value reported in Last-Modified
+				t.lastUpdatedTime ??= DateTimeConversion.fromHttpHeader.maybe(response.headers.value(HttpHeaders.lastModifiedHeader))?.toLocal();
+				return t;
+			},
+			on304: () async => ThreadTail.empty(thread),
+			// Tail is not available on short threads or archived threads
+			on404: () async => null,
+			priority: priority,
+			cancelToken: cancelToken
+		);
+	}
 }
 
 mixin Http304CachingCatalogMixin on ImageboardSite {
@@ -134,7 +171,7 @@ mixin Http304CachingCatalogMixin on ImageboardSite {
 				final c = await makeCatalog(board, response, variant: variant, priority: priority, cancelToken: cancelToken);
 				return Catalog.fromResponse(response, fetchedTime, c);
 			},
-			on404: BoardNotFoundException(board),
+			on404: () => throw BoardNotFoundException(board),
 			priority: priority,
 			cancelToken: cancelToken
 		))!;
@@ -153,7 +190,7 @@ mixin Http304CachingCatalogMixin on ImageboardSite {
 				final c = await makeCatalog(board, response, variant: variant, priority: priority, cancelToken: cancelToken);
 				return Catalog.fromResponse(response, fetchedTime, c);
 			},
-			on404: BoardNotFoundException(board),
+			on404: () => throw BoardNotFoundException(board),
 			priority: priority,
 			cancelToken: cancelToken
 		);
@@ -203,7 +240,7 @@ mixin Http304CachingCatalogMixin on ImageboardSite {
 				}
 				return CatalogPageMap.fromResponse(response, fetchedTime, pageMap);
 			},
-			on404: BoardNotFoundException(board),
+			on404: () => throw BoardNotFoundException(board),
 			priority: priority,
 			cancelToken: cancelToken
 		))!;
@@ -233,11 +270,12 @@ mixin Http304CachingCatalogMixin on ImageboardSite {
 				}
 				return CatalogPageMap.fromResponse(response, fetchedTime, pageMap);
 			},
-			on404: BoardNotFoundException(board),
-			on304: () {
+			on404: () => throw BoardNotFoundException(board),
+			on304: () async {
 				if (isSameAsCatalog) {
 					bumpCatalogInCache(board, variant, fetchedTime, lastModified);
 				}
+				return null;
 			},
 			priority: priority,
 			cancelToken: cancelToken
