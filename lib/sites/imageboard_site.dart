@@ -2202,7 +2202,8 @@ abstract class ImageboardSiteArchive {
 		identical(this, other) ||
 		other is ImageboardSiteArchive &&
 		other.overrideUserAgent == overrideUserAgent &&
-		other.addIntrospectedHeaders == addIntrospectedHeaders;
+		other.addIntrospectedHeaders == addIntrospectedHeaders &&
+		other.preferHttp3WithoutAltSvc == preferHttp3WithoutAltSvc;
 	
 	@override
 	int get hashCode => baseUrl.hashCode;
