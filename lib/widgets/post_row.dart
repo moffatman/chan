@@ -842,7 +842,7 @@ class PostRow extends StatelessWidget {
 										alignment: Alignment.bottomRight,
 										child: CupertinoInkwell(
 											alignment: Alignment.bottomRight,
-											padding: const EdgeInsets.only(left: 8, bottom: 16, right: 16),
+											padding: isDeletedStub ? const EdgeInsets.only(left: 8, bottom: 8, right: 16) : const EdgeInsets.only(left: 8, bottom: 16, right: 16),
 											onPressed: openReplies,
 											child: Transform.scale(
 												alignment: Alignment.bottomRight,
