@@ -2112,6 +2112,14 @@ class PostLinkSpan extends PostTerminalSpan {
 								filterQuality: filterQuality,
 								loadStateChanged: (loadstate) {
 									if (loadstate.extendedImageLoadState == LoadState.failed) {
+										if (ImageboardRegistry.instance.getImageboard(imageboardTarget?.$1)?.site case final site?) {
+											return Center(
+												child: ImageboardIcon(
+													site: site,
+													size: 32,
+												)
+											);
+										}
 										return const Icon(CupertinoIcons.question);
 									}
 									return null;
