@@ -639,6 +639,9 @@ class ThreadWatcher extends ChangeNotifier {
 		Settings.instance.filterListenable.removeListener(_didUpdateFilter);
 		super.dispose();
 	}
+
+	@override
+	String toString() => 'ThreadWatcher($imageboardKey)';
 }
 
 class ThreadWatcherController extends ChangeNotifier {
