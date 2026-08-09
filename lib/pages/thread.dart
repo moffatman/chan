@@ -1516,6 +1516,8 @@ class ThreadPageState extends State<ThreadPage> {
 		}
 		zone.addThread(thread);
 		if (anyNew) {
+			_firstSeenIndex = null;
+			_lastSeenIndex = null;
 			_updateHotPostIds();
 		}
 		if (anyNew) {
