@@ -507,23 +507,26 @@ class SiteReddit extends ImageboardSite {
 						}
 					}
 					else if (node.localName == 'img' && (node.attributes['src']?.startsWith('giphy%7C') ?? false)) {
-						final giphyId = Uri.decodeComponent(node.attributes['src']!).split('|')[1];
-						yield PostAttachmentsSpan([
-							Attachment(
-								board: board,
-								type: AttachmentType.image,
-								ext: '.gif',
-								id: giphyId,
-								filename: 'giphy.gif',
-								url: 'https://media.giphy.com/media/$giphyId/giphy.gif',
-								thumbnailUrl: 'https://media.giphy.com/media/$giphyId/200w_s.gif',
-								md5: '',
-								width: null,
-								height: null,
-								threadId: threadId,
-								sizeInBytes: null
-							)
-						]);
+						final id =  Uri.decodeComponent(node.attributes['src']!);
+						if (!attachments.any((a) => a.id == id)) {
+							final giphyId = id.split('|')[1];
+							yield PostAttachmentsSpan([
+								Attachment(
+									board: board,
+									type: AttachmentType.image,
+									ext: '.gif',
+									id: giphyId,
+									filename: 'giphy.gif',
+									url: 'https://media.giphy.com/media/$giphyId/giphy.gif',
+									thumbnailUrl: 'https://media.giphy.com/media/$giphyId/200w_s.gif',
+									md5: '',
+									width: null,
+									height: null,
+									threadId: threadId,
+									sizeInBytes: null
+								)
+							]);
+						}
 					}
 					else if (node.localName == 'img' && node.attributes.containsKey('src')) {
 						String src = node.attributes['src']!;
