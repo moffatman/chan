@@ -127,7 +127,13 @@ TextSpan buildThreadCounters({
 					space,
 				]
 				else const TextSpan(text: 'p'),
-				TextSpan(text: '${latestThread.currentPage}', style: TextStyle(color: otherMetadataColor)),
+				TextSpan(
+					text: '${latestThread.currentPage}',
+					style: TextStyle(
+						color: otherMetadataColor,
+						fontFeatures: const [FontFeature.tabularFigures()]
+					)
+				)
 			]
 		),
 		if (settings.showTimeInCatalogStats) TextSpan(
@@ -148,7 +154,13 @@ TextSpan buildThreadCounters({
 			children: [
 				IconSpan(icon: CupertinoIcons.arrow_up, color: otherMetadataColor, size: 18),
 				space,
-				TextSpan(text: latestThread.posts_.first.upvotes?.toString() ?? '—', style: TextStyle(color: otherMetadataColor)),
+				TextSpan(
+					text: latestThread.posts_.first.upvotes?.toString() ?? '—',
+					style: TextStyle(
+						color: otherMetadataColor,
+						fontFeatures: const [FontFeature.tabularFigures()]
+					)
+				)
 			]
 		),
 		if (settings.showReplyCountInCatalog) TextSpan(
@@ -166,9 +178,24 @@ TextSpan buildThreadCounters({
 					)
 				)
 				else if (replyCountUnreliable && latestThread == thread) const TextSpan(text: '—')
-				else TextSpan(text: (latestReplyCount - unseenReplyCount).toString(), style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
-				if (unseenReplyCount > 0) TextSpan(text: '+$unseenReplyCount'),
-				if (unseenYouCount > 0) TextSpan(text: ' (+$unseenYouCount)', style: TextStyle(color: theme.secondaryColor)),
+				else TextSpan(
+					text: (latestReplyCount - unseenReplyCount).toString(),
+					style: TextStyle(
+						color: (threadSeen || !showUnseenColors) ? grey : null,
+						fontFeatures: const [FontFeature.tabularFigures()]
+					)
+				),
+				if (unseenReplyCount > 0) TextSpan(
+					text: '+$unseenReplyCount',
+					style: CommonTextStyles.tabularFigures
+				),
+				if (unseenYouCount > 0) TextSpan(
+					text: ' (+$unseenYouCount)',
+					style: TextStyle(
+						color: theme.secondaryColor,
+						fontFeatures: const [FontFeature.tabularFigures()]
+					)
+				),
 				if (settings.cloverStyleCatalogCounters)
 					if (settings.useFullWidthForCatalogCounters)
 						if (latestImageCount == 1)
@@ -187,11 +214,26 @@ TextSpan buildThreadCounters({
 					space,
 				],
 				if (latestImageCount > unseenImageCount) ...[
-					TextSpan(text: (latestImageCount - unseenImageCount).toString(), style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
-					if (unseenImageCount > 0) TextSpan(text: '+$unseenImageCount'),
+					TextSpan(
+						text: (latestImageCount - unseenImageCount).toString(),
+						style: TextStyle(
+							color: (threadSeen || !showUnseenColors) ? grey : null,
+							fontFeatures: const [FontFeature.tabularFigures()]
+						)
+					),
+					if (unseenImageCount > 0) TextSpan(
+						text: '+$unseenImageCount',
+						style: CommonTextStyles.tabularFigures
+					),
 				]
 				else if (unseenImageCount == 0 && (imageCountUnreliable && latestThread == thread)) const TextSpan(text: '—')
-				else TextSpan(text: '$unseenImageCount', style: TextStyle(color: (threadSeen || !showUnseenColors) ? grey : null)),
+				else TextSpan(
+					text: '$unseenImageCount',
+					style: TextStyle(
+						color: (threadSeen || !showUnseenColors) ? grey : null,
+						fontFeatures: const [FontFeature.tabularFigures()]
+					)
+				),
 				if (settings.cloverStyleCatalogCounters)
 					if (settings.useFullWidthForCatalogCounters)
 						if (latestImageCount == 1)
@@ -206,7 +248,13 @@ TextSpan buildThreadCounters({
 			children: [
 				IconSpan(icon: CupertinoIcons.doc, size: 18, color: pageCountColor),
 				space,
-				TextSpan(text: (thread._lastPageNumber).toString(), style: TextStyle(color: pageCountColor)),
+				TextSpan(
+					text: (thread._lastPageNumber).toString(),
+					style: TextStyle(
+						color: pageCountColor,
+						fontFeatures: const [FontFeature.tabularFigures()]
+					)
+				),
 			]
 		)
 	];
