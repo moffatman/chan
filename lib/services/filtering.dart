@@ -625,8 +625,8 @@ class CustomFilter implements Filter {
 }
 
 class IDFilter implements Filter {
-	final List<int> hideIds;
-	final List<int> showIds;
+	final Set<int> hideIds;
+	final Set<int> showIds;
 	IDFilter({
 		required this.hideIds,
 		required this.showIds
@@ -654,18 +654,18 @@ class IDFilter implements Filter {
 	bool operator == (Object other) =>
 		identical(this, other) ||
 		other is IDFilter &&
-		listEquals(other.hideIds, hideIds) &&
-		listEquals(other.showIds, showIds);
+		setEquals(other.hideIds, hideIds) &&
+		setEquals(other.showIds, showIds);
 
 	@override
 	int get hashCode => Object.hash(Object.hashAll(hideIds), Object.hashAll(showIds));
 }
 
 class ThreadFilter implements Filter {
-	final List<int> hideIds;
-	final List<int> showIds;
-	final List<int> repliedToIds;
-	final List<String> posterIds;
+	final Set<int> hideIds;
+	final Set<int> showIds;
+	final Set<int> repliedToIds;
+	final Set<String> posterIds;
 	ThreadFilter({
 		required this.hideIds,
 		required this.showIds,
@@ -701,10 +701,10 @@ class ThreadFilter implements Filter {
 	bool operator == (Object other) =>
 		identical(this, other) ||
 		other is ThreadFilter &&
-		listEquals(other.hideIds, hideIds) &&
-		listEquals(other.showIds, showIds) &&
-		listEquals(other.repliedToIds, repliedToIds) &&
-		listEquals(other.posterIds, posterIds);
+		setEquals(other.hideIds, hideIds) &&
+		setEquals(other.showIds, showIds) &&
+		setEquals(other.repliedToIds, repliedToIds) &&
+		setEquals(other.posterIds, posterIds);
 
 	@override
 	int get hashCode => Object.hash(Object.hashAll(hideIds), Object.hashAll(showIds), Object.hashAll(repliedToIds), Object.hashAll(posterIds));

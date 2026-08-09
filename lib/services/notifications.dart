@@ -590,7 +590,7 @@ class Notifications {
 		required bool localYousOnly,
 		required bool pushYousOnly,
 		required bool push,
-		required List<int> youIds,
+		required Set<int> youIds,
 		bool foregroundMuted = false,
 		bool zombie = false,
 		required bool notifyOnSecondLastPage,
@@ -599,7 +599,7 @@ class Notifications {
 	}) async {
 		final existingWatch = threadWatches[thread];
 		if (existingWatch != null) {
-			existingWatch.youIds = youIds;
+			existingWatch.youIds = youIds.toList()..sort();
 			existingWatch.lastSeenId = lastSeenId;
 			existingWatch.notifyOnSecondLastPage = notifyOnSecondLastPage;
 			existingWatch.notifyOnLastPage = notifyOnLastPage;
@@ -613,7 +613,7 @@ class Notifications {
 				lastSeenId: lastSeenId,
 				localYousOnly: localYousOnly,
 				pushYousOnly: pushYousOnly,
-				youIds: youIds,
+				youIds: youIds.toList()..sort(),
 				push: push,
 				foregroundMuted: foregroundMuted,
 				zombie: zombie,

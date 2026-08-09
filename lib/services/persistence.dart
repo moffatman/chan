@@ -1194,7 +1194,7 @@ class Persistence extends ChangeNotifier {
 					browserState.threadWatches[threadState.identifier] ??= ThreadWatch(
 						board: threadState.board,
 						threadId: threadState.id,
-						youIds: threadState.youIds,
+						youIds: threadState.youIds.toList()..sort(),
 						localYousOnly: true,
 						pushYousOnly: true,
 						lastSeenId: threadState.thread?.posts_.last.id ?? threadState.id,
@@ -1825,19 +1825,19 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 		_invalidate();
 	}
 
-	List<int> freshYouIds() {
-		return receipts.where((receipt) => receipt.markAsYou).map((receipt) => receipt.id).followedBy(postsMarkedAsYou).toList();
+	Set<int> freshYouIds() {
+		return receipts.where((receipt) => receipt.markAsYou).map((receipt) => receipt.id).followedBy(postsMarkedAsYou).toSet();
 	}
-	List<int>? _youIds;
-	List<int> get youIds {
+	Set<int>? _youIds;
+	Set<int> get youIds {
 		_youIds ??= freshYouIds();
 		return _youIds!;
 	}
-	List<int>? _replyIdsToYou;
-	List<int>? replyIdsToYou() => _replyIdsToYou ??= () {
+	Set<int>? _replyIdsToYou;
+	Set<int>? replyIdsToYou() => _replyIdsToYou ??= () {
 		return filteredPosts()?.where((p) {
 			return p.repliedToIds.any((id) => youIds.contains(id));
-		}).map((p) => p.id).toList();
+		}).map((p) => p.id).toSet();
 	}();
 
 	int? unseenReplyIdsToYouCount() => replyIdsToYou()?.where(unseenPostIds.data.contains).length;
@@ -1860,7 +1860,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 		}
 		return true;
 	}
-	List<Post>? _makeFilteredPosts() => thread?.posts.where(shouldShowPost).toList(growable: false);
+	List<Post>? _makeFilteredPosts() => thread?.postsToShow.where(shouldShowPost).toList(growable: false);
 	int? unseenReplyCount() => filteredPosts()?.fold<int>(0, (t, p) {
 		if (!unseenPostIds.data.contains(p.id)) {
 			return t;
@@ -1920,10 +1920,10 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	}
 
 	Filter _makeThreadFilter() => FilterCache(ThreadFilter(
-		hideIds: hiddenPostIds.toList(growable: false),
-		showIds: overrideShowPostIds.toList(growable: false),
-		repliedToIds: const [],
-		posterIds: hiddenPosterIds.toList(growable: false)
+		hideIds: hiddenPostIds.toSet(),
+		showIds: overrideShowPostIds.toSet(),
+		repliedToIds: const {},
+		posterIds: hiddenPosterIds.toSet()
 	));
 	late Filter threadFilter = _makeThreadFilter();
 	MetaFilter _makeMetaFilter() => MetaFilter(
@@ -2422,8 +2422,8 @@ class PersistentBrowserState {
 	final Map<BoardKey, Filter> _catalogFilters = {};
 	Filter getCatalogFilter(BoardKey board) {
 		return _catalogFilters.putIfAbsent(board, () => FilterCache(IDFilter(
-			hideIds: hiddenIds[board]?.toList(growable: false) ?? [],
-			showIds: overrideShowIds[board]?.toList(growable: false) ?? []
+			hideIds: hiddenIds[board]?.toSet() ?? {},
+			showIds: overrideShowIds[board]?.toSet() ?? {}
 		)));
 	}
 	

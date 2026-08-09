@@ -2623,7 +2623,7 @@ class _ThreadPositionIndicator extends StatefulWidget {
 class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with SingleTickerProviderStateMixin {
 	List<Post>? _filteredPosts;
 	List<RefreshableListItem<Post>>? _filteredItems;
-	List<int> _youIds = [];
+	Set<int> _youIds = {};
 	int _redCountAbove = 0;
 	int _redCountBelow = 0;
 	int _whiteCountAbove = 0;
@@ -2679,7 +2679,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 			setState(() {});
 			return false;
 		}
-		_youIds = widget.persistentState.replyIdsToYou() ?? [];
+		_youIds = widget.persistentState.replyIdsToYou() ?? {};
 		final items = widget.listController.items.toList();
 		final greyBelow = <int>{};
 		final whiteAbove = <int>{};
@@ -3048,7 +3048,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 																child: Text(describeCount(youIds.length, 'submission'))
 															),
 															zone: widget.zone,
-															postsIdsToShow: youIds,
+															postsIdsToShow: youIds.toList()..sort(),
 															onTap: (post) {
 																widget.listController.animateTo((p) => p.id == post.id);
 																WeakNavigator.pop(context);
@@ -3065,7 +3065,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 																child: Text(describeCount(_youIds.length, '(You)'))
 															),
 															zone: widget.zone,
-															postsIdsToShow: _youIds,
+															postsIdsToShow: _youIds.toList()..sort(),
 															onTap: (post) {
 																widget.listController.animateTo((p) => p.id == post.id);
 																WeakNavigator.pop(context);

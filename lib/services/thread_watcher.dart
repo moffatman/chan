@@ -40,6 +40,10 @@ abstract class Watch {
 void _readHookThreadWatchFields(List<dynamic> fields) {
 	// The field may be in the map with value [false]. So putIfAbsent is not appropriate
 	fields[ThreadWatchFields.kWatchTime] ??= DateTime.now();
+	// I have data on my laptop stored with Set...
+	if (fields[ThreadWatchFields.kYouIds] case Set s) {
+		fields[ThreadWatchFields.kYouIds] = s.toList();
+	}
 }
 
 @HiveType(typeId: 28, readHook: _readHookThreadWatchFields)
@@ -278,8 +282,8 @@ class ThreadWatcher extends ChangeNotifier {
 				if ((thread.isArchived || thread.isLocked) && !watch.zombie) {
 					await notifications.zombifyThreadWatch(watch, false);
 				}
-				if (!listEquals(watch.youIds, newThreadState.youIds)) {
-					watch.youIds = newThreadState.youIds;
+				if (!setEquals(watch.youIds.toSet(), newThreadState.youIds)) {
+					watch.youIds = newThreadState.youIds.toList()..sort();
 					notifications.didUpdateWatch(watch);
 				}
 				if (watch.lastSeenId < thread.posts_.last.id) {
