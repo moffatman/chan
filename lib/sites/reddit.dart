@@ -275,6 +275,7 @@ class SiteReddit extends ImageboardSite {
 	}
 	@override
 	String get baseUrl => 'www.reddit.com';
+	static const _rootUrl = 'reddit.com';
 	static const _apiUrl = 'api.reddit.com';
 	static const _redditUploadsUrl = 'i.reddituploads.com';
 	static const _videosUrl = 'v.redd.it';
@@ -604,7 +605,7 @@ class SiteReddit extends ImageboardSite {
 			return true;
 		}
 		if (
-			url.host.endsWith(baseUrl)
+			url.host.endsWith(_rootUrl)
 			&& url.pathSegments.length >= 3
 			&& url.pathSegments[0] == 'r'
 			&& url.pathSegments[2] == 's'
@@ -616,7 +617,7 @@ class SiteReddit extends ImageboardSite {
 
 	bool _isCommentsLink(Uri url) {
 		return
-			url.host.endsWith(baseUrl)
+			url.host.endsWith(_rootUrl)
 			&& url.pathSegments.length >= 4
 			&& url.pathSegments[0] == 'comments'
 			&& url.pathSegments[2] == 'comment';
@@ -630,7 +631,7 @@ class SiteReddit extends ImageboardSite {
 		if (_isShareLink(url) || _isCommentsLink(url)) {
 			return true;
 		}
-		if (url.host.endsWith(baseUrl)) {
+		if (url.host.endsWith(_rootUrl)) {
 			final match = _linkPattern.firstMatch(url.path);
 			if (match != null) {
 				return true;
@@ -655,7 +656,7 @@ class SiteReddit extends ImageboardSite {
 				return await decodeUrl(Uri.https(baseUrl, redditProtocolMatch.group(1)!));
 			}
 		}
-		if (url.host.endsWith(baseUrl)) {
+		if (url.host.endsWith(_rootUrl)) {
 			final match = _linkPattern.firstMatch(url.path);
 			if (match != null) {
 				int? threadId;
@@ -1566,7 +1567,7 @@ class SiteReddit extends ImageboardSite {
 
 	@override
 	String getWebUrlImpl(String board, [int? threadId, int? postId]) {
-		String s = 'https://reddit.com/r/$board/';
+		String s = 'https://$baseUrl/r/$board/';
 		if (threadId != null) {
 			s += 'comments/${toRedditId(threadId)}/';
 			if (postId != null) {
@@ -1578,7 +1579,7 @@ class SiteReddit extends ImageboardSite {
 
 	@override
 	bool isKnownHost(String host) {
-		return super.isKnownHost(host) || host.endsWith('.reddit.com') || host == _videosUrl || host == _gifsUrl || host == _redditUploadsUrl;
+		return super.isKnownHost(host) || host.endsWith(_rootUrl) || host == _videosUrl || host == _gifsUrl || host == _redditUploadsUrl;
 	}
 
 	@override
