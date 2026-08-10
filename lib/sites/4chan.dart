@@ -1537,7 +1537,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 
 	@override
 	bool isKnownHost(String host) {
-		return super.isKnownHost(host) || host == staticUrl || host == imageUrl || host == apiUrl || host == searchUrl || host == sysUrl;
+		return super.isKnownHost(host) || host == staticUrl || host == imageUrl || host == apiUrl || host == searchUrl || host == sysUrl || host == '4chan.org';
 	}
 
 	@override
