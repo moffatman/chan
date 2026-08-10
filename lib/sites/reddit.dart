@@ -296,6 +296,7 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	static final _inlineImagePattern = RegExp(r'https:\/\/(?:preview|i)\.redd\.it\/[^\r\n\t\f\v\) ]+');
+	static final _inlineVideoPattern = RegExp(r'https:\/\/reddit\.com\/link\/[^/]+\/video\/([^/]+)\/player');
 	static final _usernamePattern = RegExp(r'^https:\/\/(?:www)?\.reddit\.com\/(?:u|user)\/([^\/]+)');
 
 	static final _inlineSyntaxes = [
@@ -366,6 +367,26 @@ class SiteReddit extends ImageboardSite {
 										filename: href.substring(href.lastIndexOf('/') + 1).split('?').first,
 										url: href,
 										thumbnailUrl: generateThumbnailerForUrl(Uri.parse(href)).toString(),
+										md5: '',
+										width: null,
+										height: null,
+										threadId: threadId,
+										sizeInBytes: null
+									)
+								]);
+							}
+							else if (_inlineVideoPattern.firstMatch(href) case final match? when !attachments.any((a) => a.url == href)) {
+								final id = match.group(1)!;
+								final url = 'https://$_videosUrl/$id/HLSPlaylist.m3u8';
+								yield PostAttachmentsSpan([
+									Attachment(
+										type: AttachmentType.mp4,
+										board: board,
+										id: url,
+										ext: '.mp4',
+										filename: '$id.mp4',
+										url: url,
+										thumbnailUrl: '',
 										md5: '',
 										width: null,
 										height: null,
