@@ -297,6 +297,8 @@ class AttachmentViewerController extends ChangeNotifier {
 	int _millisecondsBeforeLongPress = 0;
 	bool _currentlyWithinLongPress = false;
 	bool _playingBeforeLongPress = false;
+	final _longPressEdgeFactor = ValueNotifier<double>(0);
+	bool _currentlyWithinLongPressEdge = false;
 	bool _seeking = false;
 	String? _overlayText;
 	bool _isDisposed = false;
@@ -1082,6 +1084,32 @@ class AttachmentViewerController extends ChangeNotifier {
 		notifyListeners();
 	}
 
+	void _onLongPressEdgeStart(LongPressStartDetails details) async {
+		lightHapticFeedback();
+		await _videoPlayerController?.player.setRate(2);
+		_longPressEdgeFactor.value = 0;
+		_currentlyWithinLongPressEdge = true;
+		notifyListeners();
+	}
+
+	void _onLongPressEdgeMoveUpdate(double offsetDown) {
+		final oldValue = _longPressEdgeFactor.value;
+		_longPressEdgeFactor.value = (offsetDown / 100).clamp(0, 1);
+		if (_longPressEdgeFactor.value == 1 && oldValue < 1) {
+			lightHapticFeedback();
+		}
+	}
+
+	void _onLongPressEdgeEnd(LongPressEndDetails details) async {
+		lightHapticFeedback();
+		if (_longPressEdgeFactor.value < 1) {
+			await _videoPlayerController?.player.setRate(1);
+		}
+		_longPressEdgeFactor.value = 0;
+		_currentlyWithinLongPressEdge = false;
+		notifyListeners();
+	}
+
 	bool get canShare {
 		if (overrideSource?.isScheme('file') ?? false) {
 			return true;
@@ -1348,6 +1376,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		_showLoadingProgress.dispose();
 		_videoPlayerController?.player.pause().then((_) => videoPlayerController?.player.dispose());
 		_longPressFactor.dispose();
+		_longPressEdgeFactor.dispose();
 		_videoControllers.remove(this);
 		_ongoingConversion?.cancelIfActive();
 		_playerErrorStream.close();
@@ -1952,7 +1981,7 @@ class AttachmentViewer extends StatelessWidget {
 		final rotate90DegreesClockwise = _rotate90DegreesClockwise;
 		final soundSourceDownload = controller._soundSourceDownload;
 		Widget buildChild({required bool inContextMenu}) {
-			Widget centerWithPage({required Widget child}) => Positioned.fill(
+			Widget alignWithPage({required Widget child, required Alignment alignment}) => Positioned.fill(
 				child: AnimatedBuilder(
 					animation: controller.redrawGestureListenable ?? const AlwaysStoppedAnimation(null),
 					builder: (context, _) => Padding(
@@ -1961,7 +1990,8 @@ class AttachmentViewer extends StatelessWidget {
 							offset: controller.gestureKey.currentState?.extendedImageSlidePageState?.offset ?? Offset.zero,
 							child: Transform.scale(
 								scale: (controller.gestureKey.currentState?.extendedImageSlidePageState?.scale ?? 1),
-								child: Center(
+								child: Align(
+									alignment: alignment,
 									child: child
 								)
 							)
@@ -1969,6 +1999,7 @@ class AttachmentViewer extends StatelessWidget {
 					)
 				)
 			);
+			Widget centerWithPage({required Widget child}) => alignWithPage(child: child, alignment: Alignment.center);
 			return AbsorbPointer(
 				absorbing: !allowGestures,
 				child: Stack(
@@ -2194,6 +2225,52 @@ class AttachmentViewer extends StatelessWidget {
 								)
 							)
 						),
+						alignWithPage(
+							alignment: _rotate90DegreesClockwise ? Alignment.centerRight : Alignment.topCenter,
+							child: AnimatedSwitcher(
+								duration: const Duration(milliseconds: 250),
+								child: (controller._videoPlayerController?.player.state.rate ?? 1) > 1 ? RotatedBox(
+									quarterTurns: _rotate90DegreesClockwise ? 1 : 0,
+									child: Container(
+										padding: const EdgeInsets.all(8),
+										margin: const EdgeInsets.only(
+											top: 12,
+											bottom: 12
+										),
+										decoration: const BoxDecoration(
+											color: Colors.black54,
+											borderRadius: BorderRadius.all(Radius.circular(32))
+										),
+										child: Row(
+											mainAxisSize: MainAxisSize.min,
+											children: [
+												AnimatedSize(
+													duration: const Duration(milliseconds: 100),
+													child: controller._currentlyWithinLongPressEdge ? const SizedBox.shrink() : const Icon(CupertinoIcons.lock)
+												),
+												Stack(
+													alignment: Alignment.center,
+													children: [
+														ValueListenableBuilder(
+															valueListenable: controller._longPressEdgeFactor,
+															builder: (context, value0, _) => TweenAnimationBuilder<double>(
+																tween: Tween<double>(begin: 0, end: value0),
+																duration: const Duration(milliseconds: 100),
+																curve: Curves.ease,
+																builder: (context, value1, _) => CircularProgressIndicator(
+																	value: value1
+																)
+															)
+														),
+														const Text('2x', style: CommonTextStyles.bold)
+													]
+												)
+											]
+										)
+									)
+								) : const SizedBox.shrink()
+							)
+						),
 						centerWithPage(
 							child: AnimatedSwitcher(
 								duration: const Duration(milliseconds: 250),
@@ -2241,14 +2318,9 @@ class AttachmentViewer extends StatelessWidget {
 								children: [
 									Expanded(
 										child: GestureDetector(
-											onLongPressStart: (x) {
-												lightHapticFeedback();
-												controller._videoPlayerController?.player.setRate(2);
-											},
-											onLongPressEnd: (x) {
-												lightHapticFeedback();
-												controller._videoPlayerController?.player.setRate(1);
-											}
+											onLongPressStart: controller._onLongPressEdgeStart,
+											onLongPressMoveUpdate: (x) => controller._onLongPressEdgeMoveUpdate(_rotate90DegreesClockwise ? -x.offsetFromOrigin.dx : x.offsetFromOrigin.dy),
+											onLongPressEnd: controller._onLongPressEdgeEnd
 										)
 									),
 									Expanded(
@@ -2271,14 +2343,9 @@ class AttachmentViewer extends StatelessWidget {
 									),
 									Expanded(
 										child: GestureDetector(
-											onLongPressStart: (x) {
-												lightHapticFeedback();
-												controller._videoPlayerController?.player.setRate(2);
-											},
-											onLongPressEnd: (x) {
-												lightHapticFeedback();
-												controller._videoPlayerController?.player.setRate(1);
-											}
+											onLongPressStart: controller._onLongPressEdgeStart,
+											onLongPressMoveUpdate: (x) => controller._onLongPressEdgeMoveUpdate(_rotate90DegreesClockwise ? -x.offsetFromOrigin.dx : x.offsetFromOrigin.dy),
+											onLongPressEnd: controller._onLongPressEdgeEnd
 										)
 									)
 								],
