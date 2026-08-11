@@ -689,11 +689,8 @@ class PostAttachmentsSpan extends PostTerminalSpan {
 		for (final a in attachments) {
 			if (forQuoteComparison) {
 				// Make it look like a SiteXenforo quote (the only use case)
-				buffer.write('[View Attachment ');
+				buffer.write('View Attachment ');
 				buffer.write(a.id);
-				buffer.write('](');
-				buffer.write(a.url);
-				buffer.write(')');
 			}
 			else {
 				buffer.write(a.url);
