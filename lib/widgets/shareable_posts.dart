@@ -213,7 +213,6 @@ class _ShareablePostsState extends State<ShareablePosts> {
 													isYourPost: zone.primaryThreadState?.youIds.contains(value.id) ?? false,
 													settings: settings,
 													theme: theme,
-													site: imageboard.site,
 													context: context,
 													zone: zone
 												)

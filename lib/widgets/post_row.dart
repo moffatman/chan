@@ -671,7 +671,6 @@ class PostRow extends StatelessWidget {
 																			showBoardName: showBoardName,
 																			settings: settings,
 																			theme: theme,
-																			site: site,
 																			context: context,
 																			zone: ctx.watch<PostSpanZoneData>(),
 																			showPostNumber: showPostNumber,

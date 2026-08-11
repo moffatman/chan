@@ -3,7 +3,6 @@ import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/post_selection.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
-import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/weak_navigator.dart';
@@ -49,7 +48,6 @@ class SelectablePostPage extends StatelessWidget {
 												showBoardName: false,
 												settings: context.watch<Settings>(),
 												theme: context.watch<SavedTheme>(),
-												site: context.watch<ImageboardSite>(),
 												context: context,
 												zone: zone,
 												interactive: false

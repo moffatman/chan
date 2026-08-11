@@ -2366,7 +2366,6 @@ class ThreadPageState extends State<ThreadPage> {
 																								isYourPost: persistentState.youIds.contains(value.id),
 																								settings: settings,
 																								theme: theme,
-																								site: site,
 																								context: context,
 																								zone: zone
 																							)

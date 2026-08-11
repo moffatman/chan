@@ -4029,7 +4029,6 @@ TextSpan buildPostInfoRow({
 	bool showBoardName = false,
 	required Settings settings,
 	required SavedTheme theme,
-	required ImageboardSite site,
 	required BuildContext context,
 	required PostSpanZoneData zone,
 	bool interactive = true,
@@ -4038,6 +4037,7 @@ TextSpan buildPostInfoRow({
 	ValueChanged<TaggedAttachment>? propagatedOnThumbnailTap,
 	RegExp? highlightPattern
 }) {
+	final site = zone.imageboard.site;
 	final thread = zone.findThread(post.threadId);
 	final (postIdNonRepeatingSegment, postIdRepeatingSegment) = splitPostId(post.id, site);
 	final op = site.isPaged ? thread?.posts_.tryFirstWhere((p) => !p.isPageStub) : thread?.posts_.tryFirst;
