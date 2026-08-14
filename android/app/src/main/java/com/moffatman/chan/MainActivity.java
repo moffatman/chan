@@ -36,6 +36,7 @@ import androidx.activity.result.contract.ActivityResultContracts.CreateDocument;
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocumentTree;
 import androidx.annotation.NonNull;
 import androidx.documentfile.provider.DocumentFile;
+import androidx.core.content.FileProvider;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -448,6 +449,31 @@ public class MainActivity extends FlutterFragmentActivity {
                                     return;
                                 }
                             }
+                            result.success(null);
+                        } else if (call.method.equals("setClipboardImage")) {
+                            String path = call.argument("path");
+                            String mimeType = call.argument("mimeType");
+                            if (path == null || mimeType == null || !mimeType.startsWith("image/")) {
+                                result.error("BAD_ARGS", "Expected an image path and MIME type", null);
+                                return;
+                            }
+                            File image = new File(path);
+                            if (!image.isFile()) {
+                                result.error("FILE_ERROR", "Image file does not exist", null);
+                                return;
+                            }
+                            Uri uri = FileProvider.getUriForFile(
+                                    this,
+                                    getPackageName() + ".clipboard_file_provider",
+                                    image
+                            );
+                            ClipData clip = new ClipData(
+                                    "Image",
+                                    new String[] {mimeType},
+                                    new ClipData.Item(uri)
+                            );
+                            ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                            cm.setPrimaryClip(clip);
                             result.success(null);
                         } else {
                             result.notImplemented();

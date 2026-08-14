@@ -10,6 +10,49 @@ import 'package:mime/mime.dart';
 
 const _platform = MethodChannel('com.moffatman.chan/clipboard');
 
+Future<void> copyImageToClipboard(File image) async {
+	final input = await image.open();
+	late final List<int> headerBytes;
+	try {
+		headerBytes = await input.read(defaultMagicNumbersMaxLength);
+	}
+	finally {
+		await input.close();
+	}
+	final mimeType = lookupMimeType(image.path, headerBytes: headerBytes);
+	if (mimeType == null || !mimeType.startsWith('image/')) {
+		throw UnsupportedError('Could not determine the image type');
+	}
+	final extension = extensionFromMime(mimeType);
+	final clipboardDirectory = Persistence.temporaryDirectory.dir('clipboard');
+	await clipboardDirectory.create(recursive: true);
+	final clipboardFile = await image.copy(clipboardDirectory.child(
+		'clipboard_${DateTime.now().microsecondsSinceEpoch}.$extension'
+	));
+	try {
+		await _platform.invokeMethod<void>('setClipboardImage', {
+			'path': clipboardFile.path,
+			'mimeType': mimeType
+		});
+	}
+	catch (_) {
+		await clipboardFile.delete();
+		rethrow;
+	}
+	await for (final entry in clipboardDirectory.list()) {
+		if (entry is File) {
+			try {
+				if (!await FileSystemEntity.identical(entry.path, clipboardFile.path)) {
+					await entry.delete();
+				}
+			}
+			on FileSystemException {
+				// The clipboard still works if an older cache file is in use.
+			}
+		}
+	}
+}
+
 Future<bool> doesClipboardContainImage() async {
 	try {
 		return await _platform.invokeMethod<bool>('doesClipboardContainImage') ?? false;
