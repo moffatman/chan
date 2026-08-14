@@ -623,7 +623,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			}
 		}
 		flag ??= persistence.browserState.postingFlags[widget.board];
-		for (final draft in Outbox.instance.queuedPostsFor(context.read<Imageboard>().key, widget.board.s, widget.threadId)) {
+		for (final draft in Outbox.instance.queuedPostsFor(context.read<Imageboard>().key, widget.board, widget.threadId)) {
 			if (!_submittingPosts.contains(draft) && draft != postingPost.value) {
 				// This is some message restored from persistence.outbox (previous app launch)
 				_submittingPosts.add(draft);

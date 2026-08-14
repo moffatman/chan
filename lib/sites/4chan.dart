@@ -1118,7 +1118,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 						return e.key.thread == post.thread;
 					})?.value ?? _cachedReportForms.entries.tryFirstWhere((e) {
 						// Try methods in the same board
-						return e.key.board == post.board;
+						return e.key.boardKey == post.boardKey;
 					})?.value;
 					if (cached != null) {
 						return ChoiceReportMethod(

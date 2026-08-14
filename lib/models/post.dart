@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:math';
 
+import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
 import 'package:chan/models/intern.dart';
 import 'package:chan/models/thread.dart';
@@ -133,6 +134,7 @@ class Post implements Filterable {
 	@override
 	@HiveField(0)
 	final String board;
+	BoardKey get boardKey => ImageboardBoard.getKey(board);
 	@HiveField(1)
 	final String text;
 	@HiveField(2)
@@ -399,7 +401,7 @@ class Post implements Filterable {
 	bool get containsLink => span.traverse(this).any((s) => s is PostLinkSpan);
 	Iterable<int> get _referencedPostIds sync* {
 		for (final s in span.traverse(this)) {
-			if (s is PostQuoteLinkSpan && s.board == board) {
+			if (s is PostQuoteLinkSpan && s.boardKey == boardKey) {
 				yield s.postId;
 			}
 		}
@@ -526,6 +528,7 @@ class Post implements Filterable {
 
 class PostIdentifier {
 	final String board;
+	BoardKey get boardKey => ImageboardBoard.getKey(board);
 	final int threadId;
 	final int postId;
 	PostIdentifier(this.board, this.threadId, this.postId);

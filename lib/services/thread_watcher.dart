@@ -122,6 +122,7 @@ class ThreadWatch extends Watch {
 class BoardWatch extends Watch {
 	@HiveField(0)
 	String board;
+	BoardKey get boardKey => ImageboardBoard.getKey(board);
 	@HiveField(3)
 	bool threadsOnly;
 	BoardWatch({
@@ -496,7 +497,7 @@ class ThreadWatcher extends ChangeNotifier {
 					}
 				}
 			}
-			if (tab.imageboardKey == imageboardKey && tab.board != null && tab.boardKey.currentState == null) {
+			if (tab.imageboardKey == imageboardKey && tab.board != null && tab.boardPageKey.currentState == null) {
 				// Catalog widget hasn't yet been instantiated
 				final board = ImageboardBoard.getKey(tab.board!);
 				final variant = tab.catalogVariant ?? (persistence.browserState.catalogVariants[board] ?? site.defaultCatalogVariant);

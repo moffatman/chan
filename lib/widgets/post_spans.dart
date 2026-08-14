@@ -1053,6 +1053,7 @@ class PostBlueQuoteSpan extends PostQuoteSpan {
 
 class PostQuoteLinkSpan extends PostTerminalSpan {
 	final String board;
+	BoardKey get boardKey => ImageboardBoard.getKey(board);
 	final int? threadId;
 	final int postId;
 	final Key? key;
@@ -1151,7 +1152,7 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 		), recognizer);
 	}
   (TextSpan, TapGestureRecognizer) _buildDeadLink(BuildContext context, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options) {
-		final boardPrefix = board == zone.board ? '' : '${zone.imageboard.site.formatBoardNameWithoutTrailingSlash(board)}/';
+		final boardPrefix = boardKey == zone.boardKey ? '' : '${zone.imageboard.site.formatBoardNameWithoutTrailingSlash(board)}/';
 		String text = '>>$boardPrefix$postId';
 		if (zone.postFromArchiveError(board, postId)?.$1 case Object error) {
 			text += ' (Error: ${error.toStringDio()})';
@@ -1253,7 +1254,7 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 	(InlineSpan, TapGestureRecognizer) _build(BuildContext context, Post post, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options) {
 		int? actualThreadId = threadId;
 		Post? thisPostLoaded = zone.crossThreadPostFromArchive(board, postId);
-		if (board == zone.board) {
+		if (boardKey == zone.boardKey) {
 			thisPostLoaded ??= zone.findPost(postId);
 		}
 		if (thisPostLoaded != null) {
@@ -1381,7 +1382,7 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 				pair.$1
 			]
 		);
-		if (options.addExpandingPosts && (threadId != null && zone.findThread(threadId!) != null && board == zone.board)) {
+		if (options.addExpandingPosts && (threadId != null && zone.findThread(threadId!) != null && boardKey == zone.boardKey)) {
 			return TextSpan(
 				children: [
 					span,
@@ -1424,7 +1425,7 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 				estimator.addRect(Size(estimator.characterSize.width * characters, estimator.characterSize.height));
 			}
 		}
-		if (estimator.zone case final zone? when board == zone.board && zone.shouldExpandPost(this)) {
+		if (estimator.zone case final zone? when boardKey == zone.boardKey && zone.shouldExpandPost(this)) {
 			estimator.addHardLineBreak();
 			zone.findPost(postId)?.span._estimateHeight(estimator);
 			estimator.addHardLineBreak();
@@ -2259,7 +2260,7 @@ class PostLinkSpan extends PostTerminalSpan {
 			_ => null
 		};
 		if (snapshot?.imageboardTarget?.$2.threadIdentifier case final thread? when estimator.zone?.imageboard.key == snapshot?.imageboardTarget?.$1 && ((estimator.zone?.imageboard.site.explicitIds ?? false) || (estimator.post.threadIdentifier == thread && estimator.post.id != (snapshot?.imageboardTarget?.$2.postId ?? thread.id)))) {
-			estimator.addCharacters(2 + (snapshot?.imageboardTarget?.$2.postId ?? thread.id).numberOfDigits + (thread.board == estimator.post.board ? 0 : thread.board.length));
+			estimator.addCharacters(2 + (snapshot?.imageboardTarget?.$2.postId ?? thread.id).numberOfDigits + (thread.boardKey == estimator.post.boardKey ? 0 : thread.board.length));
 		}
 		else if (snapshot case final data? when data.thumbnailUrl != null || data.thumbnailWidget != null || data.imageboardTarget != null) {
 			final Size imageSize;
@@ -3242,6 +3243,7 @@ enum PostSpanZoneStyle {
 abstract class PostSpanZoneData extends ChangeNotifier {
 	final Map<(int?, PostSpanZoneStyle?, int?, ValueChanged<Post>?, PostQuoteLinkSpan?), _PostSpanChildZoneData> _children = {};
 	String get board;
+	BoardKey get boardKey => ImageboardBoard.getKey(board);
 	int get primaryThreadId;
 	ThreadIdentifier get primaryThread => ThreadIdentifier(board, primaryThreadId);
 	PersistentThreadState? get primaryThreadState => imageboard.persistence.getThreadStateIfExists(primaryThread);
@@ -3636,9 +3638,9 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	final void Function(int, bool)? glowOtherPost;
 	@override
 	Future<void> Function(List<ParentAndChildIdentifier>)? onNeedUpdateWithStubItems;
-	final Map<(String, int), bool> _isLoadingPostFromArchive = {};
-	final Map<(String, int), Post> _crossThreadPostsFromArchive = {};
-	final Map<(String, int), (Object, StackTrace)> _postFromArchiveErrors = {};
+	final Map<(BoardKey, int), bool> _isLoadingPostFromArchive = {};
+	final Map<(BoardKey, int), Post> _crossThreadPostsFromArchive = {};
+	final Map<(BoardKey, int), (Object, StackTrace)> _postFromArchiveErrors = {};
 	final Iterable<int> semanticRootIds;
 	final Map<int, AsyncSnapshot<String>> _translatedTitleSnapshots = {};
 	final Map<int, AsyncSnapshot<Post>> _translatedPostSnapshots = {};
@@ -3713,50 +3715,51 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 
 	@override
 	bool isLoadingPostFromArchive(String board, int id) {
-		return _isLoadingPostFromArchive[(board, id)] ?? false;
+		return _isLoadingPostFromArchive[(ImageboardBoard.getKey(board), id)] ?? false;
 	}
 
 	@override
 	Future<void> loadPostFromArchive(String board, int id) async {
 		lightHapticFeedback();
+		final boardKey = ImageboardBoard.getKey(board);
 		try {
-			_postFromArchiveErrors.remove((board, id));
-			_isLoadingPostFromArchive[(board, id)] = true;
+			_postFromArchiveErrors.remove((boardKey, id));
+			_isLoadingPostFromArchive[(boardKey, id)] = true;
 			notifyAllListeners();
 			final newPost = await imageboard.site.getPostFromArchive(board, id, priority: RequestPriority.interactive);
 			final cb = onPostLoadedFromArchive;
-			if (board == this.board && newPost.threadId == primaryThreadId && cb != null) {
+			if (boardKey == this.boardKey && newPost.threadId == primaryThreadId && cb != null) {
 				await cb(newPost);
 			}
 			else {
-				_crossThreadPostsFromArchive[(board, id)] = newPost;
-				if (board == this.board) {
+				_crossThreadPostsFromArchive[(boardKey, id)] = newPost;
+				if (boardKey == this.boardKey) {
 					newPost.replyIds = findThread(newPost.threadId)?.posts.where((p) => p.repliedToIds.contains(id)).map((p) => p.id).toList() ?? [];
 				}
 			}
 			notifyAllListeners();
 		}
 		catch (e, st) {
-			_postFromArchiveErrors[(board, id)] = (e, st);
+			_postFromArchiveErrors[(boardKey, id)] = (e, st);
 		}
 		lightHapticFeedback();
-		_isLoadingPostFromArchive[(board, id)] = false;
+		_isLoadingPostFromArchive[(boardKey, id)] = false;
 		notifyAllListeners();
 	}
 
 	@override
 	Post? crossThreadPostFromArchive(String board, int id) {
-		return _crossThreadPostsFromArchive[(board, id)];
+		return _crossThreadPostsFromArchive[(ImageboardBoard.getKey(board), id)];
 	}
 
 	void insertCrossThreadPost(Post post) {
-		_crossThreadPostsFromArchive[(post.board, post.id)] = post;
+		_crossThreadPostsFromArchive[(post.boardKey, post.id)] = post;
 		notifyListeners();
 	}
 
 	@override
 	(Object, StackTrace)? postFromArchiveError(String board, int id) {
-		return _postFromArchiveErrors[(board, id)];
+		return _postFromArchiveErrors[(ImageboardBoard.getKey(board), id)];
 	}
 
 	@override

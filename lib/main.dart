@@ -7,6 +7,7 @@ import 'dart:ui';
 import 'package:app_links/app_links.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/firebase_options.dart';
+import 'package:chan/models/board.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/board.dart';
@@ -1178,7 +1179,7 @@ class ChanTabs extends ChangeNotifier {
 			tab.imageboardKey = newThread.imageboard.key;
 			// Old master-pane is no longer applicable
 			tab.board = newThread.item.board;
-			tab.boardKey.currentState?.swapBoard(newThread.imageboard.scope(newThread.imageboard.persistence.getBoard(newThread.item.board)));
+			tab.boardPageKey.currentState?.swapBoard(newThread.imageboard.scope(newThread.imageboard.persistence.getBoard(newThread.item.board)));
 		}
 		tab.masterDetailKey.currentState?.setValue(newThread?.item, showAnimationsForward: showAnimationsForward);
 		tab.didUpdate();
@@ -1197,12 +1198,13 @@ class ChanTabs extends ChangeNotifier {
 		if (threadId != null) {
 			await ImageboardRegistry.instance.getImageboard(imageboardKey)?.persistence.getThreadStateIfExists(ThreadIdentifier(board, threadId))?.ensureThreadLoaded();
 		}
-		PersistentBrowserTab? tab = Persistence.tabs.tryFirstWhere((tab) => tab.imageboardKey == imageboardKey && tab.thread?.board == board && tab.thread?.id == threadId);
+		final boardKey = ImageboardBoard.getKey(board);
+		PersistentBrowserTab? tab = Persistence.tabs.tryFirstWhere((tab) => tab.imageboardKey == imageboardKey && tab.thread?.boardKey == boardKey && tab.thread?.id == threadId);
 		final tabAlreadyExisted = tab != null;
 		if (openNewTabIfNeeded) {
 			if (tab == null && threadId != null) {
 				// Maybe we can reuse a tab sitting at catalog for this board
-				bool pred(PersistentBrowserTab tab) => tab.imageboardKey == imageboardKey && tab.board == board && tab.thread == null;
+				bool pred(PersistentBrowserTab tab) => tab.imageboardKey == imageboardKey && tab.boardKey == boardKey && tab.thread == null;
 				final catalogTab = Persistence.tabs[Persistence.currentTabIndex].tryIf(pred) ?? Persistence.tabs.tryFirstWhere(pred);
 				if (catalogTab != null) {
 					tab = catalogTab;

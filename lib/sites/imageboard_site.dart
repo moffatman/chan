@@ -1549,6 +1549,7 @@ void _readHookDraftPostFields(List<dynamic> fields) {
 class DraftPost {
 	@HiveField(0)
 	final String board;
+	BoardKey get boardKey => ImageboardBoard.getKey(board);
 	@HiveField(1)
 	int? threadId;
 	@HiveField(2)

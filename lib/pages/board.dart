@@ -1339,11 +1339,11 @@ class BoardPageState extends State<BoardPage> {
 						primaryCount: MappingValueListenable(
 							parent: Outbox.instance,
 							mapper: (o) =>
-								o.queuedPostsFor(imageboard?.key ?? '', board?.name ?? '', null).where((e) => e.state.isSubmittable).length
+								o.queuedPostsFor(imageboard?.key ?? '', board?.boardKey ?? BoardKey(''), null).where((e) => e.state.isSubmittable).length
 						),
 						secondaryCount: MappingValueListenable(
 							parent: Outbox.instance,
-							mapper: (o) => o.submittableCount - o.queuedPostsFor(imageboard?.key ?? '', board?.name ?? '', null).where((e) => e.state.isSubmittable).length
+							mapper: (o) => o.submittableCount - o.queuedPostsFor(imageboard?.key ?? '', board?.boardKey ?? BoardKey(''), null).where((e) => e.state.isSubmittable).length
 						),
 						icon: AdaptiveIconButton(
 							icon: (_replyBoxKey.currentState?.show ?? false) ? const Icon(CupertinoIcons.pencil_slash) : const Icon(CupertinoIcons.pencil),
@@ -1549,11 +1549,11 @@ class BoardPageState extends State<BoardPage> {
 																						child1: MappingValueListenable(
 																							parent: Outbox.instance,
 																							mapper: (o) =>
-																								o.queuedPostsFor(imageboard?.key ?? '', board?.name ?? '', null).where((e) => e.state.isSubmittable).length
+																								o.queuedPostsFor(imageboard?.key ?? '', board?.boardKey ?? BoardKey(''), null).where((e) => e.state.isSubmittable).length
 																						),
 																						child2: MappingValueListenable(
 																							parent: Outbox.instance,
-																							mapper: (o) => o.submittableCount - o.queuedPostsFor(imageboard?.key ?? '', board?.name ?? '', null).where((e) => e.state.isSubmittable).length
+																							mapper: (o) => o.submittableCount - o.queuedPostsFor(imageboard?.key ?? '', board?.boardKey ?? BoardKey(''), null).where((e) => e.state.isSubmittable).length
 																						),
 																						combine: (v1, v2) => (thisBoard: v1, otherBoards: v2)
 																					),

@@ -70,7 +70,7 @@ class ImageboardTab extends StatelessWidget {
 				masterBuilder: (context, selectedThread, threadSetter) {
 					final boardName = tab.board;
 					return BoardPage(
-						key: tab.boardKey,
+						key: tab.boardPageKey,
 						tab: tab,
 						initialBoard: boardName == null ? null : tab.imageboard?.persistence.getBoard(boardName),
 						isThreadSelected: selectedThread,

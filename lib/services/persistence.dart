@@ -2189,6 +2189,10 @@ void _readHookPersistentBrowserTabFields(List<dynamic> fields) {
 class PersistentBrowserTab extends EasyListenable {
 	@HiveField(0)
 	String? board;
+	BoardKey? get boardKey => switch (board) {
+		String b => ImageboardBoard.getKey(b),
+		null => null
+	};
 	@HiveField(1)
 	ThreadIdentifier? thread;
 	@HiveField(2)
@@ -2207,7 +2211,7 @@ class PersistentBrowserTab extends EasyListenable {
 	// Do not persist
 	final tabKey = GlobalKey(debugLabel: 'PersistentBrowserTab.tabKey');
 	// Do not persist
-	final boardKey = GlobalKey<BoardPageState>(debugLabel: 'PersistentBrowserTab.boardKey');
+	final boardPageKey = GlobalKey<BoardPageState>(debugLabel: 'PersistentBrowserTab.boardKey');
 	// Do not persist
 	final incognitoProviderKey = GlobalKey(debugLabel: 'PersistentBrowserTab.incognitoProviderKey');
 	// Do not persist

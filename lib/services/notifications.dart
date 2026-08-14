@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:chan/main.dart';
+import 'package:chan/models/board.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/imageboard.dart';
@@ -568,7 +569,8 @@ class Notifications {
 	}
 	
 	BoardWatch? getBoardWatch(String boardName) {
-		return boardWatches.tryFirstWhere((w) => w.board == boardName);
+		final boardKey = ImageboardBoard.getKey(boardName);
+		return boardWatches.tryFirstWhere((w) => w.boardKey == boardKey);
 	}
 
 	Future<void> insertWatch(ThreadWatch watch) async {

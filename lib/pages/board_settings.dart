@@ -41,7 +41,7 @@ class _BoardSettingsPageState extends State<BoardSettingsPage> {
 	Widget build(BuildContext context) {
 		final settings = context.watch<Settings>();
 		_BoardWatchingStatus status;
-		final watch = widget.imageboard.notifications.boardWatches.tryFirstWhere((w) => w.board == widget.board.name);
+		final watch = widget.imageboard.notifications.boardWatches.tryFirstWhere((w) => w.boardKey == widget.board.boardKey);
 		if (watch == null) {
 			status = _BoardWatchingStatus.off;
 		}

@@ -1918,11 +1918,11 @@ class ThreadPageState extends State<ThreadPage> {
 										primaryCount: MappingValueListenable(
 											parent: Outbox.instance,
 											mapper: (o) =>
-												o.queuedPostsFor(persistentState.imageboardKey, widget.thread.board, widget.thread.id).where((e) => e.state.isSubmittable).length
+												o.queuedPostsFor(persistentState.imageboardKey, widget.thread.boardKey, widget.thread.id).where((e) => e.state.isSubmittable).length
 										),
 										secondaryCount: MappingValueListenable(
 											parent: Outbox.instance,
-											mapper: (o) => o.submittableCount - o.queuedPostsFor(persistentState.imageboardKey, widget.thread.board, widget.thread.id).where((e) => e.state.isSubmittable).length
+											mapper: (o) => o.submittableCount - o.queuedPostsFor(persistentState.imageboardKey, widget.thread.boardKey, widget.thread.id).where((e) => e.state.isSubmittable).length
 										),
 										icon: Opacity(
 											opacity: persistentState.disableUpdates ? 0.5 : 1,
@@ -3765,11 +3765,11 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 													child1: MappingValueListenable(
 														parent: Outbox.instance,
 														mapper: (o) =>
-															o.queuedPostsFor(widget.persistentState.imageboardKey, widget.threadIdentifier.board, widget.threadIdentifier.id).where((e) => e.state.isSubmittable).length
+															o.queuedPostsFor(widget.persistentState.imageboardKey, widget.threadIdentifier.boardKey, widget.threadIdentifier.id).where((e) => e.state.isSubmittable).length
 													),
 													child2: MappingValueListenable(
 														parent: Outbox.instance,
-														mapper: (o) => o.submittableCount - o.queuedPostsFor(widget.persistentState.imageboardKey, widget.threadIdentifier.board, widget.threadIdentifier.id).where((e) => e.state.isSubmittable).length
+														mapper: (o) => o.submittableCount - o.queuedPostsFor(widget.persistentState.imageboardKey, widget.threadIdentifier.boardKey, widget.threadIdentifier.id).where((e) => e.state.isSubmittable).length
 													),
 													combine: (v1, v2) => (thisThread: v1, otherThreads: v2)
 												),

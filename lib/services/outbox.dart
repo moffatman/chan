@@ -960,13 +960,13 @@ class Outbox extends ChangeNotifier {
 		return count;
 	}
 
-	Iterable<QueuedPost> queuedPostsFor(String imageboardKey, String board, int? threadId) sync* {
+	Iterable<QueuedPost> queuedPostsFor(String imageboardKey, BoardKey boardKey, int? threadId) sync* {
 		for (final queue in queues.values) {
 			for (final entry in queue.list) {
 				if (entry is QueuedPost &&
 				    entry.state is! QueueStateDone<QueuedPost, PostReceipt> &&
 						entry.imageboardKey == imageboardKey &&
-						entry.post.board == board &&
+						entry.post.boardKey == boardKey &&
 						entry.post.threadId == threadId) {
 					yield entry;
 				}
