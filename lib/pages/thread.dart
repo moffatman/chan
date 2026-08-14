@@ -1324,10 +1324,11 @@ class ThreadPageState extends State<ThreadPage> {
 						cancelToken: cancelToken
 					);
 					if (tail != null && (tail.posts.isEmpty || tail.posts.first.id <= oldThread.posts_.last.id)) {
-						if (tail.posts.isNotEmpty) {
+						final start = tail.posts.indexWhere((post) => post.id > oldThread.posts_.last.id);
+						if (start != -1) {
 							// Tail is usable (overlap between posts)
-							final newThread = Thread(
-								posts_: oldThread.posts_.toList(),
+							newThread = Thread(
+								posts_: [...oldThread.posts_, ...tail.posts.sublist(start)],
 								isArchived: oldThread.isArchived,
 								isDeleted: oldThread.isDeleted,
 								replyCount: tail.replyCount,
@@ -1352,9 +1353,10 @@ class ThreadPageState extends State<ThreadPage> {
 								isNsfw: oldThread.isNsfw,
 								stickyReplyCap: tail.stickyReplyCap
 							);
-							newThread.mergePosts(null, tail.posts, site);
 						}
-						newThread = oldThread;
+						else {
+							newThread = oldThread;
+						}
 					}
 					else {
 						newThread = await site.getThreadIfModifiedSince(
