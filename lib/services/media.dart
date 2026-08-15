@@ -394,6 +394,12 @@ class MediaScan {
 		}
 	}
 
+	static Future<void> clearCache() async {
+		_fileScans.clear();
+		await _mediaScanBox.deleteAll(_mediaScanBox.keys);
+		await _mediaScanBox.compact();
+	}
+
 	bool get isAudioOnly => videoFramerate?.isNaN ?? true;
 	bool get hasVideo {
 		final framerate = videoFramerate;

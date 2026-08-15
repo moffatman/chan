@@ -957,6 +957,9 @@ class Persistence extends ChangeNotifier {
 			if ((await FilePicker.platform.clearTemporaryFiles()) ?? false) {
 				print('Deleted FilePicker junk');
 			}
+			if (olderThan == null) {
+				await MediaScan.clearCache();
+			}
 		}
 		finally {
 			ensureTemporaryDirectoriesExist();
