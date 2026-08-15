@@ -326,13 +326,14 @@ sealed class QueueEntry<S extends QueueEntry<S, T>, T> extends ChangeNotifier {
 					try {
 						await site.loginSystem?.login(savedFields, cancelToken).timeout(const Duration(seconds: 15));
 					}
-					catch (e) {
+					catch (e, st) {
 						final context = ImageboardRegistry.instance.context;
 						if (context != null && context.mounted) {
 							showToast(
 								context: context,
 								icon: CupertinoIcons.exclamationmark_triangle,
-								message: 'Failed to log in to ${site.loginSystem?.name}'
+								message: 'Failed to log in to ${site.loginSystem?.name}',
+								easyButton: ('Details', () => alertError(context, e, st, barrierDismissible: true))
 							);
 						}
 						print('Problem auto-logging-in to ${site.loginSystem?.name}: $e');
