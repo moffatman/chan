@@ -584,10 +584,6 @@ class Persistence extends ChangeNotifier {
 		webmCacheDirectory = temporaryDirectory.dir('webmcache');
 		httpCacheDirectory = temporaryDirectory.dir('httpcache');
 		spanCacheDirectory = temporaryDirectory.dir('spancache');
-		if (!spanCacheDirectory.existsSync()) {
-			// Will have to write various spans to disk
-			splashStage.value = 'Migrating...';
-		}
 		shareCacheDirectory = temporaryDirectory.dir('sharecache');
 		ensureTemporaryDirectoriesExist();
 		documentsDirectory = await getApplicationDocumentsDirectory();
