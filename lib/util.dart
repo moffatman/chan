@@ -115,6 +115,9 @@ extension EasySplit on String {
 	String beforeFirst(String delimiter) {
 		return substring(0, indexOfOrLength(delimiter));
 	}
+	String beforeLast(String delimiter) {
+		return substring(0, lastIndexOf(delimiter) + 1);
+	}
 	String afterLast(String delimiter) {
 		return substring(lastIndexOf(delimiter) + 1);
 	}
@@ -1060,6 +1063,21 @@ R rprint<R>(String str, R r) {
 	print(str);
 	return r;
 }
+
+R Function() wprint0<R>(String str, R Function() f) => () {
+	print(str);
+	return f();
+};
+
+R Function(T) wprint1<T, R>(R Function(T) f, {String label = 'wprint1'}) => (obj) {
+	print('$label: $obj');
+	return f(obj);
+};
+
+R Function(T1, T2) wprint2<T1, T2, R>(R Function(T1, T2) f, {String label = 'wprint2'}) => (a, b) {
+	print('$label: $a, $b');
+	return f(a, b);
+};
 
 extension Bind1<In, Out> on Out Function(In) {
 	Out Function() bind1(In v) => () => this(v);
