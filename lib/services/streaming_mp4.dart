@@ -331,6 +331,11 @@ class VideoServer {
 		}
 		return getFile(digest);
 	}
+	Future<Uri> optimisticallyGetCachingUrl(Uri uri) async {
+		// Make sure port is assigned
+		await ensureRunning();
+		return getUri(_encodeDigest(uri));
+	}
 
 	Future<void> _handleRequest(HttpRequest request) async {
 		request.response.persistentConnection = request.persistentConnection;

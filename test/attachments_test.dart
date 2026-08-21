@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/streaming_mp4.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -41,6 +42,8 @@ class FakeContext implements BuildContext {
 class FakeImageboardSite extends ImageboardSite {
   @override
   final String imageUrl;
+	@override
+	String get baseUrl => imageUrl;
   FakeImageboardSite({
     required this.imageUrl
   }) : super(
@@ -81,6 +84,23 @@ Attachment makeFakeAttachment(Uri uri) => Attachment(
 	height: null,
 	threadId: null,
 	sizeInBytes: null
+);
+
+final _dummyScan = MediaScan(
+	hasAudio: true,
+	duration: null,
+	bitrate: null,
+	width: null,
+	height: null,
+	codec: null,
+	videoFramerate: null,
+	sizeInBytes: null,
+	metadata: null,
+	format: null,
+	pixFmt: null,
+	videoBitrate: null,
+	audioBitrate: null,
+	forceFormat: null
 );
 
 void main() async {
@@ -130,6 +150,10 @@ void main() async {
 				imageboard: imageboard,
 				attachment: makeFakeAttachment(u4)
 			);
+			MediaScan.addDummyScan(await VideoServer.instance.optimisticallyGetCachingUrl(u1), _dummyScan);
+			MediaScan.addDummyScan(await VideoServer.instance.optimisticallyGetCachingUrl(u2), _dummyScan);
+			MediaScan.addDummyScan(await VideoServer.instance.optimisticallyGetCachingUrl(u3), _dummyScan);
+			MediaScan.addDummyScan(await VideoServer.instance.optimisticallyGetCachingUrl(u4), _dummyScan);
 			final c1f = c1.preloadFullAttachment();
 			final c1r1 = await completer.future;
 			expect(c1r1.uri.toString(), u1.path);
@@ -225,6 +249,9 @@ void main() async {
 				imageboard: imageboard,
 				attachment: makeFakeAttachment(u3)
 			);
+			MediaScan.addDummyScan(await VideoServer.instance.optimisticallyGetCachingUrl(u1), _dummyScan);
+			MediaScan.addDummyScan(await VideoServer.instance.optimisticallyGetCachingUrl(u2), _dummyScan);
+			MediaScan.addDummyScan(await VideoServer.instance.optimisticallyGetCachingUrl(u3), _dummyScan);
 			final c1f = c1.preloadFullAttachment();
 			final c1r1 = await completer.future;
 			expect(c1r1.uri.toString(), u1.path);
@@ -308,6 +335,8 @@ void main() async {
 				imageboard: imageboard,
 				attachment: makeFakeAttachment(u2)
 			);
+			MediaScan.addDummyScan(await VideoServer.instance.optimisticallyGetCachingUrl(u1), _dummyScan);
+			MediaScan.addDummyScan(await VideoServer.instance.optimisticallyGetCachingUrl(u2), _dummyScan);
 			final c1f = c1.preloadFullAttachment();
 			final c1r1 = await completer.future;
 			expect(c1r1.uri.toString(), u1.path);

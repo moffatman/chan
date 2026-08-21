@@ -394,6 +394,11 @@ class MediaScan {
 		}
 	}
 
+	@visibleForTesting
+	static void addDummyScan(Uri uri, MediaScan scan) {
+		_webScans[uri] = scan;
+	}
+
 	static Future<void> clearCache() async {
 		_fileScans.clear();
 		await _mediaScanBox.deleteAll(_mediaScanBox.keys);
