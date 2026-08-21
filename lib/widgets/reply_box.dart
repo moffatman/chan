@@ -2418,6 +2418,10 @@ Future<_ReplyBoxFile?> _makeAttachment(PickedAttachment? originalAttachment, Fil
 	}
 
 	Widget _buildProposedAttachment(BuildContext context) => Container(
+		decoration: BoxDecoration(
+			border: Border(top: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context))),
+			color: ChanceTheme.backgroundColorOf(context)
+		),
 		padding: const EdgeInsets.all(8),
 		height: 64,
 		child: _proposedAttachmentUrl == null ? const SizedBox() : Row(
