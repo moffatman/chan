@@ -790,14 +790,6 @@ class VideoServer {
 	}
 }
 
-Uri getCachingURL(Response x) {
-	throw UnimplementedError();
-}
-
-Future<String> getCachedPath(String uri) async {
-	throw UnimplementedError();
-}
-
 class StreamingMP4Conversion {
 	final Dio client;
 	final Uri inputFile;
