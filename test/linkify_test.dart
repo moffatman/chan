@@ -35,6 +35,13 @@ void main() {
 			expect(text.text, 'talking about.You too');
 		});
 
+		test('loose linkification heuristic bad 2', () {
+			final r = Site4Chan.parsePlaintext('emoji.mp4').toList();
+			expect(r, hasLength(1));
+			final text = r[0] as PostTextSpan;
+			expect(text.text, 'emoji.mp4');
+		});
+
 		test('link at end of bracketed text, with suffix', () {
 			final r = Site4Chan.parsePlaintext('bootloader (https://github.com/Limine-Bootloader/Limine), amongst').toList();
 			expect(r, hasLength(3));

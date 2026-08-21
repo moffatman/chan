@@ -136,6 +136,14 @@ class LooseUrlLinkifier extends Linkifier {
                 // Probably a new sentence without space after the period
                 continue;
               }
+              if (match.end < element.text.length && switch (element.text.codeUnitAt(match.end)) {
+                // Followed by a number
+                >= 0x30 && <= 0x39 => true,
+                _ => false
+              }) {
+                // Not a valid domain
+                continue;
+              }
             }
             if (redditSafeMode) {
               final before = match.start > 0 ? element.text.substring(0, match.start) : null;
