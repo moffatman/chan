@@ -2472,7 +2472,7 @@ Future<_ReplyBoxFile?> _makeAttachment(PickedAttachment? originalAttachment, Fil
 								return;
 							}
 							await _addAttachment(newFile);
-							if (proposed.text == proposed.imageUrl) {
+							if (proposed.text.beforeFirst('?') == proposed.imageUrl.beforeFirst('?')) {
 								final original = _textFieldController.text;
 								final replaced = original.replaceFirst(proposed.text, '');
 								if (replaced.length != _textFieldController.text.length) {

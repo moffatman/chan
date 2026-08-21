@@ -34,6 +34,9 @@ bool embedPossible(String url) {
 	if (url.contains('youtube.com')) {
 		return true;
 	}
+	if (url.contains('pbs.twimg.com/media/')) {
+		return true;
+	}
 	final uri = Uri.parse(url);
 	if (ImageboardRegistry.instance.decodeUrlPossible(uri)) {
 		return true;
@@ -204,6 +207,17 @@ Future<EmbedData?> loadEmbedData(String url, {required bool highQuality}) {
 			return _loadInstagram(instagramMatch.group(1)!, highQuality);
 		}
 		final uri = Uri.parse(url);
+		if (uri.host == 'pbs.twimg.com') {
+			return EmbedData(
+				title: 'Image',
+				provider: 'X',
+				author: null,
+				thumbnailUrl: (highQuality ? uri.replace(queryParameters: {
+					...uri.queryParameters,
+					'name': 'large'
+				}) : uri).toString()
+			);
+		}
 		final target = await ImageboardRegistry.instance.decodeUrl(uri);
 		if (target != null && target.$2.threadId != null) {
 			Thread? thread = await target.$1.persistence.getThreadStateIfExists(target.$2.threadIdentifier!)?.getThread();
