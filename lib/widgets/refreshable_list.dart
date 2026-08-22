@@ -480,6 +480,12 @@ class RefreshableTreeAdapter<T extends Object> {
 	final bool repliesToOPAreTopLevel;
 	final bool newRepliesAreLinear;
 	final bool isPaged;
+	final List<List<int>>? initialCollapsedItems;
+	final Map<int, int>? initialPrimarySubtreeParents;
+	final void Function(List<List<int>>, Map<int, int>)? onCollapsedItemsChanged;
+	final int? initialTreeSplitId;
+	final void Function(int, Set<int>)? onTreeSplitIdChanged;
+	final Set<int>? initialUpgradedStubPostIds;
 
 	const RefreshableTreeAdapter({
 		required this.getId,
@@ -496,6 +502,12 @@ class RefreshableTreeAdapter<T extends Object> {
 		required this.repliesToOPAreTopLevel,
 		required this.newRepliesAreLinear,
 		required this.isPaged,
+		this.initialCollapsedItems,
+		this.initialPrimarySubtreeParents,
+		this.onCollapsedItemsChanged,
+		this.initialTreeSplitId,
+		this.onTreeSplitIdChanged,
+		this.initialUpgradedStubPostIds,
 		this.filter
 	});
 }
@@ -795,7 +807,7 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 			item.id
 		]);
 		_cache.removeWhere((key, value) => key.thisId == item.id || key.parentIds.contains(item.id));
-		state.widget.onCollapsedItemsChanged?.call(manuallyCollapsedItems, primarySubtreeParents);
+		state.widget.treeAdapter?.onCollapsedItemsChanged?.call(manuallyCollapsedItems, primarySubtreeParents);
 		state._onTreeCollapseOrExpand.call(item, false);
 		notifyListeners();
 	}
@@ -813,7 +825,7 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 		final manuallyCollapsedItemsLengthBefore = manuallyCollapsedItems.length;
 		manuallyCollapsedItems.removeWhere(includingParents ? x.beginsWith : (w) => listEquals(w, x));
 		if (manuallyCollapsedItemsLengthBefore != manuallyCollapsedItems.length) {
-			state.widget.onCollapsedItemsChanged?.call(manuallyCollapsedItems, primarySubtreeParents);
+			state.widget.treeAdapter?.onCollapsedItemsChanged?.call(manuallyCollapsedItems, primarySubtreeParents);
 		}
 		final automaticallyCollapsedItemsLengthBefore = state._automaticallyCollapsedItems.length;
 		state._automaticallyCollapsedItems.removeWhere(includingParents ? x.beginsWith : (w) => listEquals(w, x));
@@ -863,7 +875,7 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 		}
 		primarySubtreeParents[item.id] = item.parentIds.tryLast ?? -1;
 		_cache.removeWhere((key, value) => key.thisId == item.id || key.parentIds.contains(item.id));
-		state.widget.onCollapsedItemsChanged?.call(manuallyCollapsedItems, primarySubtreeParents);
+		state.widget.treeAdapter?.onCollapsedItemsChanged?.call(manuallyCollapsedItems, primarySubtreeParents);
 		// Reveal any newly inserted items in the subtree below
 		final x = [
 			...item.parentIds,
@@ -1154,11 +1166,6 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	final RefreshableTreeAdapter<T>? treeAdapter;
 	final List<Comparator<T>> sortMethods;
 	final bool reverseSort;
-	final List<List<int>>? initialCollapsedItems;
-	final Map<int, int>? initialPrimarySubtreeParents;
-	final void Function(List<List<int>>, Map<int, int>)? onCollapsedItemsChanged;
-	final int? initialTreeSplitId;
-	final ValueChanged<int>? onTreeSplitIdChanged;
 	final Duration minUpdateDuration;
 	final Listenable? updateAnimation;
 	final bool canTapFooter;
@@ -1200,11 +1207,6 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		this.collapsedItemBuilder,
 		this.sortMethods = const [],
 		this.reverseSort = false,
-		this.initialCollapsedItems,
-		this.initialPrimarySubtreeParents,
-		this.onCollapsedItemsChanged,
-		this.initialTreeSplitId,
-		this.onTreeSplitIdChanged,
 		this.minUpdateDuration = const Duration(milliseconds: 500),
 		this.updateAnimation,
 		this.canTapFooter = true,
@@ -1256,6 +1258,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	Timer? _trailingUpdateAnimationTimer;
 	bool _treeBuildingFailed = false;
 	int? _treeSplitId;
+	Set<int> _upgradedStubPostIds = {};
 	bool _needToTransitionNewlyInsertedItems = false;
 	({
 		Map<int, int> treeRootIndexLookup,
@@ -1296,12 +1299,38 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			resetTimer();
 		}
 		_refreshableTreeItems = _RefreshableTreeItems<T>(
-			manuallyCollapsedItems: widget.initialCollapsedItems?.toList() ?? [],
-			primarySubtreeParents: Map.from(widget.initialPrimarySubtreeParents ?? {}),
+			manuallyCollapsedItems: widget.treeAdapter?.initialCollapsedItems?.toList() ?? [],
+			primarySubtreeParents: Map.from(widget.treeAdapter?.initialPrimarySubtreeParents ?? {}),
 			state: this
 		);
 		widget.updateAnimation?.addListener(_onUpdateAnimation);
-		_treeSplitId = widget.initialTreeSplitId;
+		_treeSplitId = widget.treeAdapter?.initialTreeSplitId;
+		_upgradedStubPostIds = widget.treeAdapter?.initialUpgradedStubPostIds?.toSet() ?? {};
+	}
+
+	/// To be used when we have a whole updated list, it will check for any stub upgrades
+	void _updateList(List<T>? newList) {
+		final oldStubs = <int>{};
+		if (widget.treeAdapter case final treeAdapter?) {
+			for (final item in originalList ?? <T>[]) {
+				if (treeAdapter.getIsStub(item)) {
+					oldStubs.add(treeAdapter.getId(item));
+				}
+			}
+		}
+		originalList = newList;
+		sortedList = originalList?.toList();
+		if (newList != null) {
+			_sortList();
+			if (widget.treeAdapter case final treeAdapter? when oldStubs.isNotEmpty) {
+				for (final item in newList) {
+					final id = treeAdapter.getId(item);
+					if (oldStubs.contains(id) && !treeAdapter.getIsStub(item)) {
+						_upgradedStubPostIds.add(id);
+					}
+				}
+			}
+		}
 	}
 
 	@override
@@ -1331,14 +1360,15 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			originalList = widget.initialList;
 			sortedList = null;
 			error.value = null;
-			_treeSplitId = widget.initialTreeSplitId;
+			_treeSplitId = widget.treeAdapter?.initialTreeSplitId;
+			_upgradedStubPostIds = widget.treeAdapter?.initialUpgradedStubPostIds?.toSet() ?? {};
 			lastUpdateTime = null;
 			_automaticallyCollapsedItems.clear();
 			_automaticallyCollapsedTopLevelItems.clear();
 			_refreshableTreeItems.dispose();
 			_refreshableTreeItems = _RefreshableTreeItems<T>(
-				manuallyCollapsedItems: widget.initialCollapsedItems?.toList() ?? [],
-				primarySubtreeParents: Map.from(widget.initialPrimarySubtreeParents ?? {}),
+				manuallyCollapsedItems: widget.treeAdapter?.initialCollapsedItems?.toList() ?? [],
+				primarySubtreeParents: Map.from(widget.treeAdapter?.initialPrimarySubtreeParents ?? {}),
 				state: this
 			);
 			_lastTreeOrder = null;
@@ -1368,11 +1398,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			// Not in the middle of an update
 			(updatingNow.value?.id != widget.id)
 		) {
-			originalList = widget.initialList;
-			sortedList = originalList?.toList();
-			if (originalList != null) {
-				_sortList();
-			}
+			_updateList(widget.initialList);
 		}
 		if ((!listEquals(widget.sortMethods, oldWidget.sortMethods) ||
 		     widget.reverseSort != oldWidget.reverseSort ||
@@ -1567,9 +1593,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 
 	Future<void> _mergeTrees({required bool rebuild}) async {
 		final newTreeSplitId = controller._items.fold<int>(0, (m, i) => max(m, i.item.representsKnownStubChildren.fold<int>(i.item.id, (n, j) => max(n, j.childId))));
+		_upgradedStubPostIds.removeWhere((id) => id <= newTreeSplitId);
 		_lastTreeOrder = null; // Reorder OK
 		_treeSplitId = newTreeSplitId;
-		widget.onTreeSplitIdChanged?.call(newTreeSplitId);
+		widget.treeAdapter?.onTreeSplitIdChanged?.call(newTreeSplitId, _upgradedStubPostIds);
 		if (rebuild) {
 			try {
 				controller._lockSliverListAtEnd();
@@ -1768,11 +1795,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					mediumHapticFeedback();
 				}
 				setState(() {
-					originalList = newList ?? originalList;
-					sortedList = originalList?.toList();
-					if (sortedList != null) {
-						_sortList();
-					}
+					_updateList(newList ?? originalList);
 				});
 			}
 			else if (mounted && newList == null && originalList != null && mergeTrees) {
@@ -1795,9 +1818,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 
 	Future<void> acceptNewList(List<T> list) async {
 		await controller.whenDoneAutoScrolling;
-		originalList = list;
-		sortedList = list.toList();
-		_sortList();
+		_updateList(list);
 		setState(() {});
 	}
 
@@ -2341,10 +2362,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 
 		final firstTreeBuild = _treeSplitId == null;
 		final treeSplitId = _treeSplitId ?? linear.fold<int>(0, (m, i) => max(m, i.representsKnownStubChildren.fold<int>(i.id, (n, j) => max(n, j.childId))));
+		bool inNewTree(int id) => id > treeSplitId || _upgradedStubPostIds.contains(id);
 		if (_treeSplitId == null && linear.length > 1) {
 			// Set initial tree-split ID to last post in thread
 			_treeSplitId = treeSplitId;
-			widget.onTreeSplitIdChanged?.call(treeSplitId);
+			widget.treeAdapter?.onTreeSplitIdChanged?.call(treeSplitId, _upgradedStubPostIds);
 		}
 		final Set<int> itemsWithOmittedReplies = {};
 
@@ -2366,7 +2388,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			else if (parentIds.isEmpty) {
 				treeRoots1.add(node);
 			}
-			else if (adapter.newRepliesAreLinear && id > treeSplitId) {
+			else if (adapter.newRepliesAreLinear && inNewTree(id)) {
 				final peekLastTreeItemSoFar = treeRoots1.tryLast?.lastDescendant;
 				final acceptableParentIds = peekLastTreeItemSoFar?.ownershipChain.toSet() ?? {};
 				parentIds.removeWhere((parentId) => parentId <= treeSplitId && !acceptableParentIds.contains(parentId));
@@ -2481,7 +2503,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			// with newRepliesAreLinear. The optimization to add newest children in tree mode.
 			// This maybe is't perfect, there could be reordered final children with
 			// same final root in both trees. But it's an edge case.
-			oldItems = linear.where((item) => item.id <= treeSplitId).toList(growable: false);
+			oldItems = linear.where((item) => !inNewTree(item.id)).toList(growable: false);
 			const infiniteIndex = 1 << 50;
 			mergeSort(linear, compare: (a, b) {
 				final idxA = lastTreeOrder.treeRootIndexLookup[a.id] ?? infiniteIndex;
@@ -2490,11 +2512,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			});
 		}
 		else {
-			oldItems = linear.where((item) => item.id <= treeSplitId);
+			oldItems = linear.where((item) => !inNewTree(item.id));
 		}
 
 		oldItems.forEach(visitLinear);
-		linear.where((item) => item.id > treeSplitId).forEach(visitLinear);
+		linear.where((item) => inNewTree(item.id)).forEach(visitLinear);
 
 		final treeRoots = <_TreeNode<RefreshableListItem<T>>>[];
 		// Combine adjacent unloaded pages
@@ -2608,7 +2630,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				automaticallyCollapsed.add(ids);
 			}
 			if (!adapter.newRepliesAreLinear &&
-			    node.id > treeSplitId &&
+			    inNewTree(node.id) &&
 					parentIds.isNotEmpty) {
 				_refreshableTreeItems.newlyInsertedItems.putIfAbsent(ids, () => false);
 				_refreshableTreeItems._cache.removeWhere((k, _) => parentIds.contains(k.thisId));
@@ -2727,7 +2749,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			// In "old" tree behaviour, we use treeSplitId to track new insertions
 			// It needs to be updated after each rebuild
 			final treeSplitId = _treeSplitId = linear.fold<int>(0, (m, i) => max(m, i.representsKnownStubChildren.fold<int>(i.id, (n, j) => max(n, j.childId))));
-			widget.onTreeSplitIdChanged?.call(treeSplitId);
+			_upgradedStubPostIds.clear();
+			widget.treeAdapter?.onTreeSplitIdChanged?.call(treeSplitId, _upgradedStubPostIds);
 		}
 		_refreshableTreeItems.itemsWithUnknownStubReplies.addAll(itemsWithOmittedReplies);
 		_needToTransitionNewlyInsertedItems = true;

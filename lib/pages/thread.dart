@@ -1505,8 +1505,12 @@ class ThreadPageState extends State<ThreadPage> {
 			}
 			return false;
 		});
+		final treeSplitId = persistentState.treeSplitId;
 		for (final p in newChildren) {
 			if (!p.isPageStub && oldIds[p.id] != p.isStub && !persistentState.youIds.contains(p.id)) {
+				if (treeSplitId != null && p.id <= treeSplitId) {
+					needToSave |= persistentState.upgradedStubPostIds.data.add(p.id);
+				}
 				needToSave |= persistentState.unseenPostIds.data.add(p.id);
 				_highlightPosts[p.id] = _kHighlightFull;
 			}
@@ -2010,7 +2014,7 @@ class ThreadPageState extends State<ThreadPage> {
 																key: _listKey,
 																sortMethods: zone.postSortingMethods,
 																id: '/${widget.thread.board}/${widget.thread.id}${persistentState.variant?.dataId ?? ''}',
-																disableUpdates: persistentState.disableUpdates && !(_highlightPosts.isNotEmpty || switch ((persistentState.treeSplitId, persistentState.thread?.posts_)) {
+																disableUpdates: persistentState.disableUpdates && !(_highlightPosts.isNotEmpty || persistentState.upgradedStubPostIds.data.isNotEmpty || switch ((persistentState.treeSplitId, persistentState.thread?.posts_)) {
 																	(int treeSplitId, List<Post> posts) => treeSplitId < posts.fold(0, (m, p) => max(m, p.id)),
 																	_ => false
 																}),
@@ -2024,47 +2028,8 @@ class ThreadPageState extends State<ThreadPage> {
 																									) ? null
 																										: site.getThreadFromCatalogCache(widget.thread)?.posts_.sublist(0, 1)
 																								),
-																initialTreeSplitId: persistentState.treeSplitId,
-																onTreeSplitIdChanged: (newId) {
-																	persistentState.treeSplitId = newId;
-																	runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
-																},
 																useTree: useTree,
 																useAllDummies: _useAllDummies,
-																initialCollapsedItems: persistentState.collapsedItems,
-																initialPrimarySubtreeParents: persistentState.primarySubtreeParents,
-																onCollapsedItemsChanged: (newCollapsedItems, newPrimarySubtreeParents) {
-																	Future.microtask(() {
-																		if (!mounted) {
-																			return;
-																		}
-																		for (final item in _listController.items) {
-																			if (
-																				// It was initially not highlighted to avoid whole thread highlighted
-																				_highlightPosts[item.id] == _kHighlightZero &&
-																				// It was collapsed without being seen
-																				persistentState.unseenPostIds.data.contains(item.id) &&
-																				_listController.isItemHidden(item).isCollapsed
-																			) {
-																				_highlightPosts[item.id] = _kHighlightPartial;
-																			}
-																			else if (
-																				// It was highlighted already
-																				(_highlightPosts[item.id] ?? _kHighlightZero) > _kHighlightZero &&
-																				// It was collapsed after being seen
-																				!persistentState.unseenPostIds.data.contains(item.id) &&
-																				_listController.isItemHidden(item).isCollapsed
-																			) {
-																				_highlightPosts.remove(item.id);
-																			}
-																		}
-																	});
-																	_firstSeenIndex = null;
-																	_lastSeenIndex = null;
-																	persistentState.collapsedItems = newCollapsedItems.toList();
-																	persistentState.primarySubtreeParents = newPrimarySubtreeParents;
-																	runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
-																},
 																treeAdapter: RefreshableTreeAdapter(
 																	getId: (p) => p.id,
 																	getParentIds: (p) => p.repliedToIds,
@@ -2168,7 +2133,49 @@ class ThreadPageState extends State<ThreadPage> {
 																	initiallyCollapseSecondLevelReplies: treeModeInitiallyCollapseSecondLevelReplies,
 																	collapsedItemsShowBody: treeModeCollapsedPostsShowBody,
 																	repliesToOPAreTopLevel: treeModeRepliesToOPAreTopLevel,
-																	newRepliesAreLinear: treeModeNewRepliesAreLinear
+																	newRepliesAreLinear: treeModeNewRepliesAreLinear,
+																	initialTreeSplitId: persistentState.treeSplitId,
+																	initialUpgradedStubPostIds: persistentState.upgradedStubPostIds.data,
+																	onTreeSplitIdChanged: (newId, upgradedStubPostIds) {
+																		persistentState.treeSplitId = newId;
+																		persistentState.upgradedStubPostIds.data.clear();
+																		persistentState.upgradedStubPostIds.data.addAll(upgradedStubPostIds);
+																		runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
+																	},
+																	initialCollapsedItems: persistentState.collapsedItems,
+																	initialPrimarySubtreeParents: persistentState.primarySubtreeParents,
+																	onCollapsedItemsChanged: (newCollapsedItems, newPrimarySubtreeParents) {
+																		Future.microtask(() {
+																			if (!mounted) {
+																				return;
+																			}
+																			for (final item in _listController.items) {
+																				if (
+																					// It was initially not highlighted to avoid whole thread highlighted
+																					_highlightPosts[item.id] == _kHighlightZero &&
+																					// It was collapsed without being seen
+																					persistentState.unseenPostIds.data.contains(item.id) &&
+																					_listController.isItemHidden(item).isCollapsed
+																				) {
+																					_highlightPosts[item.id] = _kHighlightPartial;
+																				}
+																				else if (
+																					// It was highlighted already
+																					(_highlightPosts[item.id] ?? _kHighlightZero) > _kHighlightZero &&
+																					// It was collapsed after being seen
+																					!persistentState.unseenPostIds.data.contains(item.id) &&
+																					_listController.isItemHidden(item).isCollapsed
+																				) {
+																					_highlightPosts.remove(item.id);
+																				}
+																			}
+																		});
+																		_firstSeenIndex = null;
+																		_lastSeenIndex = null;
+																		persistentState.collapsedItems = newCollapsedItems.toList();
+																		persistentState.primarySubtreeParents = newPrimarySubtreeParents;
+																		runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
+																	}
 																),
 																footer: Container(
 																	padding: const EdgeInsets.all(16),

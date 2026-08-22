@@ -1685,6 +1685,8 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	DraftPost? draft;
 	@HiveField(32)
 	String? translatedTitle;
+	@HiveField(33)
+	final EfficientlyStoredIntSet upgradedStubPostIds;
 
 	Imageboard? get imageboard => ImageboardRegistry.instance.getImageboard(imageboardKey);
 
@@ -1700,10 +1702,12 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 		EfficientlyStoredIntSet? unseenPostIds,
 		this.postSortingMethod,
 		EfficientlyStoredIntSet? postIdsToStartRepliesAtBottom,
-		this.draft
+		this.draft,
+		EfficientlyStoredIntSet? upgradedStubPostIds
 	}) : lastOpenedTime = DateTime.now(),
 	     unseenPostIds = unseenPostIds ?? EfficientlyStoredIntSet({}),
-			 postIdsToStartRepliesAtBottom = postIdsToStartRepliesAtBottom ?? EfficientlyStoredIntSet({}) {
+			 postIdsToStartRepliesAtBottom = postIdsToStartRepliesAtBottom ?? EfficientlyStoredIntSet({}),
+			 upgradedStubPostIds = upgradedStubPostIds ?? EfficientlyStoredIntSet({}) {
 		Settings.instance.filterListenable.addListener(_onGlobalFilterUpdate);
 	}
 
@@ -1769,6 +1773,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	Thread? get thread => _thread;
 	set thread(Thread? newThread) {
 		final oldThread = _thread;
+		final treeSplitId = this.treeSplitId;
 		if (newThread != oldThread) {
 			bool needToSave = false;
 			if (oldThread != null && newThread != null) {
@@ -1778,6 +1783,9 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 				};
 				for (final p in newThread.posts_) {
 					if (oldIds[p.id] != p.isStub && !youIds.contains(p.id)) {
+						if (treeSplitId != null && p.id <= treeSplitId) {
+							needToSave |= upgradedStubPostIds.data.add(p.id);
+						}
 						needToSave |= unseenPostIds.data.add(p.id);
 					}
 				}

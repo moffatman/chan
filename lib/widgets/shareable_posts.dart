@@ -233,7 +233,6 @@ class _ShareablePostsState extends State<ShareablePosts> {
 						);
 					},
 					useTree: true,
-					initialPrimarySubtreeParents: zone.primaryThreadState?.primarySubtreeParents,
 					controller: controller,
 					treeAdapter: RefreshableTreeAdapter(
 						filter: (item) {
@@ -275,7 +274,8 @@ class _ShareablePostsState extends State<ShareablePosts> {
 						initiallyCollapseSecondLevelReplies: false,
 						collapsedItemsShowBody: false,
 						repliesToOPAreTopLevel: imageboard.persistence.browserState.treeModeRepliesToOPAreTopLevel,
-						newRepliesAreLinear: false
+						newRepliesAreLinear: false,
+						initialPrimarySubtreeParents: zone.primaryThreadState?.primarySubtreeParents
 					)
 				)
 			);

@@ -37,6 +37,7 @@ class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 	final List<_DebuggingItem> items = [];
 	int _id = 0;
 	bool _useTree = true;
+	bool _newRepliesAreLinear = true;
 
 	@override
 	void initState() {
@@ -166,7 +167,7 @@ class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 				initiallyCollapseSecondLevelReplies: false,
 				collapsedItemsShowBody: false,
 				repliesToOPAreTopLevel: true,
-				newRepliesAreLinear: true
+				newRepliesAreLinear: _newRepliesAreLinear,
 			),
 			footer: Padding(
 				padding: const EdgeInsets.all(16),
@@ -214,6 +215,24 @@ class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 							child: const Text('Merge trees')
 						),
 						AdaptiveThinButton(
+							child: const Text('Upgrade 1 stub in-place'),
+							onPressed: () {
+								for (int i = 0; i < items.length; i++) {
+									if (items[i].isStub && !items[i].isPageStub) {
+										items[i] = _DebuggingItem(
+											id: items[i].id,
+											parentIds: items[i].parentIds,
+											isStub: false,
+											isPageStub: false,
+											hasUnknownStubChildren: false
+										);
+										break;
+									}
+								}
+								setState(() {});
+							}
+						),
+						AdaptiveThinButton(
 							child: const Text('Shuffle()'),
 							onPressed: () {
 								items.shuffle();
@@ -227,6 +246,14 @@ class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 								});
 							},
 							child: _useTree ? const Text('->Linear') : const Text('->Tree')
+						),
+						const Text('newRepliesAreLinear: '),
+						AdaptiveSwitch(
+							value: _newRepliesAreLinear,
+							onChanged: (value) {
+								_newRepliesAreLinear = value;
+								setState(() {});
+							}
 						)
 					]
 				)
