@@ -1001,6 +1001,9 @@ class AttachmentViewerController extends ChangeNotifier {
 			if (_isDisposed) return;
 			_scheduleHidingOfLoadingProgress();
 			notifyListeners();
+			if (background) {
+				rethrow;
+			}
 		}
 		finally {
 			_ongoingConversion = null;
