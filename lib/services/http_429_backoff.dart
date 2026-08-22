@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
@@ -5,6 +6,7 @@ import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/interceptor.dart';
 import 'package:chan/services/priority_queue.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
@@ -16,13 +18,25 @@ final http429Queue = PriorityQueue<Uri, String>(
 
 const _kExtraRetriesKey = '_retryCount';
 
-class Http429Exception {
+class Http429Exception extends ExtendedException {
+	final Uri url;
 	final DateTime waitUntil;
 	final int retriesAttempted;
-	Http429Exception(this.waitUntil, this.retriesAttempted);
+	Http429Exception(this.url, this.waitUntil, this.retriesAttempted);
 
 	@override
-	String toString() => 'Http429Exception(waitUntil: $waitUntil, retriesAttempted: $retriesAttempted)';
+	bool get isReportable => false;
+
+	@override
+	Map<String, FutureOr<void> Function(BuildContext)> get remedies => {
+		'Reset timer': (context) {
+			http429Queue.reset(url);
+			http429Queue.prioritize(url);
+		}
+	};
+
+	@override
+	String toString() => 'Http429Exception(url: $url, waitUntil: $waitUntil, retriesAttempted: $retriesAttempted)';
 }
 
 extension _Retries on RequestOptions {
@@ -94,7 +108,11 @@ class HTTP429BackoffInterceptor extends InterceptorBase {
 	@override
 	Future<void> onRequestImpl(RequestOptions options, RequestInterceptorHandler handler) async {
 		if (options.retries == 0) {
-			await _handleCancelToken(http429Queue.start(options.uri), options.cancelToken);
+			final delay = http429Queue.getCurrentDelay(options.uri);
+			if (options.priority == RequestPriority.interactive && delay > const Duration(seconds: 15)) {
+				throw Http429Exception(options.uri, DateTime.now().add(delay), 0);
+			}
+			await _handleCancelToken(http429Queue.start(options.uri, priority: options.priority.index), options.cancelToken);
 		}
 		handler.next(options);
 	}
@@ -104,8 +122,8 @@ class HTTP429BackoffInterceptor extends InterceptorBase {
 		final currentRetries = response.requestOptions.retries;
 		if (response.statusCode == 429) {
 			final delay = get429Delay(response.headers.value('retry-after'), currentRetries);
-			if (response.requestOptions.priority == RequestPriority.lowest || currentRetries >= maxRetries) {
-				throw Http429Exception(DateTime.now().add(delay), currentRetries);
+			if (response.requestOptions.priority == RequestPriority.lowest || currentRetries >= maxRetries || (response.requestOptions.priority == RequestPriority.interactive && delay > const Duration(seconds: 15))) {
+				throw Http429Exception(response.requestOptions.uri, DateTime.now().add(delay), currentRetries);
 			}
 			print('[HTTP429BackoffInterceptor] Waiting $delay due to server-side rate-limiting (url: ${response.requestOptions.uri}, currentRetries: $currentRetries)');
 			_maybeShowToast(response.requestOptions.uri, delay);
@@ -143,8 +161,8 @@ class HTTP429BackoffInterceptor extends InterceptorBase {
 			if (err.type == DioErrorType.response &&
 					err.response?.statusCode == 429) {
 				final delay = get429Delay(err.response?.headers.value('retry-after'), currentRetries);
-				if (err.requestOptions.priority == RequestPriority.lowest || currentRetries >= maxRetries) {
-					throw Http429Exception(DateTime.now().add(delay), currentRetries);
+				if (err.requestOptions.priority == RequestPriority.lowest || currentRetries >= maxRetries || (err.requestOptions.priority == RequestPriority.interactive && delay > const Duration(seconds: 15))) {
+					throw Http429Exception(err.requestOptions.uri, DateTime.now().add(delay), currentRetries);
 				}
 				print('[HTTP429BackoffInterceptor] Waiting $delay due to server-side rate-limiting (url: ${err.requestOptions.uri}, currentRetries: $currentRetries)');
 				_maybeShowToast(err.requestOptions.uri, delay);
