@@ -853,7 +853,7 @@ class AttachmentViewerController extends ChangeNotifier {
 							return;
 						}
 						_hasAudio = scan.hasAudio;
-						if (isPrimary || !background) {
+						if ((isPrimary || !background) && !kInUnitTest) {
 							await (await _ensureController()).player.open(Media(proxiedUrl.toString()), play: false);
 						}
 						else {
