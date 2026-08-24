@@ -324,13 +324,20 @@ class ThreadWatcher extends ChangeNotifier {
 							priority: RequestPriority.functional,
 							cancelToken: cancelToken
 						);
-						final oldIds = {
+						final oldPosts = {
 							for (final post in oldThread.posts_)
-								post.id: post.isStub
+								post.id: post
 						};
 						bool needToSave = false;
+						final treeSplitId = threadState.treeSplitId;
 						for (final p in newChildren) {
-							if (!p.isPageStub && oldIds[p.id] != p.isStub && !threadState.youIds.contains(p.id)) {
+							if (!p.isPageStub && oldPosts[p.id]?.isStub != p.isStub && !threadState.youIds.contains(p.id)) {
+								if (treeSplitId != null && p.id <= treeSplitId) {
+									needToSave |= threadState.upgradedStubPostIds.data.add(p.id);
+								}
+								needToSave |= threadState.unseenPostIds.data.add(p.id);
+							}
+							else if (oldPosts[p.id]?.edited != p.edited) {
 								needToSave |= threadState.unseenPostIds.data.add(p.id);
 							}
 						}

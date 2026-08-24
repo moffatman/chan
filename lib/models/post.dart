@@ -302,6 +302,8 @@ class Post implements Filterable {
 	String? archiveName;
 	@HiveField(24, isOptimized: true)
 	final String? email;
+	@HiveField(25, isOptimized: true)
+	DateTime? edited;
 
 	Post({
 		required String board,
@@ -325,7 +327,8 @@ class Post implements Filterable {
 		this.isDeleted = false,
 		this.ipNumber,
 		this.archiveName,
-		this.email
+		this.email,
+		this.edited
 	}) : board = intern(board), name = intern(name), attachments_ = attachments_.isEmpty ? const [] : List.of(attachments_, growable: false);
 
 	@override
@@ -475,7 +478,8 @@ class Post implements Filterable {
 		other.archiveName == archiveName &&
 		other.email == email &&
 		other.capcode == capcode &&
-		mapEquals(other.extraMetadata, extraMetadata);
+		mapEquals(other.extraMetadata, extraMetadata) &&
+		edited == edited;
 	
 	bool isIdenticalForFilteringPurposes(Post other) {
 		return 
@@ -520,6 +524,7 @@ class Post implements Filterable {
 		ipNumber: ipNumber,
 		archiveName: archiveName != null ? archiveName.value : this.archiveName,
 		email: email,
+		edited: edited,
 	).._span = _span..replyIds = replyIds; // [text] hasn't changed
 
 	@override

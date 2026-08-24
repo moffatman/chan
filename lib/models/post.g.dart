@@ -206,6 +206,16 @@ class PostFields {
     fieldName: 'email',
     merger: PrimitiveMerger(),
   );
+  static DateTime? getEdited(Post x) => x.edited;
+  static void setEdited(Post x, DateTime? v) => x.edited = v;
+  static const int kEdited = 25;
+  static const edited = HiveFieldAdapter<Post, DateTime?>(
+    getter: getEdited,
+    setter: setEdited,
+    fieldNumber: kEdited,
+    fieldName: 'edited',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class PostAdapter extends TypeAdapter<Post> {
@@ -239,13 +249,14 @@ class PostAdapter extends TypeAdapter<Post> {
     21: PostFields.isDeleted,
     22: PostFields.ipNumber,
     23: PostFields.archiveName,
-    24: PostFields.email
+    24: PostFields.email,
+    25: PostFields.edited
   };
 
   @override
   Post read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final List<dynamic> fields = List.filled(25, null);
+    final List<dynamic> fields = List.filled(26, null);
     fields[11] = false;
     fields[16] = <Attachment>[];
     fields[20] = false;
@@ -295,6 +306,7 @@ class PostAdapter extends TypeAdapter<Post> {
       ipNumber: fields[22] as int?,
       archiveName: fields[23] as String?,
       email: fields[24] as String?,
+      edited: fields[25] as DateTime?,
     );
   }
 
@@ -323,6 +335,7 @@ class PostAdapter extends TypeAdapter<Post> {
       if (obj.ipNumber != null) 22: obj.ipNumber,
       if (obj.archiveName != null) 23: obj.archiveName,
       if (obj.email != null) 24: obj.email,
+      if (obj.edited != null) 25: obj.edited,
     };
     writer.writeByte(fields.length);
     for (final MapEntry<int, dynamic> entry in fields.entries) {

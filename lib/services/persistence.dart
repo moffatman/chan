@@ -1777,15 +1777,18 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 		if (newThread != oldThread) {
 			bool needToSave = false;
 			if (oldThread != null && newThread != null) {
-				final oldIds = {
+				final oldPosts = {
 					for (final post in oldThread.posts_)
-						post.id: post.isStub
+						post.id: post
 				};
 				for (final p in newThread.posts_) {
-					if (oldIds[p.id] != p.isStub && !youIds.contains(p.id)) {
+					if (oldPosts[p.id]?.isStub != p.isStub && !youIds.contains(p.id)) {
 						if (treeSplitId != null && p.id <= treeSplitId) {
 							needToSave |= upgradedStubPostIds.data.add(p.id);
 						}
+						needToSave |= unseenPostIds.data.add(p.id);
+					}
+					else if (oldPosts[p.id]?.edited != p.edited) {
 						needToSave |= unseenPostIds.data.add(p.id);
 					}
 				}

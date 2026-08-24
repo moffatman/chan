@@ -1489,9 +1489,9 @@ class ThreadPageState extends State<ThreadPage> {
 		if (widget.thread != thread.identifier) {
 			throw Exception('Thread changed');
 		}
-		final oldIds = {
+		final oldPosts = {
 			for (final post in thread.posts_)
-				post.id: post.isStub
+				post.id: post
 		};
 		if (_updateHighlightedPosts(restoring: false)) {
 			_listController.state?.forceRebuildId++; // To force widgets to re-build and re-compute [highlight]
@@ -1507,10 +1507,14 @@ class ThreadPageState extends State<ThreadPage> {
 		});
 		final treeSplitId = persistentState.treeSplitId;
 		for (final p in newChildren) {
-			if (!p.isPageStub && oldIds[p.id] != p.isStub && !persistentState.youIds.contains(p.id)) {
+			if (!p.isPageStub && (oldPosts[p.id]?.isStub != p.isStub) && !persistentState.youIds.contains(p.id)) {
 				if (treeSplitId != null && p.id <= treeSplitId) {
 					needToSave |= persistentState.upgradedStubPostIds.data.add(p.id);
 				}
+				needToSave |= persistentState.unseenPostIds.data.add(p.id);
+				_highlightPosts[p.id] = _kHighlightFull;
+			}
+			else if (oldPosts[p.id]?.edited != p.edited) {
 				needToSave |= persistentState.unseenPostIds.data.add(p.id);
 				_highlightPosts[p.id] = _kHighlightFull;
 			}

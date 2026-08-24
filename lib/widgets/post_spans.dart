@@ -4049,6 +4049,7 @@ TextSpan buildPostInfoRow({
 		null => false
 	};
 	final combineFlagNames = settings.postDisplayFieldOrder.indexOf(PostDisplayField.countryName) == settings.postDisplayFieldOrder.indexOf(PostDisplayField.flag) + 1;
+	final relativeTimeFirst = settings.postDisplayFieldOrder.indexOf(PostDisplayField.absoluteTime) > settings.postDisplayFieldOrder.indexOf(PostDisplayField.relativeTime);
 	const lineBreak = TextSpan(text: '\n');
 	final isDeletedStub = post.isDeleted && post.text.isEmpty && post.attachments.isEmpty;
 	final children = [
@@ -4237,14 +4238,51 @@ TextSpan buildPostInfoRow({
 				text: '${post.flag!.name} ',
 				style: TextStyle(color: theme.primaryColor.withValues(alpha: 0.75))
 			)
-			else if (field == PostDisplayField.absoluteTime && settings.showAbsoluteTimeOnPosts) TextSpan(
-				text: '${formatTime(post.time.toLocal(), forceFullDate: forceAbsoluteTime, withSecondsPrecision: site.hasSecondsPrecision)} '
-			)
-			else if (field == PostDisplayField.relativeTime && settings.showRelativeTimeOnPosts)
+			else if (field == PostDisplayField.absoluteTime && settings.showAbsoluteTimeOnPosts) ...[
+				TextSpan(
+					text: '${formatTime(post.time.toLocal(), forceFullDate: forceAbsoluteTime, withSecondsPrecision: site.hasSecondsPrecision)} '
+				),
+				if (post.edited case final edited? when relativeTimeFirst || !settings.showRelativeTimeOnPosts) TextSpan(
+					text: '${String.fromCharCode(CupertinoIcons.pencil.codePoint)} ',
+					style: TextStyle(
+						height: kTextHeightNone,
+						fontFamily: CupertinoIcons.pencil.fontFamily,
+						package: CupertinoIcons.pencil.fontPackage,
+						color: theme.primaryColorWithBrightness(0.5)
+					),
+					recognizer: interactive ? (TapGestureRecognizer(debugOwner: post)..onTap = () {
+						// If forceAbsoluteTime it is likely not interactive
+						showToast(
+							context: context,
+							message: 'Edited at ${formatTime(edited.toLocal(), withSecondsPrecision: site.hasSecondsPrecision)}${settings.showRelativeTimeOnPosts ? ' (${formatRelativeTime(edited.toLocal())} ago${formatRelativeTime(edited.toLocal()) == formatRelativeTime(post.time.toLocal()) ? ' (${formatTimeDiff(edited.toLocal().difference(post.time.toLocal()))} later)' : ''})' : ''}',
+							icon: CupertinoIcons.pencil
+						);
+					}) : null
+				)
+			]
+			else if (field == PostDisplayField.relativeTime && settings.showRelativeTimeOnPosts) ...[
 			 	if (!settings.showAbsoluteTimeOnPosts && forceAbsoluteTime) TextSpan(
 					text: '${formatTime(post.time.toLocal(), forceFullDate: true, withSecondsPrecision: site.hasSecondsPrecision)} '
 				)
-				else RelativeTimeSpan(post.time.toLocal(), suffix: ' ago ')
+				else RelativeTimeSpan(post.time.toLocal(), suffix: ' ago '),
+				if (post.edited case final edited?) TextSpan(
+					text: '${String.fromCharCode(CupertinoIcons.pencil.codePoint)} ',
+					style: TextStyle(
+						height: kTextHeightNone,
+						fontFamily: CupertinoIcons.pencil.fontFamily,
+						package: CupertinoIcons.pencil.fontPackage,
+						color: theme.primaryColorWithBrightness(0.5)
+					),
+					recognizer: interactive ? (TapGestureRecognizer(debugOwner: post)..onTap = () {
+						// If forceAbsoluteTime it is likely not interactive
+						showToast(
+							context: context,
+							message: 'Edited ${formatRelativeTime(edited.toLocal())} ago${formatRelativeTime(edited.toLocal()) == formatRelativeTime(post.time.toLocal()) ? ' (${formatTimeDiff(edited.toLocal().difference(post.time.toLocal()))} later)' : ''}${settings.showAbsoluteTimeOnPosts ? ' (${formatTime(edited.toLocal(), withSecondsPrecision: site.hasSecondsPrecision)})' : ''}',
+							icon: CupertinoIcons.pencil
+						);
+					}) : null
+				)
+			]
 			else if (field == PostDisplayField.postId && (site.explicitIds || zone.style != PostSpanZoneStyle.tree)) ...[
 				if (showSiteIcon) WidgetSpan(
 					alignment: PlaceholderAlignment.middle,

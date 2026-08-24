@@ -1132,6 +1132,10 @@ class SiteReddit extends ImageboardSite {
 			name: authorIsDeleted ? '' : author,
 			flag: _makeFlag(data['author_flair_richtext'] as List?, data),
 			time: DateTimeConversion.fromSecondsSinceEpoch((data['created'] as num).toInt()),
+			edited: switch (data['edited']) {
+				num number => DateTimeConversion.fromSecondsSinceEpoch(number.toInt()),
+				_ => null
+			},
 			threadId: id,
 			id: id,
 			text: textIsDeleted ? '' : text,
@@ -1522,6 +1526,10 @@ class SiteReddit extends ImageboardSite {
 			isDeleted: authorIsDeleted || textIsDeleted,
 			flag: _makeFlag(child['author_flair_richtext'] as List?, child),
 			time: DateTimeConversion.fromSecondsSinceEpoch((child['created'] as num).toInt()),
+			edited: switch (child['edited']) {
+				num number => DateTimeConversion.fromSecondsSinceEpoch(number.toInt()),
+				_ => null
+			},
 			threadId: thread.id,
 			id: id,
 			spanFormat: PostSpanFormat.reddit,
