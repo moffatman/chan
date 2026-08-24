@@ -526,6 +526,8 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 	}
 
 	@override
+	String formatBoardNameShort(String name) => name.isEmpty ? this.name : name;
+	@override
 	String formatBoardName(String name) => name.isEmpty ? this.name : '/$name/';
 	@override
 	String formatBoardNameWithoutTrailingSlash(String name) => name.isEmpty ? this.name : '/$name';

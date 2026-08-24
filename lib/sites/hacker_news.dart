@@ -705,6 +705,9 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	@override
+	String formatBoardNameShort(String name) => 'HN';
+
+	@override
 	String formatBoardName(String name) => this.name;
 
 	@override

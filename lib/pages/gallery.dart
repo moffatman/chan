@@ -59,39 +59,6 @@ class GalleryToggleChromeIntent extends Intent {
 	const GalleryToggleChromeIntent();
 }
 
-class _FasterSnappingPageScrollPhysics extends ScrollPhysics {
-  const _FasterSnappingPageScrollPhysics({ScrollPhysics? parent})
-      : super(parent: parent);
-
-  @override
-  _FasterSnappingPageScrollPhysics applyTo(ScrollPhysics? ancestor) {
-    return _FasterSnappingPageScrollPhysics(parent: buildParent(ancestor));
-  }
-
-  @override
-  SpringDescription get spring => SpringDescription.withDampingRatio(
-		mass: 0.3,
-		stiffness: 150,
-		ratio: 1.1,
-	);
-}
-
-class _VeryFastSnappingPageScrollPhysics extends ScrollPhysics {
-  const _VeryFastSnappingPageScrollPhysics({ScrollPhysics? parent})
-      : super(parent: parent);
-
-  @override
-  _VeryFastSnappingPageScrollPhysics applyTo(ScrollPhysics? ancestor) {
-    return _VeryFastSnappingPageScrollPhysics(parent: buildParent(ancestor));
-  }
-
-  @override
-  SpringDescription get spring => SpringDescription.withDurationAndBounce(
-		duration: const Duration(milliseconds: 150),
-		bounce: 0,
-	);
-}
-
 class _PaddedRectClipper extends CustomClipper<Rect> {
 	final EdgeInsets padding;
 
@@ -1119,7 +1086,7 @@ class _GalleryPageState extends State<GalleryPage> {
 											key: _pageControllerKey,
 											child: ExtendedImageGesturePageView.builder(
 												scrollDirection: widget.axis,
-												physics: settings.showAnimations ? const _FasterSnappingPageScrollPhysics() : const _VeryFastSnappingPageScrollPhysics(),
+												physics: settings.showAnimations ? const FasterSnappingPageScrollPhysics() : const VeryFastSnappingPageScrollPhysics(),
 												canScrollPage: (x) => settings.allowSwipingInGallery && widget.allowScroll && widget.attachments.length > 1,
 												onPageChanged: _onPageChanged,
 												controller: pageController,

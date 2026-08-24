@@ -112,7 +112,7 @@ class ThreadWidgetBuilder extends StatelessWidget {
 				);
 			}
 		}
-		final shortTitle = (boardName != null ? imageboard?.site.formatBoardName(boardName!) : imageboard?.site.name) ?? 'None';
+		final shortTitle = (boardName != null ? imageboard?.site.formatBoardNameShort(boardName!) : imageboard?.site.name) ?? 'None';
 		return (
 			primaryIcon: SizedBox(
 				height: 30,

@@ -590,6 +590,8 @@ class SiteJForum extends ImageboardSite with ForumSite {
 	}
 
 	@override
+	String formatBoardNameShort(String name) => name.afterLast('.');
+	@override
 	String formatBoardName(String name) => name.afterLast('.');
 	@override
 	String formatBoardNameWithoutTrailingSlash(String name) => name.afterLast('.');

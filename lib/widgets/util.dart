@@ -2935,3 +2935,36 @@ extension CopyWith on TextSpan {
 		spellOut: spellOut
 	);
 }
+
+class FasterSnappingPageScrollPhysics extends ScrollPhysics {
+  const FasterSnappingPageScrollPhysics({ScrollPhysics? parent})
+      : super(parent: parent);
+
+  @override
+  FasterSnappingPageScrollPhysics applyTo(ScrollPhysics? ancestor) {
+    return FasterSnappingPageScrollPhysics(parent: buildParent(ancestor));
+  }
+
+  @override
+  SpringDescription get spring => SpringDescription.withDampingRatio(
+		mass: 0.3,
+		stiffness: 150,
+		ratio: 1.1,
+	);
+}
+
+class VeryFastSnappingPageScrollPhysics extends ScrollPhysics {
+  const VeryFastSnappingPageScrollPhysics({ScrollPhysics? parent})
+      : super(parent: parent);
+
+  @override
+  VeryFastSnappingPageScrollPhysics applyTo(ScrollPhysics? ancestor) {
+    return VeryFastSnappingPageScrollPhysics(parent: buildParent(ancestor));
+  }
+
+  @override
+  SpringDescription get spring => SpringDescription.withDurationAndBounce(
+		duration: const Duration(milliseconds: 150),
+		bounce: 0,
+	);
+}

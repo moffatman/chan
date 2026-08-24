@@ -1019,9 +1019,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 	bool get supportsPushNotifications => true;
 
 	@override
-	String formatBoardName(String name) => '/${persistence?.maybeGetBoard(name)?.name ?? name}/';
-	@override
-	String formatBoardNameWithoutTrailingSlash(String name) => '/${persistence?.maybeGetBoard(name)?.name ?? name}';
+	String formatBoardNameShort(String name) => persistence?.maybeGetBoard(name)?.name ?? name;
 }
 
 class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
