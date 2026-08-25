@@ -1,3 +1,6 @@
+import 'dart:ui';
+
+import 'package:chan/services/settings.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/scheduler.dart';
@@ -28,8 +31,16 @@ class ScrollTracker {
 		return _instance ??= ScrollTracker._();
 	}
 
+	static bool _isMeaningfullyScrollable(ScrollMetrics metrics) {
+		final displaySize = (PlatformDispatcher.instance.views.first.physicalSize / PlatformDispatcher.instance.views.first.devicePixelRatio) / Settings.instance.interfaceScale;
+		return (metrics.extentTotal - 350) > displaySize.height;
+	}
+
 	bool onNotification(Notification notification) {
 		if (notification is ScrollNotification) {
+			if (notification.metrics.axis != Axis.vertical) {
+				return false;
+			}
 			if (notification.context case final context?) {
 				final primaryMetrics = PrimaryScrollController.maybeOf(context)?.tryPosition;
 				if (primaryMetrics?.viewportDimension != notification.metrics.viewportDimension
@@ -42,7 +53,7 @@ class ScrollTracker {
 					return false;
 				}
 			}
-			final isMeaningfullyScrollable = (notification.metrics.extentBefore + notification.metrics.extentAfter) > 500;
+			final isMeaningfullyScrollable = _isMeaningfullyScrollable(notification.metrics);
 			if (notification is ScrollStartNotification) {
 				isScrolling.value = true;
 				_thisScrollHasDragDetails = false;
@@ -61,7 +72,7 @@ class ScrollTracker {
 			}
 			else if (notification is ScrollUpdateNotification) {
 				_thisScrollHasDragDetails |= notification.dragDetails != null;
-				if (notification.metrics.axis == Axis.vertical && _thisScrollHasDragDetails && isMeaningfullyScrollable) {
+				if (_thisScrollHasDragDetails && isMeaningfullyScrollable) {
 					final delta = notification.scrollDelta ?? 0;
 					final isOverscrollBottom = notification.metrics.pixels > notification.metrics.minScrollExtent;
 					if (notification.metrics.extentAfter >= 100) {
@@ -97,8 +108,8 @@ class ScrollTracker {
 				// Background tab or something
 				return false;
 			}
-			final isMeaningfullyScrollable = (notification.metrics.extentBefore + notification.metrics.extentAfter) > 500;
-			if (!isMeaningfullyScrollable && notification.metrics.axis == Axis.vertical) {
+			final isMeaningfullyScrollable = _isMeaningfullyScrollable(notification.metrics);
+			if (!isMeaningfullyScrollable) {
 				// Scrollable size has shrunk, show the bars
 				slowScrollDirection.value = VerticalDirection.up;
 			}
