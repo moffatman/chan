@@ -297,7 +297,11 @@ class _PaginatedSliverReorderableListState extends SliverReorderableListState {
     final configuration = widget as _PaginatedSliverReorderableList;
     _selectionController.duration = configuration.selectedItemAnimationDuration;
     _selectionAnimation.curve = configuration.selectedItemAnimationCurve;
-    if (oldConfiguration.selectedIndex != configuration.selectedIndex) {
+    if (oldConfiguration.selectedIndex == null &&
+        configuration.selectedIndex != null) {
+      _previousSelectedIndex = configuration.selectedIndex;
+      _selectionController.value = 1;
+    } else if (oldConfiguration.selectedIndex != configuration.selectedIndex) {
       _previousSelectedIndex = oldConfiguration.selectedIndex;
       _selectionController.forward(from: 0);
     }

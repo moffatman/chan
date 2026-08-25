@@ -482,6 +482,31 @@ void main() {
     expect(tester.getSize(find.byKey(const ValueKey(5))).width, 90);
   });
 
+  testWidgets('initial selection commits without animating',
+      (tester) async {
+    late StateSetter setState;
+    int? selectedIndex;
+    await tester.pumpWidget(StatefulBuilder(builder: (context, setter) {
+      setState = setter;
+      return buildTestList(
+          itemCount: 3,
+          width: 300,
+          selectedIndex: selectedIndex,
+          preferredMainAxisExtents: const {1: 120},
+          delegate:
+              const PaginatedReorderableListDelegateWithFixedMainAxisCount(
+                  mainAxisCount: 3));
+    }));
+    await tester.pump();
+
+    expect(tester.getSize(find.byKey(const ValueKey(1))).width, 100);
+
+    setState(() => selectedIndex = 1);
+    await tester.pump();
+
+    expect(tester.getSize(find.byKey(const ValueKey(1))).width, 120);
+  });
+
   testWidgets('selection animation measures each preferred extent only once',
       (tester) async {
     late StateSetter setState;
