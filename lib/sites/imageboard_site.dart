@@ -1500,14 +1500,19 @@ class DraftPostFile {
 	String? get fileExt => path.afterLast('.').toLowerCase();
 
 	String? get overrideFilename {
-		if (Settings.instance.randomizeFilenames && !overrideRandomizeFilenames) {
+		final override = overrideFilenameWithoutExtension;
+		final basename = FileBasename.get(path);
+		final filename = (override == null || override.isEmpty) ? basename : '$override.$fileExt';
+		if (Settings.instance.randomizeFilenames &&
+				!overrideRandomizeFilenames &&
+				SoundpostAttachment.extractSoundSourceFromFilename(filename) == null) {
 			return '${DateTime.now().subtract(const Duration(days: 365) * random.nextDouble()).microsecondsSinceEpoch}.$fileExt';
 		}
-		final override = overrideFilenameWithoutExtension;
-		if (override == null || override.isEmpty) {
+		final encoded = SoundpostAttachment.encodeSoundSourceFilename(filename);
+		if (override == null || override.isEmpty && (encoded == basename)) {
 			return null;
 		}
-		return '${SoundpostAttachment.encodeSoundSourceFilename(override)}.$fileExt';
+		return encoded;
 	}
 
 	String get basename => FileBasename.get(path);
