@@ -786,7 +786,7 @@ class MediaConversion {
 				}
 				(int, int)? newSize;
 				if ((scan.width, scan.height) case (int width, int height)) {
-					if (maximumDimension case final maximumDimension?) {
+					if (maximumDimension case final maximumDimension? when max(width, height) > maximumDimension) {
 						// Apply this first, because the _scaleDownRetry.factor applies from the
 						// first conversion. Which means the shrunken width/height
 						final fittedSize = applyBoxFit(BoxFit.contain, Size(width.toDouble(), height.toDouble()), Size.square(maximumDimension.toDouble())).destination;
