@@ -860,8 +860,16 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
         1 => constraints.viewportMainAxisExtent,
         final pageCount => pageCount * _pageExtent + 2 * physicalGutterExtent
       };
+      final paintExtent = calculatePaintOffset(
+          constraints, from: 0, to: pageAlignedExtent);
+      final cacheExtent = calculateCacheOffset(
+          constraints, from: 0, to: pageAlignedExtent);
       geometry = geometry!.copyWith(
           scrollExtent: pageAlignedExtent,
+          paintExtent: paintExtent,
+          layoutExtent: paintExtent,
+          hitTestExtent: paintExtent,
+          cacheExtent: cacheExtent,
           maxPaintExtent: pageAlignedExtent,
           hasVisualOverflow:
               pageAlignedExtent > constraints.remainingPaintExtent ||

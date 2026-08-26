@@ -63,6 +63,7 @@ Widget buildTestList(
     ValueChanged<bool>? onPagesAlignedToEndChanged,
     double alignmentOverpullExtent = 48,
     Map<int, Key> itemKeys = const {},
+    ValueChanged<int>? onItemTap,
     bool tabGestures = false,
     Map<int, double> preferredMainAxisExtents = const {},
     void Function(int index, BoxConstraints constraints)? onItemLayout,
@@ -117,6 +118,12 @@ Widget buildTestList(
                       content = _LayoutRecorder(
                           onLayout: (constraints) =>
                               onItemLayout(index, constraints),
+                          child: content);
+                    }
+                    if (onItemTap != null) {
+                      content = GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => onItemTap(index),
                           child: content);
                     }
                     if (tabGestures) {
@@ -228,6 +235,30 @@ void main() {
     expect(key.currentState!.leadingEmptySlots, 3);
     expect(tester.getTopLeft(find.byKey(const ValueKey(0))).dx,
         listLeft + 280);
+  });
+
+  testWidgets('end-aligned partial first page remains hit-testable',
+      (tester) async {
+    final tappedItems = <int>[];
+    await tester.pumpWidget(buildTestList(
+        itemCount: 6,
+        width: 400,
+        gutterExtent: 0.5,
+        initialPagesAlignedToEnd: true,
+        delayedDragStart: true,
+        onItemTap: tappedItems.add,
+        delegate: const PaginatedReorderableListDelegateWithFixedMainAxisCount(
+            mainAxisCount: 4)));
+    await tester.pump();
+
+    final listFinder = find.byType(PaginatedReorderableList);
+    await tester.tap(find.byKey(const ValueKey(0)));
+    await tester.tap(find.byKey(const ValueKey(1)));
+    final listRect = tester.getRect(listFinder);
+    await tester.tapAt(Offset(listRect.right - 20, listRect.center.dy));
+    await tester.pump();
+
+    expect(tappedItems, [0, 1, 2]);
   });
 
   testWidgets('edge overpull toggles trailing page alignment', (tester) async {
