@@ -1262,7 +1262,7 @@ class ChanTabs extends ChangeNotifier {
 		final listIndex = usingHomeBoard ? max(0, globalIndex - 1) : globalIndex;
 		final listItemCount = max(0, Persistence.tabs.length - (usingHomeBoard ? 1 : 0));
 		final lastPage = max(0, (listItemCount - 1) ~/ itemsPerPage);
-		final targetPage = min(listIndex ~/ itemsPerPage, lastPage);
+		final targetPage = min(_tabListController.pageForItem(listIndex) ?? (listIndex ~/ itemsPerPage), lastPage);
 		if (duration > Duration.zero) {
 			await _tabListController.animateToPage(targetPage, curve: Curves.ease, duration: duration);
 		}
@@ -2197,6 +2197,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						physics: const FasterSnappingPageScrollPhysics(),
 						paginationDelegate: ChanTabs._tabListPaginationDelegate,
 						gutterExtent: 0.5,
+						allowTrailingAlignmentOverpull: true,
+						initialPagesAlignedToEnd: Settings.tabBarPagesAlignedToEndSetting.read(context),
+						onPagesAlignedToEndChanged: (value) {
+							Settings.tabBarPagesAlignedToEndSetting.write(context, value);
+						},
 						selectedItemExtentFactor: axis == Axis.vertical ? 1 : 2,
 						selectedIndex: selectedListIndex,
 						scrollDirection: axis,

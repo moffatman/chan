@@ -58,6 +58,10 @@ Widget buildTestList(
     int? selectedIndex,
     double selectedItemExtentFactor = 2,
     double gutterExtent = 0,
+    bool allowTrailingAlignmentOverpull = false,
+    bool initialPagesAlignedToEnd = false,
+    ValueChanged<bool>? onPagesAlignedToEndChanged,
+    double alignmentOverpullExtent = 48,
     Map<int, Key> itemKeys = const {},
     bool tabGestures = false,
     Map<int, double> preferredMainAxisExtents = const {},
@@ -85,6 +89,12 @@ Widget buildTestList(
                   selectedIndex: selectedIndex,
                   selectedItemExtentFactor: selectedItemExtentFactor,
                   gutterExtent: gutterExtent,
+                  allowTrailingAlignmentOverpull:
+                      allowTrailingAlignmentOverpull,
+                  initialPagesAlignedToEnd: initialPagesAlignedToEnd,
+                  onPagesAlignedToEndChanged:
+                      onPagesAlignedToEndChanged,
+                  alignmentOverpullExtent: alignmentOverpullExtent,
                   physics: physics,
                   onPageChanged: onPageChanged,
                   onReorder: onReorder ?? (_, __) {},
@@ -197,6 +207,100 @@ void main() {
     final listLeft =
         tester.getTopLeft(find.byType(PaginatedReorderableList)).dx;
     expect(tester.getTopLeft(find.byKey(const ValueKey(4))).dx, listLeft);
+  });
+
+  testWidgets('initial trailing alignment is applied before first layout',
+      (tester) async {
+    final key = GlobalKey<PaginatedReorderableListState>();
+    await tester.pumpWidget(buildTestList(
+        listKey: key,
+        itemCount: 5,
+        width: 400,
+        gutterExtent: 0.5,
+        initialPagesAlignedToEnd: true,
+        delegate: const PaginatedReorderableListDelegateWithFixedMainAxisCount(
+            mainAxisCount: 4)));
+    await tester.pump();
+
+    final listLeft =
+        tester.getTopLeft(find.byType(PaginatedReorderableList)).dx;
+    expect(key.currentState!.pagesAlignedToEnd, isTrue);
+    expect(key.currentState!.leadingEmptySlots, 3);
+    expect(tester.getTopLeft(find.byKey(const ValueKey(0))).dx,
+        listLeft + 280);
+  });
+
+  testWidgets('edge overpull toggles trailing page alignment', (tester) async {
+    final key = GlobalKey<PaginatedReorderableListState>();
+    final controller = PaginatedReorderableListController();
+    final alignmentChanges = <bool>[];
+    await tester.pumpWidget(buildTestList(
+        listKey: key,
+        controller: controller,
+        itemCount: 5,
+        width: 400,
+        physics: const BouncingScrollPhysics(),
+        gutterExtent: 0.5,
+        allowTrailingAlignmentOverpull: true,
+        onPagesAlignedToEndChanged: alignmentChanges.add,
+        alignmentOverpullExtent: 20,
+        delegate: const PaginatedReorderableListDelegateWithFixedMainAxisCount(
+            mainAxisCount: 4)));
+    await tester.pump();
+
+    final listFinder = find.byType(PaginatedReorderableList);
+    final listLeft = tester.getTopLeft(listFinder).dx;
+    expect(tester.getTopLeft(find.byKey(const ValueKey(0))).dx, listLeft);
+
+    key.currentState!.jumpToPage(1);
+    await tester.pump();
+    var gesture = await tester.startGesture(tester.getCenter(listFinder));
+    await gesture.moveBy(const Offset(-100, 0));
+    await tester.pump();
+
+    expect(key.currentState!.pagesAlignedToEnd, isFalse);
+    expect(find.byKey(const ValueKey(
+        'PaginatedReorderableList.alignmentPullIndicator')), findsOneWidget);
+
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    expect(key.currentState!.pagesAlignedToEnd, isTrue);
+    expect(key.currentState!.leadingEmptySlots, 3);
+    expect(alignmentChanges, [true]);
+    expect(controller.pageForItem(3), 1);
+    expect(controller.pageForItem(4), 1);
+
+    key.currentState!.jumpToPage(0);
+    await tester.pump();
+    expect(tester.getTopLeft(find.byKey(const ValueKey(0))).dx,
+        listLeft + 280);
+
+    key.currentState!.jumpToPage(1);
+    await tester.pump();
+    expect(tester.getTopRight(find.byKey(const ValueKey(4))).dx,
+        tester.getTopRight(listFinder).dx);
+
+    gesture = await tester.startGesture(tester.getCenter(listFinder));
+    await gesture.moveBy(const Offset(-100, 0));
+    await tester.pump();
+
+    expect(key.currentState!.pagesAlignedToEnd, isTrue);
+    expect(find.byKey(const ValueKey(
+        'PaginatedReorderableList.alignmentPullIndicator')), findsOneWidget);
+
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    expect(key.currentState!.pagesAlignedToEnd, isFalse);
+    expect(key.currentState!.leadingEmptySlots, 0);
+    expect(alignmentChanges, [true, false]);
+    expect(find.byKey(const ValueKey(
+        'PaginatedReorderableList.alignmentPullIndicator')), findsNothing);
+
+    key.currentState!.jumpToPage(0);
+    await tester.pump();
+    expect(tester.getTopLeft(find.byKey(const ValueKey(0))).dx, listLeft);
   });
 
   testWidgets('page gutter reveals adjacent items without changing chunks',

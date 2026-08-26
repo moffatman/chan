@@ -2834,6 +2834,18 @@ class SavedSettingsFields {
     fieldName: 'showAttachmentsPageButton',
     merger: PrimitiveMerger(),
   );
+  static bool getTabBarPagesAlignedToEnd(SavedSettings x) =>
+      x.tabBarPagesAlignedToEnd;
+  static void setTabBarPagesAlignedToEnd(SavedSettings x, bool v) =>
+      x.tabBarPagesAlignedToEnd = v;
+  static const int kTabBarPagesAlignedToEnd = 219;
+  static const tabBarPagesAlignedToEnd = HiveFieldAdapter<SavedSettings, bool>(
+    getter: getTabBarPagesAlignedToEnd,
+    setter: setTabBarPagesAlignedToEnd,
+    fieldNumber: kTabBarPagesAlignedToEnd,
+    fieldName: 'tabBarPagesAlignedToEnd',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -3052,13 +3064,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     215: SavedSettingsFields.showTabPopup,
     216: SavedSettingsFields.didHideTabPopupAutomatically,
     217: SavedSettingsFields.cachedWebViewTlsHello3,
-    218: SavedSettingsFields.showAttachmentsPageButton
+    218: SavedSettingsFields.showAttachmentsPageButton,
+    219: SavedSettingsFields.tabBarPagesAlignedToEnd
   };
 
   @override
   SavedSettings read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final List<dynamic> fields = List.filled(219, null);
+    final List<dynamic> fields = List.filled(220, null);
     for (int i = 0; i < numOfFields; i++) {
       final int fieldId = reader.readByte();
       final dynamic value = reader.read();
@@ -3290,13 +3303,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       didHideTabPopupAutomatically: fields[216] as bool?,
       cachedWebViewTlsHello3: fields[217] as TlsClientHello?,
       showAttachmentsPageButton: fields[218] as bool?,
+      tabBarPagesAlignedToEnd: fields[219] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(206)
+      ..writeByte(207)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -3708,7 +3722,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(217)
       ..write(obj.cachedWebViewTlsHello3)
       ..writeByte(218)
-      ..write(obj.showAttachmentsPageButton);
+      ..write(obj.showAttachmentsPageButton)
+      ..writeByte(219)
+      ..write(obj.tabBarPagesAlignedToEnd);
   }
 
   @override
