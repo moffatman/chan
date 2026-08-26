@@ -60,15 +60,17 @@ final behaviorSettings = [
 		setting: const SettingWithFallback(Settings.usePushNotificationsSetting, false),
 		injectButton: (context, usePushNotifications, setUsePushNotifications) {
 			final errors = context.watch<ImageboardRegistry>().notificationErrors;
+			final attributableErrors = {
+				for (final entry in errors.entries)
+					if (entry.key case final ib?) ib: entry.value
+			};
 			return Row(
 				mainAxisSize: MainAxisSize.min,
 				children: [
-					if (errors.isNotEmpty) CupertinoButton(
+					if (attributableErrors.isNotEmpty) CupertinoButton(
 						onPressed: () {
-							// TODO: Pick which one to show?
-							final entry = errors.entries.first;
-							alertError(context, entry.value.$1, entry.value.$2, actions: {
-								if (entry.key case final i?) 'Retry': () => i.notifications.initialize(allowDeleteAll: false)
+							alertError(context, ImageboardCoalescedError(attributableErrors), attributableErrors.values.first.$2, actions: {
+								'Retry': () => Future.wait(attributableErrors.keys.map((i) => i.notifications.initialize(allowDeleteAll: false)))
 							});
 						},
 						child: const Icon(CupertinoIcons.exclamationmark_triangle, color: Colors.red)

@@ -1,6 +1,7 @@
 
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
@@ -808,4 +809,24 @@ class ImageboardScoped<T> {
 
 	@override
 	String toString() => 'ImageboardScoped(${imageboard.key}, $item)';
+}
+
+class ImageboardCoalescedError extends ExtendedException {
+	final Map<Imageboard, (Object, StackTrace)> errors;
+	ImageboardCoalescedError(this.errors) : super(
+		additionalFiles: {
+			for (final entry in errors.entries) ...{
+				'${entry.key.key}.txt': utf8.encode('${entry.value.$1}\n\n${entry.value.$2}'),
+				if (ExtendedException.extract(entry.value.$1) case ExtendedException e)
+					for (final file in e.additionalFiles.entries)
+						'${entry.key.key}_nested_${file.key}': file.value
+			}
+		}
+	);
+	
+	@override
+	String toString() => 'ImageboardCoalescedError(${errors.entries.map((e) => '${e.key.key}: ${e.value.$1.toStringDio()}')})';
+
+  @override
+  bool get isReportable => true;
 }
