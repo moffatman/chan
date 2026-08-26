@@ -620,6 +620,10 @@ class ThreadWatcher extends ChangeNotifier {
 
 	Future<void> fixBrokenThread(ThreadIdentifier thread) async {
 		await fixBrokenLock.protect(() async {
+			if (site.hasUnreliableThumbnails) {
+				// don't even try to fix
+				return;
+			}
 			if (fixedThreads.contains(thread)) {
 				// fixed while we were waiting
 				return;
