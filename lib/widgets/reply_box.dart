@@ -972,14 +972,14 @@ Future<_ReplyBoxFile?> _makeAttachment(PickedAttachment? originalAttachment, Fil
 					transcode: forceGifToMp4 ? MediaConversion.toMp4(
 						file.uri,
 						maximumSizeInBytes: forceMaximumSizeInBytes ?? board.maxWebmSizeBytes ?? board.maxImageSizeBytes,
-						maximumDimension: settings.maximumImageUploadDimension,
+						maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
 						maximumDurationInSeconds: board.maxWebmDurationSeconds?.toDouble(),
 						removeMetadata: settings.removeMetadataOnUploadedFiles,
 						randomizeChecksum: randomizeChecksum
 					) : MediaConversion.toGif(
 						file.uri,
 						maximumSizeInBytes: forceMaximumSizeInBytes ?? board.maxWebmSizeBytes ?? board.maxImageSizeBytes,
-						maximumDimension: settings.maximumImageUploadDimension,
+						maximumDimension: forceMaximumDimension ?? settings.maximumImageUploadDimension,
 						removeMetadata: settings.removeMetadataOnUploadedFiles,
 						randomizeChecksum: randomizeChecksum
 					)
