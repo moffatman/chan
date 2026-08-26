@@ -1845,6 +1845,9 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	}
 	Set<int>? _replyIdsToYou;
 	Set<int>? replyIdsToYou() => _replyIdsToYou ??= () {
+		if (youIds.isEmpty) {
+			return const <int>{};
+		}
 		return filteredPosts()?.where((p) {
 			return p.repliedToIds.any((id) => youIds.contains(id));
 		}).map((p) => p.id).toSet();
@@ -1871,25 +1874,44 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 		return true;
 	}
 	List<Post>? _makeFilteredPosts() => thread?.postsToShow.where(shouldShowPost).toList(growable: false);
-	int? unseenReplyCount() => filteredPosts()?.fold<int>(0, (t, p) {
-		if (!unseenPostIds.data.contains(p.id)) {
-			return t;
+	int? unseenReplyCount() {
+		if (lastSeenPostId == null) {
+			if (thread?.replyCount case final replyCount?) {
+				return replyCount + 1;
+			}
+			return null;
 		}
-		if (p.isPageStub && p.hasOmittedReplies) {
-			if (p.id == filteredPosts()?.tryLast?.parentId) {
-				// Last page doesn't count if loaded
+		if (unseenPostIds.data.isEmpty) {
+			return 0;
+		}
+		return filteredPosts()?.fold<int>(0, (t, p) {
+			if (!unseenPostIds.data.contains(p.id)) {
 				return t;
 			}
-			return t + (imageboard?.site.postsPerPage ?? 1);
+			if (p.isPageStub && p.hasOmittedReplies) {
+				if (p.id == filteredPosts()?.tryLast?.parentId) {
+					// Last page doesn't count if loaded
+					return t;
+				}
+				return t + (imageboard?.site.postsPerPage ?? 1);
+			}
+			return t + 1;
+		});
+	}
+	int? unseenImageCount() {
+		if (lastSeenPostId == null) {
+			return thread?.imageCount;
 		}
-		return t + 1;
-	});
-	int? unseenImageCount() => filteredPosts()?.fold<int>(0, (t, p) {
-		if (!unseenPostIds.data.contains(p.id)) {
-			return t;
+		if (unseenPostIds.data.isEmpty) {
+			return 0;
 		}
-		return t + p.attachments.length;
-	});
+		return filteredPosts()?.fold<int>(0, (t, p) {
+			if (!unseenPostIds.data.contains(p.id)) {
+				return t;
+			}
+			return t + p.attachments.length;
+		});
+	}
 
 	@override
 	String toString() => 'PersistentThreadState(key: $boxKey, lastSeenPostId: $lastSeenPostId, receipts: $receipts, lastOpenedTime: $lastOpenedTime, savedTime: $savedTime, useArchive: $useArchive, showInHistory: $showInHistory)';
@@ -2279,7 +2301,7 @@ class PersistentBrowserTab extends EasyListenable {
 		}
 		else if (thread != null) {
 			final state = persistence?.getThreadStateIfExists(thread!);
-			if (state != null && (state.unseenPostIds.data.isNotEmpty || state.lastSeenPostId == null)) {
+			if (state != null && state.unseenPostIds.data.isNotEmpty) {
 				await state.ensureThreadLoaded(preinit: false, syncIO: true);
 			}
 		}
