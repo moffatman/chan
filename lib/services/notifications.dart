@@ -241,7 +241,7 @@ class Notifications {
 				Thread t => target.postId != null && !t.posts_.any((p) => p.id == target.postId),
 				null => true
 			}) {
-				await child.localWatcher?.updateThread(target.thread);
+				await child.localWatcher?.updateThread(target.thread, priority: RequestPriority.functional);
 			}
 			if (child.getThreadWatch(target.thread)?.foregroundMuted != true) {
 				child.foregroundStream.add(notification);

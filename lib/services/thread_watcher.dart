@@ -294,14 +294,14 @@ class ThreadWatcher extends ChangeNotifier {
 		}
 	}
 
-	Future<void> updateThread(ThreadIdentifier identifier, {CancelToken? cancelToken}) async {
-		await _updateThread(persistence.getThreadState(identifier), null, cancelToken);
+	Future<void> updateThread(ThreadIdentifier identifier, {required RequestPriority priority, CancelToken? cancelToken}) async {
+		await _updateThread(persistence.getThreadState(identifier), null, priority, cancelToken);
 	}
 
-	late final _updateThreadDebouncer = Debouncer1Plus1PlusCancel(__updateThread);
-	Future<bool> _updateThread(PersistentThreadState threadState, CacheConstraints? acceptCached, CancelToken? cancelToken)
-		=> _updateThreadDebouncer.debounce(threadState, acceptCached, cancelToken);
-	Future<bool> __updateThread(PersistentThreadState threadState, CacheConstraints? acceptCached, CancelToken? cancelToken) async {
+	late final _updateThreadDebouncer = Debouncer1Plus2PlusCancel(__updateThread);
+	Future<bool> _updateThread(PersistentThreadState threadState, CacheConstraints? acceptCached, RequestPriority priority, CancelToken? cancelToken)
+		=> _updateThreadDebouncer.debounce(threadState, acceptCached, priority, cancelToken);
+	Future<bool> __updateThread(PersistentThreadState threadState, CacheConstraints? acceptCached, RequestPriority priority, CancelToken? cancelToken) async {
 		Thread newThread;
 		try {
 			final oldThread = await threadState.getThread();
@@ -321,7 +321,7 @@ class ThreadWatcher extends ChangeNotifier {
 						final newChildren = await site.getStubPosts(
 							oldThread.identifier,
 							[ParentAndChildIdentifier.same(lastIncompletePageParentId)],
-							priority: RequestPriority.functional,
+							priority: priority,
 							cancelToken: cancelToken
 						);
 						final oldPosts = {
@@ -356,7 +356,7 @@ class ThreadWatcher extends ChangeNotifier {
 				final tail = await site.getThreadTail(
 					oldThread,
 					variant: threadState.variant,
-					priority: RequestPriority.functional,
+					priority: priority,
 					cancelToken: cancelToken
 				);
 				if (tail != null && (tail.posts.isEmpty || tail.posts.first.id <= oldThread.posts_.last.id)) {
@@ -399,16 +399,16 @@ class ThreadWatcher extends ChangeNotifier {
 						threadState.identifier,
 						lastUpdatedTime,
 						variant: threadState.variant,
-						priority: RequestPriority.functional,
+						priority: priority,
 						cancelToken: cancelToken
 					) ?? oldThread;
 				}
-				await site.updatePageNumber(newThread, priority: RequestPriority.functional, cancelToken: cancelToken);
+				await site.updatePageNumber(newThread, priority: priority, cancelToken: cancelToken);
 			}
 			else {
 				newThread = await site.getThread(
 					threadState.identifier,
-					priority: RequestPriority.functional,
+					priority: priority,
 					variant: threadState.variant,
 					cancelToken: cancelToken
 				);
@@ -431,7 +431,7 @@ class ThreadWatcher extends ChangeNotifier {
 			try {
 				newThread = await site.getThreadFromArchive(
 					threadState.identifier,
-					priority: RequestPriority.functional,
+					priority: priority,
 					cancelToken: cancelToken
 				);
 			}
@@ -487,7 +487,7 @@ class ThreadWatcher extends ChangeNotifier {
 				notifications.removeWatch(watch);
 			}
 			else {
-				await _updateThread(threadState, acceptCached, cancelToken);
+				await _updateThread(threadState, acceptCached, RequestPriority.functional, cancelToken);
 			}
 		}
 		for (final tab in Persistence.tabs.toList(growable: false)) {
@@ -499,7 +499,7 @@ class ThreadWatcher extends ChangeNotifier {
 				final threadState = persistence.getThreadStateIfExists(tab.thread!);
 				final thread = await threadState?.ensureThreadLoaded(preinit: false);
 				if (threadState != null && thread?.isArchived != true && thread?.isDeleted != true && threadState.threadWatch?.zombie != true) {
-					await _updateThread(threadState, acceptCached, cancelToken);
+					await _updateThread(threadState, acceptCached, RequestPriority.functional, cancelToken);
 					if (threadState.unseenPostIds.data.isNotEmpty) {
 						tab.unseen.value = threadState.unseenReplyCount() ?? tab.unseen.value;
 						tab.unseenYous.value = threadState.unseenReplyIdsToYouCount() ?? tab.unseenYous.value;
@@ -635,7 +635,7 @@ class ThreadWatcher extends ChangeNotifier {
 			final state = persistence.getThreadStateIfExists(thread);
 			if (state != null) {
 				try {
-					if (await _updateThread(state, null, null)) {
+					if (await _updateThread(state, null, RequestPriority.cosmetic, null)) {
 						fixedThreads.add(thread);
 					}
 				}

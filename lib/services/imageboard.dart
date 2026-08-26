@@ -225,7 +225,7 @@ class Imageboard extends ChangeNotifier {
 				int attemptsRemaining = 1;
 				while (!postShowedUpCompleter.isCompleted) {
 					try {
-						await threadWatcher.updateThread(threadIdentifier);
+						await threadWatcher.updateThread(threadIdentifier, priority: RequestPriority.interactive);
 						if (attemptsRemaining > 0) {
 							attemptsRemaining--;
 							await Future.delayed(const Duration(seconds: 15));

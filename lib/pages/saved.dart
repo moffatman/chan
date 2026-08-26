@@ -1003,7 +1003,7 @@ class _SavedPageState extends State<SavedPage> {
 											}
 										}
 										try {
-											await state.imageboard?.threadWatcher.updateThread(state.identifier, cancelToken: options.cancelToken);
+											await state.imageboard?.threadWatcher.updateThread(state.identifier, priority: RequestPriority.interactive, cancelToken: options.cancelToken);
 										}
 										catch (e, st) {
 											Future.error(e, st); // crashlytics it

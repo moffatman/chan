@@ -8,6 +8,7 @@ import 'package:chan/services/thread_collection_actions.dart' as thread_actions;
 import 'package:chan/services/thread_collection_actions.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/services/util.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/notifying_icon.dart';
@@ -621,7 +622,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 				onRefresh: () async {
 					for (final state in states) {
 						if (state.thread?.isArchived != true && state.threadWatch?.zombie != true) {
-							await state.imageboard?.threadWatcher.updateThread(state.identifier);
+							await state.imageboard?.threadWatcher.updateThread(state.identifier, priority: RequestPriority.interactive);
 						}
 					}
 				},
