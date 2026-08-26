@@ -391,6 +391,10 @@ class CloudflareInterceptor extends InterceptorBase {
 			Duration? knownHeadlessTime;
 			if ((await Persistence.currentCookies.readPseudoCookie(headlessTimePseudoCookieKey))?.tryParseDouble case final seconds?) {
 				knownHeadlessTime = DurationConversion.max(headlessTime, DurationConversion.fromSeconds(seconds));
+				if (knownHeadlessTime > const Duration(seconds: 14)) {
+					// Unreasonable
+					knownHeadlessTime = null;
+				}
 			}
 			final manager = CookieManager.instance();
 			await manager.deleteAllCookies();
@@ -609,6 +613,7 @@ class CloudflareInterceptor extends InterceptorBase {
 					// Allow popup
 			}
 			if (cancelToken?.isCancelled ?? false) {
+				Persistence.currentCookies.deletePseudoCookie(headlessTimePseudoCookieKey);
 				throw CloudflareHandlerInterruptedException(gatewayName);
 			}
 			final navigator = Navigator.of(ImageboardRegistry.instance.context!);
