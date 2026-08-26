@@ -303,11 +303,11 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 			if (response.statusCode != 200) {
 				throw PostFailedException(document.querySelector('#errorLabel')?.text ?? 'HTTP Error ${response.statusCode}');
 			}
-			final match = RegExp(r'(\d+)\.html#(\d+)?').firstMatch(document.querySelector('#linkRedirect')?.attributes['href'] ?? '');
+			final match = RegExp(r'(\d+)\.html(?:#(\d+))?').firstMatch(document.querySelector('#linkRedirect')?.attributes['href'] ?? '');
 			if (match != null) {
 				return PostReceipt(
 					post: post,
-					id: match.group(2) != null ? int.parse(match.group(2)!) : int.parse(match.group(1)!),
+					id: match.group(2)?.parseInt ?? match.group(1)!.parseInt,
 					password: password,
 					name: post.name ?? '',
 					options: post.options ?? '',
