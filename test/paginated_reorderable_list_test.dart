@@ -303,6 +303,64 @@ void main() {
     expect(tester.getTopLeft(find.byKey(const ValueKey(0))).dx, listLeft);
   });
 
+  testWidgets('alignment overpull must start on the toggled edge page',
+      (tester) async {
+    final key = GlobalKey<PaginatedReorderableListState>();
+    await tester.pumpWidget(buildTestList(
+        listKey: key,
+        itemCount: 12,
+        width: 400,
+        physics: const BouncingScrollPhysics(),
+        gutterExtent: 0.5,
+        allowTrailingAlignmentOverpull: true,
+        alignmentOverpullExtent: 20,
+        delegate: const PaginatedReorderableListDelegateWithFixedMainAxisCount(
+            mainAxisCount: 4)));
+    await tester.pump();
+
+    final listFinder = find.byType(PaginatedReorderableList);
+    key.currentState!.jumpToPage(1);
+    await tester.pump();
+    final gesture = await tester.startGesture(tester.getCenter(listFinder));
+    await gesture.moveBy(const Offset(-1000, 0));
+    await tester.pump();
+
+    expect(find.byKey(const ValueKey(
+        'PaginatedReorderableList.alignmentPullIndicator')), findsNothing);
+
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(key.currentState!.pagesAlignedToEnd, isFalse);
+
+    final reverseKey = GlobalKey<PaginatedReorderableListState>();
+    await tester.pumpWidget(buildTestList(
+        listKey: reverseKey,
+        itemCount: 12,
+        width: 400,
+        physics: const BouncingScrollPhysics(),
+        gutterExtent: 0.5,
+        allowTrailingAlignmentOverpull: true,
+        initialPagesAlignedToEnd: true,
+        alignmentOverpullExtent: 20,
+        delegate: const PaginatedReorderableListDelegateWithFixedMainAxisCount(
+            mainAxisCount: 4)));
+    await tester.pump();
+
+    reverseKey.currentState!.jumpToPage(1);
+    await tester.pump();
+    final reverseGesture =
+        await tester.startGesture(tester.getCenter(listFinder));
+    await reverseGesture.moveBy(const Offset(1000, 0));
+    await tester.pump();
+
+    expect(find.byKey(const ValueKey(
+        'PaginatedReorderableList.alignmentPullIndicator')), findsNothing);
+
+    await reverseGesture.up();
+    await tester.pumpAndSettle();
+    expect(reverseKey.currentState!.pagesAlignedToEnd, isTrue);
+  });
+
   testWidgets('page gutter reveals adjacent items without changing chunks',
       (tester) async {
     final key = GlobalKey<PaginatedReorderableListState>();

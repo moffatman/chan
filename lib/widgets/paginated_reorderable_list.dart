@@ -1099,6 +1099,7 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
   late final AnimationController _pageAlignmentController;
   late final CurvedAnimation _pageAlignmentAnimation;
   _AlignmentPullEdge? _alignmentPullEdge;
+  int? _alignmentPullStartPage;
   double _alignmentPullExtent = 0;
   bool _alignmentPullArmed = false;
 
@@ -1161,6 +1162,7 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
     }
     if (!widget.allowTrailingAlignmentOverpull) {
       _alignmentPullEdge = null;
+      _alignmentPullStartPage = null;
       _alignmentPullExtent = 0;
       _alignmentPullArmed = false;
     }
@@ -1265,6 +1267,11 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
     if (notification is ScrollStartNotification &&
         notification.dragDetails != null) {
       _clearAlignmentPull();
+      final pixels = notification.metrics.pixels.clamp(
+          notification.metrics.minScrollExtent,
+          notification.metrics.maxScrollExtent);
+      _alignmentPullStartPage =
+          _clampPage((pixels / _pageExtent).round());
       return;
     }
     if (notification is ScrollUpdateNotification &&
@@ -1306,7 +1313,14 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
     }
 
     final canChangeAlignment = pageCount > 1;
+    final startedAtToggleEdge = switch (edge) {
+      _AlignmentPullEdge.leading => _alignmentPullStartPage == 0,
+      _AlignmentPullEdge.trailing =>
+        _alignmentPullStartPage == pageCount - 1,
+      null => false
+    };
     final edgeCanToggle = canChangeAlignment &&
+        startedAtToggleEdge &&
         (edge == _AlignmentPullEdge.trailing ||
             (_alignPagesToEnd && edge == _AlignmentPullEdge.leading));
     if (!edgeCanToggle) {
@@ -1345,6 +1359,7 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
   }
 
   void _finishAlignmentPull() {
+    _alignmentPullStartPage = null;
     if (_alignmentPullEdge == null) return;
     final toggleAlignment = _alignmentPullArmed;
     bool? changedAlignment;
