@@ -2170,7 +2170,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					decoration: BoxDecoration(
 						color: usingHomeBoard && i == 0 ?
 							ChanceTheme.primaryColorWithBrightness30Of(context) :
-							(data.isArchived ? ChanceTheme.primaryColorWithBrightness10Of(context) : null),
+							(selectedListIndex == i ? ChanceTheme.primaryColorWithBrightness20Of(context) : (data.isArchived ? ChanceTheme.primaryColorWithBrightness10Of(context) : null)),
 					),
 					child: _buildTabletIcon(
 						i * -1,
