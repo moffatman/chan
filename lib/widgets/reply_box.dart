@@ -3062,7 +3062,7 @@ Future<_ReplyBoxFile?> _makeAttachment(PickedAttachment? originalAttachment, Fil
 																setState(() {});
 																// Local [context] is not safe. It will die when we go to 'Picking'
 																try {
-																	final paths = await picker.pick(this.context, true);
+																	final paths = await picker.pick(this.context, board.filesPerPost > 1 || _attachments.isNotEmpty);
 																	if (paths.isNotEmpty) {
 																		for (final path in paths) {
 																			await _addAttachment(File(path));
