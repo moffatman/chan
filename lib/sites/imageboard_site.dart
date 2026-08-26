@@ -2631,9 +2631,9 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		)
 	];
 	List<ThreadVariant> get threadVariants => const [];
-	String formatBoardNameShort(String name) => name;
-	String formatBoardName(String name) => '/${formatBoardNameShort(name)}/';
-	String formatBoardNameWithoutTrailingSlash(String name) => '/${formatBoardNameShort(name)}';
+	String formatBoardNameShort(String name) => '/$name/';
+	String formatBoardName(String name) => '/$name/';
+	String formatBoardNameWithoutTrailingSlash(String name) => '/$name';
 	String formatBoardLink(String name) => '>>/$name/';
 	String formatBoardSearchLink(String name, String query) => '>>>/$name/$query';
 	String formatUsername(String name) => name;

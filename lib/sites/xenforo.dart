@@ -1032,6 +1032,10 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 
 	@override
 	String formatBoardNameShort(String name) => name.beforeFirst('.');
+	@override
+	String formatBoardName(String name) => name.beforeFirst('.');
+	@override
+	String formatBoardNameWithoutTrailingSlash(String name) => name.beforeFirst('.');
 
 	@override
 	String formatUsername(String name) {

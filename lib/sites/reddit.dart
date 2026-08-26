@@ -1771,6 +1771,9 @@ class SiteReddit extends ImageboardSite {
 	];
 
 	@override
+	String formatBoardNameShort(String name) => name;
+
+	@override
 	String formatBoardName(String name) => '/r/$name';
 
 	@override
