@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show precisionErrorTolerance;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
@@ -175,11 +176,14 @@ class PaginatedReorderableListController extends ScrollController {
     return (index + _leadingEmptySlots) ~/ itemsPerPage;
   }
 
-  void _setPageGeometry(
-      double pageExtent, int itemsPerPage, int leadingEmptySlots) {
+  void _setPageGeometry(double pageExtent, int itemsPerPage,
+      int leadingEmptySlots, {int? pendingPageOverride}) {
     _pageExtent = pageExtent;
     _itemsPerPage = itemsPerPage;
     _leadingEmptySlots = leadingEmptySlots;
+    if (pendingPageOverride != null) {
+      _pendingPage = pendingPageOverride;
+    }
     if (_pendingPage case final pendingPage? when hasClients) {
       _pendingPage = null;
       jumpToPage(pendingPage);
@@ -458,6 +462,7 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
   bool _previousPreferredExtentNeedsMeasurement = true;
   bool _preferredExtentNeedsMeasurement = true;
   bool _delegateNeedsSelectedChildUpdate = false;
+  bool _didCorrectInitialSelectedPage = false;
   double? _lastViewportMainAxisExtent;
   double? _lastCrossAxisExtent;
 
@@ -784,6 +789,21 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
       _lastCrossAxisExtent = constraints.crossAxisExtent;
     }
     _itemsPerPage = resolvedItemsPerPage;
+    if (!_didCorrectInitialSelectedPage &&
+        _itemCount > 0 &&
+        _pageExtent > 0) {
+      _didCorrectInitialSelectedPage = true;
+      if (_isValidIndex(_selectedIndex)) {
+        final selectedPage =
+            _pageForIndex(_selectedIndex!, _alignPagesToEnd);
+        final selectedPageOffset = selectedPage * _pageExtent;
+        final correction = selectedPageOffset - constraints.scrollOffset;
+        if (correction.abs() > precisionErrorTolerance) {
+          geometry = SliverGeometry(scrollOffsetCorrection: correction);
+          return;
+        }
+      }
+    }
     RenderBox? selectedChild;
     if (_isValidIndex(_selectedIndex)) {
       selectedChild = _childAtIndex(_selectedIndex!);
@@ -1437,15 +1457,23 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
         newLeadingEmptySlots != _laidOutLeadingEmptySlots;
     final firstVisibleItem = math.max(
         0, _currentPage * _itemsPerPage - _laidOutLeadingEmptySlots);
-    _controller._setPageGeometry(
-        newPageExtent, newItemsPerPage, newLeadingEmptySlots);
+    final initialSelectedPage = !_hasLayout &&
+            widget.selectedIndex != null &&
+            widget.selectedIndex! >= 0 &&
+            widget.selectedIndex! < widget.itemCount
+        ? _clampPage(
+            (widget.selectedIndex! + newLeadingEmptySlots) ~/ newItemsPerPage)
+        : null;
+    _controller._setPageGeometry(newPageExtent, newItemsPerPage,
+        newLeadingEmptySlots,
+        pendingPageOverride: initialSelectedPage);
     var targetPage = _clampPage(_currentPage);
     if (!_hasLayout) {
       _hasLayout = true;
       _itemsPerPage = newItemsPerPage;
       _pageExtent = newPageExtent;
       _laidOutLeadingEmptySlots = newLeadingEmptySlots;
-      targetPage = _clampPage(_currentPage);
+      targetPage = initialSelectedPage ?? _clampPage(_currentPage);
     } else if (pageGeometryChanged) {
       _itemsPerPage = newItemsPerPage;
       _pageExtent = newPageExtent;

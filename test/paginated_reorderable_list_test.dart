@@ -237,6 +237,46 @@ void main() {
         listLeft + 280);
   });
 
+  testWidgets('initial layout shows the selected item page', (tester) async {
+    final key = GlobalKey<PaginatedReorderableListState>();
+    final controller = PaginatedReorderableListController(initialPage: 0);
+    await tester.pumpWidget(buildTestList(
+        listKey: key,
+        controller: controller,
+        itemCount: 10,
+        selectedIndex: 7,
+        width: 400,
+        gutterExtent: 0.5,
+        delegate: const PaginatedReorderableListDelegateWithFixedMainAxisCount(
+            mainAxisCount: 4)));
+
+    final listRect = tester.getRect(find.byType(PaginatedReorderableList));
+    final selectedRect = tester.getRect(find.byKey(const ValueKey(7)));
+    expect(controller.offset, 320);
+    expect(key.currentState!.page, 1);
+    expect(selectedRect.left, greaterThanOrEqualTo(listRect.left));
+    expect(selectedRect.right, lessThanOrEqualTo(listRect.right));
+  });
+
+  testWidgets('initial selected page respects end alignment', (tester) async {
+    final controller = PaginatedReorderableListController(initialPage: 0);
+    await tester.pumpWidget(buildTestList(
+        controller: controller,
+        itemCount: 6,
+        selectedIndex: 4,
+        width: 400,
+        gutterExtent: 0.5,
+        initialPagesAlignedToEnd: true,
+        delegate: const PaginatedReorderableListDelegateWithFixedMainAxisCount(
+            mainAxisCount: 4)));
+
+    final listRect = tester.getRect(find.byType(PaginatedReorderableList));
+    final selectedRect = tester.getRect(find.byKey(const ValueKey(4)));
+    expect(controller.offset, 320);
+    expect(selectedRect.left, greaterThanOrEqualTo(listRect.left));
+    expect(selectedRect.right, lessThanOrEqualTo(listRect.right));
+  });
+
   testWidgets('end-aligned partial first page remains hit-testable',
       (tester) async {
     final tappedItems = <int>[];
