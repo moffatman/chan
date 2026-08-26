@@ -123,9 +123,11 @@ class Imageboard extends ChangeNotifier {
 				notifications.localWatcher = threadWatcher;
 				await threadWatcher.setInitialCounts(syncIO: true);
 				_threadWatcherInitialized = true;
-				if (persistence.boards.isEmpty || !persistence.browserState.filesPerPostMigrated) {
-					await setupBoards();
-					persistence.browserState.filesPerPostMigrated = true;
+				if (persistence.boards.isEmpty || (site.supportsPosting && !persistence.browserState.filesPerPostMigrated)) {
+					setupBoards().then((_) {
+						persistence.browserState.filesPerPostMigrated = true;
+						persistence.didUpdateBrowserState();
+					});
 				}
 			}
 			site.initState();
