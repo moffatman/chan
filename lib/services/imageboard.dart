@@ -123,7 +123,7 @@ class Imageboard extends ChangeNotifier {
 				notifications.localWatcher = threadWatcher;
 				await threadWatcher.setInitialCounts(syncIO: true);
 				_threadWatcherInitialized = true;
-				if (persistence.boards.isEmpty || persistence.browserState.filesPerPostMigrated) {
+				if (persistence.boards.isEmpty || !persistence.browserState.filesPerPostMigrated) {
 					await setupBoards();
 					persistence.browserState.filesPerPostMigrated = true;
 				}
