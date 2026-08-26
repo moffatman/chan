@@ -214,7 +214,7 @@ Future<EmbedData?> loadEmbedData(String url, {required bool highQuality}) {
 				author: null,
 				thumbnailUrl: (highQuality ? uri.replace(queryParameters: {
 					...uri.queryParameters,
-					'name': 'large'
+					'name': 'orig'
 				}) : uri).toString()
 			);
 		}
