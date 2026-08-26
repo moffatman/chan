@@ -505,7 +505,8 @@ public class MainActivity extends FlutterFragmentActivity {
                         Intent launchIntent =
                                 new Intent(Intent.ACTION_VIEW)
                                         .setData(Uri.parse(url))
-                                        .putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, excludedComponentNames);
+                                        .putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, excludedComponentNames)
+                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                         try {
                             startActivity(launchIntent);
                         } catch (ActivityNotFoundException e) {
