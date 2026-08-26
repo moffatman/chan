@@ -2153,9 +2153,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 
 	Widget _buildTabList(Axis axis, ValueListenable<bool> isShowing) {
 		final usingHomeBoard = Settings.instance.usingHomeBoard;
-		final selectedListIndex = _tabs.mainTabIndex == 0 && (!usingHomeBoard || _tabs.browseTabIndex > 0) ?
-			(usingHomeBoard ? _tabs.browseTabIndex - 1 : _tabs.browseTabIndex) :
-			null;
 		buildTabIcon(int i) => ValueListenableBuilder(
 			valueListenable: isShowing,
 			builder: (context, showing, child) {
@@ -2168,9 +2165,29 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				tab: Persistence.tabs[i],
 				builder: (context, data) => DecoratedBox(
 					decoration: BoxDecoration(
-						color: usingHomeBoard && i == 0 ?
-							ChanceTheme.primaryColorWithBrightness30Of(context) :
-							(selectedListIndex == i ? ChanceTheme.primaryColorWithBrightness20Of(context) : (data.isArchived ? ChanceTheme.primaryColorWithBrightness10Of(context) : null)),
+						color: _tabs.browseTabIndex == i
+											// Don't set color if selected, it will break boxShadow
+											? null
+											: (usingHomeBoard && i == 0
+													? ChanceTheme.primaryColorWithBrightness30Of(context)
+													: (data.isArchived ? ChanceTheme.primaryColorWithBrightness10Of(context) : null)
+											),
+						boxShadow: _tabs.browseTabIndex == i ? [
+							BoxShadow(
+								color: ChanceTheme.primaryColorOf(context).withValues(
+									alpha: usingHomeBoard && i == 0
+													? 0.4
+													: (data.isArchived ? 0.3 : 0.2)
+								)
+							),
+							BoxShadow(
+								color: usingHomeBoard && i == 0
+												? ChanceTheme.primaryColorWithBrightness30Of(context)
+												: (data.isArchived ? ChanceTheme.primaryColorWithBrightness10Of(context) : ChanceTheme.barColorOf(context)),
+								spreadRadius: -6,
+								blurRadius: 24
+							),
+						] : [],
 					),
 					child: _buildTabletIcon(
 						i * -1,
@@ -2203,7 +2220,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							Settings.tabBarPagesAlignedToEndSetting.write(context, value);
 						},
 						selectedItemExtentFactor: axis == Axis.vertical ? 1 : 2,
-						selectedIndex: selectedListIndex,
+						selectedIndex: switch ((usingHomeBoard, _tabs.browseTabIndex)) {
+							(true, 0) => null,
+							(true, int i) => i - 1,
+							(false, int i) => i
+						},
 						scrollDirection: axis,
 						onReorder: _tabs.onReorder,
 						itemCount: usingHomeBoard ? Persistence.tabs.length - 1 : Persistence.tabs.length,
