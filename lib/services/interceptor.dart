@@ -22,7 +22,10 @@ class InterceptorBase extends Interceptor {
 		}
 		catch (e, st) {
 			if (e is DioError) {
-				handler.reject(e, true);
+				handler.reject(DioError(
+					requestOptions: options,
+					error: e.error
+				)..stackTrace = e.stackTrace, true);
 			}
 			else {
 				handler.reject(DioError(
@@ -41,7 +44,11 @@ class InterceptorBase extends Interceptor {
 		}
 		catch (e, st) {
 			if (e is DioError) {
-				handler.reject(e, true);
+				handler.reject(DioError(
+					requestOptions: response.requestOptions,
+					response: e.response ?? response,
+					error: e.error
+				)..stackTrace = e.stackTrace, true);
 			}
 			else {
 				handler.reject(DioError(
@@ -61,7 +68,11 @@ class InterceptorBase extends Interceptor {
 		}
 		catch (e, st) {
 			if (e is DioError) {
-				handler.reject(e, true);
+				handler.reject(DioError(
+					requestOptions: err.requestOptions,
+					response: e.response ?? err.response,
+					error: e.error
+				)..stackTrace = e.stackTrace, true);
 			}
 			else {
 				handler.reject(DioError(
