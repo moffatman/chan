@@ -747,8 +747,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 		return RequestOptions(
 			path: '/${thread.board}/thread/${thread.id}-tail.json',
 			baseUrl: 'https://$apiUrl',
-			responseType: ResponseType.json,
-			connectTimeout: 5000 // TODO: Remove this
+			responseType: ResponseType.json
 		);
 	}
 
