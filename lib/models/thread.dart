@@ -573,6 +573,8 @@ class ThreadTail {
 	final String board;
 	final int replyCount;
 	final int imageCount;
+	final bool isArchived;
+	final bool isLocked;
 	final bool isSticky;
 	DateTime? lastUpdatedTime;
 	final int? stickyReplyCap;
@@ -583,6 +585,8 @@ class ThreadTail {
 		required this.board,
 		required this.replyCount,
 		required this.imageCount,
+		required this.isArchived,
+		required this.isLocked,
 		this.isSticky = false,
 		this.lastUpdatedTime,
 		this.stickyReplyCap
@@ -594,6 +598,8 @@ class ThreadTail {
 		board = thread.board,
 		replyCount = thread.replyCount,
 		imageCount = thread.imageCount,
+		isArchived = thread.isArchived,
+		isLocked = thread.isLocked,
 		isSticky = thread.isSticky,
 		lastUpdatedTime = thread.lastUpdatedTime,
 		stickyReplyCap = thread.stickyReplyCap;

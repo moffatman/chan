@@ -760,6 +760,8 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 			board: thread.board,
 			replyCount: op['replies'] as int,
 			imageCount: op['images'] as int,
+			isArchived: op['archived'] == 1,
+			isLocked: op['closed'] == 1,
 			posts: (data['posts'] as List? ?? []).skip(1).map<Post>((postData) {
 				return _makePost(thread.board, thread.id, postData as Map);
 			}).toList(),

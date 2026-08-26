@@ -1329,7 +1329,7 @@ class ThreadPageState extends State<ThreadPage> {
 							// Tail is usable (overlap between posts)
 							newThread = Thread(
 								posts_: [...oldThread.posts_, ...tail.posts.sublist(start)],
-								isArchived: oldThread.isArchived,
+								isArchived: tail.isArchived,
 								isDeleted: oldThread.isDeleted,
 								replyCount: tail.replyCount,
 								imageCount: tail.imageCount,
@@ -1349,7 +1349,7 @@ class ThreadPageState extends State<ThreadPage> {
 								archiveName: oldThread.archiveName,
 								isEndless: oldThread.isEndless,
 								lastUpdatedTime: tail.lastUpdatedTime,
-								isLocked: oldThread.isLocked,
+								isLocked: tail.isLocked,
 								isNsfw: oldThread.isNsfw,
 								stickyReplyCap: tail.stickyReplyCap
 							);
