@@ -2955,7 +2955,7 @@ Future<_ReplyBoxFile?> _makeAttachment(PickedAttachment? originalAttachment, Fil
 								color: settings.theme.primaryColorWithBrightness(0.2)
 							),
 							AnimatedSize(
-								alignment: Alignment.centerRight,
+								alignment: Alignment.centerLeft,
 								duration: const Duration(milliseconds: 250),
 								curve: Curves.ease,
 								child:  _attachmentProgress != null ? Row(
@@ -2992,38 +2992,6 @@ Future<_ReplyBoxFile?> _makeAttachment(PickedAttachment? originalAttachment, Fil
 									]
 								) : Row(
 									children: [
-										if (_attachments.isNotEmpty) AdaptiveIconButton(
-											padding: const EdgeInsets.only(left: 8, right: 8),
-											onPressed: loading ? null : expandAttachmentOptions,
-											icon: Row(
-												mainAxisSize: MainAxisSize.min,
-												children: [
-													if (showAttachmentOptions)
-														const Icon(CupertinoIcons.chevron_down)
-													else
-														const Icon(CupertinoIcons.chevron_up),
-													for (final attachment in _attachments) ...[
-														const SizedBox(width: 8),
-														ClipRRect(
-															borderRadius: BorderRadius.circular(4),
-															child: ConstrainedBox(
-																constraints: const BoxConstraints(
-																	maxWidth: 32,
-																	maxHeight: 32
-																),
-																child: MediaThumbnail(uri: attachment.current.file.uri, fontSize: 12)
-															)
-														),
-													]
-												]
-											)
-										),
-										if (_attachments.isNotEmpty) Container(
-											margin: const EdgeInsets.symmetric(horizontal: 8),
-											width: 1,
-											height: 32,
-											color: settings.theme.primaryColorWithBrightness(0.2)
-										),
 										if (board.filesPerPost > 0) AnimatedBuilder(
 											animation: attachmentSourceNotifier,
 											builder: (context, _) => Row(
@@ -3092,6 +3060,38 @@ Future<_ReplyBoxFile?> _makeAttachment(PickedAttachment? originalAttachment, Fil
 															)
 														)
 													)
+												]
+											)
+										),
+										if (_attachments.isNotEmpty) Container(
+											margin: const EdgeInsets.symmetric(horizontal: 8),
+											width: 1,
+											height: 32,
+											color: settings.theme.primaryColorWithBrightness(0.2)
+										),
+										if (_attachments.isNotEmpty) AdaptiveIconButton(
+											padding: const EdgeInsets.only(left: 8, right: 8),
+											onPressed: loading ? null : expandAttachmentOptions,
+											icon: Row(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													if (showAttachmentOptions)
+														const Icon(CupertinoIcons.chevron_down)
+													else
+														const Icon(CupertinoIcons.chevron_up),
+													for (final attachment in _attachments) ...[
+														const SizedBox(width: 8),
+														ClipRRect(
+															borderRadius: BorderRadius.circular(4),
+															child: ConstrainedBox(
+																constraints: const BoxConstraints(
+																	maxWidth: 32,
+																	maxHeight: 32
+																),
+																child: MediaThumbnail(uri: attachment.current.file.uri, fontSize: 12)
+															)
+														),
+													]
 												]
 											)
 										)
