@@ -29,11 +29,13 @@ import 'package:provider/provider.dart';
 
 class AttachmentsPage extends StatefulWidget {
 	final List<TaggedAttachment> attachments;
-	final PostSpanZoneData zone;
-	final ReplyBoxZone replyBoxZone;
+	final PostSpanZoneData? zone;
+	final ReplyBoxZone? replyBoxZone;
 	final TaggedAttachment? initialAttachment;
 	final ValueChanged<TaggedAttachment>? onChange;
-	final PersistentThreadState threadState;
+	final PersistentThreadState? threadState;
+	final Map<Attachment, ImageboardScoped<Thread>> threads;
+	final ValueChanged<ImageboardScoped<Thread>>? onThreadSelected;
 	const AttachmentsPage({
 		required this.attachments,
 		required this.zone,
@@ -41,6 +43,8 @@ class AttachmentsPage extends StatefulWidget {
 		this.initialAttachment,
 		this.onChange,
 		required this.threadState,
+		this.threads = const {},
+		this.onThreadSelected,
 		Key? key
 	}) : super(key: key);
 
@@ -187,12 +191,14 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 							allowPop: false,
 							heroOtherEndIsBoxFitCover: false,
 							posts: {
-								if (widget.threadState.thread case Thread t)
-									if (widget.threadState.imageboard case Imageboard imageboard)
+								if (widget.threadState?.thread case Thread t)
+									if (widget.threadState?.imageboard case Imageboard imageboard)
 										for (final post in t.posts)
 											for (final attachment in post.attachments)
 												attachment: imageboard.scope(post)
 							},
+							threads: widget.threads,
+							onThreadSelected: widget.onThreadSelected,
 							additionalContextMenuActionsBuilder: (attachment) => [
 								ContextMenuAction(
 									trailingIcon: CupertinoIcons.return_icon,
@@ -261,14 +267,14 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 											context: context,
 											attachments: widget.attachments,
 											zone: widget.zone,
-											replyBoxZone: ReplyBoxZone(
+											replyBoxZone: widget.replyBoxZone == null ? null : ReplyBoxZone(
 												onTapPostId: (int threadId, int id) {
 													navigator.pop(); // Pop the AttachmentsPage
-													widget.replyBoxZone.onTapPostId(threadId, id);
+													widget.replyBoxZone?.onTapPostId(threadId, id);
 												},
 												onQuoteText: (String text, {required PostIdentifier? backlink}) {
 													navigator.pop(); // Pop the AttachmentsPage
-													widget.replyBoxZone.onQuoteText(text, backlink: backlink);
+													widget.replyBoxZone?.onQuoteText(text, backlink: backlink);
 												}
 											),
 											initialGoodSources: {
@@ -277,12 +283,14 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 														controller.attachment: controller.goodImageSource!
 											},
 											posts: {
-												if (widget.threadState.thread case Thread t)
-													if (widget.threadState.imageboard case Imageboard imageboard)
+												if (widget.threadState?.thread case Thread t)
+													if (widget.threadState?.imageboard case Imageboard imageboard)
 														for (final post in t.posts)
 															for (final attachment in post.attachments)
 																attachment: imageboard.scope(post)
 											},
+											threads: widget.threads,
+											onThreadSelected: widget.onThreadSelected,
 											initialAttachment: attachment,
 											useHeroDestinationWidget: true,
 											heroOtherEndIsBoxFitCover: true,

@@ -3,8 +3,10 @@ import 'dart:math';
 
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/main.dart';
+import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/post.dart';
+import 'package:chan/pages/attachments.dart';
 import 'package:chan/pages/board_switcher.dart';
 import 'package:chan/pages/board_settings.dart';
 import 'package:chan/pages/master_detail.dart';
@@ -663,6 +665,59 @@ class BoardPageState extends State<BoardPage> {
 				initiallyShowGrid: initiallyShowGrid,
 				heroOtherEndIsBoxFitCover: true//settings.useCatalogGrid
 			);
+		}
+	}
+
+	Future<void> _showAttachmentsPageFromNextImage() async {
+		final nextThreadWithImage = _listController.items.skip(max(0, _listController.firstVisibleIndex - 1)).firstWhere((p) => p.item.attachments.isNotEmpty, orElse: () {
+			return _listController.items.take(_listController.firstVisibleIndex).lastWhere((p) => p.item.attachments.isNotEmpty);
+		});
+		final imageboard = context.read<Imageboard>();
+		final attachments = _listController.items.expand((item) {
+			if (item.representsStubChildren || _listController.isItemHidden(item).isDuplicate) {
+				return const <TaggedAttachment>[];
+			}
+			return item.item.attachments.map((a) => TaggedAttachment(
+				attachment: a,
+				semanticParentIds: [widget.semanticId],
+				imageboard: imageboard,
+				postId: item.item.id
+			));
+		}).toList();
+		final initialAttachment = TaggedAttachment(
+			attachment: nextThreadWithImage.item.attachments.first,
+			semanticParentIds: [widget.semanticId],
+			imageboard: imageboard,
+			postId: nextThreadWithImage.item.id
+		);
+		final found = <Attachment, TaggedAttachment>{};
+		for (final a in attachments) {
+			found.putIfAbsent(a.attachment, () => a);
+		}
+		found[initialAttachment.attachment] = initialAttachment;
+		attachments.removeWhere((a) => found[a.attachment] != a);
+		final dest = await Navigator.of(context).push<TaggedAttachment>(adaptivePageRoute(
+			builder: (context) => ImageboardScope(
+				imageboardKey: null,
+				imageboard: imageboard,
+				child: AttachmentsPage(
+					attachments: attachments,
+					zone: null,
+					replyBoxZone: null,
+					initialAttachment: initialAttachment,
+					threadState: null,
+					threads: {
+						for (final thread in _listController.items)
+							for (final attachment in thread.item.attachments)
+								attachment: imageboard.scope(thread.item)
+					},
+					onThreadSelected: (t) => _onThreadSelected(t.item.identifier)
+					//onChange: (attachment) => widget.listController.animateTo((p) => p.attachment?.id == attachment.id)
+				)
+			)
+		));
+		if (dest != null) {
+			_listController.animateTo((t) => t.attachments.contains(dest.attachment));
 		}
 	}
 
@@ -1540,6 +1595,19 @@ class BoardPageState extends State<BoardPage> {
 																					color: primaryColorWithBrightness80,
 																					onPressed: () => _showGalleryFromNextImage(initiallyShowGrid: true),
 																					child: Icon(CupertinoIcons.square_grid_2x2, size: 20, color: theme.backgroundColor, applyTextScaling: true)
+																				),
+																				const SizedBox(width: 8),
+																			],
+																			if (settings.showAttachmentsPageButton && realImageCount > 1) ...[
+																				AdaptiveFilledButton(
+																					padding: const EdgeInsets.all(8),
+																					minimumSize: Size.zero,
+																					color: primaryColorWithBrightness80,
+																					onPressed: () => _showAttachmentsPageFromNextImage(),
+																					child: RotatedBox(
+																						quarterTurns: 1,
+																						child: Icon(CupertinoIcons.rectangle_split_3x1, size: 20, color: theme.backgroundColor, applyTextScaling: true)
+																					)
 																				),
 																				const SizedBox(width: 8),
 																			],

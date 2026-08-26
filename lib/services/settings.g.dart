@@ -2821,6 +2821,19 @@ class SavedSettingsFields {
     fieldName: 'cachedWebViewTlsHello3',
     merger: NullableMerger(AdaptedMerger(TlsClientHelloAdapter.kTypeId)),
   );
+  static bool getShowAttachmentsPageButton(SavedSettings x) =>
+      x.showAttachmentsPageButton;
+  static void setShowAttachmentsPageButton(SavedSettings x, bool v) =>
+      x.showAttachmentsPageButton = v;
+  static const int kShowAttachmentsPageButton = 218;
+  static const showAttachmentsPageButton =
+      HiveFieldAdapter<SavedSettings, bool>(
+    getter: getShowAttachmentsPageButton,
+    setter: setShowAttachmentsPageButton,
+    fieldNumber: kShowAttachmentsPageButton,
+    fieldName: 'showAttachmentsPageButton',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -3038,13 +3051,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     214: SavedSettingsFields.cachedWebViewHeaders,
     215: SavedSettingsFields.showTabPopup,
     216: SavedSettingsFields.didHideTabPopupAutomatically,
-    217: SavedSettingsFields.cachedWebViewTlsHello3
+    217: SavedSettingsFields.cachedWebViewTlsHello3,
+    218: SavedSettingsFields.showAttachmentsPageButton
   };
 
   @override
   SavedSettings read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final List<dynamic> fields = List.filled(218, null);
+    final List<dynamic> fields = List.filled(219, null);
     for (int i = 0; i < numOfFields; i++) {
       final int fieldId = reader.readByte();
       final dynamic value = reader.read();
@@ -3275,13 +3289,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       showTabPopup: fields[215] as bool?,
       didHideTabPopupAutomatically: fields[216] as bool?,
       cachedWebViewTlsHello3: fields[217] as TlsClientHello?,
+      showAttachmentsPageButton: fields[218] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(205)
+      ..writeByte(206)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -3691,7 +3706,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(216)
       ..write(obj.didHideTabPopupAutomatically)
       ..writeByte(217)
-      ..write(obj.cachedWebViewTlsHello3);
+      ..write(obj.cachedWebViewTlsHello3)
+      ..writeByte(218)
+      ..write(obj.showAttachmentsPageButton);
   }
 
   @override

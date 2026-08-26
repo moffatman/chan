@@ -1271,6 +1271,8 @@ class SavedSettings extends HiveObject {
 	bool didHideTabPopupAutomatically;
 	@HiveField(217)
 	TlsClientHello? cachedWebViewTlsHello3;
+	@HiveField(218)
+	bool showAttachmentsPageButton;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1490,6 +1492,7 @@ class SavedSettings extends HiveObject {
 		bool? showTabPopup,
 		bool? didHideTabPopupAutomatically,
 		this.cachedWebViewTlsHello3,
+		bool? showAttachmentsPageButton,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1724,7 +1727,8 @@ class SavedSettings extends HiveObject {
 		doubleTapToSeekVideo = doubleTapToSeekVideo ?? false,
 		showHotPostsInScrollbar = showHotPostsInScrollbar ?? false,
 		showTabPopup = showTabPopup ?? false,
-		didHideTabPopupAutomatically = didHideTabPopupAutomatically ?? false {
+		didHideTabPopupAutomatically = didHideTabPopupAutomatically ?? false,
+		showAttachmentsPageButton = showAttachmentsPageButton ?? false {
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
@@ -3124,6 +3128,9 @@ class Settings extends ChangeNotifier {
 
 	static const showHotPostsInScrollbarSetting = SavedSetting(SavedSettingsFields.showHotPostsInScrollbar);
 	bool get showHotPostsInScrollbar => showHotPostsInScrollbarSetting(this);
+
+	static const showAttachmentsPageButtonSetting = SavedSetting(SavedSettingsFields.showAttachmentsPageButton);
+	bool get showAttachmentsPageButton => showAttachmentsPageButtonSetting(this);
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {

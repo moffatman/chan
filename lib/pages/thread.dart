@@ -2992,12 +2992,63 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 			}
 			widget.listController.animateToIndex(widget.listController.itemsLength - 1, alignment: 1.0, duration: scrollAnimationDuration);
 		}
+		showAttachmentsPage() async {
+			const commonParentIds = [-101];
+			final nextPostWithImage = widget.listController.items.skip(max(0, widget.listController.firstVisibleIndex - 1)).firstWhere((p) => p.item.attachments.isNotEmpty, orElse: () {
+				return widget.listController.items.take(widget.listController.firstVisibleIndex).lastWhere((p) => p.item.attachments.isNotEmpty);
+			});
+			final imageboard = context.read<Imageboard>();
+			final attachments = widget.listController.items.expand((item) {
+				if (item.representsStubChildren || widget.listController.isItemHidden(item).isDuplicate) {
+					return const <TaggedAttachment>[];
+				}
+				return item.item.attachments.map((a) => TaggedAttachment(
+					attachment: a,
+					semanticParentIds: commonParentIds.followedBy(item.parentIds),
+					imageboard: imageboard,
+					postId: item.item.id
+				));
+			}).toList();
+			final initialAttachment = TaggedAttachment(
+				attachment: nextPostWithImage.item.attachments.first,
+				semanticParentIds: commonParentIds.followedBy(nextPostWithImage.parentIds),
+				imageboard: imageboard,
+				postId: nextPostWithImage.item.id
+			);
+			final found = <Attachment, TaggedAttachment>{};
+			for (final a in attachments) {
+				found.putIfAbsent(a.attachment, () => a);
+			}
+			found[initialAttachment.attachment] = initialAttachment;
+			attachments.removeWhere((a) => found[a.attachment] != a);
+			final dest = await Navigator.of(context).push<TaggedAttachment>(adaptivePageRoute(
+				builder: (context) => ImageboardScope(
+					imageboardKey: null,
+					imageboard: imageboard,
+					child: AttachmentsPage(
+						attachments: attachments,
+						zone: widget.zone,
+						replyBoxZone: widget.replyBoxZone,
+						initialAttachment: initialAttachment,
+						threadState: widget.persistentState
+						//onChange: (attachment) => widget.listController.animateTo((p) => p.attachment?.id == attachment.id)
+					)
+				)
+			));
+			if (dest != null) {
+				final destPost = widget.thread?.posts.tryFirstWhere((p) => p.attachments.contains(dest.attachment));
+				if (destPost != null) {
+					widget.zone.onNeedScrollToPost?.call(destPost);
+				}
+			}
+		}
 		final youIds = widget.persistentState.youIds;
 		final uncachedCount = widget.cachedAttachments.values.where((v) => !v.isCached).length;
 		final uncachedMB = (widget.cachedAttachments.entries.map((e) => e.value.isCached ? 0 : e.key.sizeInBytes ?? 0).fold(0, (a, b) => a + b) / kMB);
 		final uncachedMBIsUncertain = widget.cachedAttachments.entries.any((e) => !e.value.isCached && e.key.sizeInBytes == null);
 		final cachingButtonLabel = '${uncachedMB.ceil()}${uncachedMBIsUncertain ? '+' : ''} MB';
 		final showGalleryGridButton = Settings.showGalleryGridButtonSetting.watch(context);
+		final showAttachmentsPageButton = Settings.showAttachmentsPageButtonSetting.watch(context);
 		final replyButtonAtBottom = Settings.replyButtonAtBottomSetting.watch(context);
 		final realImageCount = widget.listController.items.fold<int>(0, (t, a) => t + a.item.attachments.where((a) => a.type != AttachmentType.url).length);
 		final postSortingMethod = widget.persistentState.effectivePostSortingMethod;
@@ -3091,56 +3142,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 														quarterTurns: 1,
 														child: Icon(CupertinoIcons.rectangle_split_3x1, size: 19, applyTextScaling: true)
 													),
-													() async {
-														const commonParentIds = [-101];
-														final nextPostWithImage = widget.listController.items.skip(max(0, widget.listController.firstVisibleIndex - 1)).firstWhere((p) => p.item.attachments.isNotEmpty, orElse: () {
-															return widget.listController.items.take(widget.listController.firstVisibleIndex).lastWhere((p) => p.item.attachments.isNotEmpty);
-														});
-														final imageboard = context.read<Imageboard>();
-														final attachments = widget.listController.items.expand((item) {
-															if (item.representsStubChildren || widget.listController.isItemHidden(item).isDuplicate) {
-																return const <TaggedAttachment>[];
-															}
-															return item.item.attachments.map((a) => TaggedAttachment(
-																attachment: a,
-																semanticParentIds: commonParentIds.followedBy(item.parentIds),
-																imageboard: imageboard,
-																postId: item.item.id
-															));
-														}).toList();
-														final initialAttachment = TaggedAttachment(
-															attachment: nextPostWithImage.item.attachments.first,
-															semanticParentIds: commonParentIds.followedBy(nextPostWithImage.parentIds),
-															imageboard: imageboard,
-															postId: nextPostWithImage.item.id
-														);
-														final found = <Attachment, TaggedAttachment>{};
-														for (final a in attachments) {
-															found.putIfAbsent(a.attachment, () => a);
-														}
-														found[initialAttachment.attachment] = initialAttachment;
-														attachments.removeWhere((a) => found[a.attachment] != a);
-														final dest = await Navigator.of(context).push<TaggedAttachment>(adaptivePageRoute(
-															builder: (context) => ImageboardScope(
-																imageboardKey: null,
-																imageboard: imageboard,
-																child: AttachmentsPage(
-																	attachments: attachments,
-																	zone: widget.zone,
-																	replyBoxZone: widget.replyBoxZone,
-																	initialAttachment: initialAttachment,
-																	threadState: widget.persistentState
-																	//onChange: (attachment) => widget.listController.animateTo((p) => p.attachment?.id == attachment.id)
-																)
-															)
-														));
-														if (dest != null) {
-															final destPost = widget.thread?.posts.tryFirstWhere((p) => p.attachments.contains(dest.attachment));
-															if (destPost != null) {
-																widget.zone.onNeedScrollToPost?.call(destPost);
-															}
-														}
-													}
+													showAttachmentsPage
 												), (
 													uncachedCount == 0 ? '' : 'Preload $uncachedCount${uncachedMB == 0 ? '' : ' (${uncachedMBIsUncertain ? '>' : ''}${uncachedMB.ceil()} MB)'}',
 													const Icon(CupertinoIcons.cloud_download, size: 19, applyTextScaling: true),
@@ -3763,6 +3765,28 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 													crossAxisAlignment: CrossAxisAlignment.center,
 													children: [
 														Icon(CupertinoIcons.square_grid_2x2, size: 19, color: theme.backgroundColor, applyTextScaling: true),
+														const SizedBox(width: 4),
+														Text(describeCount(realImageCount, 'image'), style: TextStyle(
+															color: theme.backgroundColor
+														))
+													]
+												)
+											),
+											const SizedBox(width: 8),
+										],
+										if (showAttachmentsPageButton && realImageCount > 1) ...[
+											AdaptiveFilledButton(
+												padding: const EdgeInsets.all(8),
+												minimumSize: Size.zero,
+												onPressed: showAttachmentsPage,
+												child: Row(
+													mainAxisSize: MainAxisSize.min,
+													crossAxisAlignment: CrossAxisAlignment.center,
+													children: [
+														RotatedBox(
+															quarterTurns: 1,
+															child: Icon(CupertinoIcons.rectangle_split_3x1, size: 19, color: theme.backgroundColor, applyTextScaling: true)
+														),
 														const SizedBox(width: 4),
 														Text(describeCount(realImageCount, 'image'), style: TextStyle(
 															color: theme.backgroundColor

@@ -1540,6 +1540,14 @@ final appearanceSettings = [
 		icon: CupertinoIcons.square_grid_2x2,
 		setting: Settings.showGalleryGridButtonSetting
 	),
+	SwitchSettingWidget(
+		description: 'Show scrolling gallery button in catalog and thread',
+		iconBuilder: (color) => RotatedBox(
+			quarterTurns: 1,
+			child: Icon(CupertinoIcons.rectangle_split_3x1, color: color)
+		),
+		setting: Settings.showAttachmentsPageButtonSetting
+	),
 	const SwitchSettingWidget(
 		description: 'Show filtered posts/threads at bottom of lists',
 		keywords: ['hidden'],
