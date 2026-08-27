@@ -626,12 +626,11 @@ class ThreadRow extends StatelessWidget {
 					)
 				)
 			)
-			else if (latestThread.attachmentDeleted) Center(
-				child: SizedBox(
-					width: settings.thumbnailSize,
-					height: settings.thumbnailSize,
-					child: const Icon(CupertinoIcons.xmark_square, size: 36)
-				)
+			else if (latestThread.attachmentDeleted) Container(
+				alignment: Alignment.center,
+				width: settings.thumbnailSize,
+				height: settings.thumbnailSize,
+				child: const Icon(CupertinoIcons.xmark_square, size: 36)
 			),
 			Expanded(
 				child: Container(
@@ -720,7 +719,12 @@ class ThreadRow extends StatelessWidget {
 				),
 				_ => null
 			};
-			Widget? att = taggedAttachment == null || !settings.showImages(context, thread.board) ? null : Column(
+			Widget? att = settings.showImages(context, thread.board) ? (taggedAttachment == null ? (thread.attachmentDeleted ? Container(
+				alignment: Alignment.center,
+				width: settings.thumbnailSize,
+				height: min(75, settings.thumbnailSize),
+				child: const Icon(CupertinoIcons.xmark_square, size: 36)
+			) : null) : Column(
 				crossAxisAlignment: CrossAxisAlignment.stretch,
 				mainAxisSize: MainAxisSize.min,
 				mainAxisAlignment: MainAxisAlignment.center,
@@ -790,7 +794,7 @@ class ThreadRow extends StatelessWidget {
 					),
 					if (!settings.catalogGridModeCropThumbnails && settings.catalogGridModeTextAboveAttachment && !settings.useFullWidthForCatalogCounters && !settings.catalogGridModeAttachmentInBackground) countersPlaceholderWidget
 				]
-			);
+			)) : null;
 			final txt = Container(
 				padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
 				child: ChangeNotifierProvider<PostSpanZoneData>(
