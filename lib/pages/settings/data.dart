@@ -753,7 +753,7 @@ final dataSettings = [
 								const SizedBox(height: 10),
 								Visibility.maintain(
 									visible: (userAgent?.isEmpty ?? true),
-									child: const Text('You are currently using your system\'s default User-Agent (recommended)')
+									child: Text('You are currently using your system\'s default User-Agent (recommended):\n\n$defaultUserAgent')
 								),
 								const SizedBox(height: 10),
 								AdaptiveTextField(
@@ -763,7 +763,7 @@ final dataSettings = [
 									smartQuotesType: SmartQuotesType.disabled,
 									minLines: 6,
 									maxLines: 6,
-									placeholder: defaultUserAgent,
+									placeholder: 'User-agent',
 									onChanged: (s) {
 										userAgent = s;
 										setDialogState(() {});
@@ -777,11 +777,11 @@ final dataSettings = [
 						),
 						actions: [
 							AdaptiveDialogAction(
-								child: const Text('Reset to Default'),
-								onPressed: () {
+								onPressed: userAgent == null ? null : () {
 									userAgent = null;
 									Navigator.pop(context, true);
-								}
+								},
+								child: const Text('Reset to Default')
 							),
 							AdaptiveDialogAction(
 								child: const Text('Random'),
