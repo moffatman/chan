@@ -1144,6 +1144,8 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
   bool _hasLayout = false;
   int? _lastLaidOutItemCount;
   int _pageCorrectionGeneration = 0;
+  int? _pendingScrollNotificationPage;
+  bool _scrollNotificationPageUpdateScheduled = false;
   Timer? _pageIndicatorHideTimer;
   bool _pageIndicatorVisible = false;
   bool _reordering = false;
@@ -1295,6 +1297,26 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
     widget.onPageChanged?.call(page);
   }
 
+  void _schedulePageChangedFromScrollNotification(int page) {
+    if (_pendingScrollNotificationPage == page ||
+        (!_scrollNotificationPageUpdateScheduled && _currentPage == page)) {
+      return;
+    }
+    _pendingScrollNotificationPage = page;
+    if (_scrollNotificationPageUpdateScheduled) {
+      return;
+    }
+    _scrollNotificationPageUpdateScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollNotificationPageUpdateScheduled = false;
+      final pendingPage = _pendingScrollNotificationPage;
+      _pendingScrollNotificationPage = null;
+      if (mounted && pendingPage != null) {
+        _notifyPageChanged(pendingPage);
+      }
+    });
+  }
+
   bool _handleScrollNotification(ScrollNotification notification) {
     if (notification.depth != 0) {
       return false;
@@ -1314,7 +1336,7 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
     }
     final newPage =
         _clampPage((_controller.page ?? _currentPage.toDouble()).round());
-    _notifyPageChanged(newPage);
+    _schedulePageChangedFromScrollNotification(newPage);
     return false;
   }
 
@@ -1469,6 +1491,50 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
     });
   }
 
+  int _pageWithGreatestItemOverlap({
+    required int oldPage,
+    required int oldItemsPerPage,
+    required int oldLeadingEmptySlots,
+    required int newItemsPerPage,
+    required int newLeadingEmptySlots,
+  }) {
+    if (widget.itemCount == 0) return 0;
+    final oldPageCount =
+        ((widget.itemCount + oldLeadingEmptySlots) / oldItemsPerPage).ceil();
+    final clampedOldPage = oldPage.clamp(0, oldPageCount - 1);
+    final oldStart = math.max(
+        0, clampedOldPage * oldItemsPerPage - oldLeadingEmptySlots);
+    final oldEnd = math.min(
+        widget.itemCount,
+        (clampedOldPage + 1) * oldItemsPerPage -
+            oldLeadingEmptySlots);
+    final oldCenter = (oldStart + oldEnd) / 2;
+    final newPageCount =
+        ((widget.itemCount + newLeadingEmptySlots) / newItemsPerPage).ceil();
+    var bestPage = 0;
+    var greatestOverlap = -1;
+    var closestCenterDistance = double.infinity;
+    for (var page = 0; page < newPageCount; page++) {
+      final newStart =
+          math.max(0, page * newItemsPerPage - newLeadingEmptySlots);
+      final newEnd = math.min(
+          widget.itemCount,
+          (page + 1) * newItemsPerPage - newLeadingEmptySlots);
+      final overlap =
+          math.max(0, math.min(oldEnd, newEnd) - math.max(oldStart, newStart))
+              .toInt();
+      final centerDistance = ((newStart + newEnd) / 2 - oldCenter).abs();
+      if (overlap > greatestOverlap ||
+          (overlap == greatestOverlap &&
+              centerDistance < closestCenterDistance)) {
+        bestPage = page;
+        greatestOverlap = overlap;
+        closestCenterDistance = centerDistance;
+      }
+    }
+    return bestPage;
+  }
+
   void _syncPaginationFromRender() {
     final renderList = _renderList;
     if (renderList == null) return;
@@ -1483,8 +1549,6 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
         (newPageExtent - _pageExtent).abs() > 0.000001;
     final pageAlignmentChanged =
         newLeadingEmptySlots != _laidOutLeadingEmptySlots;
-    final firstVisibleItem = math.max(
-        0, _currentPage * _itemsPerPage - _laidOutLeadingEmptySlots);
     final initialSelectedPage = !_hasLayout &&
             widget.selectedIndex != null &&
             widget.selectedIndex! >= 0 &&
@@ -1503,11 +1567,22 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
       _laidOutLeadingEmptySlots = newLeadingEmptySlots;
       targetPage = initialSelectedPage ?? _clampPage(_currentPage);
     } else if (pageGeometryChanged) {
+      final previousPage = _controller.hasClients &&
+              _controller.position.hasPixels &&
+              _pageExtent > 0
+          ? (_controller.position.pixels / _pageExtent).round()
+          : _currentPage;
+      targetPage = _pageWithGreatestItemOverlap(
+          oldPage: previousPage,
+          oldItemsPerPage: _itemsPerPage,
+          oldLeadingEmptySlots: _laidOutLeadingEmptySlots,
+          newItemsPerPage: newItemsPerPage,
+          newLeadingEmptySlots: newLeadingEmptySlots);
       _itemsPerPage = newItemsPerPage;
       _pageExtent = newPageExtent;
       _laidOutLeadingEmptySlots = newLeadingEmptySlots;
-      targetPage =
-          _clampPage((firstVisibleItem + newLeadingEmptySlots) ~/ _itemsPerPage);
+      _pendingScrollNotificationPage = null;
+      targetPage = _clampPage(targetPage);
     } else if (pageAlignmentChanged) {
       _laidOutLeadingEmptySlots = newLeadingEmptySlots;
     } else if (!itemCountChanged) {
