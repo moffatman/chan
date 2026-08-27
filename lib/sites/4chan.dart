@@ -1598,32 +1598,38 @@ class Site4ChanPassLoginSystem extends ImageboardSiteLoginSystem {
 
   @override
   Future<void> login(Map<ImageboardSiteLoginField, String> fields, CancelToken cancelToken) async {
-		final response = await parent.client.postUri(
-			Uri.https(parent.sysUrl, '/auth'),
-			data: FormData.fromMap({
-				for (final field in fields.entries) field.key.formKey: field.value
-			}),
-			options: Options(
-				responseType: ResponseType.plain,
-				extra: {
-					kPriority: RequestPriority.interactive
-				}
-			),
-			cancelToken: cancelToken
-		);
-		final document = parse(response.data);
-		final message = document.querySelector('h2')?.text;
-		if (message == null) {
-			loggedIn[Persistence.currentCookies] = false;
-			await logout(false, cancelToken);
-			throw const ImageboardSiteLoginException('Unexpected response, contact developer');
+		try {
+			final response = await parent.client.postUri(
+				Uri.https(parent.sysUrl, '/auth'),
+				data: FormData.fromMap({
+					for (final field in fields.entries) field.key.formKey: field.value
+				}),
+				options: Options(
+					responseType: ResponseType.plain,
+					extra: {
+						kPriority: RequestPriority.interactive
+					}
+				),
+				cancelToken: cancelToken
+			);
+			final document = parse(response.data);
+			final message = document.querySelector('h2')?.text;
+			if (message == null) {
+				loggedIn[Persistence.currentCookies] = false;
+				await logout(false, cancelToken);
+				throw const ImageboardSiteLoginException('Unexpected response, contact developer');
+			}
+			if (!message.contains('Success!')) {
+				loggedIn[Persistence.currentCookies] = false;
+				await logout(false, cancelToken);
+				throw ImageboardSiteLoginException(message);
+			}
+			loggedIn[Persistence.currentCookies] = true;
 		}
-		if (!message.contains('Success!')) {
+		catch (e) {
 			loggedIn[Persistence.currentCookies] = false;
-			await logout(false, cancelToken);
-			throw ImageboardSiteLoginException(message);
+			rethrow;
 		}
-		loggedIn[Persistence.currentCookies] = true;
   }
 
   @override

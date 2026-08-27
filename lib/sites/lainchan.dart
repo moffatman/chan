@@ -1090,29 +1090,36 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
 
   @override
   Future<void> login(Map<ImageboardSiteLoginField, String> fields, CancelToken cancelToken) async {
-    final response = await parent.client.postUri(
-			Uri.https(parent.sysUrl, '${parent.basePath}/mod.php'),
-			data: {
-				for (final field in fields.entries) field.key.formKey: field.value,
-				'login': 'Continue'
-			},
-			options: Options(
-				responseType: ResponseType.plain,
-				contentType: Headers.formUrlEncodedContentType,
-				followRedirects: false,
-				validateStatus: (x) => true,
-				extra: {
-					kPriority: RequestPriority.interactive
-				}
-			),
-			cancelToken: cancelToken
-		);
-		final document = parse(response.data);
-		if (document.querySelector('h2') != null) {
-			await logout(false, cancelToken);
-			throw ImageboardSiteLoginException(document.querySelector('h2')!.text);
+		try {
+			final response = await parent.client.postUri(
+				Uri.https(parent.sysUrl, '${parent.basePath}/mod.php'),
+				data: {
+					for (final field in fields.entries) field.key.formKey: field.value,
+					'login': 'Continue'
+				},
+				options: Options(
+					responseType: ResponseType.plain,
+					contentType: Headers.formUrlEncodedContentType,
+					followRedirects: false,
+					validateStatus: (x) => true,
+					extra: {
+						kPriority: RequestPriority.interactive
+					}
+				),
+				cancelToken: cancelToken
+			);
+			final document = parse(response.data);
+			if (document.querySelector('h2') != null) {
+				loggedIn[Persistence.currentCookies] = false;
+				await logout(false, cancelToken);
+				throw ImageboardSiteLoginException(document.querySelector('h2')!.text);
+			}
+			loggedIn[Persistence.currentCookies] = true;
 		}
-		loggedIn[Persistence.currentCookies] = true;
+		catch (e) {
+			loggedIn[Persistence.currentCookies] = false;
+			rethrow;
+		}
   }
 
   @override

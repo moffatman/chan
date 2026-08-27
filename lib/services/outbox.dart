@@ -324,7 +324,11 @@ sealed class QueueEntry<S extends QueueEntry<S, T>, T> extends ChangeNotifier {
 				final savedFields = site.loginSystem?.getSavedLoginFields();
 				if (useLoginSystem && savedFields != null) {
 					try {
-						await site.loginSystem?.login(savedFields, cancelToken).timeout(const Duration(seconds: 15));
+						const timeout = Duration(seconds: 15);
+						final cancelToken2 = CancelToken();
+						cancelToken.whenCancel.then(cancelToken2.cancel);
+						Future.delayed(timeout, () => cancelToken2.cancel(TimeoutException('Timed out logging in', timeout)));
+						await site.loginSystem?.login(savedFields, cancelToken2);
 					}
 					catch (e, st) {
 						final context = ImageboardRegistry.instance.context;

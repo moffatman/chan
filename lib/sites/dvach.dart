@@ -417,30 +417,36 @@ class SiteDvachPasscodeLoginSystem extends ImageboardSiteLoginSystem {
 
   @override
   Future<void> login(Map<ImageboardSiteLoginField, String> fields, CancelToken cancelToken) async {
-		final response = await parent.client.postUri(
-			Uri.https(parent.baseUrl, '/user/passlogin'),
-			data: FormData.fromMap({
-				for (final field in fields.entries) field.key.formKey: field.value
-			}),
-			options: Options(
-				responseType: ResponseType.plain,
-				validateStatus: (_) => true,
-				extra: {
-					kPriority: RequestPriority.interactive
-				},
-				followRedirects: false // This makes sure cookie is remembered
-			),
-			cancelToken: cancelToken
-		);
-		
-		if ((response.statusCode ?? 400) >= 400) {
-			final document = parse(response.data);
-			final message = document.querySelector('.msg__title')?.text;
-			loggedIn[Persistence.currentCookies] = false;
-			await logout(false, cancelToken);
-			throw ImageboardSiteLoginException(message ?? 'Unknown error');
+		try {
+			final response = await parent.client.postUri(
+				Uri.https(parent.baseUrl, '/user/passlogin'),
+				data: FormData.fromMap({
+					for (final field in fields.entries) field.key.formKey: field.value
+				}),
+				options: Options(
+					responseType: ResponseType.plain,
+					validateStatus: (_) => true,
+					extra: {
+						kPriority: RequestPriority.interactive
+					},
+					followRedirects: false // This makes sure cookie is remembered
+				),
+				cancelToken: cancelToken
+			);
+			
+			if ((response.statusCode ?? 400) >= 400) {
+				final document = parse(response.data);
+				final message = document.querySelector('.msg__title')?.text;
+				loggedIn[Persistence.currentCookies] = false;
+				await logout(false, cancelToken);
+				throw ImageboardSiteLoginException(message ?? 'Unknown error');
+			}
+			loggedIn[Persistence.currentCookies] = true;
 		}
-		loggedIn[Persistence.currentCookies] = true;
+		catch (e) {
+			loggedIn[Persistence.currentCookies] = false;
+			rethrow;
+		}
   }
 
   @override
