@@ -280,8 +280,12 @@ class ThreadWatcher extends ChangeNotifier {
 			if (watch != null) {
 				await _updateThreadCounts(newThreadState, watch, thread);
 				_updateCounts();
-				if ((thread.isArchived || thread.isLocked) && !watch.zombie) {
+				final shouldBeZombie = thread.isArchived || thread.isLocked;
+				if (shouldBeZombie && !watch.zombie) {
 					await notifications.zombifyThreadWatch(watch, false);
+				}
+				else if (!shouldBeZombie && watch.zombie) {
+					await notifications.unZombifyThreadWatch(watch);
 				}
 				if (!setEquals(watch.youIds.toSet(), newThreadState.youIds)) {
 					watch.youIds = newThreadState.youIds.toList()..sort();

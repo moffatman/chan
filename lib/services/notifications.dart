@@ -739,6 +739,15 @@ class Notifications {
 		persistence.didUpdateBrowserState();
 	}
 
+	Future<void> unZombifyThreadWatch(ThreadWatch watch) async {
+		if (Persistence.settings.usePushNotifications == true && watch.push) {
+			await _create(watch);
+		}
+		watch.zombie = false;
+		localWatcher?.onWatchUpdated(watch);
+		persistence.didUpdateBrowserState();
+	}
+
 	Future<void> removeWatch(Watch watch) async {
 		if (Persistence.settings.usePushNotifications == true && watch.push) {
 			_delete(watch);
