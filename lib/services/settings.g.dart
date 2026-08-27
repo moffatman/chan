@@ -2846,6 +2846,17 @@ class SavedSettingsFields {
     fieldName: 'tabBarPagesAlignedToEnd',
     merger: PrimitiveMerger(),
   );
+  static bool getUsePaginatedTabBar(SavedSettings x) => x.usePaginatedTabBar;
+  static void setUsePaginatedTabBar(SavedSettings x, bool v) =>
+      x.usePaginatedTabBar = v;
+  static const int kUsePaginatedTabBar = 220;
+  static const usePaginatedTabBar = HiveFieldAdapter<SavedSettings, bool>(
+    getter: getUsePaginatedTabBar,
+    setter: setUsePaginatedTabBar,
+    fieldNumber: kUsePaginatedTabBar,
+    fieldName: 'usePaginatedTabBar',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -3065,13 +3076,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     216: SavedSettingsFields.didHideTabPopupAutomatically,
     217: SavedSettingsFields.cachedWebViewTlsHello3,
     218: SavedSettingsFields.showAttachmentsPageButton,
-    219: SavedSettingsFields.tabBarPagesAlignedToEnd
+    219: SavedSettingsFields.tabBarPagesAlignedToEnd,
+    220: SavedSettingsFields.usePaginatedTabBar
   };
 
   @override
   SavedSettings read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final List<dynamic> fields = List.filled(220, null);
+    final List<dynamic> fields = List.filled(221, null);
     for (int i = 0; i < numOfFields; i++) {
       final int fieldId = reader.readByte();
       final dynamic value = reader.read();
@@ -3304,13 +3316,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       cachedWebViewTlsHello3: fields[217] as TlsClientHello?,
       showAttachmentsPageButton: fields[218] as bool?,
       tabBarPagesAlignedToEnd: fields[219] as bool?,
+      usePaginatedTabBar: fields[220] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(207)
+      ..writeByte(208)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -3724,7 +3737,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(218)
       ..write(obj.showAttachmentsPageButton)
       ..writeByte(219)
-      ..write(obj.tabBarPagesAlignedToEnd);
+      ..write(obj.tabBarPagesAlignedToEnd)
+      ..writeByte(220)
+      ..write(obj.usePaginatedTabBar);
   }
 
   @override

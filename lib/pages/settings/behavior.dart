@@ -602,6 +602,12 @@ final behaviorSettings = [
 		}
 	),
 	const SwitchSettingWidget(
+		description: 'Paginated tab bar',
+		icon: CupertinoIcons.rectangle_split_3x1,
+		helpText: 'Group tabs into snapping pages. Turn this off to use the original continuously scrolling tab bar.',
+		setting: Settings.usePaginatedTabBarSetting
+	),
+	const SwitchSettingWidget(
 		description: 'Tap post IDs to reply',
 		icon: CupertinoIcons.reply,
 		setting: Settings.tapPostIdToReplySetting

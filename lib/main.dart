@@ -690,7 +690,8 @@ class ChanTabs extends ChangeNotifier {
 	final activeBrowserTab = ValueNotifier<int>(Persistence.currentTabIndex);
 	late Listenable browseCountListenable = Listenable.merge([activeBrowserTab, ...Persistence.tabs.map((x) => x.unseen)]);
 	final _tabController = CupertinoTabController();
-	final _tabListController = PaginatedReorderableListController();
+	final _paginatedTabListController = PaginatedReorderableListController();
+	final _legacyTabListController = ScrollController();
 	int _lastIndex = 0;
 	final _savedMasterDetailKey = GlobalKey<SavedPageMasterDetailPanesState>();
 	final _tabButtonKeys = <int, GlobalKey>{};
@@ -711,6 +712,7 @@ class ChanTabs extends ChangeNotifier {
 	// Sometimes duplicate links are received due to use of multiple link handling packages
 	({DateTime time, String link})? _lastLink;
 	late (String?, String) _lastHomeBoard;
+	late bool _lastUsePaginatedTabBar;
 	static const _tabListPaginationDelegate = PaginatedReorderableListDelegateWithMaxMainAxisExtent(
 		maxMainAxisExtent: 120
 	);
@@ -726,6 +728,7 @@ class ChanTabs extends ChangeNotifier {
 			tab.threadForPullTab = tab.thread;
 		}
 		_lastHomeBoard = (Settings.instance.homeImageboardKey, Settings.instance.homeBoardName);
+		_lastUsePaginatedTabBar = Settings.instance.usePaginatedTabBar;
 		Settings.instance.addListener(_onSettingsUpdate);
 		_settingsSubscription = SelectListenable(Settings.instance, (s) => (
 			s.alwaysUseWideDrawerGesture,
@@ -767,6 +770,13 @@ class ChanTabs extends ChangeNotifier {
 	}
 
 	void _onSettingsUpdate() async {
+		final usePaginatedTabBar = Settings.instance.usePaginatedTabBar;
+		if (usePaginatedTabBar != _lastUsePaginatedTabBar) {
+			_lastUsePaginatedTabBar = usePaginatedTabBar;
+			WidgetsBinding.instance.addPostFrameCallback((_) {
+				_animateTabList(duration: Duration.zero);
+			});
+		}
 		final newHomeBoard = (Settings.instance.homeImageboardKey, Settings.instance.homeBoardName);
 		if (newHomeBoard != _lastHomeBoard) {
 			if (Persistence.tabs.first.imageboardKey == _lastHomeBoard.$1
@@ -909,7 +919,8 @@ class ChanTabs extends ChangeNotifier {
 	void dispose() {
 		super.dispose();
 		activeBrowserTab.dispose();
-		_tabListController.dispose();
+		_paginatedTabListController.dispose();
+		_legacyTabListController.dispose();
 		Persistence.globalTabMutator.removeListener(_onGlobalTabMutatorUpdate);
 		ScrollTracker.instance.someNavigatorNavigated.removeListener(_onSomeNavigatorNavigated);
 		for (final tab in Persistence.tabs) {
@@ -1252,7 +1263,10 @@ class ChanTabs extends ChangeNotifier {
 	}
 
 	Future<void> _animateTabList({int? index, Duration duration = const Duration(milliseconds: 500)}) async {
-		final viewportDimension = _tabListController.tryPosition?.viewportDimension;
+		if (!Settings.instance.usePaginatedTabBar) {
+			return _animateLegacyTabList(index: index, duration: duration);
+		}
+		final viewportDimension = _paginatedTabListController.tryPosition?.viewportDimension;
 		if (viewportDimension == null) {
 			return;
 		}
@@ -1262,12 +1276,70 @@ class ChanTabs extends ChangeNotifier {
 		final listIndex = usingHomeBoard ? max(0, globalIndex - 1) : globalIndex;
 		final listItemCount = max(0, Persistence.tabs.length - (usingHomeBoard ? 1 : 0));
 		final lastPage = max(0, (listItemCount - 1) ~/ itemsPerPage);
-		final targetPage = min(_tabListController.pageForItem(listIndex) ?? (listIndex ~/ itemsPerPage), lastPage);
+		final targetPage = min(_paginatedTabListController.pageForItem(listIndex) ?? (listIndex ~/ itemsPerPage), lastPage);
 		if (duration > Duration.zero) {
-			await _tabListController.animateToPage(targetPage, curve: Curves.ease, duration: duration);
+			await _paginatedTabListController.animateToPage(targetPage, curve: Curves.ease, duration: duration);
 		}
 		else {
-			_tabListController.jumpToPage(targetPage);
+			_paginatedTabListController.jumpToPage(targetPage);
+		}
+	}
+
+	Future<void> _animateLegacyTabList({
+		int? index,
+		Duration duration = const Duration(milliseconds: 500),
+		bool inner = false
+	}) async {
+		final pos = index ?? browseTabIndex;
+		if (_tabButtonKeys[pos]?.currentContext?.ifMounted case BuildContext ctx) {
+			await Scrollable.ensureVisible(
+				ctx,
+				alignmentPolicy: pos < 3 ?
+					ScrollPositionAlignmentPolicy.keepVisibleAtStart :
+					ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+				duration: duration
+			);
+			return;
+		}
+		(int, double)? firstKnownItem;
+		(int, double)? lastKnownItem;
+		final viewportDimension = _legacyTabListController.tryPosition?.viewportDimension;
+		if (viewportDimension == null) {
+			return;
+		}
+		for (final entry in _tabButtonKeys.entries) {
+			final offset = entry.value.currentContext?.getOffsetToReveal(0);
+			if (offset != null) {
+				final item = (entry.key, offset);
+				firstKnownItem ??= item;
+				lastKnownItem = item;
+			}
+		}
+		final double estimate;
+		if (firstKnownItem != null && pos < firstKnownItem.$1) {
+			estimate = (firstKnownItem.$2 / firstKnownItem.$1) * pos;
+		}
+		else if (lastKnownItem != null && pos > lastKnownItem.$1) {
+			final averageItemExtent = lastKnownItem.$2 / lastKnownItem.$1;
+			final estimateAtAlignment0 = averageItemExtent * pos;
+			estimate = min(
+				estimateAtAlignment0 + (viewportDimension - averageItemExtent),
+				(averageItemExtent * Persistence.tabs.length) - viewportDimension,
+			);
+		}
+		else {
+			return;
+		}
+		if (duration > Duration.zero) {
+			await _legacyTabListController.animateTo(estimate, curve: Curves.ease, duration: duration);
+			await SchedulerBinding.instance.endOfFrame;
+		}
+		else {
+			_legacyTabListController.jumpTo(estimate);
+			await SchedulerBinding.instance.endOfFrame;
+		}
+		if (!inner) {
+			_animateLegacyTabList(index: index, duration: duration, inner: true);
 		}
 	}
 
@@ -2153,6 +2225,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 
 	Widget _buildTabList(Axis axis, ValueListenable<bool> isShowing) {
 		final usingHomeBoard = Settings.instance.usingHomeBoard;
+		final usePaginatedTabBar = Settings.instance.usePaginatedTabBar;
 		buildTabIcon(int i) => ValueListenableBuilder(
 			valueListenable: isShowing,
 			builder: (context, showing, child) {
@@ -2209,8 +2282,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			children: [
 				if (usingHomeBoard) buildTabIcon(0),
 				Expanded(
-					child: PaginatedReorderableList(
-						controller: _tabs._tabListController,
+					child: usePaginatedTabBar ? PaginatedReorderableList(
+						controller: _tabs._paginatedTabListController,
 						physics: const FasterSnappingPageScrollPhysics(),
 						paginationDelegate: ChanTabs._tabListPaginationDelegate,
 						gutterExtent: 0.5,
@@ -2237,6 +2310,19 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									index: index,
 									child: buildTabIcon(i)
 								)
+							);
+						}
+					) : ReorderableList(
+						controller: _tabs._legacyTabListController,
+						scrollDirection: axis,
+						onReorder: _tabs.onReorder,
+						itemCount: usingHomeBoard ? Persistence.tabs.length - 1 : Persistence.tabs.length,
+						itemBuilder: (context, index) {
+							final i = usingHomeBoard ? index + 1 : index;
+							return ReorderableDelayedDragStartListener(
+								index: index,
+								key: _tabs._tabButtonKeys.putIfAbsent(i, () => GlobalKey(debugLabel: '_tabs._tabButtonKeys[$i]')),
+								child: buildTabIcon(i)
 							);
 						}
 					)
