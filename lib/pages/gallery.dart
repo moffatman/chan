@@ -609,8 +609,12 @@ class _GalleryPageState extends State<GalleryPage> {
 					child: Column(
 						mainAxisSize: MainAxisSize.min,
 						children: [
-							if (currentController.attachment.type.usesVideoPlayer) VideoControls(
-								controller: currentController
+							if (currentController.attachment.type.usesVideoPlayer) SafeArea(
+								top: false,
+								bottom: false,
+								child: VideoControls(
+									controller: currentController
+								)
 							),
 							SizedBox(
 								height: _thumbnailSize + 8,
@@ -1158,7 +1162,7 @@ class _GalleryPageState extends State<GalleryPage> {
 												builder: (context, child) => Padding(
 													padding: showChrome ? EdgeInsets.only(
 														bottom: max(0, (settings.showThumbnailsInGallery ? MediaQuery.sizeOf(context).height * 0.2 : (44 + MediaQuery.paddingOf(context).bottom)) - (currentController.attachment.type.usesVideoPlayer ? 0 : 44) - 16),
-														right: 8
+														right: 8 + layoutInsets.right
 													) : layoutInsets + const EdgeInsets.only(right: 8),
 													child: child
 												),
@@ -1338,26 +1342,85 @@ class _GalleryPageState extends State<GalleryPage> {
 													child: AnimatedOpacity(
 														duration: const Duration(milliseconds: 300),
 														opacity: showChrome || (_shouldShowPosition.value && settings.showOverlaysInGallery) ? 1 : 0,
-														child: Column(
-															mainAxisSize: MainAxisSize.min,
-															crossAxisAlignment: CrossAxisAlignment.start,
-															children: [
-																if (_peers[currentAttachment.attachment] case (int numer, int denom)) Container(
-																	margin: const EdgeInsets.symmetric(horizontal: 16),
-																	padding: const EdgeInsets.all(8),
-																	decoration: const BoxDecoration(
-																		borderRadius: BorderRadius.all(Radius.circular(8)),
-																		color: Colors.black54
+														child: Padding(
+															padding: EdgeInsets.only(left: layoutInsets.left),
+															child: Column(
+																mainAxisSize: MainAxisSize.min,
+																crossAxisAlignment: CrossAxisAlignment.start,
+																children: [
+																	if (_peers[currentAttachment.attachment] case (int numer, int denom)) Container(
+																		margin: const EdgeInsets.symmetric(horizontal: 16),
+																		padding: const EdgeInsets.all(8),
+																		decoration: const BoxDecoration(
+																			borderRadius: BorderRadius.all(Radius.circular(8)),
+																			color: Colors.black54
+																		),
+																		child: Row(
+																			mainAxisSize: MainAxisSize.min,
+																			children: [
+																				const Icon(CupertinoIcons.photo_on_rectangle, size: 19),
+																				const SizedBox(width: 8),
+																				AnimatedBuilder(
+																					animation: _currentAttachmentChanged,
+																					builder: (context, _) => Text(
+																						'$numer / $denom',
+																						style: TextStyle(
+																							color: settings.darkTheme.primaryColor,
+																							fontFeatures: const [FontFeature.tabularFigures()]
+																						),
+																						textAlign: TextAlign.center
+																					)
+																				)
+																			]
+																		)
 																	),
-																	child: Row(
-																		mainAxisSize: MainAxisSize.min,
-																		children: [
-																			const Icon(CupertinoIcons.photo_on_rectangle, size: 19),
-																			const SizedBox(width: 8),
-																			AnimatedBuilder(
+																	GestureDetector(
+																		onTap: () async {
+																			final controller = TextEditingController();
+																			final str = await showAdaptiveDialog<String>(
+																				barrierDismissible: true,
+																				context: context,
+																				builder: (context) => AdaptiveAlertDialog(
+																					title: const Text('Jump to Attachment'),
+																					content: AdaptiveTextField(
+																						autofocus: true,
+																						controller: controller,
+																						keyboardType: TextInputType.number,
+																						placeholder: 'Attachment #',
+																						onSubmitted: (s) => Navigator.pop(context, s),
+																					),
+																					actions: [
+																						AdaptiveDialogAction(
+																							onPressed: () => Navigator.pop(context, controller.text),
+																							child: const Text('Go')
+																						),
+																						AdaptiveDialogAction(
+																							onPressed: () => Navigator.pop(context),
+																							child: const Text('Cancel')
+																						)
+																					]
+																				)
+																			);
+																			controller.dispose();
+																			if (!context.mounted) {
+																				return;
+																			}
+																			final index = str?.tryParseInt;
+																			if (index != null) {
+																				_animateToPage((index - 1).clamp(0, widget.attachments.length - 1), milliseconds: 0, overrideRateLimit: true);
+																			}
+																		},
+																		child: Container(
+																			margin: const EdgeInsets.all(16),
+																			padding: const EdgeInsets.all(8),
+																			decoration: const BoxDecoration(
+																				borderRadius: BorderRadius.all(Radius.circular(8)),
+																				color: Colors.black54
+																			),
+																			child: AnimatedBuilder(
 																				animation: _currentAttachmentChanged,
 																				builder: (context, _) => Text(
-																					'$numer / $denom',
+																					'${currentIndex + 1} / ${widget.attachments.length}',
 																					style: TextStyle(
 																						color: settings.darkTheme.primaryColor,
 																						fontFeatures: const [FontFeature.tabularFigures()]
@@ -1365,69 +1428,13 @@ class _GalleryPageState extends State<GalleryPage> {
 																					textAlign: TextAlign.center
 																				)
 																			)
-																		]
-																	)
-																),
-																GestureDetector(
-																	onTap: () async {
-																		final controller = TextEditingController();
-																		final str = await showAdaptiveDialog<String>(
-																			barrierDismissible: true,
-																			context: context,
-																			builder: (context) => AdaptiveAlertDialog(
-																				title: const Text('Jump to Attachment'),
-																				content: AdaptiveTextField(
-																					autofocus: true,
-																					controller: controller,
-																					keyboardType: TextInputType.number,
-																					placeholder: 'Attachment #',
-																					onSubmitted: (s) => Navigator.pop(context, s),
-																				),
-																				actions: [
-																					AdaptiveDialogAction(
-																						onPressed: () => Navigator.pop(context, controller.text),
-																						child: const Text('Go')
-																					),
-																					AdaptiveDialogAction(
-																						onPressed: () => Navigator.pop(context),
-																						child: const Text('Cancel')
-																					)
-																				]
-																			)
-																		);
-																		controller.dispose();
-																		if (!context.mounted) {
-																			return;
-																		}
-																		final index = str?.tryParseInt;
-																		if (index != null) {
-																			_animateToPage((index - 1).clamp(0, widget.attachments.length - 1), milliseconds: 0, overrideRateLimit: true);
-																		}
-																	},
-																	child: Container(
-																		margin: const EdgeInsets.all(16),
-																		padding: const EdgeInsets.all(8),
-																		decoration: const BoxDecoration(
-																			borderRadius: BorderRadius.all(Radius.circular(8)),
-																			color: Colors.black54
-																		),
-																		child: AnimatedBuilder(
-																			animation: _currentAttachmentChanged,
-																			builder: (context, _) => Text(
-																				'${currentIndex + 1} / ${widget.attachments.length}',
-																				style: TextStyle(
-																					color: settings.darkTheme.primaryColor,
-																					fontFeatures: const [FontFeature.tabularFigures()]
-																				),
-																				textAlign: TextAlign.center
-																			)
 																		)
+																	),
+																	if (showChrome) SizedBox(
+																		height: (settings.showThumbnailsInGallery ? MediaQuery.sizeOf(context).height * 0.2 : (44 + MediaQuery.paddingOf(context).bottom)) - (currentController.attachment.type.usesVideoPlayer ? 0 : 44),
 																	)
-																),
-																if (showChrome) SizedBox(
-																	height: (settings.showThumbnailsInGallery ? MediaQuery.sizeOf(context).height * 0.2 : (44 + MediaQuery.paddingOf(context).bottom)) - (currentController.attachment.type.usesVideoPlayer ? 0 : 44),
-																)
-															]
+																]
+															)
 														)
 													)
 												)

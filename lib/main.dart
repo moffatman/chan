@@ -2989,10 +2989,18 @@ class ChanceCupertinoTabBar extends CupertinoTabBar {
 					curve: Curves.ease,
 					child: IgnorePointer(
 						ignoring: direction == VerticalDirection.down,
-						child: super.build(context)
+						child: SafeArea(
+							top: false,
+							bottom: false,
+							child: super.build(context)
+						)
 					)
 				)
-			) : super.build(context)
+			) : SafeArea(
+				top: false,
+				bottom: false,
+				child: super.build(context)
+			)
 		);
 	}
 
