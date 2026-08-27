@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -5,7 +6,9 @@ import 'dart:math';
 import 'package:chan/models/flag.dart';
 import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/search.dart';
+import 'package:chan/pages/cookie_browser.dart';
 import 'package:chan/services/embed.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/interceptor.dart';
 import 'package:chan/services/linkifier.dart';
 import 'package:chan/services/persistence.dart';
@@ -23,6 +26,7 @@ import 'package:chan/sites/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:html/parser.dart';
 import 'package:html_unescape/html_unescape_small.dart';
@@ -225,6 +229,23 @@ class _LooseHeaderSyntax extends markdown.BlockSyntax {
 
 const _loginFieldRedGifsTokenKey = '_rgt';
 
+class SiteRedditBlockedException extends ExtendedException {
+	final Uri url;
+	final Imageboard? imageboard;
+	SiteRedditBlockedException(this.imageboard, this.url);
+
+	@override
+	Map<String, FutureOr<void> Function(BuildContext)> get remedies => {
+		if (imageboard != null) 'Log in': (context) => openCookieLoginBrowser(context, imageboard!)
+	};
+
+	@override
+	bool get isReportable => false;
+
+	@override
+	String toString() => 'Blocked by Reddit: $url';
+}
+
 class _SiteRedditInterceptor extends InterceptorBase {
 	final SiteReddit parent;
 	_SiteRedditInterceptor(this.parent);
@@ -233,6 +254,22 @@ class _SiteRedditInterceptor extends InterceptorBase {
 	Future<void> onRequestImpl(RequestOptions options, RequestInterceptorHandler handler) async {
 		options.headers[HttpHeaders.cacheControlHeader] = 'max-age=0';
 		handler.next(options);
+	}
+
+	@override
+	Future<void> onResponseImpl(Response response, ResponseInterceptorHandler handler) async {
+		if (response.statusCode == 403 && parent.isKnownHost(response.realUri.host)) {
+			throw SiteRedditBlockedException(parent.imageboard, response.realUri);
+		}
+		handler.next(response);
+	}
+	@override
+	Future<void> onErrorImpl(DioError err, ErrorInterceptorHandler handler) async {
+		final response = err.response;
+		if (response != null && response.statusCode == 403 && parent.isKnownHost(response.realUri.host)) {
+			throw SiteRedditBlockedException(parent.imageboard, response.realUri);
+		}
+		handler.next(err);
 	}
 }
 
@@ -1824,6 +1861,11 @@ class SiteReddit extends ImageboardSite {
 	bool get hasExpiringThreads => false;
 	@override
 	bool get hasUnreliableThumbnails => true;
+
+	@override
+	Uri? get authPage => Uri.https(baseUrl, '/login');
+	@override
+	Set<String> get authPageFormFields => const {'username', 'password'};
 
 	@override
 	bool operator == (Object other) =>
