@@ -195,7 +195,11 @@ class PaginatedReorderableListController extends ScrollController {
       _pendingPage = page;
       return;
     }
-    jumpTo(_pixelsForPage(page));
+    final target = _pixelsForPage(page);
+    if ((position.pixels - target).abs() <= precisionErrorTolerance) {
+      return;
+    }
+    jumpTo(target);
   }
 
   Future<void> animateToPage(int page,
@@ -204,7 +208,11 @@ class PaginatedReorderableListController extends ScrollController {
       _pendingPage = page;
       return Future<void>.value();
     }
-    return animateTo(_pixelsForPage(page), duration: duration, curve: curve);
+    final target = _pixelsForPage(page);
+    if ((position.pixels - target).abs() <= precisionErrorTolerance) {
+      return Future<void>.value();
+    }
+    return animateTo(target, duration: duration, curve: curve);
   }
 
   double _pixelsForPage(int page) => page * _pageExtent!;
@@ -407,7 +415,6 @@ class _SliverSelectedFirstList extends SliverMultiBoxAdaptorWidget {
   void updateRenderObject(
       BuildContext context, _RenderSelectedFirstList renderObject) {
     renderObject
-      ..invalidatePreferredExtentsForDelegateUpdate()
       ..itemCount = itemCount
       ..paginationDelegate = paginationDelegate
       ..gutterExtent = gutterExtent
@@ -461,7 +468,6 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
   double? _preferredSelectedExtent;
   bool _previousPreferredExtentNeedsMeasurement = true;
   bool _preferredExtentNeedsMeasurement = true;
-  bool _delegateNeedsSelectedChildUpdate = false;
   bool _didCorrectInitialSelectedPage = false;
   double? _lastViewportMainAxisExtent;
   double? _lastCrossAxisExtent;
@@ -558,12 +564,6 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
   void _invalidatePreferredExtents() {
     _previousPreferredExtentNeedsMeasurement = true;
     _preferredExtentNeedsMeasurement = true;
-  }
-
-  void invalidatePreferredExtentsForDelegateUpdate() {
-    _invalidatePreferredExtents();
-    _delegateNeedsSelectedChildUpdate = true;
-    markNeedsLayout();
   }
 
   void invalidatePreferredExtentForIndex(int index) {
@@ -728,13 +728,6 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
     return null;
   }
 
-  RenderBox _updateChildFromDelegate(RenderBox child, int index) {
-    invokeLayoutCallback<SliverConstraints>((_) {
-      childManager.createChild(index, after: childBefore(child));
-    });
-    return _childAtIndex(index)!;
-  }
-
   double _leadingEmptyExtentFor(bool alignPagesToEnd) {
     if (!alignPagesToEnd) return 0;
     return physicalGutterExtent +
@@ -749,12 +742,58 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
     return begin + (end - begin) * t;
   }
 
-  double _layoutOffsetForIndex(int index) {
-    var offset = _leadingEmptyExtent;
-    for (var i = 0; i < math.min(index, _itemCount); i++) {
-      offset += _animatedExtentForIndex(i);
+  double _layoutOffsetForSelection(int index, int? selectedIndex,
+      double? preferredExtent, bool alignPagesToEnd) {
+    final leadingEmptySlots = _leadingEmptySlotsFor(alignPagesToEnd);
+    final slotCount = leadingEmptySlots + math.min(index, _itemCount);
+    final fullPageCount = slotCount ~/ _itemsPerPage;
+    final partialPageSlotCount = slotCount % _itemsPerPage;
+    var offset = alignPagesToEnd ? physicalGutterExtent : 0.0;
+    offset += fullPageCount * _pageExtent;
+    if (fullPageCount > 0) {
+      if (_pageCount == 1) {
+        offset += constraints.viewportMainAxisExtent - _pageExtent;
+      } else if (!alignPagesToEnd) {
+        offset += physicalGutterExtent;
+      } else if (fullPageCount == _pageCount) {
+        offset += physicalGutterExtent;
+      }
+    }
+    if (partialPageSlotCount > 0) {
+      final page = fullPageCount;
+      final normalExtent = _normalExtentForPage(
+          page, selectedIndex, preferredExtent, alignPagesToEnd);
+      offset += partialPageSlotCount * normalExtent;
+      if (_isValidIndex(selectedIndex)) {
+        final selectedSlot = selectedIndex! + leadingEmptySlots;
+        if (selectedSlot ~/ _itemsPerPage == page &&
+            selectedSlot % _itemsPerPage < partialPageSlotCount) {
+          offset += _selectedExtent(
+                  page, preferredExtent, alignPagesToEnd) -
+              normalExtent;
+        }
+      }
     }
     return offset;
+  }
+
+  double _selectionAnimatedLayoutOffsetForIndex(
+      int index, bool alignPagesToEnd) {
+    final begin = _layoutOffsetForSelection(index, _previousSelectedIndex,
+        _previousPreferredSelectedExtent, alignPagesToEnd);
+    final end = _layoutOffsetForSelection(index, _selectedIndex,
+        _preferredSelectedExtent, alignPagesToEnd);
+    final t = _selectionAnimation.value;
+    return begin + (end - begin) * t;
+  }
+
+  double _layoutOffsetForIndex(int index) {
+    final begin = _selectionAnimatedLayoutOffsetForIndex(
+        index, _previousAlignPagesToEnd);
+    final end = _selectionAnimatedLayoutOffsetForIndex(
+        index, _alignPagesToEnd);
+    final t = _pageAlignmentAnimation.value;
+    return begin + (end - begin) * t;
   }
 
   @override
@@ -809,9 +848,6 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
       selectedChild = _childAtIndex(_selectedIndex!);
       if (selectedChild == null && firstChild == null) {
         if (addInitialChild(index: _selectedIndex!)) selectedChild = firstChild;
-      } else if (selectedChild != null && _delegateNeedsSelectedChildUpdate) {
-        selectedChild =
-            _updateChildFromDelegate(selectedChild, _selectedIndex!);
       }
       if (selectedChild != null && _preferredExtentNeedsMeasurement) {
         selectedChild.layout(
@@ -833,12 +869,6 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
       previousSelectedChild = _previousSelectedIndex == _selectedIndex
           ? selectedChild
           : _childAtIndex(_previousSelectedIndex!);
-      if (previousSelectedChild != null &&
-          !identical(previousSelectedChild, selectedChild) &&
-          _delegateNeedsSelectedChildUpdate) {
-        previousSelectedChild = _updateChildFromDelegate(
-            previousSelectedChild, _previousSelectedIndex!);
-      }
       if (identical(previousSelectedChild, selectedChild)) {
         _previousPreferredSelectedExtent = _preferredSelectedExtent;
         _previousPreferredExtentNeedsMeasurement =
@@ -858,8 +888,6 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
       _previousPreferredSelectedExtent = null;
       _previousPreferredExtentNeedsMeasurement = false;
     }
-    _delegateNeedsSelectedChildUpdate = false;
-
     if (selectedChild != null) {
       final parentData =
           selectedChild.parentData! as SliverMultiBoxAdaptorParentData;
