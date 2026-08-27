@@ -7,12 +7,14 @@ class TimedRebuilder<T> extends StatefulWidget {
 	final Widget Function(BuildContext, T) builder;
 	final bool enabled;
 	final T Function() function;
+	final Object? sentinelValue;
 
 	const TimedRebuilder({
 		required this.interval,
 		required this.builder,
 		required this.function,
 		this.enabled = true,
+		this.sentinelValue,
 		Key? key
 	}) : super(key: key);
 
@@ -71,6 +73,12 @@ class _TimedRebuilderState<T> extends State<TimedRebuilder<T>> {
 			// Deactivate
 			timer?.cancel();
 			timer = null;
+		}
+		else if (widget.sentinelValue != oldWidget.sentinelValue) {
+			// Update and reactivate
+			notifier.value = widget.function();
+			timer?.cancel();
+			timer = _makeTimer();
 		}
 	}
 

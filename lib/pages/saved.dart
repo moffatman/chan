@@ -1838,6 +1838,7 @@ class LocalWatcherControls extends StatelessWidget {
 										borderRadius: const BorderRadius.all(Radius.circular(8)),
 										child: TimedRebuilder(
 											interval: () => const Duration(seconds: 1),
+											sentinelValue: w.updatingNow,
 											function: () {
 												final now = DateTime.now();
 												return w.updatingNow != null ? null : now.difference(w.lastUpdate!).inSeconds / w.nextUpdate!.difference(w.lastUpdate!).inSeconds;
