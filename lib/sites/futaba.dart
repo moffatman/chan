@@ -170,7 +170,7 @@ class SiteFutaba extends ImageboardSite {
 	}
 
 	@override
-	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url) async {
+	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url, {CancelToken? cancelToken}) async {
 		return _decodeUrl(url);
 	}
 

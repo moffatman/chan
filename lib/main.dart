@@ -63,6 +63,7 @@ import 'package:chan/widgets/switching_view.dart';
 import 'package:chan/widgets/thread_widget_builder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_gesture_recognizer.dart';
+import 'package:dio/dio.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -1628,7 +1629,8 @@ class ChanTabs extends ChangeNotifier {
 		else {
 			if (Uri.tryParse(link) case Uri url) {
 				// Custom [wait] handling to start before [initialized]
-				final future = ImageboardRegistry.instance.decodeUrl(url);
+				final cancelToken = CancelToken();
+				final future = ImageboardRegistry.instance.decodeUrl(url, cancelToken: cancelToken);
 				(Imageboard, BoardThreadOrPostIdentifier, String?)? dest;
 				try {
 					dest = await _initializer.holdFor(future.timeout(const Duration(milliseconds: 50)));
@@ -1639,7 +1641,10 @@ class ChanTabs extends ChangeNotifier {
 					if (!_homePageState.mounted) {
 						return;
 					}
-					dest = await modalLoad(_homePageState.context, 'Checking url...', (_) => future);
+					dest = await modalLoad(_homePageState.context, 'Checking url...', (controller) {
+						controller.cancelToken.whenCancel.then(cancelToken.cancel);
+						return future;
+					}, cancellable: true);
 				}
 				if (dest != null) {
 					_onNotificationTapped(dest.$1, dest.$2, initiallyUseArchive: dest.$3, showAnimationsForward: showAnimationsForward);

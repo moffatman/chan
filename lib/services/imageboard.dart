@@ -731,15 +731,15 @@ class ImageboardRegistry extends ChangeNotifier {
 		return false;
 	}
 
-	Future<(Imageboard, BoardThreadOrPostIdentifier, String?)?> decodeUrl(Uri url) async {
+	Future<(Imageboard, BoardThreadOrPostIdentifier, String?)?> decodeUrl(Uri url, {CancelToken? cancelToken}) async {
 		for (final imageboard in imageboardsIncludingDev) {
-			BoardThreadOrPostIdentifier? dest = await imageboard.site.decodeUrl(url);
+			BoardThreadOrPostIdentifier? dest = await imageboard.site.decodeUrl(url, cancelToken: cancelToken);
 			String? usedArchive;
 			for (final archive in imageboard.site.archives) {
 				if (dest != null) {
 					break;
 				}
-				dest = await archive.decodeUrl(url);
+				dest = await archive.decodeUrl(url, cancelToken: cancelToken);
 				usedArchive = archive.name;
 			}
 			if (dest != null) {

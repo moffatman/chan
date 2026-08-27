@@ -389,7 +389,7 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 	late final _relativeBoardPattern  = RegExp(RegExp.escape(basePath) + r'/forums/([^/]+)');
 
 	/// Board is a weak concept in Xenforo. Sometimes we need to find it.
-	Future<String?> _lookupBoard(int threadId) async {
+	Future<String?> _lookupBoard(int threadId, {CancelToken? cancelToken}) async {
 		// See if we know the board from loading it before
 		final imageboardKey = persistence?.imageboardKey;
 		if (imageboardKey != null) {
@@ -406,7 +406,7 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 			}
 		}
 		// We don't know the board, need to get it from the page
-		final response = await client.get(getWebUrlImpl('', threadId), options: Options(responseType: ResponseType.plain));
+		final response = await client.get(getWebUrlImpl('', threadId), options: Options(responseType: ResponseType.plain), cancelToken: cancelToken);
 		final document = parse(response.data);
 		final boardLink = document.querySelector('.p-breadcrumbs')?.querySelectorAll('a').tryLast?.attributes['href'] ?? '';
 		if (boardLink.startsWith('/')) {
@@ -455,7 +455,7 @@ class SiteXenforo extends ImageboardSite with ForumSite {
   }
 
   @override
-  Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url) async {
+  Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url, {CancelToken? cancelToken}) async {
 		if (url.host != baseUrl) {
 			return null;
 		}
@@ -487,7 +487,7 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 					};
 					postNumber = p[2].extractPrefixedInt('post-') ?? url.fragment.extractPrefixedInt('post-');
 				}
-				final board = await _lookupBoard(threadId);
+				final board = await _lookupBoard(threadId, cancelToken: cancelToken);
 				if (board != null) {
 					return BoardThreadOrPostIdentifier(board, threadId, postNumber ?? pageNumber);
 				}

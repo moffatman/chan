@@ -91,7 +91,7 @@ class WrappedArchive extends ImageboardSite {
   String get siteData => '';
   
   @override
-  Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url) => archive.decodeUrl(url);
+  Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url, {CancelToken? cancelToken}) => archive.decodeUrl(url, cancelToken: cancelToken);
 
   @override
   bool decodeUrlPossible(Uri url) => archive.decodeUrlPossible(url);

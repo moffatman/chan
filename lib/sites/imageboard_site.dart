@@ -2147,7 +2147,7 @@ abstract class ImageboardSiteArchive {
 	}) {
 		return getWebUrlImpl(board, threadId, postId);
 	}
-	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url);
+	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url, {CancelToken? cancelToken});
 	bool decodeUrlPossible(Uri url);
 	int placeOrphanPost(List<Post> posts, Post post) {
 		final index = posts.indexWhere((p) => p.id > post.id);

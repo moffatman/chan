@@ -72,7 +72,7 @@ mixin DecodeGenericUrlMixin {
 	bool decodeUrlPossible(Uri url) {
 		return _decodeUrl(url) != null;
 	}
-	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url) async {
+	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url, {CancelToken? cancelToken}) async {
 		return _decodeUrl(url);
 	}
 }

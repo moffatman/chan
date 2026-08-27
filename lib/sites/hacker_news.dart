@@ -407,7 +407,7 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	@override
-	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url) async {
+	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url, {CancelToken? cancelToken}) async {
 		if (url.host == baseUrl && url.path == '/item') {
 			final id = url.queryParameters['id']?.tryParseInt;
 			if (id != null) {
@@ -417,7 +417,7 @@ class SiteHackerNews extends ImageboardSite {
 						// Must be OP
 						return id;
 					}
-					final object = await _getAlgolia(id, priority: RequestPriority.interactive);
+					final object = await _getAlgolia(id, priority: RequestPriority.interactive, cancelToken: cancelToken);
 					return object is _HNComment ? object.story : id;
 				});
 				return BoardThreadOrPostIdentifier('', threadId, id == threadId ? null : id);

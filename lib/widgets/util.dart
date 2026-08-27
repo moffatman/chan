@@ -628,7 +628,9 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 		url = url.replace(host: context.read<Imageboard?>()?.site.baseUrl);
 	}
 	final settings = Settings.instance;
-	final imageboardTarget = useChanceIfPossible ? await modalLoad(context, 'Checking url...', (_) => ImageboardRegistry.instance.decodeUrl(url), wait: const Duration(milliseconds: 50)) : null;
+	final imageboardTarget = useChanceIfPossible ? await modalLoad(context, 'Checking url...', (controller) {
+		return ImageboardRegistry.instance.decodeUrl(url, cancelToken: controller.cancelToken);
+	}, wait: const Duration(milliseconds: 50), cancellable: true) : null;
 	openInChance() {
 		openImageboardTarget(context, imageboardTarget!);
 	}

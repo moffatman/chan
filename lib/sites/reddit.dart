@@ -662,19 +662,19 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	@override
-	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url) async {
+	Future<BoardThreadOrPostIdentifier?> decodeUrl(Uri url, {CancelToken? cancelToken}) async {
 		if (_isShareLink(url) || _isCommentsLink(url)) {
 			final response = await client.getUri<String>(url, options: Options(
 				responseType: ResponseType.plain
-			));
+			), cancelToken: cancelToken);
 			Uri? redirected = response.redirects.tryLast?.location;
 			if (redirected != null && !_isShareLink(redirected) && !_isCommentsLink(redirected)) {
-				return await decodeUrl(Uri.https(baseUrl).resolve(redirected.toString()));
+				return await decodeUrl(Uri.https(baseUrl).resolve(redirected.toString()), cancelToken: cancelToken);
 			}
 			// Look for "reddit:///r/subreddit/..." in the JavaScript redirect page
 			final redditProtocolMatch = _redditProtocolPattern.firstMatch(response.data ?? '');
 			if (redditProtocolMatch != null) {
-				return await decodeUrl(Uri.https(baseUrl, redditProtocolMatch.group(1)!));
+				return await decodeUrl(Uri.https(baseUrl, redditProtocolMatch.group(1)!), cancelToken: cancelToken);
 			}
 		}
 		if (url.host.endsWith(_rootUrl)) {
