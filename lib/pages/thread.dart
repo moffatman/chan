@@ -1055,7 +1055,7 @@ class ThreadPageState extends State<ThreadPage> {
 	}
 
 	Widget _limitCounter(int value, int? maximum) {
-		if (maximum != null && (value >= maximum * 0.8)) {
+		if (maximum != null && maximum > 1 && (value >= maximum * 0.8)) {
 			return Text('$value / $maximum', style: TextStyle(
 				color: value >= maximum ? Colors.red : null
 			));
