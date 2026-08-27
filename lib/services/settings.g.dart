@@ -2857,6 +2857,16 @@ class SavedSettingsFields {
     fieldName: 'usePaginatedTabBar',
     merger: PrimitiveMerger(),
   );
+  static bool getUseHttp3(SavedSettings x) => x.useHttp3;
+  static void setUseHttp3(SavedSettings x, bool v) => x.useHttp3 = v;
+  static const int kUseHttp3 = 221;
+  static const useHttp3 = HiveFieldAdapter<SavedSettings, bool>(
+    getter: getUseHttp3,
+    setter: setUseHttp3,
+    fieldNumber: kUseHttp3,
+    fieldName: 'useHttp3',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
@@ -3077,13 +3087,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
     217: SavedSettingsFields.cachedWebViewTlsHello3,
     218: SavedSettingsFields.showAttachmentsPageButton,
     219: SavedSettingsFields.tabBarPagesAlignedToEnd,
-    220: SavedSettingsFields.usePaginatedTabBar
+    220: SavedSettingsFields.usePaginatedTabBar,
+    221: SavedSettingsFields.useHttp3
   };
 
   @override
   SavedSettings read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final List<dynamic> fields = List.filled(221, null);
+    final List<dynamic> fields = List.filled(222, null);
     for (int i = 0; i < numOfFields; i++) {
       final int fieldId = reader.readByte();
       final dynamic value = reader.read();
@@ -3317,13 +3328,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       showAttachmentsPageButton: fields[218] as bool?,
       tabBarPagesAlignedToEnd: fields[219] as bool?,
       usePaginatedTabBar: fields[220] as bool?,
+      useHttp3: fields[221] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(208)
+      ..writeByte(209)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -3739,7 +3751,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(219)
       ..write(obj.tabBarPagesAlignedToEnd)
       ..writeByte(220)
-      ..write(obj.usePaginatedTabBar);
+      ..write(obj.usePaginatedTabBar)
+      ..writeByte(221)
+      ..write(obj.useHttp3);
   }
 
   @override

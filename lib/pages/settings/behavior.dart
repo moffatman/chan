@@ -12,6 +12,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/tls.dart';
 import 'package:chan/services/translation.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -753,5 +754,21 @@ final behaviorSettings = [
 		),
 		confirm: (context, newValue) =>
 			confirm(context, 'Are you sure? The app will close and you will have to relaunch it.')
+	),
+	SwitchSettingWidget(
+		description: 'HTTP/3',
+		icon: CupertinoIcons.speedometer,
+		helpText: 'Use HTTP/3 protocol. This should help with site firewalls. But may be broken in certain countries.',
+		keywords: ['http3'],
+		disabled: CustomMutableSetting(
+			reader: (context) => enableQuic,
+			didMutater: (_) async {}
+		),
+		// Using a custom setting to show the switch as off when disabled
+		setting: CustomImmutableSetting(
+			reader: (context) => enableQuic && Settings.useHttp3Setting.read(context),
+			watcher: (context) => enableQuic && Settings.useHttp3Setting.watch(context),
+			writer: Settings.useHttp3Setting.write
+		)
 	)
 ];

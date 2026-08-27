@@ -743,7 +743,7 @@ class CloudflareInterceptor extends InterceptorBase {
 				initialUrlRequest: URLRequest(
 					url: WebUri.uri(options.uri),
 					mainDocumentURL: WebUri.uri(options.uri),
-					assumesHTTP3Capable: enableQuic ? options.preferHttp3WithoutAltSvc : false,
+					assumesHTTP3Capable: (enableQuic && Settings.instance.useHttp3) ? options.preferHttp3WithoutAltSvc : false,
 					method: options.method,
 					headers: {
 						for (final h in options.headers.entries)
@@ -790,7 +790,7 @@ class CloudflareInterceptor extends InterceptorBase {
 					initialUrlRequest: URLRequest(
 						url: WebUri.uri(response.requestOptions.uri),
 						mainDocumentURL: WebUri.uri(response.requestOptions.uri),
-						assumesHTTP3Capable: enableQuic ? response.requestOptions.preferHttp3WithoutAltSvc : false,
+						assumesHTTP3Capable: (enableQuic && Settings.instance.useHttp3) ? response.requestOptions.preferHttp3WithoutAltSvc : false,
 						method: response.requestOptions.method,
 						headers: {
 							for (final h in response.requestOptions.headers.entries) h.key: h.value.toString(),

@@ -1277,6 +1277,8 @@ class SavedSettings extends HiveObject {
 	bool tabBarPagesAlignedToEnd;
 	@HiveField(220)
 	bool usePaginatedTabBar;
+	@HiveField(221)
+	bool useHttp3;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -1499,6 +1501,7 @@ class SavedSettings extends HiveObject {
 		bool? showAttachmentsPageButton,
 		bool? tabBarPagesAlignedToEnd,
 		bool? usePaginatedTabBar,
+		bool? useHttp3,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1736,7 +1739,8 @@ class SavedSettings extends HiveObject {
 		didHideTabPopupAutomatically = didHideTabPopupAutomatically ?? false,
 		showAttachmentsPageButton = showAttachmentsPageButton ?? false,
 		tabBarPagesAlignedToEnd = tabBarPagesAlignedToEnd ?? false,
-		usePaginatedTabBar = usePaginatedTabBar ?? true {
+		usePaginatedTabBar = usePaginatedTabBar ?? true,
+		useHttp3 = useHttp3 ?? true {
 		if (!this.appliedMigrations.contains('filters')) {
 			this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 				return '${m.group(1)};save;highlight${m.group(3)}';
@@ -3144,6 +3148,9 @@ class Settings extends ChangeNotifier {
 
 	static const usePaginatedTabBarSetting = SavedSetting(SavedSettingsFields.usePaginatedTabBar);
 	bool get usePaginatedTabBar => usePaginatedTabBarSetting(this);
+
+	static const useHttp3Setting = SavedSetting(SavedSettingsFields.useHttp3);
+	bool get useHttp3 => useHttp3Setting(this);
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {
