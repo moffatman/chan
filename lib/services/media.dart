@@ -795,7 +795,7 @@ class MediaConversion {
 					if (maximumSizeInBytes case final maximumSizeInBytes?) {
 						if (outputDurationInSeconds case final s? when isVideoOutput) {
 							// Just a way to try and not get stuck, slowly reduce bitrate target over attempts
-							final bitsPerByte = 8 - (_scaleDownRetry.attempts / 6);
+							final bitsPerByte = 8 / _scaleDownRetry.factor;
 							final maximumBitrate = (bitsPerByte * (maximumSizeInBytes / s)).round();
 							if (maximumBitrate < outputBitrate) {
 								// Limit bitrate
