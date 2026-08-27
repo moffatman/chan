@@ -1457,11 +1457,15 @@ class Persistence extends ChangeNotifier {
 		};
 		try {
 			await webview.CookieManager.instance().deleteAllCookies();
-			await (switch (fromWifi) {
+			final jar = switch (fromWifi) {
 				true => Persistence.wifiCookies,
 				null => Persistence.currentCookies,
 				false => Persistence.cellularCookies
-			}).deleteAll();
+			};
+			await jar.deleteAll();
+			for (final imageboard in ImageboardRegistry.instance.imageboardsIncludingDev) {
+				imageboard.site.loginSystem?.didClearCookies(jar);
+			}
 			showToast(
 				context: ImageboardRegistry.instance.context!,
 				icon: icon,

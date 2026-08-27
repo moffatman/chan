@@ -2810,6 +2810,9 @@ abstract class ImageboardSiteLoginSystem {
 	bool isLoggedIn(CookieJar jar) {
 		return loggedIn.putIfAbsent(jar, () => false);
 	}
+	void didClearCookies(CookieJar jar) {
+		loggedIn[jar] = false;
+	}
 }
 
 ImageboardSiteArchive? makeArchive(Map archive) {
