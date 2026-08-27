@@ -42,7 +42,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 Future<void> alert(BuildContext context, String title, String message, {
 	Map<String, FutureOr<void> Function()> actions = const {},
-	bool barrierDismissible = true
+	bool barrierDismissible = true,
+	bool selectable = false
 }) async {
 	final looksForeign = title.looksForeign || message.looksForeign;
 	bool translating = false;
@@ -55,7 +56,7 @@ Future<void> alert(BuildContext context, String title, String message, {
 		builder: (context) => StatefulBuilder(
 			builder: (context, setState) => AdaptiveAlertDialog(
 				title: Text(translatedTitle ?? title),
-				content: Text(translatedMessage ?? message),
+				content: selectable ? SelectableText(translatedMessage ?? message) : Text(translatedMessage ?? message),
 				actions: [
 					for (final action in actions.entries) AdaptiveDialogAction(
 						onPressed: () async {

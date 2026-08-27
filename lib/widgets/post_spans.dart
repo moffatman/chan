@@ -3935,7 +3935,7 @@ Iterable<TextSpan> _makeAttachmentInfo({
 				yield TextSpan(
 					text: '$ellipsizedFilename ',
 					recognizer: context != null ? (TapGestureRecognizer(debugOwner: metadata)..onTap = () {
-						alert(context, 'Full filename', attachment.filename);
+						alert(context, 'Full filename', attachment.filename, selectable: true);
 					}) : null
 				);
 			}
