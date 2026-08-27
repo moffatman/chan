@@ -1485,7 +1485,10 @@ class Persistence extends ChangeNotifier {
 		final cookies = await webview.CookieManager.instance().getCookies(url: webview.WebUri.uri(uri));
 		await currentCookies.saveFromResponse(uri, cookies.map((cookie) {
 			final newCookie = MyCookie(cookie.name, cookie.value as String);
-			newCookie.domain = cookie.domain;
+			newCookie.domain = normalizeWebViewCookieDomain(
+				cookie.domain,
+				leadingDotIndicatesDomainCookie: Platform.isIOS || Platform.isMacOS
+			);
 			if (cookie.expiresDate != null) {
 				newCookie.expires = DateTime.fromMillisecondsSinceEpoch(cookie.expiresDate!);
 			}

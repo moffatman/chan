@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:chan/pages/settings/common.dart';
+import 'package:chan/pages/settings/cookies.dart';
 import 'package:chan/services/default_user_agent.dart';
 import 'package:chan/services/edit_site_board_map.dart';
 import 'package:chan/services/imageboard.dart';
@@ -692,37 +693,43 @@ final dataSettings = [
 	),
 	const SwitchSettingWidget(
 		description: 'Separate cookies for Wi-Fi and cellular data',
-		icon: Icons.cookie,
+		icon: Icons.cookie_outlined,
 		setting: Settings.separateWiFiAndCellularCookiesSetting
 	),
 	SettingHiding(
 		hidden: Settings.separateWiFiAndCellularCookiesSetting,
 		setting: SimpleButtonSettingWidget(
-			description: 'Clear cookies',
-			icon: CupertinoIcons.trash,
-			onPressed: (context) {
-				Persistence.clearCookies(fromWifi: true);
-			}
+			description: 'Edit cookies',
+			icon: Icons.cookie_outlined,
+			onPressed: (context) => Navigator.of(context).push(adaptivePageRoute(
+				builder: (context) => CookieSettingsPage(
+					jar: Persistence.currentCookies
+				)
+			))
 		)
 	),
 	SettingHiding(
 		hidden: const MappedSetting(Settings.separateWiFiAndCellularCookiesSetting, FieldMappers.invert, FieldMappers.invert),
 		setting: SimpleButtonSettingWidget(
-			description: 'Clear Wi-Fi cookies',
+			description: 'Edit Wi-Fi cookies',
 			icon: CupertinoIcons.wifi,
-			onPressed: (context) {
-				Persistence.clearCookies(fromWifi: true);
-			}
+			onPressed: (context) => Navigator.of(context).push(adaptivePageRoute(
+				builder: (context) => CookieSettingsPage(
+					jar: Persistence.wifiCookies
+				)
+			))
 		)
 	),
 	SettingHiding(
 		hidden: const MappedSetting(Settings.separateWiFiAndCellularCookiesSetting, FieldMappers.invert, FieldMappers.invert),
 		setting: SimpleButtonSettingWidget(
-			description: 'Clear cellular cookies',
+			description: 'Edit cellular cookies',
 			icon: CupertinoIcons.antenna_radiowaves_left_right,
-			onPressed: (context) {
-				Persistence.clearCookies(fromWifi: false);
-			}
+			onPressed: (context) => Navigator.of(context).push(adaptivePageRoute(
+				builder: (context) => CookieSettingsPage(
+					jar: Persistence.cellularCookies
+				)
+			))
 		)
 	),
 	ImmutableButtonSettingWidget(

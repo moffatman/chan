@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:chan/services/interceptor.dart';
@@ -7,6 +8,211 @@ import 'package:dio/dio.dart';
 
 const kExtraCookie = 'extraCookie';
 const kExcludeCookies = 'excludeCookies';
+
+enum StoredCookieScope {
+	domain,
+	host;
+}
+
+class StoredCookie {
+	final StoredCookieScope scope;
+	final String storageKey;
+	final String path;
+	final Cookie cookie;
+
+	const StoredCookie({
+		required this.scope,
+		required this.storageKey,
+		required this.path,
+		required this.cookie,
+	});
+
+	String get identity => '${scope.name}:$storageKey:$path:${cookie.name}';
+}
+
+String? normalizeWebViewCookieDomain(String? domain, {required bool leadingDotIndicatesDomainCookie}) {
+	if (leadingDotIndicatesDomainCookie && !(domain?.startsWith('.') ?? false)) {
+		return null;
+	}
+	return domain;
+}
+
+String cookieRootDomain(String host) {
+	final parts = host.split('.');
+	if (host.contains(':') || parts.every((part) {
+		final octet = int.tryParse(part);
+		return octet != null && octet >= 0 && octet <= 255;
+	})) {
+		return host;
+	}
+	if (parts.length <= 2) {
+		return host;
+	}
+	const compoundPublicSuffixes = {
+		'co.uk', 'org.uk', 'ac.uk',
+		'com.au', 'net.au', 'org.au',
+		'co.nz', 'com.br', 'com.mx', 'co.jp', 'co.kr', 'co.za'
+	};
+	final suffix = parts.sublist(parts.length - 2).join('.');
+	final count = compoundPublicSuffixes.contains(suffix) ? 3 : 2;
+	return parts.sublist(parts.length - count).join('.');
+}
+
+/// Loads the complete contents of a cookie jar, including the host buckets that
+/// [PersistCookieJar] normally leaves on disk until their first request.
+Future<List<StoredCookie>> loadAllCookies(CookieJar jar) async {
+	if (jar is PersistCookieJar) {
+		await jar.forceInit();
+		final index = await jar.storage.read('.index');
+		if (index != null && index.isNotEmpty) {
+			for (final host in (json.decode(index) as List).cast<String>()) {
+				final stored = await jar.storage.read(host);
+				if (stored == null || stored.isEmpty) {
+					continue;
+				}
+				try {
+					jar.hostCookies[host] = _decodeStoredCookiePaths(stored);
+				}
+				on Object {
+					if (jar.deleteHostCookiesWhenLoadFailed) {
+						await jar.storage.delete(host);
+					}
+					rethrow;
+				}
+			}
+		}
+	}
+	if (jar is! DefaultCookieJar) {
+		throw UnsupportedError('Cookie editing is not supported for ${jar.runtimeType}');
+	}
+	return [
+		for (final domain in jar.domainCookies.entries)
+			for (final path in domain.value.entries)
+				for (final cookie in path.value.values)
+					StoredCookie(
+						scope: StoredCookieScope.domain,
+						storageKey: domain.key,
+						path: path.key,
+						cookie: cookie.cookie,
+					),
+		for (final host in jar.hostCookies.entries)
+			for (final path in host.value.entries)
+				for (final cookie in path.value.values)
+					StoredCookie(
+						scope: StoredCookieScope.host,
+						storageKey: host.key,
+						path: path.key,
+						cookie: cookie.cookie,
+					),
+	];
+}
+
+Map<String, Map<String, SerializableCookie>> _decodeStoredCookiePaths(String stored) {
+	final decoded = json.decode(stored);
+	if (decoded is! Map) {
+		throw const FormatException('Invalid persisted cookie host');
+	}
+	final paths = <String, Map<String, SerializableCookie>>{};
+	for (final pathEntry in decoded.entries) {
+		if (pathEntry.key is! String || pathEntry.value is! Map) {
+			throw const FormatException('Invalid persisted cookie path');
+		}
+		final cookies = <String, SerializableCookie>{};
+		for (final cookieEntry in (pathEntry.value as Map).entries) {
+			if (cookieEntry.key is! String || cookieEntry.value is! String) {
+				throw const FormatException('Invalid persisted cookie');
+			}
+			cookies[cookieEntry.key as String] = SerializableCookie.fromJson(cookieEntry.value as String);
+		}
+		paths[pathEntry.key as String] = cookies;
+	}
+	return paths;
+}
+
+Future<void> deleteStoredCookie(CookieJar jar, StoredCookie storedCookie) async {
+	await _mutateStoredCookie(jar, storedCookie, null);
+}
+
+Future<void> addStoredCookie(CookieJar jar, {required String host, required Cookie cookie}) async {
+	await loadAllCookies(jar);
+	if (jar is! DefaultCookieJar) {
+		throw UnsupportedError('Cookie editing is not supported for ${jar.runtimeType}');
+	}
+	_insertStoredCookie(jar, host: host, cookie: cookie);
+	if (jar is PersistCookieJar) {
+		await _persistAllCookies(jar);
+	}
+}
+
+Future<void> replaceStoredCookie(CookieJar jar, StoredCookie storedCookie, Cookie replacement, {String? host}) async {
+	await _mutateStoredCookie(jar, storedCookie, replacement, replacementHost: host);
+}
+
+void _insertStoredCookie(DefaultCookieJar jar, {required String host, required Cookie cookie}) {
+	final domain = cookie.domain?.replaceFirst(RegExp(r'^\.'), '').toLowerCase();
+	final hostKey = host.trim().toLowerCase();
+	if ((domain == null || domain.isEmpty) && hostKey.isEmpty) {
+		throw const FormatException('A host is required for a host-only cookie');
+	}
+	final target = domain == null || domain.isEmpty ? jar.hostCookies : jar.domainCookies;
+	final storageKey = domain == null || domain.isEmpty ? hostKey : domain;
+	final path = cookie.path ?? '/';
+	target
+		.putIfAbsent(storageKey, () => {})
+		.putIfAbsent(path, () => {})[cookie.name] = SerializableCookie(cookie);
+}
+
+Future<void> _mutateStoredCookie(CookieJar jar, StoredCookie storedCookie, Cookie? replacement, {String? replacementHost}) async {
+	await loadAllCookies(jar);
+	if (jar is! DefaultCookieJar) {
+		throw UnsupportedError('Cookie editing is not supported for ${jar.runtimeType}');
+	}
+
+	final source = switch (storedCookie.scope) {
+		StoredCookieScope.domain => jar.domainCookies,
+		StoredCookieScope.host => jar.hostCookies,
+	};
+	final sourcePaths = source[storedCookie.storageKey];
+	final sourceCookies = sourcePaths?[storedCookie.path];
+	sourceCookies?.remove(storedCookie.cookie.name);
+	if (sourceCookies?.isEmpty ?? false) {
+		sourcePaths?.remove(storedCookie.path);
+	}
+	if (sourcePaths?.isEmpty ?? false) {
+		source.remove(storedCookie.storageKey);
+	}
+
+	if (replacement != null) {
+		_insertStoredCookie(jar, host: replacementHost ?? storedCookie.storageKey, cookie: replacement);
+	}
+
+	if (jar is PersistCookieJar) {
+		await _persistAllCookies(jar);
+	}
+}
+
+Future<void> _persistAllCookies(PersistCookieJar jar) async {
+	final oldIndexValue = await jar.storage.read('.index');
+	final oldHosts = oldIndexValue == null || oldIndexValue.isEmpty
+		? <String>{}
+		: Set<String>.from(json.decode(oldIndexValue) as List);
+	final hosts = jar.hostCookies.entries.where((entry) {
+		entry.value.removeWhere((_, cookies) => cookies.isEmpty);
+		return entry.value.isNotEmpty;
+	}).map((entry) => entry.key).toSet();
+	jar.hostCookies.removeWhere((_, paths) => paths.isEmpty);
+	jar.domainCookies.forEach((_, paths) => paths.removeWhere((_, cookies) => cookies.isEmpty));
+	jar.domainCookies.removeWhere((_, paths) => paths.isEmpty);
+
+	for (final removedHost in oldHosts.difference(hosts)) {
+		await jar.storage.delete(removedHost);
+	}
+	for (final host in hosts) {
+		await jar.storage.write(host, json.encode(jar.hostCookies[host]));
+	}
+	await jar.storage.write('.index', json.encode(hosts.toList()));
+	await jar.storage.write('.domains', json.encode(jar.domainCookies));
+}
 
 class SeparatedCookieManager extends InterceptorBase {
 
