@@ -2074,12 +2074,12 @@ class AttachmentViewer extends StatelessWidget {
 													)
 												),
 												ValueListenableBuilder(
-													valueListenable: controller.videoPlayerController?.notifier ?? const ConstantValueListenable<PlatformVideoController?>(null),
+													valueListenable: controller.videoPlayerController?.notifier ?? const StoppedValueListenable<PlatformVideoController?>(null),
 													builder: (context, pvc, placeholder) {
 														return ValueListenableBuilder(
 															valueListenable: Combining2ValueListenable(
-																child1: pvc?.id ?? const ConstantValueListenable<int?>(null),
-																child2: pvc?.rect ?? const ConstantValueListenable<Rect?>(null),
+																child1: pvc?.id ?? const StoppedValueListenable<int?>(null),
+																child2: pvc?.rect ?? const StoppedValueListenable<Rect?>(null),
 																combine: (id, rect) => (id, rect)
 															),
 															builder: (context, data, placeholder) {

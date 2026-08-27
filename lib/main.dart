@@ -2508,7 +2508,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 																		animation: Listenable.merge([_tabs.activeBrowserTab, _tabs._tabController]),
 																		builder: (context, _) => Selector<Settings, bool>(
 																			selector: (context, settings) => settings.usingHomeBoard,
-																			builder: (context, _, __) => _buildTabList(Axis.vertical, const ConstantValueListenable(true))
+																			builder: (context, _, __) => _buildTabList(Axis.vertical, const StoppedValueListenable(true))
 																		)
 																	)
 																),

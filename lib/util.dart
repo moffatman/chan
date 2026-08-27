@@ -1200,19 +1200,6 @@ extension DurationConversion on Duration {
 	}
 }
 
-class ConstantValueListenable<T> implements ValueListenable<T> {
-	@override
-	final T value;
-
-	const ConstantValueListenable(this.value);
-
-	// Don't notify, it will never change
-	@override
-	void addListener(VoidCallback listener) {}
-	@override
-	void removeListener(VoidCallback listener) {}
-}
-
 extension Ellipsize on String {
 	String? ellipsizeIfLonger(int allowedLength, {String ellipsis = '…'}) {
 		if (length <= (allowedLength + ellipsis.length)) {

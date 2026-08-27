@@ -4069,7 +4069,7 @@ class _ThreadScrollbar extends StatefulWidget {
 }
 
 class _ThreadScrollbarState extends State<_ThreadScrollbar> {
-	ValueListenable<bool> isScrollingNotifier = const ConstantValueListenable(false);
+	ValueListenable<bool> isScrollingNotifier = const StoppedValueListenable(false);
 	bool show = false;
 	int things = 0;
 	Timer? hideTimer;
@@ -4086,7 +4086,7 @@ class _ThreadScrollbarState extends State<_ThreadScrollbar> {
 		final newIsScrollingNotifier = widget.listController.scrollController?.tryPosition?.isScrollingNotifier;
 		if (isScrollingNotifier != newIsScrollingNotifier) {
 			isScrollingNotifier.removeListener(_onIsScrolling);
-			isScrollingNotifier = newIsScrollingNotifier ?? const ConstantValueListenable(false);
+			isScrollingNotifier = newIsScrollingNotifier ?? const StoppedValueListenable(false);
 			isScrollingNotifier.addListener(_onIsScrolling);
 			_onIsScrolling();
 		}

@@ -3706,7 +3706,7 @@ class RefreshableListFooter extends StatelessWidget {
 									maxHeight: 100,
 									alignment: Alignment.topCenter,
 									child: ValueListenableBuilder(
-										valueListenable: isScrollable ?? const ConstantValueListenable(false),
+										valueListenable: isScrollable ?? const StoppedValueListenable(false),
 										builder: (context, bool isScrollableValue, child) => ValueListenableBuilder(
 											valueListenable: overscrollFactor,
 											builder: (context, double value, child) {

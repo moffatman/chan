@@ -69,7 +69,7 @@ class _MyPopListener extends PopEntry<dynamic> {
 	final ValueChanged<dynamic> onPop;
 	_MyPopListener(this.onPop);
 	@override
-	ValueListenable<bool> get canPopNotifier => const ConstantValueListenable(true);
+	ValueListenable<bool> get canPopNotifier => const StoppedValueListenable(true);
 	@override
 	void onPopInvoked(bool didPop) {
 		onPop(null);
