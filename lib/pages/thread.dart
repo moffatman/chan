@@ -41,6 +41,7 @@ import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/reply_box.dart';
+import 'package:chan/widgets/scroll_tracker.dart';
 import 'package:chan/widgets/segmented.dart';
 import 'package:chan/widgets/shareable_posts.dart';
 import 'package:chan/widgets/thread_spans.dart';
@@ -2654,6 +2655,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 	late bool _useCatalogCache;
 	Filter? _lastFilter;
 	bool _skipNextSwipe = false;
+	Object? _hideErrorInIndicator;
 
 	Future<bool> _updateCounts() async {
 		final site = context.read<ImageboardSite>();
@@ -3587,7 +3589,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 										if (widget.listController.state?.error case ValueListenable<(Object, StackTrace)?> listenable when !widget.blocked && widget.listController.itemsLength > 0) ValueListenableBuilder(
 											valueListenable: listenable,
 											builder: (context, error, _) {
-												if (error == null) {
+												if (error == null || error.$1 == _hideErrorInIndicator) {
 													return const SizedBox.shrink();
 												}
 												final remedy = widget.listController.state?.widget.remedies[error.$1.runtimeType] ?? switch (ExtendedException.extract(error.$1)?.remedies.entries.tryFirst) {
@@ -3602,21 +3604,45 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 															SegmentedWidgetSegment(
 																color: theme.primaryColorWithBrightness(0.6),
 																onPressed: () => alertError(context, error.$1, error.$2, barrierDismissible: true, actions: {
+																	'Hide': () {
+																		_hideErrorInIndicator = error.$1;
+																		setState(() {});
+																	},
 																	'Retry': () {} // The afterFix will do everything
-																}, afterFix: widget.listController.update),
+																}, afterFix: () async {
+																	if (_hideErrorInIndicator == error.$1) {
+																		// Lazy way to just skip update() after 'Hide'
+																		return;
+																	}
+																	await widget.listController.update();
+																}),
 																child: Row(
 																	mainAxisSize: MainAxisSize.min,
 																	children: [
 																		Icon(CupertinoIcons.exclamationmark_triangle, size: 19, color: theme.backgroundColor, applyTextScaling: true),
-																		const SizedBox(width: 4),
-																		ConstrainedBox(
-																			constraints: const BoxConstraints(maxWidth: 200),
-																			child: Text(switch (error.$1) {
-																				ThreadNotFoundException() => '404',
-																				Object obj => obj.toStringDio()
-																			}, style: TextStyle(
-																				color: theme.backgroundColor
-																			), maxLines: 1, overflow: TextOverflow.ellipsis)
+																		AncestorScrollBuilder(
+																			builder: (context, direction, child) => AnimatedCrossFade(
+																				firstChild: child!,
+																				secondChild: const SizedBox.shrink(),
+																				alignment: Alignment.centerLeft,
+																				crossFadeState: direction == VerticalDirection.down ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+																				duration: const Duration(milliseconds: 250),
+																				sizeCurve: Curves.ease,
+																				firstCurve: Curves.ease,
+																				secondCurve: Curves.ease,
+																			),
+																			child: Padding(
+																				padding: const EdgeInsets.only(left: 4),
+																				child: ConstrainedBox(
+																				constraints: const BoxConstraints(maxWidth: 200),
+																					child: Text(switch (error.$1) {
+																						ThreadNotFoundException() => '404',
+																						Object obj => obj.toStringDio()
+																					}, style: TextStyle(
+																						color: theme.backgroundColor
+																					), maxLines: 1, overflow: TextOverflow.ellipsis)
+																				)
+																			)
 																		)
 																	]
 																)
