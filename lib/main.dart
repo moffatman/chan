@@ -2257,7 +2257,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								color: usingHomeBoard && i == 0
 												? ChanceTheme.primaryColorWithBrightness30Of(context)
 												: (data.isArchived ? ChanceTheme.primaryColorWithBrightness10Of(context) : ChanceTheme.barColorOf(context)),
-								spreadRadius: -6,
+								spreadRadius: 0,
 								blurRadius: 24
 							),
 						] : [],
