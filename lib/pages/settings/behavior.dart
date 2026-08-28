@@ -769,6 +769,13 @@ final behaviorSettings = [
 			reader: (context) => enableQuic && Settings.useHttp3Setting.read(context),
 			watcher: (context) => enableQuic && Settings.useHttp3Setting.watch(context),
 			writer: Settings.useHttp3Setting.write
-		)
+		),
+		confirm: (context, newValue) async {
+			Future.microtask(() {
+				// ignore: use_build_context_synchronously
+				alert(context, newValue ? 'HTTP/3 enabled' : 'HTTP/3 disabled', 'Please relaunch the app, this setting will apply on next launch of Chance');
+			});
+			return true;
+		}
 	)
 ];

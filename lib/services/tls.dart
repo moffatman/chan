@@ -661,7 +661,9 @@ Future<void> initializeTls() async {
 		if (_defaultHello3.quic) {
 			final hello3 = Persistence.settings.cachedWebViewTlsHello3 ??= await getWebViewHello(http3: true);
 			if (hello3.quic) {
-				myHttpClientAdapter = MyHttpClientAdapter3();
+				if (Persistence.settings.useHttp3) {
+					myHttpClientAdapter = MyHttpClientAdapter3();
+				}
 				enableQuic = true;
 				_initializeTls(
 					quic: true,
