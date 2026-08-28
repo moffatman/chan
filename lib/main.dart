@@ -1783,7 +1783,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			..addListener(() {
 				Persistence.settings.showTabPopup = _showTabPopup.value;
 				Persistence.settings.save();
-				if (_showTabPopup.value) {
+				if (_showTabPopup.value && !Settings.instance.usePaginatedTabBar) {
 					Future.microtask(() => _tabs._animateTabList(duration: Duration.zero));
 				}
 			});
@@ -1794,8 +1794,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				});
 			});
 		}
-		// Set initial tab list up right
-		Future.microtask(() => _tabs._animateTabList(duration: Duration.zero));
+		// The paginated list positions its selected item during its first layout.
+		if (!Settings.instance.usePaginatedTabBar) {
+			Future.microtask(() => _tabs._animateTabList(duration: Duration.zero));
+		}
 		_setAdditionalSafeAreaInsets();
 		ScrollTracker.instance.slowScrollDirection.addListener(_onSlowScrollDirectionChange);
 		if (Persistence.settings.launchCount > 5 && !Persistence.settings.promptedAboutCrashlytics && !_promptedAboutCrashlytics) {
@@ -1831,7 +1833,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			});
 		}
 		WidgetsBinding.instance.addPostFrameCallback((_) {
-			_tabs._animateTabList();
+			if (!Settings.instance.usePaginatedTabBar) {
+				_tabs._animateTabList();
+			}
 		});
 		if (Settings.instance.askForAuthenticationOnLaunch) {
 			_authenticate();

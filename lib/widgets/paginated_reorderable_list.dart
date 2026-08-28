@@ -801,6 +801,10 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
       _layoutOffsetForIndex(index);
 
   @override
+  double? childScrollOffset(RenderObject child) =>
+      _layoutOffsetForIndex(indexOf(child as RenderBox));
+
+  @override
   int getMinChildIndexForScrollOffset(double scrollOffset, double itemExtent) {
     return super.getMinChildIndexForScrollOffset(
         math.max(0.0, scrollOffset - _leadingEmptyExtent), itemExtent);
@@ -1144,6 +1148,7 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
   bool _hasLayout = false;
   int? _lastLaidOutItemCount;
   int _pageCorrectionGeneration = 0;
+  int _scrollNotificationPageUpdateGeneration = 0;
   int? _pendingScrollNotificationPage;
   bool _scrollNotificationPageUpdateScheduled = false;
   Timer? _pageIndicatorHideTimer;
@@ -1307,7 +1312,11 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
       return;
     }
     _scrollNotificationPageUpdateScheduled = true;
+    final generation = _scrollNotificationPageUpdateGeneration;
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (generation != _scrollNotificationPageUpdateGeneration) {
+        return;
+      }
       _scrollNotificationPageUpdateScheduled = false;
       final pendingPage = _pendingScrollNotificationPage;
       _pendingScrollNotificationPage = null;
@@ -1315,6 +1324,12 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
         _notifyPageChanged(pendingPage);
       }
     });
+  }
+
+  void _discardPendingScrollNotificationPageUpdate() {
+    _scrollNotificationPageUpdateGeneration++;
+    _pendingScrollNotificationPage = null;
+    _scrollNotificationPageUpdateScheduled = false;
   }
 
   bool _handleScrollNotification(ScrollNotification notification) {
@@ -1549,6 +1564,9 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
         (newPageExtent - _pageExtent).abs() > 0.000001;
     final pageAlignmentChanged =
         newLeadingEmptySlots != _laidOutLeadingEmptySlots;
+    if (pageGeometryChanged || pageAlignmentChanged || itemCountChanged) {
+      _discardPendingScrollNotificationPageUpdate();
+    }
     final initialSelectedPage = !_hasLayout &&
             widget.selectedIndex != null &&
             widget.selectedIndex! >= 0 &&
@@ -1581,7 +1599,6 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
       _itemsPerPage = newItemsPerPage;
       _pageExtent = newPageExtent;
       _laidOutLeadingEmptySlots = newLeadingEmptySlots;
-      _pendingScrollNotificationPage = null;
       targetPage = _clampPage(targetPage);
     } else if (pageAlignmentChanged) {
       _laidOutLeadingEmptySlots = newLeadingEmptySlots;
