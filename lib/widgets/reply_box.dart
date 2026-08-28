@@ -2743,25 +2743,22 @@ Future<_ReplyBoxFile?> _makeAttachment(PickedAttachment? originalAttachment, Fil
 																	animation: postingPost,
 																	builder: (context, _) {
 																		final pair = postingPost.pair;
-																		if (pair == null) {
-																			return const SizedBox.shrink();
-																		}
-																		final time = pair.deadline;
+																		final time = pair?.deadline;
 																		return AdaptiveThinButton(
 																			backgroundFilled: true,
-																			onPressed: () => pair.action(context),
+																			onPressed: pair != null ? () => pair.action(context) : null,
 																			padding: const EdgeInsets.all(8),
 																			child: Row(
 																				mainAxisSize: MainAxisSize.min,
 																				children: [
-																					Text('${pair.label} '),
-																					GreedySizeCachingBox(
+																					Text(pair?.label ?? '${postingPost.statusText}...'),
+																					if (time != null) GreedySizeCachingBox(
 																						alignment: Alignment.centerRight,
 																						child: TimedRebuilder(
 																							interval: () => const Duration(seconds: 1),
 																							function: () => formatDuration(time.difference(DateTime.now()).clampAboveZero),
 																							builder: (context, delta) => Text(
-																								'($delta)',
+																								' ($delta)',
 																								style: CommonTextStyles.tabularFigures
 																							)
 																						)

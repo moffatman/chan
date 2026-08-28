@@ -2538,6 +2538,7 @@ class ThreadPageState extends State<ThreadPage> {
 										},
 										onVisibilityChanged: () {
 											setState(() {});
+											_indicatorKey.currentState?.setState(() {});
 										}
 									)
 								) : const SizedBox.shrink()
@@ -3703,7 +3704,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 										if (widget.replyBoxKey.currentState case ReplyBoxState replyBoxState) ValueListenableBuilder(
 											valueListenable: replyBoxState.postingPost,
 											builder: (context, postingPost, _) {
-												if (postingPost == null) {
+												if (postingPost == null || replyBoxState.show) {
 													return const SizedBox.shrink();
 												}
 												return Padding(
