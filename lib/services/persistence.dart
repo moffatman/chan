@@ -2622,7 +2622,8 @@ class EfficientlyStoredIntSetAdapter extends TypeAdapter<EfficientlyStoredIntSet
 }
 
 extension PseudoCookies on CookieJar {
-	static final _pseudoCookieUri = Uri.parse('https://chancepseudo.com');
+	static const kDomain = 'chancepseudo.com';
+	static final _pseudoCookieUri = Uri.https(kDomain);
 	static const _expiresOffset = Duration(days: 1000);
 
 	Future<String?> readPseudoCookie(String key) async {

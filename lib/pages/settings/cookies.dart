@@ -246,6 +246,10 @@ class _CookieSettingsPageState extends State<CookieSettingsPage> {
 		final output = <_CookieTreeItem>[];
 		final domains = grouped.keys.toList()..sort();
 		for (final domain in domains) {
+      if (domain == PseudoCookies.kDomain) {
+        // Shouldn't be visible to user
+        continue;
+      }
 			final domainId = _idFor('domain:$domain');
 			final hosts = grouped[domain]!;
 			final domainCookieCount = hosts.values.fold<int>(0, (sum, values) => sum + values.length);
