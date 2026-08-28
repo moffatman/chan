@@ -758,10 +758,10 @@ final behaviorSettings = [
 	SwitchSettingWidget(
 		description: 'HTTP/3',
 		icon: CupertinoIcons.speedometer,
-		helpText: 'Use HTTP/3 protocol. This should help with site firewalls. But may be broken in certain countries.',
+		helpText: 'Use HTTP/3 protocol.\n\nThis should help with site firewalls. But may be broken in certain countries.',
 		keywords: ['http3'],
 		disabled: CustomMutableSetting(
-			reader: (context) => enableQuic,
+			reader: (context) => !enableQuic,
 			didMutater: (_) async {}
 		),
 		// Using a custom setting to show the switch as off when disabled
