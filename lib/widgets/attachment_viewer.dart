@@ -8,6 +8,7 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/attachment_cache.dart';
+import 'package:chan/services/clipboard_image.dart';
 import 'package:chan/services/http_429_backoff.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/launch_url_externally.dart';
@@ -1241,6 +1242,8 @@ class AttachmentViewerController extends ChangeNotifier {
 		);
 	}
 
+	Future<void> copyImage() => copyImageToClipboard(getFile());
+
 	Future<void> translate() async {
 		final rawBlocks = await recognizeText(_cachedFile!);
 		final translated = await batchTranslate(rawBlocks.map((r) => r.text).toList(), toLanguage: Settings.instance.translationTargetLanguage, interactive: true);
@@ -1706,6 +1709,27 @@ class AttachmentViewer extends StatelessWidget {
 							sharePositionOrigin: controller.contextMenuShareLinkButtonKey.currentContext?.globalSemanticBounds
 						);
 					}
+				),
+				if (attachment.type == AttachmentType.image) ContextMenuAction(
+					trailingIcon: CupertinoIcons.doc_on_clipboard,
+					onPressed: controller.canShare ? () async {
+						try {
+							await controller.copyImage();
+							if (context.mounted) {
+								showToast(
+									context: context,
+									message: 'Copied image to clipboard',
+									icon: CupertinoIcons.doc_on_clipboard
+								);
+							}
+						}
+						catch (e, st) {
+							if (context.mounted) {
+								alertError(context, e, st);
+							}
+						}
+					} : null,
+					child: const Text('Copy image')
 				),
 				if (attachment.type == AttachmentType.image && isTextRecognitionSupported) ContextMenuAction(
 					trailingIcon: Icons.translate,
