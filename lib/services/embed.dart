@@ -18,6 +18,7 @@ import 'package:html/dom.dart' as dom;
 import 'package:linkify/linkify.dart';
 
 final _youtubeShortsRegex = RegExp(r'youtube.com\/shorts\/([^?]+)');
+final _youtubeShortenerRegex = RegExp(r'^(?:https?\:\/\/)?youtu\.be\/([^?]+)');
 
 bool embedPossible(String url) {
 	final embedRegexes = Settings.instance.embedRegexes;
@@ -32,6 +33,9 @@ bool embedPossible(String url) {
 		return true;
 	}
 	if (url.contains('youtube.com')) {
+		return true;
+	}
+	if (url.contains('youtu.be')) {
 		return true;
 	}
 	if (url.contains('pbs.twimg.com/media/')) {
@@ -266,6 +270,10 @@ Future<EmbedData?> loadEmbedData(String url, {required bool highQuality}) {
 		final youtubeShortsMatch = _youtubeShortsRegex.firstMatch(url);
 		if (youtubeShortsMatch != null) {
 			url = 'https://www.youtube.com/watch?v=${youtubeShortsMatch.group(1)}';
+		}
+		final youtubeShortenerMatch = _youtubeShortenerRegex.firstMatch(url);
+		if (youtubeShortenerMatch != null) {
+			url = 'https://www.youtube.com/watch?v=${youtubeShortenerMatch.group(1)}';
 		}
 		// noembed regex for some reason requires a subdomain
 		url = url.replaceFirst('//youtube.com/', '//www.youtube.com/');
