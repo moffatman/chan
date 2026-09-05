@@ -167,7 +167,13 @@ void main() async {
 	if ((Platform.isAndroid || Platform.isIOS) && !developerMode) {
 		runZonedGuarded<Future<void>>(
 			innerMain,
-			(error, stack) => FirebaseCrashlytics.instance.recordError(error, stack, fatal: true)
+			(error, stack) => FirebaseCrashlytics.instance.recordError(
+				error, stack,
+				information: [
+					if (error is ExtendedException) error.additionalFiles.entries.map((entry) => '${entry.key}: ${base64.encode(entry.value)}')
+				],
+				fatal: true
+			)
 		);
 	}
 	else {
