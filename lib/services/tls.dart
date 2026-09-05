@@ -195,10 +195,13 @@ TlsClientHello _decodeTlsHandshake(bool quic, Uint8List recordBytes) {
 		final id = extensionsReader.takeUint16();
 		final length = extensionsReader.takeUint16();
 		if (id == _kTlsExtSignatureAlgorithms) {
-			final signatureAlgorithmsLength = extensionsReader.takeUint16();
-			signatureAlgorithms.addAll(Iterable.generate(signatureAlgorithmsLength ~/ 2, (_) {
-				return extensionsReader.takeUint16();
-			}));
+			final signatureAlgorithmsLength = extensionsReader.takeUint16() ~/ 2;
+			for (int i = 0; i < signatureAlgorithmsLength; i++) {
+				final signatureAlgorithm = extensionsReader.takeUint16();
+				if (!_kGREASE.contains(signatureAlgorithm)) {
+					signatureAlgorithms.add(signatureAlgorithm);
+				}
+			}
 		}
 		else if (id == _kTlsExtSupportedVersions) {
 			versions.clear();
