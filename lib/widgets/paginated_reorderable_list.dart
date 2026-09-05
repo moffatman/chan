@@ -516,7 +516,6 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
   set itemCount(int value) {
     if (_itemCount == value) return;
     _itemCount = value;
-    _invalidatePreferredExtents();
     markNeedsLayout();
   }
 
