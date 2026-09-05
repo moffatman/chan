@@ -729,7 +729,7 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
   }
 
   double _leadingEmptyExtentFor(bool alignPagesToEnd) {
-    if (!alignPagesToEnd) return 0;
+    if (!alignPagesToEnd || _pageCount <= 1) return 0;
     return physicalGutterExtent +
         _leadingEmptySlotsFor(true) *
             _selectionAnimatedNormalExtentForPage(0, true);
@@ -748,7 +748,9 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
     final slotCount = leadingEmptySlots + math.min(index, _itemCount);
     final fullPageCount = slotCount ~/ _itemsPerPage;
     final partialPageSlotCount = slotCount % _itemsPerPage;
-    var offset = alignPagesToEnd ? physicalGutterExtent : 0.0;
+    var offset = alignPagesToEnd && _pageCount > 1
+        ? physicalGutterExtent
+        : 0.0;
     offset += fullPageCount * _pageExtent;
     if (fullPageCount > 0) {
       if (_pageCount == 1) {
