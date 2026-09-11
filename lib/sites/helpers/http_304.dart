@@ -118,7 +118,7 @@ mixin Http304CachingThreadTailMixin on ImageboardSite {
 		CancelToken? cancelToken
 	});
 	@override
-	Future<ThreadTail?> getThreadTail(Thread thread, {
+	Future<ThreadTail?> getThreadTail(Thread thread, DateTime lastModified, {
 		ThreadVariant? variant,
 		required RequestPriority priority,
 		CancelToken? cancelToken
@@ -129,7 +129,7 @@ mixin Http304CachingThreadTailMixin on ImageboardSite {
 		}
 		return await _helper<ThreadTail>(
 			baseOptions: request,
-			lastModified: null,
+			lastModified: lastModified,
 			func: (response) async {
 				final t = await makeThreadTail(thread.identifier, response, variant: variant, priority: priority, cancelToken: cancelToken);
 				// posts.last.time sometimes is off by 1 second. probably due to server-side processing latencies

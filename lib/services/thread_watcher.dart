@@ -355,6 +355,7 @@ class ThreadWatcher extends ChangeNotifier {
 			if (oldThread != null && oldThread.posts_.length >= (oldThread.replyCount + 1) && lastUpdatedTime != null && oldThread.archiveName == null) {
 				final tail = await site.getThreadTail(
 					oldThread,
+					lastUpdatedTime,
 					variant: threadState.variant,
 					priority: priority,
 					cancelToken: cancelToken

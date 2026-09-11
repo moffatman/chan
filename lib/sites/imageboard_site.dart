@@ -1932,7 +1932,7 @@ abstract class ImageboardSiteArchive {
 	Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority, CancelToken? cancelToken});
 	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken});
 	/// Null means tail function not available
-	Future<ThreadTail?> getThreadTail(Thread thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
+	Future<ThreadTail?> getThreadTail(Thread thread, DateTime lastModified, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		return null;
 	}
 	/// Exported to handle pageMap with same request as catalog, when pageMap is requested first
