@@ -603,4 +603,39 @@ class ThreadTail {
 		isSticky = thread.isSticky,
 		lastUpdatedTime = thread.lastUpdatedTime,
 		stickyReplyCap = thread.stickyReplyCap;
+
+	/// Apply metadata even when the tail contains no new posts.
+	/// Null means the tail does not overlap and a full fetch is required.
+	Thread? applyTo(Thread oldThread) {
+		if (posts.isNotEmpty && (oldThread.posts_.isEmpty || posts.first.id > oldThread.posts_.last.id)) {
+			return null;
+		}
+		final start = posts.indexWhere((post) => post.id > oldThread.posts_.last.id);
+		return Thread(
+			posts_: [...oldThread.posts_, if (start != -1) ...posts.sublist(start)],
+			isArchived: isArchived,
+			isDeleted: oldThread.isDeleted,
+			replyCount: replyCount,
+			imageCount: imageCount,
+			id: id,
+			attachmentDeleted: oldThread.attachmentDeleted,
+			board: board,
+			title: oldThread.title,
+			isSticky: isSticky,
+			time: oldThread.time,
+			flair: oldThread.flair,
+			currentPage: oldThread.currentPage,
+			uniqueIPCount: oldThread.uniqueIPCount,
+			customSpoilerId: oldThread.customSpoilerId,
+			attachments: oldThread.attachments,
+			suggestedVariant: oldThread.suggestedVariant,
+			poll: oldThread.poll,
+			archiveName: oldThread.archiveName,
+			isEndless: oldThread.isEndless,
+			lastUpdatedTime: lastUpdatedTime,
+			isLocked: isLocked,
+			isNsfw: oldThread.isNsfw,
+			stickyReplyCap: stickyReplyCap
+		);
+	}
 }

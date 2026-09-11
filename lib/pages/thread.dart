@@ -1325,40 +1325,9 @@ class ThreadPageState extends State<ThreadPage> {
 						priority: _priority,
 						cancelToken: cancelToken
 					);
-					if (tail != null && (tail.posts.isEmpty || tail.posts.first.id <= oldThread.posts_.last.id)) {
-						final start = tail.posts.indexWhere((post) => post.id > oldThread.posts_.last.id);
-						if (start != -1) {
-							// Tail is usable (overlap between posts)
-							newThread = Thread(
-								posts_: [...oldThread.posts_, ...tail.posts.sublist(start)],
-								isArchived: tail.isArchived,
-								isDeleted: oldThread.isDeleted,
-								replyCount: tail.replyCount,
-								imageCount: tail.imageCount,
-								id: tail.id,
-								attachmentDeleted: oldThread.attachmentDeleted,
-								board: tail.board,
-								title: oldThread.title,
-								isSticky: tail.isSticky,
-								time: oldThread.time,
-								flair: oldThread.flair,
-								currentPage: oldThread.currentPage,
-								uniqueIPCount: oldThread.uniqueIPCount,
-								customSpoilerId: oldThread.customSpoilerId,
-								attachments: oldThread.attachments,
-								suggestedVariant: oldThread.suggestedVariant,
-								poll: oldThread.poll,
-								archiveName: oldThread.archiveName,
-								isEndless: oldThread.isEndless,
-								lastUpdatedTime: tail.lastUpdatedTime,
-								isLocked: tail.isLocked,
-								isNsfw: oldThread.isNsfw,
-								stickyReplyCap: tail.stickyReplyCap
-							);
-						}
-						else {
-							newThread = oldThread;
-						}
+					final updatedFromTail = tail?.applyTo(oldThread);
+					if (updatedFromTail != null) {
+						newThread = updatedFromTail;
 					}
 					else {
 						newThread = await site.getThreadIfModifiedSince(
