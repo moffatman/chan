@@ -281,7 +281,7 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 				'fileSha256': post.files.map((file) => sha256Map[file]).toList(),
 				'fileMime': post.files.map((file) => lookupMimeType(file.path)).toList(),
 				'fileSpoiler': post.files.map((file) => file.spoiler ? 'spoiler': '').toList(),
-				'fileName': post.files.map((file) => file.overrideFilename ?? file.basename),
+				'fileName': post.files.map((file) => file.overrideFilename ?? file.basename).toList(),
 				'files': [
 					for (final file in post.files)
 						if (sha256AlreadyUploaded[file] != true)
