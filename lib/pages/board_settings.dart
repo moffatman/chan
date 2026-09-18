@@ -34,7 +34,6 @@ class BoardSettingsPage extends StatefulWidget {
 	createState() => _BoardSettingsPageState();
 }
 
-@override
 class _BoardSettingsPageState extends State<BoardSettingsPage> {
 
 	@override

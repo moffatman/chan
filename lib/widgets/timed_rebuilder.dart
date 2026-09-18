@@ -47,7 +47,7 @@ class _TimedRebuilderState<T> extends State<TimedRebuilder<T>> {
 	@override
 	void didChangeDependencies() {
 		super.didChangeDependencies();
-		final tickerMode = TickerMode.of(context);
+		final tickerMode = TickerMode.valuesOf(context).enabled;
 		if (tickerMode && widget.enabled && timer == null) {
 			// Update and reactivate
 			notifier.value = widget.function();

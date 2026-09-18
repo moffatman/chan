@@ -3310,10 +3310,7 @@ Future<_ReplyBoxFile?> _makeAttachment(PickedAttachment? originalAttachment, Fil
 													},
 													child: child,
 												),
-												onReorder: (oldIndex, newIndex) {
-													if (oldIndex < newIndex) {
-														newIndex -= 1;
-													}
+												onReorderItem: (oldIndex, newIndex) {
 													final item = _attachments.removeAt(oldIndex);
 													_attachments.insert(newIndex, item);
 													setState(() {});

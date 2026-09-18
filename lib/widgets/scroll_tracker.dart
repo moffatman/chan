@@ -48,7 +48,7 @@ class ScrollTracker {
 					// Not a real scroll of primary scrollable
 					return false;
 				}
-				if (!TickerMode.of(context)) {
+				if (!TickerMode.valuesOf(context).enabled) {
 					// Background tab or something
 					return false;
 				}
@@ -104,7 +104,7 @@ class ScrollTracker {
 				// Not a real scroll of primary scrollable
 				return false;
 			}
-			if (!TickerMode.of(notification.context)) {
+			if (!TickerMode.valuesOf(notification.context).enabled) {
 				// Background tab or something
 				return false;
 			}

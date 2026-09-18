@@ -3087,7 +3087,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 								child: CustomScrollView(
 									key: _scrollViewKey,
 									shrinkWrap: widget.shrinkWrap,
-									cacheExtent: max(widget.minCacheExtent, 250),
+									scrollCacheExtent: ScrollCacheExtent.pixels(max(widget.minCacheExtent, 250)),
 									controller: controller.scrollController,
 									physics: const AlwaysScrollableScrollPhysics(),
 									slivers: [

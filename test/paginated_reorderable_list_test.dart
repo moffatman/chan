@@ -3,7 +3,6 @@ import 'package:chan/widgets/weak_gesture_recognizer.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _FasterSnappingPageScrollPhysics extends ScrollPhysics {
@@ -53,7 +52,7 @@ Widget buildTestList(
     GlobalKey<PaginatedReorderableListState>? listKey,
     PaginatedReorderableListController? controller,
     ValueChanged<int>? onPageChanged,
-    ReorderCallback? onReorder,
+    ReorderCallback? onReorderItem,
     ScrollPhysics? physics,
     int? selectedIndex,
     double selectedItemExtentFactor = 2,
@@ -98,7 +97,7 @@ Widget buildTestList(
                   alignmentOverpullExtent: alignmentOverpullExtent,
                   physics: physics,
                   onPageChanged: onPageChanged,
-                  onReorder: onReorder ?? (_, __) {},
+                  onReorderItem: onReorderItem ?? (_, __) {},
                   itemBuilder: (context, index) {
                     final preferredExtent = preferredMainAxisExtents[index];
                     Widget buildContent() => SizedBox(
@@ -311,6 +310,7 @@ void main() {
         itemCount: 5,
         width: 400,
         physics: const BouncingScrollPhysics(),
+        delayedDragStart: true,
         gutterExtent: 0.5,
         allowTrailingAlignmentOverpull: true,
         onPagesAlignedToEndChanged: alignmentChanges.add,
@@ -326,6 +326,8 @@ void main() {
     key.currentState!.jumpToPage(1);
     await tester.pump();
     var gesture = await tester.startGesture(tester.getCenter(listFinder));
+    await gesture.moveBy(const Offset(-10, 0));
+    await tester.pump();
     await gesture.moveBy(const Offset(-100, 0));
     await tester.pump();
 
@@ -353,6 +355,8 @@ void main() {
         tester.getTopRight(listFinder).dx);
 
     gesture = await tester.startGesture(tester.getCenter(listFinder));
+    await gesture.moveBy(const Offset(-10, 0));
+    await tester.pump();
     await gesture.moveBy(const Offset(-100, 0));
     await tester.pump();
 
@@ -923,7 +927,7 @@ void main() {
     final reorders = <(int, int)>[];
     await tester.pumpWidget(buildTestList(
         itemCount: 4,
-        onReorder: (oldIndex, newIndex) => reorders.add((oldIndex, newIndex)),
+        onReorderItem: (oldIndex, newIndex) => reorders.add((oldIndex, newIndex)),
         delegate: const PaginatedReorderableListDelegateWithFixedMainAxisCount(
             mainAxisCount: 2)));
     await tester.pump();
@@ -933,7 +937,7 @@ void main() {
     await tester.pump(kPressTimeout);
     await drag.moveBy(const Offset(10, 0));
     await tester.pump();
-    await drag.moveBy(const Offset(220, 0));
+    await drag.moveBy(const Offset(320, 0));
     await tester.pump();
     await drag.up();
     await tester.pumpAndSettle();
@@ -983,7 +987,7 @@ void main() {
         listKey: listKey,
         itemCount: 12,
         controller: controller,
-        onReorder: (oldIndex, newIndex) => reorder = (oldIndex, newIndex),
+        onReorderItem: (oldIndex, newIndex) => reorder = (oldIndex, newIndex),
         delayedDragStart: true,
         height: 80,
         gutterExtent: 0.5,
@@ -1018,9 +1022,7 @@ void main() {
 
     expect(reorder, isNotNull);
     final itemsPerPage = listKey.currentState!.itemsPerPage;
-    final destinationIndex = reorder!.$2 > reorder!.$1
-        ? reorder!.$2 - 1
-        : reorder!.$2;
+    final destinationIndex = reorder!.$2;
     final insertionPage = reorder!.$2 ~/ itemsPerPage;
     final destinationPage = destinationIndex ~/ itemsPerPage;
     final expectedPage =
@@ -1129,6 +1131,7 @@ void main() {
     await swipe.moveBy(const Offset(-10, 0));
     await tester.pump();
     await swipe.moveBy(const Offset(-220, 0));
+    await tester.pump();
     await tester.pump();
 
     expect(tester.widget<AnimatedOpacity>(find.byKey(indicatorKey)).opacity, 1);

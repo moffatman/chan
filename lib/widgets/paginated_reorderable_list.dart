@@ -292,7 +292,7 @@ class _PaginatedSliverReorderableList extends SliverReorderableList {
       required this.selectedItemAnimationCurve,
       required super.itemBuilder,
       required super.itemCount,
-      required super.onReorder,
+      required super.onReorderItem,
       super.onReorderStart,
       super.onReorderEnd,
       super.proxyDecorator,
@@ -566,11 +566,17 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
   }
 
   void invalidatePreferredExtentForIndex(int index) {
+    var invalidated = false;
     if (index == _previousSelectedIndex) {
       _previousPreferredExtentNeedsMeasurement = true;
+      invalidated = true;
     }
     if (index == _selectedIndex) {
       _preferredExtentNeedsMeasurement = true;
+      invalidated = true;
+    }
+    if (invalidated) {
+      markNeedsLayout();
     }
   }
 
@@ -727,6 +733,11 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
     return null;
   }
 
+  double _laidOutMainAxisExtent(RenderBox child) => switch (constraints.axis) {
+        Axis.horizontal => child.size.width,
+        Axis.vertical => child.size.height
+      };
+
   double _leadingEmptyExtentFor(bool alignPagesToEnd) {
     if (!alignPagesToEnd || _pageCount <= 1) return 0;
     return physicalGutterExtent +
@@ -861,7 +872,7 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
                 maxExtent:
                     _maximumSelectedExtentForIndex(_selectedIndex!)),
             parentUsesSize: true);
-        _preferredSelectedExtent = paintExtentOf(selectedChild);
+        _preferredSelectedExtent = _laidOutMainAxisExtent(selectedChild);
         _preferredExtentNeedsMeasurement = false;
       }
     } else {
@@ -886,7 +897,8 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
                 maxExtent:
                     _maximumSelectedExtentForIndex(_previousSelectedIndex!)),
             parentUsesSize: true);
-        _previousPreferredSelectedExtent = paintExtentOf(previousSelectedChild);
+        _previousPreferredSelectedExtent =
+            _laidOutMainAxisExtent(previousSelectedChild);
         _previousPreferredExtentNeedsMeasurement = false;
       }
     } else {
@@ -1012,7 +1024,7 @@ class PaginatedReorderableListDelegateWithMaxMainAxisExtent
 class PaginatedReorderableList extends StatefulWidget {
   final IndexedWidgetBuilder itemBuilder;
   final int itemCount;
-  final ReorderCallback onReorder;
+  final ReorderCallback onReorderItem;
   final PaginatedReorderableListDelegate paginationDelegate;
   final Axis scrollDirection;
   final bool reverse;
@@ -1092,7 +1104,7 @@ class PaginatedReorderableList extends StatefulWidget {
   const PaginatedReorderableList(
       {required this.itemBuilder,
       required this.itemCount,
-      required this.onReorder,
+      required this.onReorderItem,
       required this.paginationDelegate,
       this.scrollDirection = Axis.horizontal,
       this.reverse = false,
@@ -1962,7 +1974,7 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
                                 widget.selectedItemAnimationCurve,
                             itemBuilder: widget.itemBuilder,
                             itemCount: widget.itemCount,
-                            onReorder: widget.onReorder,
+                            onReorderItem: widget.onReorderItem,
                             onReorderStart: _handleReorderStart,
                             onReorderEnd: _handleReorderEnd,
                             proxyDecorator: _buildReorderProxy,

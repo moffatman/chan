@@ -1717,9 +1717,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 												builder: (context, constraints) => ReorderableListView(
 													scrollDirection: Axis.horizontal,
 													physics: const NeverScrollableScrollPhysics(),
-													onReorder: (a, b) {
+													onReorderItem: (a, b) {
 														if (a < b) {
-															for (int i = a; i < b - 1; i++) {
+															for (int i = a; i < b; i++) {
 																final tmp = _getPickerStuffForWidgetIndex(i).controller.selectedItem;
 																_getPickerStuffForWidgetIndex(i).controller.jumpToItem(_getPickerStuffForWidgetIndex(i + 1).controller.selectedItem);
 																_getPickerStuffForWidgetIndex(i + 1).controller.jumpToItem(tmp);

@@ -111,7 +111,7 @@ class _TabListTile extends StatelessWidget {
 class DrawerList<T extends Object> {
 	final List<T> list;
 	final Widget Function(T, Widget Function(BuildContext, ThreadWidgetData)) builder;
-	final void Function(int, int)? onReorder;
+	final void Function(int, int)? onReorderItem;
 	final ({String message, VoidCallback? onUndo}) Function(int)? onClose;
 	final bool Function(int) isSelected;
 	final void Function(int) onSelect;
@@ -133,7 +133,7 @@ class DrawerList<T extends Object> {
 		required this.onSelect,
 		required this.menuAxisDirection,
 		this.buildAdditionalActions = _buildNothing,
-		this.onReorder,
+		this.onReorderItem,
 		this.onRefresh,
 		this.pinFirstItem = false,
 		this.footer
@@ -212,7 +212,7 @@ class DrawerList<T extends Object> {
 			return innerBuilder;
 		}
 		return ReorderableDelayedDragStartListener(
-			enabled: onReorder != null,
+			enabled: onReorderItem != null,
 			index: i,
 			key: ValueKey(i),
 			child: innerBuilder
@@ -232,7 +232,7 @@ class DrawerList<T extends Object> {
 			tab: tab,
 			builder: builder
 		),
-		onReorder: tabs.onReorder,
+		onReorderItem: tabs.onReorderItem,
 		onClose: Persistence.tabs.length > 1 ? (i) {
 			final previouslyActiveTab = tabs.browseTabIndex;
 			final closedTab = Persistence.tabs[i];
@@ -383,7 +383,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 					);
 				},
 				onRefresh: ImageboardRegistry.threadWatcherController.update,
-				onReorder: Persistence.settings.watchedThreadsSortingMethod == ThreadSortingMethod.savedTime ? (int oldIndex, int newIndex) {
+				onReorderItem: Persistence.settings.watchedThreadsSortingMethod == ThreadSortingMethod.savedTime ? (int oldIndex, int newIndex) {
 					// Make sure they are spaced enough to work
 					final affectedPersistences = Set<Persistence>.identity();
 					const kSafeDistance = Duration(seconds: 1);
@@ -561,7 +561,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 					thread: state.identifier,
 					builder: builder
 				),
-				onReorder: null,
+				onReorderItem: null,
 				onClose: (i) {
 					final state = states[i];
 					state.showInHistory = false;
@@ -618,7 +618,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 					thread: state.identifier,
 					builder: builder,
 				),
-				onReorder: null,
+				onReorderItem: null,
 				onRefresh: () async {
 					for (final state in states) {
 						if (state.thread?.isArchived != true && state.threadWatch?.zombie != true) {
@@ -925,10 +925,10 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 										buildDefaultDragHandles: false,
 										physics: const AlwaysScrollableScrollPhysics(),
 										itemCount: list.pinFirstItem ? list.list.length - 1 : list.list.length,
-										onReorder: (oldIndex, newIndex) {
+										onReorderItem: (oldIndex, newIndex) {
 											final oldI = list.pinFirstItem ? oldIndex + 1 : oldIndex;
 											final newI = list.pinFirstItem ? newIndex + 1 : newIndex;
-											list.onReorder?.call(oldI, newI);
+											list.onReorderItem?.call(oldI, newI);
 										},
 										itemBuilder: (context, index) {
 											final i = list.pinFirstItem ? index + 1 : index;

@@ -33,13 +33,13 @@ extension _Helper on ImageboardSite {
 			));
 			final status = response.statusCode;
 			if (status == 304) {
-				return on304?.call();
+				return await on304?.call();
 			}
 			if (status != null && status >= 200 && status < 400) {
 				return await unsafeAsync(response.data, () => func(response));
 			}
 			if (status == 404) {
-				return on404();
+				return await on404();
 			}
 			throw HTTPStatusException.fromResponse(response);
 		}

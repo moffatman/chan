@@ -131,7 +131,7 @@ class HistoryPageState extends State<HistoryPage> {
 								controller: _listController,
 								autoExtendDuringScroll: true,
 								updateAnimation: Persistence.sharedThreadStateListenable,
-								disableUpdates: !TickerMode.of(context),
+								disableUpdates: !TickerMode.valuesOf(context).enabled,
 								listUpdater: (options) async {
 									states = Persistence.sharedThreadStateBox.values.where((s) => s.imageboard != null && (s.showInHistory ?? false)).toList();
 									states.sort((a, b) => b.lastOpenedTime.compareTo(a.lastOpenedTime));

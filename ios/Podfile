@@ -1,5 +1,5 @@
 # Uncomment this line to define a global platform for your project
-platform :ios, '13.0'
+platform :ios, '15.0'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
@@ -47,8 +47,8 @@ def fix_config(config)
   end
   # https://github.com/ponnamkarthik/FlutterToast/issues/431
   # https://github.com/fluttercommunity/plus_plugins/issues/1955
-  if config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 12.0
-    config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
+  if config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 15.0
+    config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
   end
 end
 

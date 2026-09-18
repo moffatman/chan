@@ -274,7 +274,7 @@ class MediaScan {
 				}
 				return scan;
 			}
-			return (await _ffprobeLock.protect<Wrapper<Future<MediaScan>>>(() async {
+			return await (await _ffprobeLock.protect<Wrapper<Future<MediaScan>>>(() async {
 				// Only start work within wrappper
 				final future = work();
 				final first = await Future.any([future, Future<MediaScan?>.delayed(const Duration(seconds: 3))]);

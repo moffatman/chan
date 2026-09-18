@@ -606,7 +606,7 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 	@override
 	Future<List<Thread>> getMoreCatalogImpl(String board, Thread after, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		try {
-			return _getCatalogPage(board, (after.currentPage ?? 0) + 1, priority: priority, cancelToken: cancelToken);
+			return await _getCatalogPage(board, (after.currentPage ?? 0) + 1, priority: priority, cancelToken: cancelToken);
 		}
 		on BoardNotFoundException {
 			return [];

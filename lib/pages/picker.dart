@@ -357,7 +357,7 @@ class _PickerPageState<T> extends State<PickerPage<T>> {
 								padding: const EdgeInsets.only(top: 4, bottom: 4) + MediaQuery.paddingOf(context),
 								separatorBuilder: (context, i) => const SizedBox(height: 2),
 								itemCount: filteredItems.length,
-								findChildIndexCallback: (key) {
+								findItemIndexCallback: (key) {
 									if (key case ValueKey(value: int index)) {
 										return index;
 									}

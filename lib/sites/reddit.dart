@@ -828,7 +828,7 @@ class SiteReddit extends ImageboardSite {
 						responseType: ResponseType.json
 					), cancelToken: cancelToken);
 					if (!redirectResponse.realUri.host.contains('gfycat')) {
-						return _resolveUrl0(redirectResponse.realUri, priority: priority);
+						return await _resolveUrl0(redirectResponse.realUri, priority: priority);
 					}
 				}
 				else if (response.data case {'gfyItem': Map gfyItem && {'mp4Url': String link}}) {

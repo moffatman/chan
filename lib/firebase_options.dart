@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -28,15 +25,9 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return macos;
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -54,16 +45,40 @@ class DefaultFirebaseOptions {
     appId: '1:500583514678:android:d297a3fbce272458018e97',
     messagingSenderId: '500583514678',
     projectId: 'chan-329813',
-    storageBucket: 'chan-329813.appspot.com',
+    storageBucket: 'chan-329813.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyDezXK1OIMB5e2fhFrchPaDL_bs2fFcIVk',
     appId: '1:500583514678:ios:1f50bb1c217f7c6f018e97',
     messagingSenderId: '500583514678',
     projectId: 'chan-329813',
-    storageBucket: 'chan-329813.appspot.com',
-    iosClientId: '500583514678-mkce6tt2g3cjf59bblmh3ih30i9rp58r.apps.googleusercontent.com',
+    storageBucket: 'chan-329813.firebasestorage.app',
     iosBundleId: 'com.moffatman.chan',
+  );
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyBCywtjyJ0Nb0lLQYDy_4kK-u3HUYa7C-s',
+    appId: '1:500583514678:web:11a05f8d6fa06cba018e97',
+    messagingSenderId: '500583514678',
+    projectId: 'chan-329813',
+    authDomain: 'chan-329813.firebaseapp.com',
+    storageBucket: 'chan-329813.firebasestorage.app',
+  );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyDezXK1OIMB5e2fhFrchPaDL_bs2fFcIVk',
+    appId: '1:500583514678:ios:1f50bb1c217f7c6f018e97',
+    messagingSenderId: '500583514678',
+    projectId: 'chan-329813',
+    storageBucket: 'chan-329813.firebasestorage.app',
+    iosBundleId: 'com.moffatman.chan',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyBCywtjyJ0Nb0lLQYDy_4kK-u3HUYa7C-s',
+    appId: '1:500583514678:web:57be979b0ce4f215018e97',
+    messagingSenderId: '500583514678',
+    projectId: 'chan-329813',
+    authDomain: 'chan-329813.firebaseapp.com',
+    storageBucket: 'chan-329813.firebasestorage.app',
   );
 }

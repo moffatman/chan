@@ -42,10 +42,10 @@ class PopupDrawerPage<T extends Object> extends StatelessWidget {
 						),
 						SliverReorderableList(
 							itemCount: list.pinFirstItem ? list.list.length - 1 : list.list.length,
-							onReorder: (oldIndex, newIndex) {
+							onReorderItem: (oldIndex, newIndex) {
 								final oldI = list.pinFirstItem ? oldIndex + 1 : oldIndex;
 								final newI = list.pinFirstItem ? newIndex + 1 : newIndex;
-								list.onReorder?.call(oldI, newI);
+								list.onReorderItem?.call(oldI, newI);
 							},
 							itemBuilder: (context, index) {
 								final i = list.pinFirstItem ? index + 1 : index;
