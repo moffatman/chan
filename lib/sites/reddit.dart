@@ -745,10 +745,10 @@ class SiteReddit extends ImageboardSite {
 		filesPerPost: 0
 	);
 
-	Future<String> _getRedgifsToken() async {
+	Future<String> _getRedgifsToken(RequestPriority priority) async {
 		final response = await client.getUri<Map>(Uri.https('api.redgifs.com', '/v2/auth/temporary'), options: Options(
 			extra: {
-				kPriority: RequestPriority.cosmetic
+				kPriority: priority
 			},
 			responseType: ResponseType.json
 		));
@@ -756,7 +756,10 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	/// Resolve image hosting sites to hotlinks
-	Future<List<({String url, String? thumbnailUrl, AttachmentType type, String ext})>?> _resolveUrl0(Uri uri, {CancelToken? cancelToken}) async {
+	Future<List<({String url, String? thumbnailUrl, AttachmentType type, String ext})>?> _resolveUrl0(Uri uri, {
+		required RequestPriority priority,
+		CancelToken? cancelToken
+	}) async {
 		try {
 			if ((uri.host == 'imgur.com' || uri.host == 'imgur.io' || uri.host == 'i.imgur.com' || uri.host == 'i.imgur.io') && (uri.pathSegments.trySingle?.length ?? 0) > 2) {
 				final hash = uri.pathSegments.single.beforeFirst('.');
@@ -765,7 +768,7 @@ class SiteReddit extends ImageboardSite {
 						'Authorization': 'Client-ID 714791ea4513f83'
 					},
 					extra: {
-						kPriority: RequestPriority.cosmetic
+						kPriority: priority
 					},
 					responseType: ResponseType.json
 				), cancelToken: cancelToken);
@@ -787,7 +790,7 @@ class SiteReddit extends ImageboardSite {
 						'Authorization': 'Client-ID 714791ea4513f83'
 					},
 					extra: {
-						kPriority: RequestPriority.cosmetic
+						kPriority: priority
 					},
 					responseType: ResponseType.json
 				), cancelToken: cancelToken);
@@ -812,7 +815,7 @@ class SiteReddit extends ImageboardSite {
 						'Authorization': '2_YQH1hg'
 					},
 					extra: {
-						kPriority: RequestPriority.cosmetic
+						kPriority: priority
 					},
 					validateStatus: (status) => (status != null) && ((status >= 200 && status < 300) || (status == 404))
 				), cancelToken: cancelToken);
@@ -820,12 +823,12 @@ class SiteReddit extends ImageboardSite {
 					// Sometimes gfycat redirects to redgifs
 					final redirectResponse = await client.headUri(uri, options: Options(
 						extra: {
-							kPriority: RequestPriority.cosmetic
+							kPriority: priority
 						},
 						responseType: ResponseType.json
 					), cancelToken: cancelToken);
 					if (!redirectResponse.realUri.host.contains('gfycat')) {
-						return _resolveUrl0(redirectResponse.realUri);
+						return _resolveUrl0(redirectResponse.realUri, priority: priority);
 					}
 				}
 				else if (response.data case {'gfyItem': Map gfyItem && {'mp4Url': String link}}) {
@@ -850,13 +853,13 @@ class SiteReddit extends ImageboardSite {
 				String redGifsToken = '';
 				Response<Map>? response;
 				try {
-					redGifsToken = await persistence!.browserState.loginFields.putIfAbsentAsync(_loginFieldRedGifsTokenKey, _getRedgifsToken);
+					redGifsToken = await persistence!.browserState.loginFields.putIfAbsentAsync(_loginFieldRedGifsTokenKey, () => _getRedgifsToken(priority));
 					response = await client.getUri(Uri.https('api.redgifs.com', '/v2/gifs/$id'), options: Options(
 						headers: {
 							'Authorization': 'Bearer $redGifsToken'
 						},
 						extra: {
-							kPriority: RequestPriority.cosmetic
+							kPriority: priority
 						},
 						responseType: ResponseType.json
 					), cancelToken: cancelToken);
@@ -864,13 +867,13 @@ class SiteReddit extends ImageboardSite {
 				catch (e) {
 					if (e is DioError && e.response?.statusCode == 401 && redGifsToken.isNotEmpty) {
 						// Token expired?
-						redGifsToken = persistence!.browserState.loginFields[_loginFieldRedGifsTokenKey] = await _getRedgifsToken();
+						redGifsToken = persistence!.browserState.loginFields[_loginFieldRedGifsTokenKey] = await _getRedgifsToken(priority);
 						response = await client.getUri(Uri.https('api.redgifs.com', '/v2/gifs/$id'), options: Options(
 							headers: {
 								'Authorization': 'Bearer $redGifsToken'
 							},
 							extra: {
-								kPriority: RequestPriority.cosmetic
+								kPriority: priority
 							},
 							responseType: ResponseType.json
 						), cancelToken: cancelToken);
@@ -895,8 +898,11 @@ class SiteReddit extends ImageboardSite {
 		return null;
 	}
 
-	Future<List<({String url, String? thumbnailUrl, AttachmentType type, String ext})>> _resolveUrl1(Uri uri, {CancelToken? cancelToken}) async {
-		final results = await _resolveUrl0(uri, cancelToken: cancelToken);
+	Future<List<({String url, String? thumbnailUrl, AttachmentType type, String ext})>> _resolveUrl1(Uri uri, {
+		required RequestPriority priority,
+		CancelToken? cancelToken
+	}) async {
+		final results = await _resolveUrl0(uri, priority: priority, cancelToken: cancelToken);
 		if (results != null) {
 			return results;
 		}
@@ -931,8 +937,11 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Attachment>> loadEmbedData(Uri url, {CancelToken? cancelToken}) async {
-		final datas = await _resolveUrl0(url, cancelToken: cancelToken);
+	Future<List<Attachment>> loadEmbedData(Uri url, {
+		required RequestPriority priority,
+		CancelToken? cancelToken
+	}) async {
+		final datas = await _resolveUrl0(url, priority: priority, cancelToken: cancelToken);
 		return datas?.map((data) => Attachment(
 			type: data.type,
 			board: '',
@@ -1050,7 +1059,7 @@ class SiteReddit extends ImageboardSite {
 				));
 			}
 			else if (data case {'url': String url}) {
-				final urls = await _resolveUrl1(Uri.parse(url), cancelToken: cancelToken);
+				final urls = await _resolveUrl1(Uri.parse(url), priority: RequestPriority.cosmetic, cancelToken: cancelToken);
 				final image0 = (preview['images'] as List?)?.tryFirst as Map?;
 				attachments.addAll(urls.indexed.map((url) => Attachment(
 					type: url.$2.type,
@@ -1072,7 +1081,7 @@ class SiteReddit extends ImageboardSite {
 			}
 		}
 		else if (data['is_self'] != true && data['url'] != null) {
-			final urls = await _resolveUrl1(Uri.parse(data['url'] as String), cancelToken: cancelToken);
+			final urls = await _resolveUrl1(Uri.parse(data['url'] as String), priority: RequestPriority.cosmetic, cancelToken: cancelToken);
 			attachments.addAll(urls.indexed.map((url) => Attachment(
 				type: url.$2.type,
 				board: data['subreddit'] as String,

@@ -2755,7 +2755,10 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	bool get supportsPinkQuotes => false;
 	bool get supportsBlueQuotes => false;
 	bool embedPossible(Uri url) => false;
-	Future<List<Attachment>> loadEmbedData(Uri url, {CancelToken? cancelToken}) async {
+	Future<List<Attachment>> loadEmbedData(Uri url, {
+		required RequestPriority priority,
+		CancelToken? cancelToken
+	}) async {
 		return [];
 	}
 

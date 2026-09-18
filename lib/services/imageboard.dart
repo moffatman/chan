@@ -753,9 +753,12 @@ class ImageboardRegistry extends ChangeNotifier {
 		return imageboardsIncludingDev.any((i) => i.site.embedPossible(url));
 	}
 
-	Future<ImageboardScoped<List<Attachment>>?> loadEmbedData(Uri url, {CancelToken? cancelToken}) async {
+	Future<ImageboardScoped<List<Attachment>>?> loadEmbedData(Uri url, {
+		required RequestPriority priority,
+		CancelToken? cancelToken
+	}) async {
 		for (final imageboard in imageboardsIncludingDev) {
-			final ret = await imageboard.site.loadEmbedData(url);
+			final ret = await imageboard.site.loadEmbedData(url, priority: priority);
 			if (ret.isNotEmpty) {
 				return imageboard.scope(ret);
 			}

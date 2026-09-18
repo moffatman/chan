@@ -99,9 +99,12 @@ class EmbedData {
 
 final _twitterPattern = RegExp(r'(?:x|twitter)\.com/[^/]+/status/(\d+)');
 
-Future<EmbedData?> _loadTwitter(String id, bool highQuality) async {
+Future<EmbedData?> _loadTwitter(String id, bool highQuality, RequestPriority priority) async {
 	final response = await Settings.instance.client.getUri(Uri.https('api.vxtwitter.com', '/_/status/$id'), options: Options(
-		responseType: ResponseType.json
+		responseType: ResponseType.json,
+		extra: {
+			kPriority: priority
+		}
 	));
 	if (response.data case Map data) {
 		return EmbedData(
@@ -120,9 +123,12 @@ Future<EmbedData?> _loadTwitter(String id, bool highQuality) async {
 
 final _instagramPattern = RegExp(r'instagram\.com/p/([^/]+)');
 
-Future<EmbedData?> _loadInstagram(String id, bool highQuality) async {
+Future<EmbedData?> _loadInstagram(String id, bool highQuality, RequestPriority priority) async {
 	final response = await Settings.instance.client.getUri(Uri.https('www.instagram.com', '/p/$id/embed/captioned'), options: Options(
-		responseType: ResponseType.plain
+		responseType: ResponseType.plain,
+		extra: {
+			kPriority: priority
+		}
 	));
 	final document = parse(response.data);
 	final caption = document.querySelector('.Caption');
@@ -158,7 +164,10 @@ String? _getPossibleHigherQualityThumbnailUrl(String? url) {
 	return null;
 }
 
-Future<EmbedData?> loadEmbedData(String url, {required bool highQuality}) {
+Future<EmbedData?> loadEmbedData(String url, {
+	required bool highQuality,
+	required RequestPriority priority
+}) {
 	if (url.startsWith('chance://site/')) {
 		try {
 			Map? data = JsonCache.instance.sites.value?[Uri.parse(url).pathSegments.tryFirst];
@@ -204,11 +213,11 @@ Future<EmbedData?> loadEmbedData(String url, {required bool highQuality}) {
 	return () async {
 		final twitterMatch = _twitterPattern.firstMatch(url);
 		if (twitterMatch != null) {
-			return _loadTwitter(twitterMatch.group(1)!, highQuality);
+			return _loadTwitter(twitterMatch.group(1)!, highQuality, priority);
 		}
 		final instagramMatch = _instagramPattern.firstMatch(url);
 		if (instagramMatch != null) {
-			return _loadInstagram(instagramMatch.group(1)!, highQuality);
+			return _loadInstagram(instagramMatch.group(1)!, highQuality, priority);
 		}
 		final uri = Uri.parse(url);
 		if (uri.host == 'pbs.twimg.com') {
@@ -257,7 +266,7 @@ Future<EmbedData?> loadEmbedData(String url, {required bool highQuality}) {
 				imageboardTarget: (target.$1.key, target.$2, target.$3)
 			);
 		}
-		final attachments = await ImageboardRegistry.instance.loadEmbedData(uri);
+		final attachments = await ImageboardRegistry.instance.loadEmbedData(uri, priority: priority);
 		if (attachments != null) {
 			return EmbedData(
 				title: uri.host,
@@ -280,7 +289,10 @@ Future<EmbedData?> loadEmbedData(String url, {required bool highQuality}) {
 		final response = await Settings.instance.client.get('https://noembed.com/embed', queryParameters: {
 			'url': url
 		}, options: Options(
-			responseType: ResponseType.plain
+			responseType: ResponseType.plain,
+			extra: {
+				kPriority: priority
+			}
 		));
 		if (response.data case String responseData) {
 			final data = jsonDecode(responseData) as Map;
@@ -293,7 +305,10 @@ Future<EmbedData?> loadEmbedData(String url, {required bool highQuality}) {
 				if (hqUrl != null) {
 					// HQ URL may not really be available
 					final response = await Settings.instance.client.head(hqUrl, options: Options(
-						validateStatus: (x) => true
+						validateStatus: (x) => true,
+						extra: {
+							kPriority: priority
+						}
 					));
 					if ((response.statusCode ?? 500) < 400) {
 						thumbnailUrl = hqUrl;

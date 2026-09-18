@@ -1915,7 +1915,7 @@ class PostLinkSpan extends PostTerminalSpan {
 			if (check == true) {
 				return zone.getFutureForComputation(
 					id: 'noembed $url',
-					work: () => loadEmbedData(url, highQuality: false)
+					work: () => loadEmbedData(url, highQuality: false, priority: RequestPriority.cosmetic)
 				);
 			}
 		}
