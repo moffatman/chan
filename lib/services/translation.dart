@@ -1,7 +1,6 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:chan/services/compress_html.dart';
 import 'package:chan/services/settings.dart';
@@ -59,15 +58,17 @@ const _platform = MethodChannel('com.moffatman.chan/translation');
 
 bool nativeTranslationSupported = false;
 Future<void> initializeNativeTranslation() async {
-	if (Platform.isIOS) {
-		try {
-			nativeTranslationSupported = await _platform.invokeMethod<bool>('isSupported') ?? false;
-		}
-		catch (e, st) {
-			if (e is! MissingPluginException) {
-				// Don't throw, translation will default to off
-				Future.error(e, st);
-			}
+	// Asked on every platform rather than only where an implementation is
+	// expected: a platform without one answers with MissingPluginException,
+	// which leaves translation on the HTTP backend, and one that has an
+	// implementation is then used without a change here.
+	try {
+		nativeTranslationSupported = await _platform.invokeMethod<bool>('isSupported') ?? false;
+	}
+	catch (e, st) {
+		if (e is! MissingPluginException) {
+			// Don't throw, translation will default to off
+			Future.error(e, st);
 		}
 	}
 }
@@ -131,6 +132,11 @@ Future<String?> _nativeTranslate(String html, {required String toLanguage, requi
 		if (e.details case String detectedLanguage when e.code == 'INTERACTION_NEEDED') {
 			throw NativeTranslationNeedsInteractionException(detectedLanguage);
 		}
+		if (e.code == 'UNSUPPORTED') {
+			// This platform's engine cannot translate after all, so the HTTP
+			// backend gets the request instead of the user getting an error.
+			return null;
+		}
 		rethrow;
 	}
 }
@@ -170,7 +176,12 @@ Future<String> _translate(String html, {required String toLanguage, required boo
 		responseType: ResponseType.json
 	));
 	if (response.data?['error'] case String error) {
-		if (error == TranslationQuotaExhaustedException._kMessage) {
+		// The service owns the wording, and it has already changed once: it now
+		// answers "Quota for this billing period has been exceeded, message:
+		// Quota exceeded". Matching the exact sentence meant the friendly
+		// explanation, and every recovery path that waits for this exception,
+		// never ran - so the check is on the word instead.
+		if (error.toLowerCase().contains('quota')) {
 			throw TranslationQuotaExhaustedException();
 		}
 		throw TranslationException(error);
