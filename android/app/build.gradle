@@ -109,4 +109,12 @@ dependencies {
     implementation 'androidx.window:window-java:1.0.0'
     implementation 'com.github.UnifiedPush:android-foss_embedded_fcm_distributor:1.0.0'
     implementation 'androidx.documentfile:documentfile:1.0.1'
+    // On-device translation and language identification. These are the plain
+    // Maven artifacts rather than the old ML Kit for Firebase ones: they need
+    // no google-services.json, no Firebase project and no google-services
+    // plugin, and the language models are downloaded by the app itself (the
+    // firebase-* artifacts they pull in are only telemetry plumbing that never
+    // reads an app id)
+    implementation 'com.google.mlkit:translate:17.0.3'
+    implementation 'com.google.mlkit:language-id:17.0.6'
 }

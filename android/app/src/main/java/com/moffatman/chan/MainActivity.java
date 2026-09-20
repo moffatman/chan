@@ -67,7 +67,9 @@ public class MainActivity extends FlutterFragmentActivity {
     private static final String AUDIO_CHANNEL = "com.moffatman.chan/audio";
     private static final String USER_AGENT_CHANNEL = "com.moffatman.chan/userAgent";
     private static final String LAUNCH_URL_CHANNEL = "com.moffatman.chan/launchUrl";
+    private static final String TRANSLATION_CHANNEL = "com.moffatman.chan/translation";
     private MethodChannel.Result folderResult;
+    private MlKitTranslation translation;
 
     private MethodChannel.Result saveFileAsResult;
     private String newDocumentSourcePath;
@@ -520,5 +522,18 @@ public class MainActivity extends FlutterFragmentActivity {
                     }
                 }
         );
+        translation = new MlKitTranslation();
+        new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), TRANSLATION_CHANNEL).setMethodCallHandler(translation);
+    }
+
+    @Override
+    protected void onDestroy() {
+        // The engine can outlive this activity, so the translators it holds
+        // (and the language models loaded inside them) have to be released here
+        if (translation != null) {
+            translation.close();
+            translation = null;
+        }
+        super.onDestroy();
     }
 }
