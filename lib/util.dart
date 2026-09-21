@@ -1430,3 +1430,23 @@ extension IfNotEmptyIterable<T extends Iterable> on T {
 extension IfNotEmptyMap<K, V> on Map<K, V> {
   Map<K, V>? get ifNotEmpty => isNotEmpty ? this : null;
 }
+
+/// Lazy, does not call .length
+bool iterableEquals<T>(Iterable<T>? a, Iterable<T>? b) {
+	if (identical(a, b)) {
+		return true;
+	}
+	if (a == null || b == null) {
+		return false;
+	}
+	final aa = a.iterator;
+	final bb = b.iterator;
+	while (true) {
+		if (!aa.moveNext() || !bb.moveNext()) {
+			return false;
+		}
+		if (aa.current != bb.current) {
+			return false;
+		}
+	}
+}
