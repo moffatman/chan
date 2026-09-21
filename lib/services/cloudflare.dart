@@ -26,6 +26,7 @@ import 'package:mutex/mutex.dart';
 const kCloudflare = 'cloudflare';
 const kRetryIfCloudflare = 'retry_cloudflare';
 const kRedirectGateway = 'redirect_gateway';
+const kTrustUnknownCerts = 'trust_unknown_certs';
 
 extension CloudflareWanted on RequestOptions {
 	bool get cloudflare => extra[kCloudflare] == true;
@@ -374,6 +375,7 @@ class CloudflareInterceptor extends InterceptorBase {
 	static Future<T> _useWebview<T extends Object>({
 		required Future<T?> Function(InAppWebViewController, Uri?, bool isCancelledMedia, int? statusCode) handler,
 		bool skipHeadless = false,
+		bool trustUnknownCerts = false,
 		Duration headlessTime = kDefaultHeadlessTime,
 		InAppWebViewInitialData? initialData,
 		URLRequest? initialUrlRequest,
@@ -500,6 +502,9 @@ class CloudflareInterceptor extends InterceptorBase {
 				if (isFirstLoad) {
 					firstLoad.complete();
 				}
+				if (cancelToken?.isCancelled ?? false) {
+					return;
+				}
 				final title = await controller.getTitle() ?? '';
 				// Android WebView in-band error page check
 				if (Platform.isAndroid && (
@@ -548,6 +553,14 @@ class CloudflareInterceptor extends InterceptorBase {
 			void onLoadResource(InAppWebViewController controller, LoadedResource resource) {
 				resetResourceTimer();
 			}
+			Future<ServerTrustAuthResponse?> Function(InAppWebViewController, URLAuthenticationChallenge)? onReceivedServerTrustAuthRequest;
+			if (trustUnknownCerts) {
+				onReceivedServerTrustAuthRequest = (controller, challenge) async {
+					// This only works on Android
+					return ServerTrustAuthResponse(
+							action: ServerTrustAuthResponseAction.PROCEED);
+				};
+			}
 			final headlessCompleter = Completer<AsyncSnapshot<T>>();
 			callback_ = headlessCompleter.complete;
 			headlessWebView = HeadlessInAppWebView(
@@ -559,6 +572,7 @@ class CloudflareInterceptor extends InterceptorBase {
 				onNavigationResponse: onNavigationResponse,
 				onLoadResource: onLoadResource,
 				onReceivedError: onReceivedError,
+				onReceivedServerTrustAuthRequest: onReceivedServerTrustAuthRequest,
 				onConsoleMessage: kDebugMode ? (controller, msg) => print(msg) : null
 			);
 			await headlessWebView.run();
@@ -665,6 +679,7 @@ class CloudflareInterceptor extends InterceptorBase {
 							onLoadResource: onLoadResource,
 							onNavigationResponse: onNavigationResponse,
 							onReceivedError: onReceivedError,
+							onReceivedServerTrustAuthRequest: onReceivedServerTrustAuthRequest,
 							onConsoleMessage: kDebugMode ? (controller, msg) => print(msg) : null
 						)
 					)
@@ -697,6 +712,7 @@ class CloudflareInterceptor extends InterceptorBase {
 	Future<_CloudflareResponse> _useWebviewForCloudflare({
 		required Future<_CloudflareResponse?> Function(InAppWebViewController, Uri?, bool isCancelledMedia, int? statusCode) handler,
 		bool skipHeadless = false,
+		bool trustUnknownCerts = false,
 		InAppWebViewInitialData? initialData,
 		URLRequest? initialUrlRequest,
 		required String userAgent,
@@ -712,6 +728,7 @@ class CloudflareInterceptor extends InterceptorBase {
 		return await _useWebview(
 			handler: handler,
 			skipHeadless: skipHeadless,
+			trustUnknownCerts: trustUnknownCerts,
 			initialData: initialData,
 			initialUrlRequest: initialUrlRequest,
 			userAgent: userAgent,
@@ -739,6 +756,7 @@ class CloudflareInterceptor extends InterceptorBase {
 			final data = await _useWebviewForCloudflare(
 				handler: _buildHandler(options.uri),
 				cookieUrl: options.uri,
+				trustUnknownCerts: options.extra[kTrustUnknownCerts] == true,
 				userAgent: options.headers['user-agent'] as String? ?? Settings.instance.userAgent,
 				initialUrlRequest: URLRequest(
 					url: WebUri.uri(options.uri),
@@ -785,6 +803,7 @@ class CloudflareInterceptor extends InterceptorBase {
 				data = await _useWebviewForCloudflare(
 					handler: _buildHandler(response.requestOptions.uri),
 					cookieUrl: response.requestOptions.uri,
+					trustUnknownCerts: response.requestOptions.extra[kTrustUnknownCerts] == true,
 					userAgent: (response.requestOptions.headers['user-agent'] as String?) ?? Settings.instance.userAgent,
 					skipHeadless: gateway.alwaysNeedsManualSolving,
 					initialUrlRequest: URLRequest(
@@ -808,6 +827,7 @@ class CloudflareInterceptor extends InterceptorBase {
 				data = await _useWebviewForCloudflare(
 					handler: _buildHandler(response.requestOptions.uri),
 					cookieUrl: response.requestOptions.uri,
+					trustUnknownCerts: response.requestOptions.extra[kTrustUnknownCerts] == true,
 					userAgent: (response.requestOptions.headers['user-agent'] as String?) ?? Settings.instance.userAgent,
 					initialData: InAppWebViewInitialData(
 						data: await _bodyAsString(response.data),
@@ -852,6 +872,7 @@ class CloudflareInterceptor extends InterceptorBase {
 			final data = await _useWebviewForCloudflare(
 				handler: _buildHandler(err.requestOptions.uri),
 				cookieUrl: err.requestOptions.uri,
+				trustUnknownCerts: err.requestOptions.extra[kTrustUnknownCerts] == true,
 				userAgent: err.requestOptions.headers['user-agent'] as String? ?? Settings.instance.userAgent,
 				initialData: InAppWebViewInitialData(
 					data: await _bodyAsString(err.response?.data),

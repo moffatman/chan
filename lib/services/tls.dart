@@ -338,14 +338,16 @@ Future<TlsClientHello> getTlsHello(Future<void> Function(Uri uri, CancelToken ca
 }
 
 Future<TlsClientHello> getDioHello({required Dio client, required bool cloudflare, required bool http3}) {
+	final webTransportTrick = http3 && cloudflare && Platform.isAndroid;
 	return getTlsHello((uri, cancelToken) => client.getUri(uri, options: Options(
 		extra: {
 			kCloudflare: cloudflare,
-			kPriority: RequestPriority.lowest
+			kPriority: RequestPriority.lowest,
+			kTrustUnknownCerts: webTransportTrick
 		},
 		preferHttp3WithoutAltSvc: http3
 		), cancelToken: cancelToken),
-		webTransportTrick: http3 && cloudflare && Platform.isAndroid
+		webTransportTrick: webTransportTrick
 	);
 }
 
@@ -376,12 +378,12 @@ Future<TlsClientHello> getWebViewHello({required bool http3}) async {
 	}, webTransportTrick: http3 && Platform.isAndroid);
 }
 
-class _TlsSettings {
+class TlsSettings {
 	SecurityContext? context;
 }
 
-final _tlsSettings = _TlsSettings();
-final _tlsSettings3 = _TlsSettings();
+final _tlsSettings = TlsSettings();
+final _tlsSettings3 = TlsSettings();
 bool enableQuic = false;
 
 HttpClientAdapter myHttpClientAdapter = MyHttpClientAdapter2();
@@ -396,7 +398,7 @@ void applyTlsSettings3(ClientSetting setting) {
 	setting.context = _tlsSettings3.context;
 }
 
-const _kAndroidHello = TlsClientHello(
+const kAndroidHello = TlsClientHello(
 	versions: [0x0304,0x0303],
 	ciphers: [0x1303,0x1301,0x1302,0xcca9,0xcca8,0xc02b,0xc02f,0xc02c,0xc030,0xc013,0xc014,0x009c,0x009d,0x002f,0x0035],
 	extensions: [0xfe0d,0x0017,0xff01,0x000a,0x000b,0x0023,0x0010,0x0005,0x000d,0x0012,0x0033,0x002d,0x002b,0x001b,0x44cd],
@@ -404,9 +406,9 @@ const _kAndroidHello = TlsClientHello(
 	quic: false
 );
 // Will be filled in on forked_flutter_engine branch
-const _kAndroidHello3 = _kAndroidHello;
+const kAndroidHello3 = kAndroidHello;
 
-const _kDarwinHello = TlsClientHello(
+const kDarwinHello = TlsClientHello(
 	versions: [0x0304,0x0303],
 	ciphers: [0x1302,0x1303,0x1301,0xc02b,0xc02f,0xc02c,0xc030,0xcca9,0xcca8,0xc009,0xc013,0xc00a,0xc014,0x009c,0x009d,0x002f,0x0035,0x000a,0xc008,0xc012],
 	extensions: [0x0017,0xff01,0x000a,0x000b,0x0010,0x0005,0x000d,0x0012,0x0033,0x002d,0x002b,0x001b],
@@ -414,10 +416,10 @@ const _kDarwinHello = TlsClientHello(
 	quic: false
 );
 // Will be filled in on forked_flutter_engine branch
-const _kDarwinHello3 = _kDarwinHello;
+const kDarwinHello3 = kDarwinHello;
 
-final _defaultHello = Platform.isAndroid ? _kAndroidHello : _kDarwinHello;
-final _defaultHello3 = Platform.isAndroid ? _kAndroidHello3 : _kDarwinHello3;
+final _defaultHello = Platform.isAndroid ? kAndroidHello : kDarwinHello;
+final _defaultHello3 = Platform.isAndroid ? kAndroidHello3 : kDarwinHello3;
 
 const _kVersions = {
 	0x0303: TlsProtocolVersion.tls1_2,
@@ -458,11 +460,11 @@ const _kCipherNames = {
 (Object, StackTrace)? tlsError;
 (Object, StackTrace)? tlsError3;
 
-void _initializeTls({
+void prepareTlsSettings({
 	required bool quic,
 	required TlsClientHello desired,
 	required TlsClientHello current,
-	required _TlsSettings settings,
+	required TlsSettings settings,
 }) =>
 		unsafeVoid(desired, () {
 
@@ -493,11 +495,7 @@ void _initializeTls({
 				errors.add('Can\'t reduce maximum version: $desiredVersions');
 			}
 
-			if (
-				// TLS 1.3 ciphers are not configurable
-				withMinimumTlsProtocolVersion != TlsProtocolVersion.tls1_3
-				&& !listEquals(desired.ciphers, current.ciphers)
-			) {
+			if (!listEquals(desired.ciphers, current.ciphers)) {
 				for (final code in desired.ciphers) {
 					if (!_kCipherNames.containsKey(code)) {
 						errors.add('Can\'t add cipher 0x${code.toRadixString(16).padLeft(4, '0')}');
@@ -538,7 +536,7 @@ void _initializeTls({
 
 Future<void> initializeTls() async {
 	try {
-		_initializeTls(
+		prepareTlsSettings(
 			quic: false,
 			desired: Persistence.settings.cachedWebViewTlsHello ??=
 					await getWebViewHello(http3: false),
@@ -555,7 +553,7 @@ Future<void> initializeTls() async {
 			final hello3 = Persistence.settings.cachedWebViewTlsHello3 ??= await getWebViewHello(http3: true);
 			if (hello3.quic) {
 				// Will be filled in on forked_flutter_engine branch
-				_initializeTls(
+				prepareTlsSettings(
 					quic: true,
 					desired: hello3,
 					current: _defaultHello3,
