@@ -61,7 +61,7 @@ dependencies:
   image_picker: ^1.0.7
   flutter_heic_to_jpg: ^1.0.0
   mutex: ^3.0.0
-  uuid: ^3.0.5
+  uuid: ^4.6.0
   profanity_filter: ^2.0.0
   url_launcher: ^6.0.12
   highlight: ^0.7.0
@@ -93,7 +93,7 @@ dependencies:
   http_parser: ^4.0.0
   cupertino_icons: ^1.0.0
   firebase_core: ^4.15.0
-  unifiedpush: ^5.0.2
+  unifiedpush: ^6.2.0
   flutter_apns_only: ^1.6.0
   flutter_local_notifications: ^17.2.1+2
   path_provider: ^2.0.10

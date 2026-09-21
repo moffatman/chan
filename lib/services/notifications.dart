@@ -274,10 +274,10 @@ class Notifications {
 	}
 
 	@pragma('vm:entry-point')
-	static Future<void> onNewUnifiedPushEndpoint(String endpoint, String instance) async {
-		Persistence.settings.lastUnifiedPushEndpoint = endpoint;
+	static Future<void> onNewUnifiedPushEndpoint(PushEndpoint endpoint, String instance) async {
+		Persistence.settings.lastUnifiedPushEndpoint = endpoint.url;
 		for (final completer in _unifiedPushNewEndpointCompleters) {
-			completer.complete(endpoint);
+			completer.complete(endpoint.url);
 		}
 		_unifiedPushNewEndpointCompleters.clear();
 		await _reinitializeChildren(allowDeleteAll: false);
@@ -294,8 +294,8 @@ class Notifications {
 	}
 
 	@pragma('vm:entry-point')
-	static Future<void> onUnifiedPushMessage(Uint8List message, String instance) async {
-		final notification = json.decode(utf8.decode(message)) as Map;
+	static Future<void> onUnifiedPushMessage(PushMessage message, String instance) async {
+		final notification = json.decode(utf8.decode(message.content)) as Map;
 		final data = (notification['data'] as Map).cast<String, String>();
 		if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
 			_onMessage(data);
