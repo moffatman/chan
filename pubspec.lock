@@ -346,7 +346,7 @@ packages:
     description:
       path: "plugins/http2_adapter"
       ref: forked_flutter_engine
-      resolved-ref: f4591fe2828da537ccb0e7f608881602e16b10a1
+      resolved-ref: "3e1c4c9a1bded7b8cabd29756ed4a637998e3e4c"
       url: "https://github.com/moffatman/dio.git"
     source: git
     version: "2.0.0"
