@@ -487,6 +487,9 @@ const _kCipherNames = {
 	0xccab: 'ECDHE-PSK-CHACHA20-POLY1305',
 };
 
+bool _isCipher13(int cipher) => cipher >= 0x1301 && cipher <= 0x1305;
+bool _isNotCipher13(int cipher) => cipher < 0x1301 || cipher > 0x1305;
+
 (Object, StackTrace)? tlsError;
 (Object, StackTrace)? tlsError3;
 
@@ -506,6 +509,7 @@ void prepareTlsSettings({
 
 			bool? withCertCompression;
 			String? withCipherList;
+			Uint16List? withCipherList13;
 			TlsProtocolVersion withMinimumTlsProtocolVersion = TlsProtocolVersion.tls1_2;
 			TlsProtocolVersion withMaximumTlsProtocolVersion = TlsProtocolVersion.tls1_3;
 			bool? withAlwaysAddPadding;
@@ -545,18 +549,20 @@ void prepareTlsSettings({
 				}
 			}
 
-			if (
-				// TLS 1.3 ciphers are not configurable
-				withMinimumTlsProtocolVersion != TlsProtocolVersion.tls1_3
-				&& !listEquals(desired.ciphers, current.ciphers)
-			) {
-				withCipherList = desired.ciphers.tryMap((code) {
+			if (withMinimumTlsProtocolVersion != TlsProtocolVersion.tls1_3 &&
+				  !iterableEquals(desired.ciphers.where(_isNotCipher13), current.ciphers.where(_isNotCipher13))) {
+				withCipherList = desired.ciphers.where(_isNotCipher13).tryMap((code) {
 					final name = _kCipherNames[code];
 					if (name == null) {
 						errors.add('Can\'t add cipher 0x${code.toRadixString(16).padLeft(4, '0')}');
 					}
 					return name;
 				}).join(':');
+			}
+
+			if (withMaximumTlsProtocolVersion == TlsProtocolVersion.tls1_3 &&
+			    !iterableEquals(desired.ciphers.where(_isCipher13), current.ciphers.where(_isCipher13))) {
+				withCipherList13 = Uint16List.fromList(desired.ciphers.where(_isCipher13).toList());
 			}
 
 			if (desiredExtensions.contains(_kTlsExtApplicationSettingsOld) && currentExtensions.contains(_kTlsExtApplicationSettings)) {
@@ -618,6 +624,7 @@ void prepareTlsSettings({
 
 			if (withCertCompression != null ||
 					withCipherList != null ||
+					withCipherList13 != null ||
 					withMinimumTlsProtocolVersion != TlsProtocolVersion.tls1_2 ||
 					withMaximumTlsProtocolVersion != TlsProtocolVersion.tls1_3 ||
 					withAlwaysAddPadding != null ||
@@ -639,6 +646,9 @@ void prepareTlsSettings({
 				}
 				if (withCipherList != null) {
 					context.setCiphers(withCipherList);
+				}
+				if (withCipherList13 != null) {
+					context.setCiphers13(withCipherList13);
 				}
 				if (withAlwaysAddPadding != null) {
 					context.alwaysAddPadding = withAlwaysAddPadding;
