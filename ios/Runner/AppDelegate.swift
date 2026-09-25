@@ -4,7 +4,6 @@ import Flutter
 import Foundation
 import Vision
 import WebKit
-import SwiftUI
 import Translation
 import NaturalLanguage
 
@@ -68,39 +67,23 @@ class MyFileExportDelegate : NSObject, UIDocumentPickerDelegate {
   }
 }
 
-@objc class AppDelegate: FlutterAppDelegate {
+@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate, FlutterSceneLifeCycleDelegate {
   var appleChannel: FlutterMethodChannel?
   var garbageKeepAlive: [any NSObjectProtocol] = []
-  private var translationHelper: any TranslationHelper = DummyTranslationHelper()
-  override func application(
-    _ application: UIApplication,
-    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
-  ) -> Bool {
+
+  func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+    GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
     if #available(iOS 10.0, *) {
       UNUserNotificationCenter.current().delegate = self as UNUserNotificationCenterDelegate
     }
-    let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
-    if #available(iOS 18.0, *) {
-      let myBridge = TranslationBridge()
-      let myTranslationHelper = RealTranslationHelper(bridge: myBridge)
-      translationHelper = myTranslationHelper
-      let hostVC = UIHostingController(rootView: TranslationTaskHost(bridge: myBridge))
-      controller.addChild(hostVC)
-      controller.view.addSubview(hostVC.view)
-      hostVC.didMove(toParent: controller)
-      hostVC.view.backgroundColor = .clear
-      hostVC.view.isUserInteractionEnabled = false
-      hostVC.view.translatesAutoresizingMaskIntoConstraints = false
-      NSLayoutConstraint.activate([
-        hostVC.view.widthAnchor.constraint(equalToConstant: 1),
-        hostVC.view.heightAnchor.constraint(equalToConstant: 1),
-        hostVC.view.trailingAnchor.constraint(equalTo: controller.view.trailingAnchor),
-        hostVC.view.bottomAnchor.constraint(equalTo: controller.view.bottomAnchor),
-      ])
-      hostVC.view.alpha = 0.01
-    }
+    // Resolve UI through this engine's registrar when a call needs it. The scene
+    // and its window are not ready during implicit engine initialization.
+    let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "ChanceNativeChannels")!
+    // Receive Handoff through Flutter's scene dispatcher so handled activities
+    // are not also routed as default Flutter deep links.
+    registrar.addSceneDelegate(self)
     var currentActivity: NSUserActivity?
-    appleChannel = FlutterMethodChannel(name: "com.moffatman.chan/apple", binaryMessenger: controller.binaryMessenger)
+    appleChannel = FlutterMethodChannel(name: "com.moffatman.chan/apple", binaryMessenger: engineBridge.applicationRegistrar.messenger())
     appleChannel!.setMethodCallHandler({
       (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
       if (call.method == "isOnMac") {
@@ -140,8 +123,11 @@ class MyFileExportDelegate : NSObject, UIDocumentPickerDelegate {
         result(nil)
       }
       else if (call.method == "setAdditionalSafeAreaInsets") {
-        if let fvc = application.keyWindow?.rootViewController as? FlutterViewController,
-           let args = call.arguments as? Dictionary<String, Any>,
+        guard let fvc = registrar.viewController as? FlutterViewController else {
+          result(FlutterError(code: "UI_NOT_READY", message: "Flutter view controller is not attached", details: nil))
+          return
+        }
+        if let args = call.arguments as? Dictionary<String, Any>,
            let top = args["top"] as? NSNumber,
            let left = args["left"] as? NSNumber,
            let right = args["right"] as? NSNumber,
@@ -162,7 +148,7 @@ class MyFileExportDelegate : NSObject, UIDocumentPickerDelegate {
         result(FlutterMethodNotImplemented)
       }
     })
-    let notificationsChannel = FlutterMethodChannel(name: "com.moffatman.chan/notifications", binaryMessenger: controller.binaryMessenger)
+    let notificationsChannel = FlutterMethodChannel(name: "com.moffatman.chan/notifications", binaryMessenger: engineBridge.applicationRegistrar.messenger())
     notificationsChannel.setMethodCallHandler({
       (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
       if (call.method == "clearNotificationsWithProperties") {
@@ -188,7 +174,7 @@ class MyFileExportDelegate : NSObject, UIDocumentPickerDelegate {
         let nc = UNUserNotificationCenter.current()
         nc.getDeliveredNotifications { (list: [UNNotification]) in
           DispatchQueue.main.async {
-            application.applicationIconBadgeNumber = list.count
+            UIApplication.shared.applicationIconBadgeNumber = list.count
           }
         }
         result(nil)
@@ -197,7 +183,7 @@ class MyFileExportDelegate : NSObject, UIDocumentPickerDelegate {
         result(FlutterMethodNotImplemented)
       }
     })
-    let clipboardChannel = FlutterMethodChannel(name: "com.moffatman.chan/clipboard", binaryMessenger: controller.binaryMessenger)
+    let clipboardChannel = FlutterMethodChannel(name: "com.moffatman.chan/clipboard", binaryMessenger: engineBridge.applicationRegistrar.messenger())
     clipboardChannel.setMethodCallHandler({
       (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
       if (call.method == "doesClipboardContainImage") {
@@ -238,7 +224,7 @@ class MyFileExportDelegate : NSObject, UIDocumentPickerDelegate {
         result(FlutterMethodNotImplemented)
       }
     })
-    let textRecognitionChannel = FlutterMethodChannel(name: "com.moffatman.chan/textRecognition", binaryMessenger: controller.binaryMessenger)
+    let textRecognitionChannel = FlutterMethodChannel(name: "com.moffatman.chan/textRecognition", binaryMessenger: engineBridge.applicationRegistrar.messenger())
     textRecognitionChannel.setMethodCallHandler({
       (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
       if (call.method == "recognizeText") {
@@ -289,7 +275,7 @@ class MyFileExportDelegate : NSObject, UIDocumentPickerDelegate {
         result(FlutterMethodNotImplemented)
       }
     })
-    let audioChannel = FlutterMethodChannel(name: "com.moffatman.chan/audio", binaryMessenger: controller.binaryMessenger)
+    let audioChannel = FlutterMethodChannel(name: "com.moffatman.chan/audio", binaryMessenger: engineBridge.applicationRegistrar.messenger())
     audioChannel.setMethodCallHandler({
       (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
       if (call.method == "areHeadphonesPluggedIn") {
@@ -299,7 +285,7 @@ class MyFileExportDelegate : NSObject, UIDocumentPickerDelegate {
         result(FlutterMethodNotImplemented)
       }
     })
-    let userAgentChannel = FlutterMethodChannel(name: "com.moffatman.chan/userAgent", binaryMessenger: controller.binaryMessenger)
+    let userAgentChannel = FlutterMethodChannel(name: "com.moffatman.chan/userAgent", binaryMessenger: engineBridge.applicationRegistrar.messenger())
     userAgentChannel.setMethodCallHandler({
       (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
       if (call.method == "getDefaultUserAgent") {
@@ -309,11 +295,15 @@ class MyFileExportDelegate : NSObject, UIDocumentPickerDelegate {
         result(FlutterMethodNotImplemented)
       }
     })
-    let storageChannel = FlutterMethodChannel(name: "com.moffatman.chan/storage", binaryMessenger: controller.binaryMessenger)
+    let storageChannel = FlutterMethodChannel(name: "com.moffatman.chan/storage", binaryMessenger: engineBridge.applicationRegistrar.messenger())
     storageChannel.setMethodCallHandler({
       (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
       if (call.method == "pickDirectory") {
         if #available(iOS 14.0, *) {
+          guard let controller = registrar.viewController, controller.viewIfLoaded?.window != nil else {
+            result(FlutterError(code: "UI_NOT_READY", message: "Flutter view controller is not attached to a window", details: nil))
+            return
+          }
           let folderPicker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder])
           folderPicker.shouldShowFileExtensions = true
           let delegate = MyFolderPickerDelegate() { (value: Any) in
@@ -412,6 +402,10 @@ class MyFileExportDelegate : NSObject, UIDocumentPickerDelegate {
         }
         let sourceUrl = URL(fileURLWithPath: sourcePath)
         if #available(iOS 14.0, *) {
+          guard let controller = registrar.viewController, controller.viewIfLoaded?.window != nil else {
+            result(FlutterError(code: "UI_NOT_READY", message: "Flutter view controller is not attached to a window", details: nil))
+            return
+          }
           let filePicker = UIDocumentPickerViewController(forExporting: [sourceUrl], asCopy: false)
           filePicker.shouldShowFileExtensions = true
           let delegate = MyFileExportDelegate() { (value: Any) in
@@ -432,14 +426,15 @@ class MyFileExportDelegate : NSObject, UIDocumentPickerDelegate {
         result(FlutterMethodNotImplemented)
       }
     })
-    let translationChannel = FlutterMethodChannel(name: "com.moffatman.chan/translation", binaryMessenger: controller.binaryMessenger)
+    let translationChannel = FlutterMethodChannel(name: "com.moffatman.chan/translation", binaryMessenger: engineBridge.applicationRegistrar.messenger())
     translationChannel.setMethodCallHandler({
       (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
       if (call.method == "isSupported") {
         if #available(iOS 18.0, *) {
           result(true)
+        } else {
+          result(false)
         }
-        result(false)
       }
       else if (call.method == "translate") {
         guard let args = call.arguments as? Dictionary<String, Any>,
@@ -502,7 +497,12 @@ class MyFileExportDelegate : NSObject, UIDocumentPickerDelegate {
                 firstError = firstError ?? FlutterError.init(code: "INTERACTION_NEEDED", message: "Language download required", details: fromLanguage.languageCode?.identifier)
                 continue
               }
-              let translationResult = await self.translationHelper.translate(text: text, source: fromLanguage, target: .init(identifier: to))
+              guard let sceneDelegate = registrar.viewController?.viewIfLoaded?.window?.windowScene?.delegate as? SceneDelegate,
+                    let translationHelper = sceneDelegate.translationHelper else {
+                result(FlutterError(code: "UI_NOT_READY", message: "Translation view is not attached to a scene", details: nil))
+                return
+              }
+              let translationResult = await translationHelper.translate(text: text, source: fromLanguage, target: .init(identifier: to))
               switch translationResult {
               case .success(let translated):
                 result(translated)
@@ -527,25 +527,24 @@ class MyFileExportDelegate : NSObject, UIDocumentPickerDelegate {
         result(FlutterMethodNotImplemented)
       }
     })
-    GeneratedPluginRegistrant.register(with: self)
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
   
-  override func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
-    if let fvc = application.keyWindow?.rootViewController as? FlutterViewController {
-      restorationHandler([fvc])
-      if userActivity.activityType == "com.moffatman.chan.thread" {
-        appleChannel?.invokeMethod("receivedHandoffUrl", arguments: [
-          "url": userActivity.webpageURL?.absoluteString
-        ])
-      }
-      else {
-        NSLog("Unknown activity type: \(userActivity.activityType)")
-      }
-      return true
+  func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions?) -> Bool {
+    for activity in connectionOptions?.userActivities ?? [] {
+      if continueHandoff(activity) { return true }
     }
-    else {
-      return false
-    }
+    return false
+  }
+
+  func scene(_ scene: UIScene, continue userActivity: NSUserActivity) -> Bool {
+    return continueHandoff(userActivity)
+  }
+
+  private func continueHandoff(_ userActivity: NSUserActivity) -> Bool {
+    guard userActivity.activityType == "com.moffatman.chan.thread" else { return false }
+    appleChannel?.invokeMethod("receivedHandoffUrl", arguments: [
+      "url": userActivity.webpageURL?.absoluteString
+    ])
+    return true
   }
 }

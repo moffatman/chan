@@ -1,4 +1,5 @@
 {
+  "originHash" : "97ae1f1b4d5d3bd2b577d1ad66360cd840abd76b8c2623fdb3c89197fd44b946",
   "pins" : [
     {
       "identity" : "abseil-cpp-binary",
@@ -41,8 +42,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/GoogleAppMeasurement.git",
       "state" : {
-        "revision" : "8fe40b69bd53241847814422101188465f7ff728",
-        "version" : "12.19.0"
+        "revision" : "b8455dd2ff55cc269fda7a4f9eac6c1e3588c53f",
+        "version" : "12.19.2"
       }
     },
     {
@@ -118,5 +119,5 @@
       }
     }
   ],
-  "version" : 2
+  "version" : 3
 }

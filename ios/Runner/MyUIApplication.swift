@@ -10,7 +10,11 @@ class MyUIApplication : UIApplication {
     override func sendEvent(_ event: UIEvent) {
         if #available(iOS 13.4, *) {
             if Utils.isOnMac && event.type == UIEvent.EventType.touches {
-                if let window = self.delegate?.window ?? nil, let vc = window.rootViewController, let touches = event.touches(for: window) {
+                // Touches identify their scene's window; UIApplicationDelegate.window
+                // is no longer populated under the UIScene lifecycle.
+                let windows = Set((event.allTouches ?? []).compactMap { $0.window })
+                for window in windows {
+                    guard let vc = window.rootViewController, let touches = event.touches(for: window) else { continue }
                     var began: Set<UITouch> = []
                     var moved: Set<UITouch> = []
                     var ended: Set<UITouch> = []
