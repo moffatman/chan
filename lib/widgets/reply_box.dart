@@ -404,7 +404,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			}
 			return null;
 		});
-		if (rawUrl != _lastFoundUrl && rawUrl != null) {
+		if (rawUrl != null && _lastFoundUrl?.startsWith(rawUrl) != true) {
 			try {
 				_lastFoundUrl = rawUrl; // Avoid race
 				final response = await context.read<ImageboardSite>().client.head(rawUrl);
@@ -424,7 +424,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		}
 		else {
 			final possibleEmbed = findEmbedUrl(_textFieldController.text);
-			if (possibleEmbed != _lastFoundUrl && possibleEmbed != null) {
+			if (possibleEmbed != null && _lastFoundUrl?.startsWith(possibleEmbed) != true) {
 				final embedData = await loadEmbedData(possibleEmbed, highQuality: true, priority: RequestPriority.interactive);
 				if (_textFieldController.text != original) {
 					// Text changed
