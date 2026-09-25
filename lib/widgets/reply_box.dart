@@ -583,9 +583,15 @@ class ReplyBoxState extends State<ReplyBox> {
 					icon: CupertinoIcons.exclamationmark_triangle
 				);
 			}
+			final wasOpen = _show;
 			showReplyBox();
 			_postInBackground();
-			_insertText('>>$id');
+			final quotelink = '>>$id';
+			if (wasOpen || !_textFieldController.text.contains(quotelink)) {
+				// Don't insert more quotelinks, some people use "Reply" action to open
+				// the reply box
+				_insertText(quotelink);	
+			}
 		}
 	}
 
