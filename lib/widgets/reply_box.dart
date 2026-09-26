@@ -2660,7 +2660,7 @@ Future<_ReplyBoxFile?> _makeAttachment(PickedAttachment? originalAttachment, Fil
 															if (data.isEmpty) {
 																return;
 															}
-															String filename = Uri.parse(content.uri).pathSegments.last;
+															String filename = Uri.parse(content.uri).pathSegments.tryLast ?? 'Pasted file';
 															if (!filename.contains('.')) {
 																filename += '.${content.mimeType.afterLast('/')}';
 															}
