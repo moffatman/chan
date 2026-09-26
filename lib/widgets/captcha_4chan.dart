@@ -66,7 +66,6 @@ typedef _CloudGuess = ({
 typedef CloudGuessedCaptcha4ChanCustom = ({
 	Captcha4ChanCustomChallenge challenge,
 	Chan4CustomCaptchaSolution solution,
-	int? slide,
 	bool confident
 });
 
@@ -564,15 +563,11 @@ Future<int> _alignImage(Captcha4ChanCustomChallengeText challenge) async {
 
 Future<_CloudGuess> _cloudGuess({
 	required ImageboardSite site,
-	required ui.Image image,
+	required Uint8List bytes,
+	required Uri endpoint,
 	CancelToken? cancelToken
 }) async {
-	final pngData = await image.toByteData(format: ui.ImageByteFormat.png);
-	if (pngData == null) {
-		throw Exception('Could not encode captcha image');
-	}
-	final bytes = pngData.buffer.asUint8List();
-	final response = await site.client.postUri<String>(Uri.https('captcha.chance.surf', '/solve'), 
+	final response = await site.client.postUri<String>(endpoint,
 		data: bytes,
 		options: Options(
 			responseType: ResponseType.plain,
@@ -594,6 +589,37 @@ Future<_CloudGuess> _cloudGuess({
 		answer: answer,
 		confidence: response.headers.value('Chance-Confidence')?.tryParseDouble ?? 0,
 		ip: response.headers.value('Chance-X-Forwarded-For')
+	);
+}
+
+Future<_CloudGuess> _cloudGuessText({
+	required ImageboardSite site,
+	required ui.Image image,
+	CancelToken? cancelToken
+}) async {
+	final pngData = await image.toByteData(format: ui.ImageByteFormat.png);
+	if (pngData == null) {
+		throw Exception('Could not encode captcha image');
+	}
+	final bytes = pngData.buffer.asUint8List();
+	return _cloudGuess(
+		site: site,
+		endpoint: Uri.https('captcha.chance.surf', '/solve'),
+		bytes: bytes,
+		cancelToken: cancelToken
+	);
+}
+
+Future<_CloudGuess> _cloudGuessTasks({
+	required ImageboardSite site,
+	required Map data,
+	CancelToken? cancelToken
+}) async {
+	return _cloudGuess(
+		site: site,
+		endpoint: Uri.https('captcha.chance.surf', '/solve2'),
+		bytes: utf8.encode(json.encode({'challenge': data})),
+		cancelToken: cancelToken
 	);
 }
 
@@ -641,6 +667,30 @@ Future<CloudGuessedCaptcha4ChanCustom?> headlessSolveCaptcha4ChanCustom({
 		}
 	}
 
+	if (challenge is Captcha4ChanCustomChallengeTasks) {
+		final cloudGuess = await _cloudGuessTasks(
+			site: site,
+			data: challenge.originalData,
+			cancelToken: cancelToken
+		);
+
+		return (
+			challenge: challenge,
+			solution: Chan4CustomCaptchaSolution(
+				challenge: challenge.challenge,
+				response: cloudGuess.answer,
+				acquiredAt: challenge.acquiredAt,
+				lifetime: challenge.lifetime,
+				originalData: challenge.originalData,
+				slide: null,
+				cloudflare: challenge.cloudflare,
+				ip: cloudGuess.ip,
+				autoSolved: true
+			),
+			confident: cloudGuess.confidence >= 1
+		);
+	}
+
 	if (challenge is! Captcha4ChanCustomChallengeText) {
 		// Other captcha types not auto-solvable
 		return null;
@@ -680,7 +730,7 @@ Future<CloudGuessedCaptcha4ChanCustom?> headlessSolveCaptcha4ChanCustom({
 			image = challenge.foregroundImage!.clone();
 		}
 
-		final cloudGuess = await _cloudGuess(
+		final cloudGuess = await _cloudGuessText(
 			site: site,
 			image: image,
 			cancelToken: cancelToken
@@ -703,7 +753,6 @@ Future<CloudGuessedCaptcha4ChanCustom?> headlessSolveCaptcha4ChanCustom({
 	return (
 		challenge: challenge,
 		solution: solution,
-		slide: slide,
 		confident: confident
 	);
 }
@@ -1050,14 +1099,23 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		final thisCancelToken = cancelToken = CancelToken();
 		setState(() {});
 		try {
-			final image = await (challenge as Captcha4ChanCustomChallengeText)._screenshotImage(backgroundSlide);
-			final guess = await _cloudGuess(
-				site: widget.site,
-				image: image,
-				cancelToken: thisCancelToken
-			);
-			_ip = guess.ip ?? _ip;
-			_useCloudGuess(guess.answer);
+			final guess = switch (challenge) {
+				Captcha4ChanCustomChallengeText text => await _cloudGuessText(
+					site: widget.site,
+					image: await text._screenshotImage(backgroundSlide),
+					cancelToken: thisCancelToken
+				),
+				Captcha4ChanCustomChallengeTasks tasks => await _cloudGuessTasks(
+					site: widget.site,
+					data: tasks.originalData,
+					cancelToken: thisCancelToken
+				),
+				null => null
+			};
+			if (guess != null) {
+				_ip = guess.ip ?? _ip;
+				_useCloudGuess(guess.answer);
+			}
 		}
 		catch (e, st) {
 			if (!thisCancelToken.isCancelled) {
@@ -1098,6 +1156,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			_solutionController.selection = const TextSelection(baseOffset: 0, extentOffset: 1);
 			_solutionNode.requestFocus();
 		}
+		final chars = answer.split('');
+		_taskChoices = chars.map(int.tryParse).toList();
+		_collapseTasks = chars.map((c) => c != ' ').toList();
 		setState(() {}); // numLetters may have changed
 	}
 
@@ -1144,7 +1205,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		}
 	}
 
-	Future<void> _animateGuess(String? wipAnswer) async {
+	Future<bool> _animateGuess() async {
 		Settings.useCloudCaptchaSolverSetting.value ??= await showAdaptiveDialog<bool>(
 			context: context,
 			barrierDismissible: true,
@@ -1172,11 +1233,11 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			if (!_cloudGuessFailed) {
 				await _animateCloudGuess();
 				if (!_cloudGuessFailed) {
-					return;
+					return true;
 				}
 			}
 		}
-		_animateLocalGuess(wipAnswer);
+		return false;
 	}
 
 	_PickerStuff _getPickerStuffForWidgetIndex(int i) {
@@ -1241,7 +1302,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				backgroundSlide = 0;
 			}
 			if (useNewCaptchaForm) {
-				await _animateGuess(challenge._wipAnswer);
+				if (!await _animateGuess()) {
+					_animateLocalGuess(challenge._wipAnswer);
+				}
 			}
 			else {
 				setState(() {});
@@ -1253,7 +1316,10 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			}
 		}
 		else if (challenge case Captcha4ChanCustomChallengeTasks challenge) {
-			if (challenge._wipAnswer case final wip? when wip.collapseTasks.length == challenge.tasks.length &&
+			if (await _animateGuess()) {
+				// Do nothing
+			}
+			else if (challenge._wipAnswer case final wip? when wip.collapseTasks.length == challenge.tasks.length &&
 																										wip.taskChoices.length == challenge.tasks.length
 			) {
 				_taskChoices = wip.taskChoices;
@@ -1382,7 +1448,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		else if (guess != null) {
 			_ip = guess.solution.ip;
 			challenge = guess.challenge;
-			backgroundSlide = guess.slide ?? 0;
+			backgroundSlide = guess.solution.slide ?? 0;
 			tryAgainAt = guess.challenge.tryAgainAt;
 			Future.delayed(const Duration(milliseconds: 10), () {
 				_useCloudGuess(guess.solution.response);
@@ -1546,7 +1612,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 												backgroundSlide = await _alignImage(challenge);
 												setState(() {});
 											}
-											await _animateGuess(null);
+											await _animateGuess();
 										},
 										child: CustomPaint(
 											size: Size(min(challenge.backgroundImage?.width ?? challenge.foregroundImage!.width, challenge.foregroundImage!.width).toDouble(), challenge.foregroundImage!.height.toDouble()),
@@ -1584,7 +1650,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 												},
 												onChangeEnd: (newOffset) {
 													if (_solutionController.text.toUpperCase() == _lastGuess.guess.toUpperCase()) {
-														_animateGuess(null);
+														_animateGuess();
 													}
 												}
 											)
