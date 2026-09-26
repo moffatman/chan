@@ -5,6 +5,7 @@ import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/sliver_center.dart';
+import 'package:chan/widgets/sliver_pinned_footer.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_navigator.dart';
 import 'package:flutter/gestures.dart';
@@ -15,6 +16,7 @@ const _kLongPressToPopAllTime = Duration(milliseconds: 500);
 class OverscrollModalPage extends StatefulWidget {
 	final Widget? child;
 	final Widget? sliver;
+	final Widget? pinnedFooter;
 	final double heightEstimate;
 	final Color backgroundColor;
 	final Widget? background;
@@ -27,6 +29,7 @@ class OverscrollModalPage extends StatefulWidget {
 
 	const OverscrollModalPage({
 		required this.child,
+		this.pinnedFooter,
 		this.background,
 		this.heightEstimate = 0,
 		this.backgroundColor = Colors.black38,
@@ -41,6 +44,7 @@ class OverscrollModalPage extends StatefulWidget {
 
 	const OverscrollModalPage.sliver({
 		required this.sliver,
+		this.pinnedFooter,
 		this.background,
 		this.heightEstimate = 0,
 		this.backgroundColor = Colors.black38,
@@ -200,6 +204,9 @@ class OverscrollModalPageState extends State<OverscrollModalPage> {
 			key: _childWidgetKey,
 			child: widget.child!
 		);
+		final bodySliver = widget.sliver ?? SliverToBoxAdapter(
+			child: ChanceTheme.materialOf(context) ? Material(child: child) : child
+		);
 		return LayoutBuilder(
 			builder: (context, constraints) => Stack(
 				fit: StackFit.expand,
@@ -306,10 +313,10 @@ class OverscrollModalPageState extends State<OverscrollModalPage> {
 																	removeRight: true,
 																	removeTop: true,
 																	removeBottom: true,
-																	child: widget.sliver ?? SliverToBoxAdapter(
-																		child: ChanceTheme.materialOf(context) ? Material(
-																			child: child
-																		) : child
+																	child: widget.pinnedFooter == null ? bodySliver : SliverPinnedFooter(
+																		bottomPadding: MediaQuery.paddingOf(context).bottom,
+																		sliver: bodySliver,
+																		footer: SliverToBoxAdapter(child: widget.pinnedFooter!)
 																	)
 																)
 															)

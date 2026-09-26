@@ -55,7 +55,7 @@ Future<CaptchaSolution?> solveCaptcha({
 	bool? forceHeadless,
 	CancelToken? cancelToken
 }) async {
-	Future<CaptchaSolution?> pushModal(Widget Function(ValueChanged<CaptchaSolution?> onCaptchaSolved) builder) async {
+	Future<CaptchaSolution?> pushModal(Widget Function(ValueChanged<CaptchaSolution?> onCaptchaSolved) builder, {bool wrapPage = true}) async {
 		final context = getContext();
 		if (context == null) {
 			throw const HeadlessSolveNotPossibleException();
@@ -67,10 +67,10 @@ Future<CaptchaSolution?> solveCaptcha({
 			Future.error(e, st); // crashlytics
 		}
 		final solution = await Navigator.of(context, rootNavigator: true).push<CaptchaSolution>(TransparentRoute(
-			builder: (context) => OverscrollModalPage(
+			builder: (context) => wrapPage ? OverscrollModalPage(
 				increasePopDifficulty: true,
 				child: builder(Navigator.of(context).pop)
-			)
+			) : builder(Navigator.of(context).pop)
 		));
 		try {
 			afterModal?.call();
@@ -177,7 +177,7 @@ Future<CaptchaSolution?> solveCaptcha({
 			if (context?.mounted != true) {
 				initialCloudGuess?.challenge.dispose();
 			}
-			return pushModal((onCaptchaSolved) => Captcha4ChanCustom(
+			return pushModal((onCaptchaSolved) => Captcha4ChanCustomPage(
 				site: site,
 				request: request,
 				initialCloudGuess: initialCloudGuess,
@@ -185,7 +185,7 @@ Future<CaptchaSolution?> solveCaptcha({
 				initialChallengeException: initialChallengeException,
 				onCaptchaSolved: onCaptchaSolved,
 				onTryAgainAt: onTryAgainAt
-			));
+			), wrapPage: false);
 		case SecurimageCaptchaRequest():
 			return await pushModal((onCaptchaSolved) => CaptchaSecurimage(
 				request: request,

@@ -4,6 +4,7 @@ import 'dart:math';
 import 'dart:ui' as ui show Image, ImageByteFormat, PictureRecorder;
 
 import 'package:chan/services/base64_image.dart';
+import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/captcha.dart';
 import 'package:chan/services/captcha_4chan.dart';
 import 'package:chan/services/cloudflare.dart';
@@ -865,7 +866,7 @@ class _ModifiedBouncingScrollPhysics extends BouncingScrollPhysics {
 	String toString() => '_ModifiedBouncingScrollPhysics()';
 }
 
-class Captcha4ChanCustom extends StatefulWidget {
+class Captcha4ChanCustomPage extends StatefulWidget {
 	final ImageboardSite site;
 	final Chan4CustomCaptchaRequest request;
 	final ValueChanged<Chan4CustomCaptchaSolution?> onCaptchaSolved;
@@ -874,7 +875,7 @@ class Captcha4ChanCustom extends StatefulWidget {
 	final (Object, StackTrace)? initialChallengeException;
 	final ValueChanged<DateTime>? onTryAgainAt;
 
-	const Captcha4ChanCustom({
+	const Captcha4ChanCustomPage({
 		required this.site,
 		required this.request,
 		required this.onCaptchaSolved,
@@ -886,7 +887,7 @@ class Captcha4ChanCustom extends StatefulWidget {
 	}) : super(key: key);
 
 	@override
-	createState() => _Captcha4ChanCustomState();
+	createState() => _Captcha4ChanCustomPageState();
 }
 
 class Captcha4ChanCustomException implements Exception {
@@ -1068,7 +1069,7 @@ class _Captcha4ChanCustomPainter extends CustomPainter{
 
 typedef _PickerStuff = ({GlobalKey key, UniqueKey wrapperKey, FixedExtentScrollController controller});
 
-class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
+class _Captcha4ChanCustomPageState extends State<Captcha4ChanCustomPage> {
 	(Object, StackTrace)? error;
 	DateTime? tryAgainAt;
 	Captcha4ChanCustomChallenge? challenge;
@@ -1524,9 +1525,13 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		);
 	}
 
-	Widget _build(BuildContext context) {
+	({
+		Widget child,
+		Wrapper<Future<void> Function()?>? onSubmit
+	}) _build(BuildContext context) {
 		if (error != null) {
-			return Center(
+			return (
+				onSubmit: null,
 				child: Column(
 					children: [
 						Row(
@@ -1592,7 +1597,8 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				List<int> list => list
 			};
 			final maxSlide = ((challenge.backgroundWidth ?? challenge.backgroundImage?.width ?? challenge.foregroundImage?.width ?? 0) - (challenge.foregroundImage?.width ?? 0)).abs();
-			return Center(
+			return (
+				onSubmit: null,
 				child: ConstrainedBox(
 					constraints: BoxConstraints(
 						maxWidth: maxWidth
@@ -1979,7 +1985,8 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		}
 		else if (challenge case Captcha4ChanCustomChallengeTasks challenge) {
 			final theme = context.watch<SavedTheme>();
-			return Center(
+			return (
+				onSubmit: Wrapper(_taskChoices.any((t) => t == null) ? null : () => _submit(_taskChoices.join())),
 				child: ConstrainedBox(
 					constraints: const BoxConstraints(
 						maxWidth: 500
@@ -2105,55 +2112,21 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 										]
 									)
 								);
-							}),
-							Row(
-								mainAxisAlignment: MainAxisAlignment.center,
-								children: [
-									Flexible(
-										fit: FlexFit.tight,
-										flex: 1,
-										child:  _cooldownedRetryButton(context)
-									),
-									Flexible(
-										flex: 1,
-										fit: FlexFit.tight,
-										child: _expiryWidget()
-									)
-								]
-							),
-							const SizedBox(height: 16),
-							CupertinoButton(
-								padding: EdgeInsets.zero,
-								color: theme.primaryColor,
-								disabledColor: theme.primaryColorWithBrightness(0.5),
-								onPressed: _taskChoices.any((t) => t == null) ? null : () {
-									_submit(_taskChoices.join());
-								},
-								child: SizedBox(
-									height: 50,
-									child: Center(
-										child: Text(
-											'Submit',
-											style: TextStyle(
-												fontSize: 20,
-												color: theme.backgroundColor
-											)
-										)
-									)
-								)
-							)
+							})
 						]
 					)
 				)
 			);
 		}
 		else if (challenge != null) {
-			return Center(
+			return (
+				onSubmit: null,
 				child: Text('Unknown inner challenge: $challenge')
 			);
 		}
 		else {
-			return Center(
+			return (
+				onSubmit: null,
 				child: Column(
 					mainAxisSize: MainAxisSize.min,
 					children: [
@@ -2171,16 +2144,109 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 
 	@override
 	Widget build(BuildContext context) {
-		return Container(
+		final resolved = _build(context);
+		final theme = context.watch<SavedTheme>();
+		final child = Container(
 			decoration: BoxDecoration(
-				color: ChanceTheme.backgroundColorOf(context),
+				color: theme.backgroundColor,
 			),
 			width: double.infinity,
 			padding: const EdgeInsets.all(16),
 			child: AnimatedSize(
 				duration: const Duration(milliseconds: 100),
-				child: _build(context)
+				child: Center(
+					child: resolved.child
+				)
 			)
+		);
+		Widget? pinnedFooter;
+		if (resolved.onSubmit case final onSubmit?) {
+			pinnedFooter = Container(
+				color: ChanceTheme.barColorOf(context),
+				padding: const EdgeInsets.all(16),
+				child: Row(
+					children: [
+						TimedRebuilder(
+							interval: () => const Duration(seconds: 1),
+							function: () {
+								return max(0, tryAgainAt?.difference(DateTime.now()).inSeconds ?? 0);
+							},
+							builder: (context, seconds) {
+								return Stack(
+									alignment: Alignment.center,
+									children: [
+										AdaptiveIconButton(
+											onPressed: seconds > 0 ? null : _tryRequestChallenge,
+											minimumSize: Size.zero,
+											icon: const Icon(CupertinoIcons.refresh)
+										),
+										if (seconds > 0) Text(
+											'$seconds',
+											style: const TextStyle(
+												fontWeight: FontWeight.bold,
+												fontFeatures: [FontFeature.tabularFigures()]
+											)
+										)
+									]
+								);
+							}
+						),
+						const SizedBox(width: 16),
+						Expanded(
+							child: TimedRebuilder(
+								interval: () => const Duration(seconds: 1),
+								function: () {
+									return max(0, challenge?.expiresAt.difference(DateTime.now()).inMilliseconds ?? 0) / 1000;
+								},
+								builder: (context, seconds) {
+									return Stack(
+										children: [
+											ClipRRect(
+												borderRadius: BorderRadius.circular(8),
+												child: LinearProgressIndicator(
+													value: _greyOutPickers ? null : switch (challenge) {
+														Captcha4ChanCustomChallenge challenge => 1 - (DateTime.now().difference(challenge.acquiredAt).inMilliseconds / challenge.lifetime.inMilliseconds).clamp(0, 1),
+														null => null
+													},
+													minHeight: 50,
+													valueColor: AlwaysStoppedAnimation(theme.primaryColor),
+													backgroundColor: theme.primaryColor.withValues(alpha: 0.3)
+												)
+											),
+											CupertinoButton(
+												padding: EdgeInsets.zero,
+												onPressed: _greyOutPickers || seconds <= 0 ? null : onSubmit.value,
+												child: SizedBox(
+													height: 50,
+													child: Center(
+														child: Text(
+															seconds > 0 ? 'Submit' : 'Expired',
+															style: TextStyle(
+																fontSize: 20,
+																color: theme.backgroundColor
+															)
+														)
+													)
+												)
+											)
+										]
+									);
+								}
+							)
+						),
+						HiddenCancelButton(
+							cancelToken: cancelToken,
+							icon: const Icon(CupertinoIcons.xmark),
+							alignment: Alignment.centerRight
+						)
+					]
+				)
+			);
+		}
+		return OverscrollModalPage(
+			increasePopDifficulty: true,
+			pinnedFooter: pinnedFooter,
+			child: child
 		);
 	}
 
