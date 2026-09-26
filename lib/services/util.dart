@@ -104,7 +104,7 @@ extension FileBasename on FileSystemEntity {
 }
 
 extension FileExtension on File {
-	static String getBaseameWithoutExtension(String path) {
+	static String getBasenameWithoutExtension(String path) {
 		final lastSlash = path.lastIndexOf('/');
 		final lastDotAfterLastSlash = path.lastIndexOf('.');
 		if (lastSlash >= lastDotAfterLastSlash) {
@@ -131,7 +131,7 @@ extension FileExtension on File {
 		}
 		return path.substring(lastDotAfterLastSlash + 1);
 	}
-	String get basenameWithoutExtension => getBaseameWithoutExtension(path);
+	String get basenameWithoutExtension => getBasenameWithoutExtension(path);
 	String? get extensionWithDot => getExtensionWithDot(path);
 	String? get extensionWithoutDot => getExtensionWithoutDot(path);
 }
