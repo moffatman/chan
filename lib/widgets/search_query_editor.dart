@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:chan/models/search.dart';
 import 'package:chan/pages/picker.dart';
 import 'package:chan/services/countries.dart';
@@ -166,7 +168,7 @@ class _SearchQueryEditorState extends State<SearchQueryEditor> {
 												onPressed: () async {
 													final file = await pickAttachment(context: context, allowMultiple: false);
 													if (file.length == 1 && context.mounted) {
-														controller.text = await calculateMD5(file.single);
+														controller.text = await calculateMD5(File(file.single.path));
 													}
 												}
 											),

@@ -277,6 +277,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	final Imageboard imageboard;
 	ImageboardSite get site => imageboard.site;
 	final Uri? overrideSource;
+	final String? overrideFilename;
 	final VoidCallback? onDownloaded;
 
 	// Private usage
@@ -397,6 +398,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		this.redrawGestureListenable,
 		required this.imageboard,
 		this.overrideSource,
+		this.overrideFilename,
 		Uri? initialGoodSource,
 		this.onDownloaded,
 		bool isPrimary = false,
@@ -1164,7 +1166,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			filename = attachment.id.afterLast('/');
 		}
 		else {
-			filename = attachment.filename;
+			filename = overrideFilename ?? attachment.filename;
 		}
 		if (filename.startsWith('.')) {
 			// Not able to save hidden files

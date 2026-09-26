@@ -138,10 +138,19 @@ Future<File?> downloadToShareCache({
 	}, cancellable: true, wait: const Duration(milliseconds: 50));
 }
 
+class PickedFile {
+	final String path;
+	final String? overrideFilenameWithoutExtension;
+	const PickedFile(this.path, {this.overrideFilenameWithoutExtension});
+
+	@override
+	String toString() => 'PickedFile($path${overrideFilenameWithoutExtension == null ? null : ', overrideFilenameWithoutExtension: $overrideFilenameWithoutExtension'})';
+}
+
 class AttachmentPickingSource {
 	final String name;
 	final IconData icon;
-	final Future<List<String>> Function(BuildContext context, bool allowMultiple) pick;
+	final Future<List<PickedFile>> Function(BuildContext context, bool allowMultiple) pick;
 	final Future<void> Function(BuildContext context)? onLongPress;
 	final double iconSizeMultiplier;
 
@@ -193,7 +202,7 @@ Future<String?> chooseAndroidPicker(BuildContext context) async {
 	return null;
 }
 
-Future<List<String>> _galleryPicker(BuildContext context, bool allowMultiple) async {
+Future<List<PickedFile>> _galleryPicker(BuildContext context, bool allowMultiple) async {
 	String? androidPackage;
 	if (Platform.isAndroid) {
 		try {
@@ -219,7 +228,7 @@ Future<List<String>> _galleryPicker(BuildContext context, bool allowMultiple) as
 		return (await Future.wait((result?.files ?? []).map((file) async {
 			final path = await _stripFileTimestamp(file.path);
 			return _copyFileToSafeLocation(path);
-		}))).whereNotNull.toList();
+		}))).whereNotNull.map((path) => PickedFile(path)).toList();
 	}
 	on PlatformException catch (e) {
 		if (e.code == 'invalid_format_type' && (androidPackage?.isNotEmpty ?? false) && context.mounted) {
@@ -406,7 +415,10 @@ class _SavedAttachmentsModalState extends State<SavedAttachmentsModal> {
 										child: CupertinoInkwell(
 											padding: EdgeInsets.zero,
 											onPressed: () {
-												Navigator.of(context).pop(attachment.item.file.path);
+												Navigator.of(context).pop(PickedFile(
+													attachment.item.file.path,
+													overrideFilenameWithoutExtension: attachment.item.overrideFilenameWithoutExtension ?? attachment.item.attachment.filename.beforeLast('.')
+												));
 											},
 											child: ClipRRect(
 												borderRadius: BorderRadius.circular(8),
@@ -507,7 +519,7 @@ List<AttachmentPickingSource> getAttachmentSources({
 			if (file == null) {
 				return [];
 			}
-			return [file];
+			return [PickedFile(file)];
 		}
 	);
 	final web = AttachmentPickingSource(
@@ -519,7 +531,7 @@ List<AttachmentPickingSource> getAttachmentSources({
 			if (x == null) {
 				return [];
 			}
-			return [x.path];
+			return [PickedFile(x.path)];
 		})
 	);
 	final file = AttachmentPickingSource(
@@ -533,7 +545,7 @@ List<AttachmentPickingSource> getAttachmentSources({
 		).then((x) async {
 			return (await Future.wait((x?.files ?? []).map((file) {
 				return _copyFileToSafeLocation(file.path);
-			}))).whereNotNull.toList();
+			}))).whereNotNull.map((path) => PickedFile(path)).toList();
 		})
 	);
 	final clipboard = AttachmentPickingSource(
@@ -550,7 +562,7 @@ List<AttachmentPickingSource> getAttachmentSources({
 				}
 				return [];
 			}
-			return [x.path];
+			return [PickedFile(x.path)];
 		})
 	);
 	final anySaved = ImageboardRegistry.instance.imageboards.any((i) => i.persistence.savedAttachments.isNotEmpty);
@@ -558,7 +570,7 @@ List<AttachmentPickingSource> getAttachmentSources({
 		name: 'Saved Attachments',
 		icon: Adaptive.icons.bookmark,
 		pick: (context, allowMultiple) async {
-			final x = await Navigator.of(context).push<String>(TransparentRoute(
+			final x = await Navigator.of(context).push<PickedFile>(TransparentRoute(
 				builder: (context) => const SavedAttachmentsModal()
 			));
 			if (x == null) {
@@ -596,14 +608,14 @@ List<AttachmentPickingSource> getAttachmentSources({
 	}
 }
 
-Future<List<File>> pickAttachment({
+Future<List<PickedFile>> pickAttachment({
 	required BuildContext context,
 	required bool allowMultiple
 }) async {
 	final sources = getAttachmentSources(includeClipboard: true);
 	bool loadingPick = false;
 	final theme = context.read<SavedTheme>();
-	final picked = await Navigator.of(context).push<List<File>>(TransparentRoute(
+	final picked = await Navigator.of(context).push<List<PickedFile>>(TransparentRoute(
 		builder: (context) => StatefulBuilder(
 			builder: (context, setPickerDialogState) => OverscrollModalPage(
 				child: Container(
@@ -633,11 +645,11 @@ Future<List<File>> pickAttachment({
 												loadingPick = true;
 												setPickerDialogState(() {});
 												try {
-													final paths = await entry.pick(context, allowMultiple);
+													final files = await entry.pick(context, allowMultiple);
 													loadingPick = false;
 													setPickerDialogState(() {});
-													if (paths.isNotEmpty && context.mounted) {
-														Navigator.of(context).pop<List<File>>(paths.map(File.new).toList());
+													if (files.isNotEmpty && context.mounted) {
+														Navigator.of(context).pop<List<PickedFile>>(files);
 													}
 												}
 												catch (e, st) {
@@ -681,7 +693,7 @@ Future<List<File>> pickAttachment({
 										final file = File(path);
 										return GestureDetector(
 											onTap: () {
-												Navigator.of(context).pop(file);
+												Navigator.of(context).pop<List<PickedFile>>([PickedFile(path)]);
 											},
 											onLongPress: () async {
 												if (await confirm(context, 'Remove received file?')) {

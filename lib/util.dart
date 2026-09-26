@@ -116,7 +116,11 @@ extension EasySplit on String {
 		return substring(0, indexOfOrLength(delimiter));
 	}
 	String beforeLast(String delimiter) {
-		return substring(0, lastIndexOf(delimiter) + 1);
+		final index = lastIndexOf(delimiter);
+		if (index == -1) {
+			return this;
+		}
+		return substring(0, index);
 	}
 	String afterLast(String delimiter) {
 		return substring(lastIndexOf(delimiter) + 1);

@@ -553,6 +553,76 @@ class _SavedPageState extends State<SavedPage> {
 		}
 	);
 
+	static ContextMenuAction _makeRenameSavedAttachmentAction({
+		required ImageboardScoped<SavedAttachment> item,
+		required BuildContext context
+	}) => ContextMenuAction(
+		child: const Text('Rename'),
+		trailingIcon: CupertinoIcons.pencil,
+		onPressed: () async {
+			final originalWithoutExtension = item.item.attachment.filename.beforeLast('.');
+			final controller = TextEditingController(text: item.item.overrideFilenameWithoutExtension ?? originalWithoutExtension);
+			final save = await showAdaptiveDialog<bool>(
+				context: context,
+				barrierDismissible: true,
+				builder: (context) => AdaptiveAlertDialog(
+					title: const Text('Edit filename'),
+					actions: [
+						AdaptiveDialogAction(
+							child: const Text('Reset'),
+							onPressed: () {
+								controller.text = originalWithoutExtension;
+								Navigator.pop(context, true);
+							}
+						),
+						AdaptiveDialogAction(
+							child: const Text('Save'),
+							onPressed: () => Navigator.pop(context, true)
+						),
+						AdaptiveDialogAction(
+							child: const Text('Cancel'),
+							onPressed: () => Navigator.pop(context, false)
+						)
+					],
+					content: Row(
+						children: [
+							Expanded(
+								child: AdaptiveTextField(
+									autofocus: true,
+									controller: controller,
+									placeholder: originalWithoutExtension,
+									maxLines: 1,
+									textCapitalization: TextCapitalization.none,
+									autocorrect: false,
+									enableIMEPersonalizedLearning: Settings.instance.enableIMEPersonalizedLearning,
+									smartDashesType: SmartDashesType.disabled,
+									smartQuotesType: SmartQuotesType.disabled,
+									onSubmitted: (s) {
+										Navigator.pop(context, true);
+									}
+								)
+							),
+							const SizedBox(width: 16),
+							Text(item.item.savedExt ?? item.item.attachment.ext)
+						]
+					)
+				)
+			);
+			final newName = controller.text;
+			controller.dispose();
+			if (save != true) {
+				return;
+			}
+			if (newName == originalWithoutExtension) {
+				item.item.overrideFilenameWithoutExtension = null;
+			}
+			else {
+				item.item.overrideFilenameWithoutExtension = newName;
+			}
+			item.imageboard.persistence.didUpdateBrowserState();
+		}
+	);
+
 	@override
 	Widget build(BuildContext context) {
 		final tickerMode = TickerMode.valuesOf(context).enabled;
@@ -1618,7 +1688,8 @@ class _SavedPageState extends State<SavedPage> {
 									context: context,
 									imageboard: item.imageboard,
 									isDownloaded: _downloadedAttachments.contains(item.item.attachment),
-									overrideSource: item.item.file.uri
+									overrideSource: item.item.file.uri,
+									overrideFilename: item.item.overrideFilename
 								);
 								return ImageboardScope(
 									imageboardKey: item.imageboard.key,
@@ -1683,6 +1754,10 @@ class _SavedPageState extends State<SavedPage> {
 													context: context,
 													innerContext: null,
 													imageboard: item.imageboard
+												),
+												_makeRenameSavedAttachmentAction(
+													item: item,
+													context: context
 												)
 											],
 											child: Container(
@@ -1745,6 +1820,10 @@ class _SavedPageState extends State<SavedPage> {
 								imageboard: selectedValue.imageboard,
 								postId: 0
 							);
+							final attachments = {
+								for (final item in _savedAttachmentsController.items)
+									item.item.item.attachment: item.item
+							};
 							child = ImageboardScope(
 								imageboardKey: selectedValue.imageboard.key,
 								child: Builder(
@@ -1763,8 +1842,13 @@ class _SavedPageState extends State<SavedPage> {
 											for (final l in _savedAttachmentsController.items)
 												l.item.item.attachment: l.item.item.file.uri
 										},
+										overrideFilenames: {
+											for (final l in _savedAttachmentsController.items)
+												if (l.item.item.overrideFilename case final overrideFilename?)
+													l.item.item.attachment: overrideFilename
+										},
 										onChange: (a) {
-											final originalL = _savedAttachmentsController.items.tryFirstWhere((l) => l.item.item.attachment == a.attachment)?.item;
+											final originalL = attachments[a.attachment];
 											_savedAttachmentsController.animateToIfOffscreen((l) => l.item.attachment == a.attachment, alignment: 0.5);
 											widget.masterDetailKey.currentState?.setValue5(originalL, updateDetailPane: false);
 										},
@@ -1779,6 +1863,10 @@ class _SavedPageState extends State<SavedPage> {
 												context: context,
 												innerContext: innerContext,
 												imageboard: ImageboardRegistry.instance.getImageboard(imageboardIds.entries.tryFirstWhere((e) => e.value == attachment.semanticParentIds.last)?.key)
+											),
+											if (attachments[attachment.attachment] case final item?) _makeRenameSavedAttachmentAction(
+												item: item,
+												context: context
 											)
 										],
 									)

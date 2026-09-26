@@ -2135,6 +2135,8 @@ class SavedAttachment implements Filterable {
 	final List<int> tags;
 	@HiveField(3)
 	String? savedExt;
+	@HiveField(4)
+	String? overrideFilenameWithoutExtension;
 	SavedAttachment({
 		required this.attachment,
 		required this.savedTime,
@@ -2158,12 +2160,19 @@ class SavedAttachment implements Filterable {
 
 	@override
 	String get board => attachment.board;
+
+	String? get overrideFilename {
+		if (overrideFilenameWithoutExtension case final customName?) {
+			return '$customName${savedExt ?? attachment.ext}';
+		}
+		return null;
+	}
 	
 	@override
 	String? getFilterFieldText(String fieldName) {
 		switch (fieldName) {
 			case 'filename':
-				return attachment.filename;
+				return overrideFilename ?? attachment.filename;
 			case 'dimensions':
 				return '${attachment.width}x${attachment.height}';
 			case 'md5':

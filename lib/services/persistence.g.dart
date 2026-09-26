@@ -870,6 +870,20 @@ class SavedAttachmentFields {
     fieldName: 'savedExt',
     merger: PrimitiveMerger(),
   );
+  static String? getOverrideFilenameWithoutExtension(SavedAttachment x) =>
+      x.overrideFilenameWithoutExtension;
+  static void setOverrideFilenameWithoutExtension(
+          SavedAttachment x, String? v) =>
+      x.overrideFilenameWithoutExtension = v;
+  static const int kOverrideFilenameWithoutExtension = 4;
+  static const overrideFilenameWithoutExtension =
+      HiveFieldAdapter<SavedAttachment, String?>(
+    getter: getOverrideFilenameWithoutExtension,
+    setter: setOverrideFilenameWithoutExtension,
+    fieldNumber: kOverrideFilenameWithoutExtension,
+    fieldName: 'overrideFilenameWithoutExtension',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class SavedAttachmentAdapter extends TypeAdapter<SavedAttachment> {
@@ -886,13 +900,14 @@ class SavedAttachmentAdapter extends TypeAdapter<SavedAttachment> {
     0: SavedAttachmentFields.attachment,
     1: SavedAttachmentFields.savedTime,
     2: SavedAttachmentFields.tags,
-    3: SavedAttachmentFields.savedExt
+    3: SavedAttachmentFields.savedExt,
+    4: SavedAttachmentFields.overrideFilenameWithoutExtension
   };
 
   @override
   SavedAttachment read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final List<dynamic> fields = List.filled(4, null);
+    final List<dynamic> fields = List.filled(5, null);
     for (int i = 0; i < numOfFields; i++) {
       final int fieldId = reader.readByte();
       final dynamic value = reader.read();
@@ -905,13 +920,13 @@ class SavedAttachmentAdapter extends TypeAdapter<SavedAttachment> {
       savedTime: fields[1] as DateTime,
       tags: (fields[2] as List?)?.cast<int>(),
       savedExt: fields[3] as String?,
-    );
+    )..overrideFilenameWithoutExtension = fields[4] as String?;
   }
 
   @override
   void write(BinaryWriter writer, SavedAttachment obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.attachment)
       ..writeByte(1)
@@ -919,7 +934,9 @@ class SavedAttachmentAdapter extends TypeAdapter<SavedAttachment> {
       ..writeByte(2)
       ..write(obj.tags)
       ..writeByte(3)
-      ..write(obj.savedExt);
+      ..write(obj.savedExt)
+      ..writeByte(4)
+      ..write(obj.overrideFilenameWithoutExtension);
   }
 
   @override

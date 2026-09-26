@@ -75,6 +75,7 @@ class GalleryPage extends StatefulWidget {
 	final List<TaggedAttachment> attachments;
 	final Map<Attachment, Uri> initialGoodSources;
 	final Map<Attachment, Uri> overrideSources;
+	final Map<Attachment, String> overrideFilenames;
 	final PostSpanZoneData? zone;
 	final Map<Attachment, ImageboardScoped<Thread>> threads;
 	final Map<Attachment, ImageboardScoped<Post>> posts;
@@ -97,6 +98,7 @@ class GalleryPage extends StatefulWidget {
 	const GalleryPage({
 		required this.attachments,
 		this.overrideSources = const {},
+		this.overrideFilenames = const {},
 		this.initialGoodSources = const {},
 		this.zone,
 		this.threads = const {},
@@ -367,6 +369,7 @@ class _GalleryPageState extends State<GalleryPage> {
 				imageboard: attachment.imageboard,
 				isPrimary: attachment == currentAttachment,
 				overrideSource: widget.overrideSources[attachment.attachment],
+				overrideFilename: widget.overrideFilenames[attachment.attachment],
 				initialGoodSource: widget.initialGoodSources[attachment.attachment],
 				isDownloaded: _isAttachmentAlreadyDownloaded(attachment.attachment),
 				onDownloaded: () => _onAttachmentDownload(attachment.attachment),
@@ -919,16 +922,17 @@ class _GalleryPageState extends State<GalleryPage> {
 									if (currentAttachment.attachment.width != null && currentAttachment.attachment.height != null) '${currentAttachment.attachment.width}x${currentAttachment.attachment.height}',
 									if (currentAttachment.attachment.sizeInBytes != null) formatFilesize(currentAttachment.attachment.sizeInBytes!)
 								];
+								final overrideEllipsized = currentController.overrideFilename?.ellipsizeIfLonger(50, ellipsis: '...');
 								return Padding(
 									padding: const EdgeInsets.only(bottom: 4),
 									child: GestureDetector(
-										onTap: currentAttachment.attachment.ellipsizedFilename == null ? null : () {
-											alert(context, 'Full filename', currentAttachment.attachment.filename, selectable: true);
+										onTap: (overrideEllipsized ?? currentAttachment.attachment.ellipsizedFilename) == null ? null : () {
+											alert(context, 'Full filename', currentController.overrideFilename ?? currentAttachment.attachment.filename, selectable: true);
 										},
 										child: AutoSizeText(
 											currentAttachment.attachment.type == AttachmentType.url ?
 												currentAttachment.attachment.url.toString() :
-												"${currentAttachment.attachment.ellipsizedFilename ?? currentAttachment.attachment.filename}${metadataParts.isEmpty ? '' : ' (${metadataParts.join(', ')})'}",
+												"${overrideEllipsized ?? currentController.overrideFilename ?? currentAttachment.attachment.ellipsizedFilename ?? currentAttachment.attachment.filename}${metadataParts.isEmpty ? '' : ' (${metadataParts.join(', ')})'}",
 											minFontSize: 8,
 											maxLines: 3
 										)

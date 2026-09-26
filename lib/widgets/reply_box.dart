@@ -252,12 +252,18 @@ class ReplyBoxState extends State<ReplyBox> {
 		_updateNeededPosts();
 	});
 
-	Future<void> _addAttachment(File file) => _attachmentsLock.protect(() async {
+	Future<void> _addAttachment(File file, {
+		String? overrideFilenameWithoutExtension
+	}) => _attachmentsLock.protect(() async {
 		bool retry;
 		do {
 			retry = false;
 			try {
-				final attachment = await _makeAttachment(null, file, checkForDuplicateFile: true);
+				final attachment = await _makeAttachment(
+					null, file,
+					checkForDuplicateFile: true,
+					filenameWithoutExtension: overrideFilenameWithoutExtension
+				);
 				if (!mounted || attachment == null) {
 					return;
 				}
@@ -3033,10 +3039,13 @@ Future<_ReplyBoxFile?> _makeAttachment(PickedAttachment? originalAttachment, Fil
 																setState(() {});
 																// Local [context] is not safe. It will die when we go to 'Picking'
 																try {
-																	final paths = await picker.pick(this.context, board.filesPerPost > 1 || _attachments.isNotEmpty);
-																	if (paths.isNotEmpty) {
-																		for (final path in paths) {
-																			await _addAttachment(File(path));
+																	final files = await picker.pick(this.context, board.filesPerPost > 1 || _attachments.isNotEmpty);
+																	if (files.isNotEmpty) {
+																		for (final file in files) {
+																			await _addAttachment(
+																				File(file.path),
+																				overrideFilenameWithoutExtension: file.overrideFilenameWithoutExtension
+																			);
 																		}
 																	}
 																	else {
