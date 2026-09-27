@@ -2019,7 +2019,7 @@ class _Captcha4ChanCustomPageState extends State<Captcha4ChanCustomPage> {
 												Wrap(
 													children: task.$2.choices.indexed.map((choice) => CupertinoInkwell(
 														padding: EdgeInsets.zero,
-														onPressed: () {
+														onPressed: _greyOutPickers ? null : () {
 															setState(() {
 																_taskChoices[task.$1] = choice.$1;
 															});
@@ -2057,7 +2057,7 @@ class _Captcha4ChanCustomPageState extends State<Captcha4ChanCustomPage> {
 														bottomSafe: true,
 														child: CupertinoInkwell(
 															padding: EdgeInsets.zero,
-															onPressed: () {
+															onPressed: _greyOutPickers ? null : () {
 																setState(() {
 																	if (_taskChoices[task.$1] == choice.$1) {
 																		_collapseTasks[task.$1] = !_collapseTasks[task.$1];
