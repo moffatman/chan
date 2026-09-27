@@ -421,8 +421,11 @@ class Imageboard extends ChangeNotifier {
 									),
 									AdaptiveDialogAction(
 										child: const Text('Clear cookies'),
-										onPressed: () {
-											Persistence.clearCookies(fromWifi: null);
+										onPressed: () async {
+											final sure = await confirm(context, 'Really clear?', actionName: 'Clear', content: 'Be careful, this may do more harm than good...');
+											if (sure) {
+												await Persistence.clearCookies(fromWifi: null);
+											}
 										}
 									),
 									AdaptiveDialogAction(
