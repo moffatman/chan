@@ -3539,12 +3539,28 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 												}
 											)
 										),
-										if (!widget.blocked && (widget.persistentState.thread?.archiveName != null || (widget.persistentState.thread?.isArchived ?? widget.persistentState.useArchive))) ...[
-											Icon(CupertinoIcons.archivebox, color: theme.primaryColor.withValues(alpha: 0.5), applyTextScaling: true),
-											if (widget.persistentState.thread?.archiveName case String archiveName)
-												Text(' $archiveName', style: TextStyle(color: theme.primaryColor.withValues(alpha: 0.5))),
-											const SizedBox(width: 8)
-										]
+										if (!widget.blocked && (widget.persistentState.thread?.archiveName != null || (widget.persistentState.thread?.isArchived ?? widget.persistentState.useArchive))) AnimatedBuilder(
+											animation: widget.listController.scrollController ?? const AlwaysStoppedAnimation(null),
+											builder: (context, child) => AnimatedCrossFade(
+												firstChild: child!,
+												secondChild: const SizedBox.shrink(),
+												alignment: Alignment.centerLeft,
+												crossFadeState: (widget.listController.scrollController?.tryPosition?.extentAfter ?? 100) > 50 ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+												duration: const Duration(milliseconds: 350),
+												sizeCurve: Curves.ease,
+												firstCurve: Curves.ease,
+												secondCurve: Curves.ease,
+											),
+											child: Row(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													Icon(CupertinoIcons.archivebox, color: theme.primaryColor.withValues(alpha: 0.5), applyTextScaling: true),
+													if (widget.persistentState.thread?.archiveName case String archiveName)
+														Text(' $archiveName', style: TextStyle(color: theme.primaryColor.withValues(alpha: 0.5))),
+													const SizedBox(width: 8)
+												]
+											)
+										)
 										else if (!widget.blocked && (widget.persistentState.thread?.isDeleted ?? false)) ...[
 											Icon(CupertinoIcons.trash, color: theme.primaryColor.withValues(alpha: 0.5), applyTextScaling: true),
 											const SizedBox(width: 8)
