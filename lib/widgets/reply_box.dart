@@ -817,6 +817,7 @@ Future<_ReplyBoxFile?> _makeAttachment(PickedAttachment? originalAttachment, Fil
 				// No extension
 				final scan = await MediaScan.scan(file.uri);
 				// Rename it with extension
+				await Persistence.shareCacheDirectory.create(recursive: true);
 				file = await file.copy(Persistence.shareCacheDirectory.child('${file.uri.pathSegments.last}.${scan.guessExtension}'));
 			}
 			if (file.path.endsWith('.pvt')) {
@@ -888,6 +889,7 @@ Future<_ReplyBoxFile?> _makeAttachment(PickedAttachment? originalAttachment, Fil
 			if (scan.forceFormat == 'mjpeg') {
 				// TODO: Just check codec. so it applies to all renames?
 				// Wrong file extension, rename it
+				await Persistence.shareCacheDirectory.create(recursive: true);
 				file = await file.copy(Persistence.shareCacheDirectory.child('${file.uri.pathSegments.last}.jpeg'));
 				ext = 'jpg';
 				scan = await MediaScan.scan(file.uri);

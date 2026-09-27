@@ -101,6 +101,10 @@ Future<File?> downloadToShareCache({
 		context.read<ImageboardSite?>()?.client ??
 		Settings.instance.client;
 	final filename = url.pathSegments.tryLast;
+	await Persistence.shareCacheDirectory.create(recursive: true);
+	if (!context.mounted) {
+		return null;
+	}
 	final path = Persistence.shareCacheDirectory.child('${DateTime.now().millisecondsSinceEpoch}_${filename ?? ''}');
 	return await modalLoad(context, 'Downloading...', (controller) async {
 		final alreadyCached = await getCachedImageFile(url.toString());

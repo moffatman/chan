@@ -1194,6 +1194,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				}
 			}, cancellable: true, hideable: true);
 		}
+		await Persistence.shareCacheDirectory.create(recursive: true);
 		return await file.copy(Persistence.shareCacheDirectory.child(newFilename));
 	}
 

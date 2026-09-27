@@ -350,6 +350,7 @@ Future<File> sharePostsAsImage({
 		delay: needToLoadThumbnails ? const Duration(seconds: 2) : const Duration(milliseconds: 500)
 	);
 	final file = Persistence.shareCacheDirectory.file('${imageboard.site.name}_${effectiveZone.board}_$primaryPostId.png');
+	await file.create(recursive: true);
 	await file.writeAsBytes(img);
 	return file;
 }
