@@ -91,7 +91,9 @@ class ScrollTracker {
 						}
 					}
 					else if (delta > 0 && isOverscrollBottom && slowScrollDirection.value != VerticalDirection.up) {
-						_accumulatedScrollDelta = 0;
+						// The extentAfter may grow because showing the tab bar. since that has height ~80,
+						// make it require 81 pixels scrolldown to hide bars again.
+						_accumulatedScrollDelta = -31;
 						slowScrollDirection.value = VerticalDirection.up;
 					}
 				}
