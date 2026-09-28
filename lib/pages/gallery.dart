@@ -419,6 +419,9 @@ class _GalleryPageState extends State<GalleryPage> {
 			final idealLocation = (thumbnailScrollController.position.maxScrollExtent + thumbnailScrollController.position.viewportDimension - _thumbnailSize - 12) * factor - (thumbnailScrollController.position.viewportDimension / 2) + (_thumbnailSize / 2 + 6);
 			thumbnailScrollController.jumpTo(idealLocation.clamp(0, thumbnailScrollController.position.maxScrollExtent));
 		}
+		if (pageController.activityIsIdle) {
+			_onPageSettled();
+		}
 	}
 
 	Future<void> _animateToPage(int index, {int milliseconds = 200, bool overrideRateLimit = false}) async {
@@ -490,6 +493,14 @@ class _GalleryPageState extends State<GalleryPage> {
 		await Future.delayed(const Duration(seconds: 3));
 		if (mounted && currentIndex == index) {
 			_shouldShowPosition.value = false;
+		}
+	}
+
+	void _onPageSettled() {
+		for (final c in _controllers.entries) {
+			if (c.key != currentAttachment) {
+				c.value.softReset();
+			}
 		}
 	}
 

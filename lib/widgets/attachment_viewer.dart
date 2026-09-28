@@ -533,6 +533,10 @@ class AttachmentViewerController extends ChangeNotifier {
 		notifyListeners();
 	}
 
+	Future<void> softReset() async {
+		await videoPlayerController?.player.seek(Duration.zero);
+	}
+
 	Map<String, String> getHeaders(Uri url) {
 		return {
 			...site.getHeaders(attachment, url),

@@ -1885,6 +1885,8 @@ extension ProtectedAccess on ScrollController {
 	}
 	// ignore: invalid_use_of_visible_for_testing_member, invalid_use_of_protected_member
 	bool get activityIsDriven => tryPosition?.activity is DrivenScrollActivity;
+	// ignore: invalid_use_of_visible_for_testing_member, invalid_use_of_protected_member
+	bool get activityIsIdle => tryPosition?.activity is IdleScrollActivity;
 }
 
 Future<bool> confirm(BuildContext context, String message, {String actionName = 'OK', String? content}) async {
