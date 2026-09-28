@@ -1270,16 +1270,17 @@ class ChanTabs extends ChangeNotifier {
 		if (!Settings.instance.usePaginatedTabBar) {
 			return _animateLegacyTabList(index: index, duration: duration);
 		}
+		final viewportDimension = _paginatedTabListController.tryPosition?.viewportDimension;
+		if (viewportDimension == null) {
+			return;
+		}
+		final itemsPerPage = _tabListPaginationDelegate.getMainAxisCount(viewportDimension);
 		final usingHomeBoard = Settings.instance.usingHomeBoard;
 		final globalIndex = index ?? browseTabIndex;
 		final listIndex = usingHomeBoard ? max(0, globalIndex - 1) : globalIndex;
 		final listItemCount = max(0, Persistence.tabs.length - (usingHomeBoard ? 1 : 0));
-		final targetItemPage = _paginatedTabListController.pageForItem(listIndex);
-		if (targetItemPage == null) {
-			return;
-		}
-		final lastPage = listItemCount == 0 ? 0 : (_paginatedTabListController.pageForItem(listItemCount - 1) ?? 0);
-		final targetPage = min(targetItemPage, lastPage);
+		final lastPage = max(0, (listItemCount - 1) ~/ itemsPerPage);
+		final targetPage = min(_paginatedTabListController.pageForItem(listIndex) ?? (listIndex ~/ itemsPerPage), lastPage);
 		if (duration > Duration.zero) {
 			await _paginatedTabListController.animateToPage(targetPage, curve: Curves.ease, duration: duration);
 		}

@@ -96,12 +96,10 @@ class _ReorderProxyDropListenerState
 class _PaginatedPageScrollPhysics extends PageScrollPhysics {
   final double gutterExtent;
   final PaginatedReorderableListDelegate paginationDelegate;
-  final double selectedItemExtentFactor;
 
   const _PaginatedPageScrollPhysics(
       {required this.gutterExtent,
       required this.paginationDelegate,
-      required this.selectedItemExtentFactor,
       super.parent});
 
   @override
@@ -109,7 +107,6 @@ class _PaginatedPageScrollPhysics extends PageScrollPhysics {
     return _PaginatedPageScrollPhysics(
         gutterExtent: gutterExtent,
         paginationDelegate: paginationDelegate,
-        selectedItemExtentFactor: selectedItemExtentFactor,
         parent: buildParent(ancestor));
   }
 
@@ -123,9 +120,8 @@ class _PaginatedPageScrollPhysics extends PageScrollPhysics {
         (velocity >= 0 && position.pixels >= position.maxScrollExtent)) {
       return parent?.createBallisticSimulation(position, velocity);
     }
-    final itemsPerPage = paginationDelegate.getMainAxisCount(
-        position.viewportDimension,
-        selectedItemExtentFactor: selectedItemExtentFactor);
+    final itemsPerPage =
+        paginationDelegate.getMainAxisCount(position.viewportDimension);
     final itemExtent =
         position.viewportDimension / (itemsPerPage + 2 * gutterExtent);
     final pageExtent = itemsPerPage * itemExtent;
@@ -834,9 +830,8 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
 
   @override
   void performLayout() {
-    final resolvedItemsPerPage = _paginationDelegate.getMainAxisCount(
-        constraints.viewportMainAxisExtent,
-        selectedItemExtentFactor: _selectedItemExtentFactor);
+    final resolvedItemsPerPage = _paginationDelegate
+        .getMainAxisCount(constraints.viewportMainAxisExtent);
     if (resolvedItemsPerPage <= 0) {
       throw FlutterError(
           'A pagination delegate must return at least one item per page.');
@@ -957,12 +952,7 @@ abstract class PaginatedReorderableListDelegate {
   const PaginatedReorderableListDelegate();
 
   /// Returns the number of items to display per page.
-  ///
-  /// Adaptive delegates may reserve additional capacity for an expanded
-  /// selected item. Fixed-count delegates can ignore
-  /// [selectedItemExtentFactor].
-  int getMainAxisCount(double mainAxisExtent,
-      {double selectedItemExtentFactor = 1});
+  int getMainAxisCount(double mainAxisExtent);
 
   /// Whether a widget using [oldDelegate] needs to recompute its layout.
   bool shouldRelayout(covariant PaginatedReorderableListDelegate oldDelegate);
@@ -978,9 +968,7 @@ class PaginatedReorderableListDelegateWithFixedMainAxisCount
       : assert(mainAxisCount > 0);
 
   @override
-  int getMainAxisCount(double mainAxisExtent,
-          {double selectedItemExtentFactor = 1}) =>
-      mainAxisCount;
+  int getMainAxisCount(double mainAxisExtent) => mainAxisCount;
 
   @override
   bool shouldRelayout(
@@ -992,15 +980,11 @@ class PaginatedReorderableListDelegateWithFixedMainAxisCount
 /// A pagination delegate whose items never exceed [maxMainAxisExtent].
 ///
 /// For example, a horizontal list that is 500 logical pixels wide and has a
-/// maximum extent of 200 displays three items per page when
-/// `selectedItemExtentFactor` is one. A larger factor partially reserves the
-/// selected item's additional slot capacity when choosing the page count.
-/// Items are expanded to fill the page so page boundaries line up with the
+/// maximum extent of 200 displays three items per page. Each item is expanded
+/// to exactly one third of the page so page boundaries always line up with the
 /// viewport.
 class PaginatedReorderableListDelegateWithMaxMainAxisExtent
     extends PaginatedReorderableListDelegate {
-  static const _selectedItemCapacityPenaltyFactor = 0.5;
-
   final double maxMainAxisExtent;
 
   const PaginatedReorderableListDelegateWithMaxMainAxisExtent(
@@ -1008,15 +992,8 @@ class PaginatedReorderableListDelegateWithMaxMainAxisExtent
       : assert(maxMainAxisExtent > 0);
 
   @override
-  int getMainAxisCount(double mainAxisExtent,
-      {double selectedItemExtentFactor = 1}) {
-    final availableNormalItemSlots = mainAxisExtent / maxMainAxisExtent;
-    final selectedItemCapacityPenalty = (selectedItemExtentFactor - 1) *
-        _selectedItemCapacityPenaltyFactor;
-    final effectiveItemSlots =
-        availableNormalItemSlots - selectedItemCapacityPenalty;
-    if (!effectiveItemSlots.isFinite || effectiveItemSlots <= 1) return 1;
-    return effectiveItemSlots.ceil();
+  int getMainAxisCount(double mainAxisExtent) {
+    return math.max(1, (mainAxisExtent / maxMainAxisExtent).ceil());
   }
 
   @override
@@ -1066,9 +1043,7 @@ class PaginatedReorderableList extends StatefulWidget {
   /// A [PaginatedReorderableListItem] grows only as much as its intrinsic
   /// extent requires, up to this ratio. Other items and empty slots shrink by
   /// the amount actually used, so the page remains exactly one viewport.
-  /// Adaptive pagination delegates may also reserve capacity for the selected
-  /// item when choosing the number of items per page. Defaults to twice the
-  /// extent of the other slots.
+  /// Defaults to twice the extent of the other slots.
   final double selectedItemExtentFactor;
 
   /// Duration of the extent redistribution when [selectedIndex] changes.
@@ -1962,8 +1937,7 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
     final effectivePhysics = widget.pageSnapping && !_reordering
         ? _PaginatedPageScrollPhysics(
                 gutterExtent: widget.gutterExtent,
-                paginationDelegate: widget.paginationDelegate,
-                selectedItemExtentFactor: widget.selectedItemExtentFactor)
+                paginationDelegate: widget.paginationDelegate)
             .applyTo(inheritedPhysics)
         : inheritedPhysics;
 
