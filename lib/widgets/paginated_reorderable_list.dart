@@ -227,6 +227,12 @@ class PaginatedReorderableListItem extends SingleChildRenderObjectWidget {
   const PaginatedReorderableListItem(
       {required this.index, required super.child, required super.key});
 
+  /// The selected item's index relative to this item on the same page.
+  /// Positive values mean the selected item is after this one; negative values
+  /// mean it is before. Returns null for the selected item or another page.
+  static int? selectedItemDeltaOf(BuildContext context) =>
+      _PaginatedItemSelectionScope.maybeOf(context)?.selectedItemDelta;
+
   @override
   RenderObject createRenderObject(BuildContext context) =>
       _RenderPaginatedReorderableListItem(index);
@@ -234,6 +240,128 @@ class PaginatedReorderableListItem extends SingleChildRenderObjectWidget {
   @override
   void updateRenderObject(BuildContext context, RenderObject renderObject) {
     (renderObject as _RenderPaginatedReorderableListItem).update(index);
+  }
+}
+
+class _PaginatedItemSelectionScope extends InheritedWidget {
+  final int? selectedItemDelta;
+
+  const _PaginatedItemSelectionScope({
+    required this.selectedItemDelta,
+    required super.child,
+    super.key,
+  });
+
+  static _PaginatedItemSelectionScope? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_PaginatedItemSelectionScope>();
+
+  @override
+  bool updateShouldNotify(_PaginatedItemSelectionScope oldWidget) =>
+      selectedItemDelta != oldWidget.selectedItemDelta;
+}
+
+/// Horizontal item padding that gives content more room only when its slot
+/// becomes too narrow. [shrinkWeights] controls which side may contract:
+/// `dx` is the left side and `dy` is the right side.
+class PaginatedReorderableListItemPadding extends SingleChildRenderObjectWidget {
+  final double preferredContentExtent;
+  final Offset shrinkWeights;
+
+  const PaginatedReorderableListItemPadding({
+    required this.preferredContentExtent,
+    required this.shrinkWeights,
+    required super.child,
+    super.key,
+  }) : assert(preferredContentExtent >= 0);
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderPaginatedItemPadding(preferredContentExtent, shrinkWeights);
+
+  @override
+  void updateRenderObject(
+      BuildContext context, RenderObject renderObject) {
+    (renderObject as _RenderPaginatedItemPadding)
+      ..preferredContentExtent = preferredContentExtent
+      ..shrinkWeights = shrinkWeights;
+  }
+}
+
+class _RenderPaginatedItemPadding extends RenderShiftedBox {
+  _RenderPaginatedItemPadding(
+      this._preferredContentExtent, this._shrinkWeights)
+      : super(null);
+
+  static const double _normalSidePadding = 16;
+  static const double _minimumSidePadding = 4;
+  static const double _verticalPadding = 8;
+
+  double _preferredContentExtent;
+  set preferredContentExtent(double value) {
+    if (_preferredContentExtent == value) return;
+    _preferredContentExtent = value;
+    markNeedsLayout();
+  }
+
+  Offset _shrinkWeights;
+  set shrinkWeights(Offset value) {
+    if (_shrinkWeights == value) return;
+    final oldPadding = hasSize ? _paddingForWidth(constraints.maxWidth) : null;
+    _shrinkWeights = value;
+    if (oldPadding == null ||
+        oldPadding != _paddingForWidth(constraints.maxWidth)) {
+      markNeedsLayout();
+    }
+  }
+
+  EdgeInsets _paddingForWidth(double availableWidth) {
+    final leftCapacity =
+        (_normalSidePadding - _minimumSidePadding) * _shrinkWeights.dx;
+    final rightCapacity =
+        (_normalSidePadding - _minimumSidePadding) * _shrinkWeights.dy;
+    final totalCapacity = leftCapacity + rightCapacity;
+    if (!availableWidth.isFinite || totalCapacity == 0) {
+      return const EdgeInsets.symmetric(
+          horizontal: _normalSidePadding, vertical: _verticalPadding);
+    }
+    final deficit = math.max(0.0,
+        _preferredContentExtent + 2 * _normalSidePadding - availableWidth);
+    final shrink = math.min(deficit, totalCapacity);
+    return EdgeInsets.only(
+        left: _normalSidePadding - shrink * leftCapacity / totalCapacity,
+        right: _normalSidePadding - shrink * rightCapacity / totalCapacity,
+        top: _verticalPadding,
+        bottom: _verticalPadding);
+  }
+
+  @override
+  Size computeDryLayout(BoxConstraints constraints) {
+    final padding = _paddingForWidth(constraints.maxWidth);
+    final childSize = child?.getDryLayout(constraints.deflate(padding)) ??
+        Size.zero;
+    return constraints.constrain(Size(
+        childSize.width + padding.horizontal,
+        childSize.height + padding.vertical));
+  }
+
+  @override
+  void performLayout() {
+    final padding = _paddingForWidth(constraints.maxWidth);
+    final childBox = child;
+    if (childBox == null) {
+      size = constraints.constrain(Size(padding.horizontal, padding.vertical));
+      return;
+    }
+    childBox.layout(constraints.deflate(padding), parentUsesSize: true);
+    size = constraints.constrain(Size(
+        childBox.size.width + padding.horizontal,
+        childBox.size.height + padding.vertical));
+    final extraWidth = math.max(
+        0.0, size.width - padding.horizontal - childBox.size.width);
+    final extraHeight = math.max(
+        0.0, size.height - padding.vertical - childBox.size.height);
+    (childBox.parentData! as BoxParentData).offset = Offset(
+        padding.left + extraWidth / 2, padding.top + extraHeight / 2);
   }
 }
 
@@ -1200,6 +1328,21 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
   int pageForItem(int index) =>
       (index + leadingEmptySlots) ~/ itemsPerPage;
 
+  int? _selectedItemDeltaFor(int index) {
+    final selectedIndex = widget.selectedIndex;
+    if (selectedIndex == null || selectedIndex < 0 ||
+        selectedIndex >= widget.itemCount || index == selectedIndex) {
+      return null;
+    }
+    // The selected page is initially laid out by the sliver. Until that first
+    // layout resolves its count, compacting other items avoids a first-frame
+    // padding change on the page that contains the selected item.
+    if (!_hasLayout || pageForItem(index) == pageForItem(selectedIndex)) {
+      return selectedIndex - index;
+    }
+    return null;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -1972,7 +2115,14 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
                                 widget.selectedItemAnimationDuration,
                             selectedItemAnimationCurve:
                                 widget.selectedItemAnimationCurve,
-                            itemBuilder: widget.itemBuilder,
+                            itemBuilder: (context, index) {
+                              final item = widget.itemBuilder(context, index);
+                              return _PaginatedItemSelectionScope(
+                                  key: ValueKey(item.key),
+                                  selectedItemDelta:
+                                      _selectedItemDeltaFor(index),
+                                  child: item);
+                            },
                             itemCount: widget.itemCount,
                             onReorderItem: widget.onReorderItem,
                             onReorderStart: _handleReorderStart,

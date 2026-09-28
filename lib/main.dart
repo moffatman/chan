@@ -2024,6 +2024,19 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		);
 	}
 
+	double _tabletTabPreferredContentExtent(BuildContext context, String? label, bool hasPreLabelInjection) {
+		if (label == null) return 24;
+		final painter = TextPainter(
+			text: TextSpan(text: label, style: DefaultTextStyle.of(context).style.copyWith(fontSize: 12)),
+			textDirection: Directionality.of(context),
+			textScaler: MediaQuery.textScalerOf(context),
+			maxLines: 1
+		)..layout();
+		final extent = max(24.0, painter.width + (hasPreLabelInjection ? 28 : 0));
+		painter.dispose();
+		return extent;
+	}
+
 	Widget _buildTabletIcon(int index, Widget icon, String? label, {
 		Axis axis = Axis.vertical,
 		Widget? preLabelInjection
@@ -2075,6 +2088,25 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		);
 		return Builder(
 			builder: (context) {
+				final selectedItemDelta = axis == Axis.horizontal ? PaginatedReorderableListItem.selectedItemDeltaOf(context) : null;
+				final shrinkWeights = switch (selectedItemDelta) {
+					1 => const Offset(1, 0),
+					-1 => const Offset(0, 1),
+					null => Offset.zero,
+					_ => const Offset(1, 1)
+				};
+				final preferredContentExtent = axis == Axis.horizontal ? _tabletTabPreferredContentExtent(context, label, preLabelInjection != null) : 0.0;
+				final paddedContent = axis == Axis.horizontal ? TweenAnimationBuilder<Offset>(
+					tween: Tween(begin: shrinkWeights, end: shrinkWeights),
+					duration: const Duration(milliseconds: 350),
+					curve: Curves.ease,
+					builder: (context, weights, child) => PaginatedReorderableListItemPadding(
+						preferredContentExtent: preferredContentExtent,
+						shrinkWeights: weights,
+						child: child!
+					),
+					child: content
+				) : content;
 				void showThisTabMenu() {
 					showTabMenu(
 						context: context,
@@ -2152,8 +2184,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						)
 					},
 					child: AdaptiveButton(
-						padding: axis == Axis.vertical ? const EdgeInsets.only(top: 16, bottom: 16, left: 8, right: 8) : const EdgeInsets.only(top: 8, bottom: 8, left: 16, right: 16),
-						child: content,
+						padding: axis == Axis.vertical ? const EdgeInsets.only(top: 16, bottom: 16, left: 8, right: 8) : EdgeInsets.zero,
+						child: paddedContent,
 						onPressed: () async {
 							lightHapticFeedback();
 							if (index <= 0) {
