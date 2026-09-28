@@ -179,6 +179,16 @@ void main() {
       expect(delegate.getMainAxisCount(201), 2);
       expect(delegate.getMainAxisCount(500), 3);
     });
+
+    test('maximum main-axis extent reserves selected item capacity', () {
+      const delegate = PaginatedReorderableListDelegateWithMaxMainAxisExtent(
+          maxMainAxisExtent: 120);
+      expect(delegate.getMainAxisCount(390), 4);
+      expect(delegate.getMainAxisCount(390, selectedItemExtentFactor: 2), 3);
+      expect(delegate.getMainAxisCount(480, selectedItemExtentFactor: 2), 4);
+      expect(delegate.getMainAxisCount(260, selectedItemExtentFactor: 2), 2);
+      expect(delegate.getMainAxisCount(195, selectedItemExtentFactor: 2), 2);
+    });
   });
 
   testWidgets('lays out exactly one fixed-size page at a time', (tester) async {
@@ -444,6 +454,7 @@ void main() {
         itemCount: 15,
         width: 400,
         gutterExtent: 0.5,
+        selectedItemExtentFactor: 1,
         delegate: const PaginatedReorderableListDelegateWithMaxMainAxisExtent(
             maxMainAxisExtent: 80)));
     await tester.pump();
@@ -875,6 +886,7 @@ void main() {
         listKey: key,
         itemCount: 6,
         width: 500,
+        selectedItemExtentFactor: 1,
         delegate: const PaginatedReorderableListDelegateWithMaxMainAxisExtent(
             maxMainAxisExtent: 200)));
     await tester.pump();
@@ -885,6 +897,27 @@ void main() {
         closeTo(500 / 3, 0.001));
   });
 
+  testWidgets('selected item factor reduces the adaptive page count',
+      (tester) async {
+    final key = GlobalKey<PaginatedReorderableListState>();
+    await tester.pumpWidget(buildTestList(
+        listKey: key,
+        itemCount: 6,
+        width: 260,
+        gutterExtent: 0.5,
+        selectedIndex: 2,
+        preferredMainAxisExtents: const {2: 200},
+        delegate: const PaginatedReorderableListDelegateWithMaxMainAxisExtent(
+            maxMainAxisExtent: 120)));
+    await tester.pump();
+
+    expect(key.currentState!.itemsPerPage, 2);
+    key.currentState!.jumpToPage(1);
+    await tester.pump();
+    expect(tester.getSize(find.byKey(const ValueKey(3))).width,
+        closeTo(260 / 4.5, 0.001));
+  });
+
   testWidgets('vertical pagination uses the available height', (tester) async {
     final key = GlobalKey<PaginatedReorderableListState>();
     await tester.pumpWidget(buildTestList(
@@ -892,6 +925,7 @@ void main() {
         itemCount: 6,
         height: 450,
         scrollDirection: Axis.vertical,
+        selectedItemExtentFactor: 1,
         delegate: const PaginatedReorderableListDelegateWithMaxMainAxisExtent(
             maxMainAxisExtent: 200)));
     await tester.pump();
@@ -908,6 +942,7 @@ void main() {
         height: 450,
         gutterExtent: 0.5,
         scrollDirection: Axis.vertical,
+        selectedItemExtentFactor: 1,
         delegate: const PaginatedReorderableListDelegateWithMaxMainAxisExtent(
             maxMainAxisExtent: 200)));
     await tester.pump();
@@ -1082,6 +1117,7 @@ void main() {
           listKey: key,
           itemCount: 8,
           width: width,
+          selectedItemExtentFactor: 1,
           delegate: const PaginatedReorderableListDelegateWithMaxMainAxisExtent(
               maxMainAxisExtent: 200));
     }));
