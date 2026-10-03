@@ -1317,10 +1317,7 @@ class _Captcha4ChanCustomPageState extends State<Captcha4ChanCustomPage> {
 			}
 		}
 		else if (challenge case Captcha4ChanCustomChallengeTasks challenge) {
-			if (await _animateGuess()) {
-				// Do nothing
-			}
-			else if (challenge._wipAnswer case final wip? when wip.collapseTasks.length == challenge.tasks.length &&
+			if (challenge._wipAnswer case final wip? when wip.collapseTasks.length == challenge.tasks.length &&
 																										wip.taskChoices.length == challenge.tasks.length
 			) {
 				_taskChoices = wip.taskChoices;
@@ -1329,6 +1326,7 @@ class _Captcha4ChanCustomPageState extends State<Captcha4ChanCustomPage> {
 			else {
 				_taskChoices = List.filled(challenge.tasks.length, null);
 				_collapseTasks = List.filled(challenge.tasks.length, false);
+				await _animateGuess();
 			}
 			setState(() {});
 		}
