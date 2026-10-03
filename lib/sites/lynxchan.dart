@@ -398,8 +398,9 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 			if (col1 == null || match == null) {
 				continue;
 			}
+			final boardName = match.group(1)!;
 			list.add(ImageboardBoard(
-				name: match.group(1)!,
+				name: boardName,
 				title: match.group(2)!,
 				isWorksafe: col1.querySelector('.indicatorSfw') != null,
 				webmAudioAllowed: true,
@@ -407,7 +408,8 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 				spoilers: true,
 				maxImageSizeBytes: maxUploadSizeBytes ?? 32000000,
 				maxWebmSizeBytes: maxUploadSizeBytes ?? 32000000,
-				filesPerPost: filesPerPost
+				// Only individual board request knows filesPerPost
+				filesPerPost: persistence?.maybeGetBoard(boardName)?.filesPerPost ?? filesPerPost
 			));
 		}
 		if (list.isEmpty) {
@@ -417,8 +419,9 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 				if (col1 == null || match == null) {
 					continue;
 				}
+				final boardName = match.group(1)!;
 				list.add(ImageboardBoard(
-					name: match.group(1)!,
+					name: boardName,
 					title: match.group(2)!,
 					isWorksafe: col1.querySelector('.indicatorSfw') != null,
 					webmAudioAllowed: true,
@@ -426,7 +429,8 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 					spoilers: true,
 					maxImageSizeBytes: maxUploadSizeBytes ?? 32000000,
 					maxWebmSizeBytes: maxUploadSizeBytes ?? 32000000,
-					filesPerPost: filesPerPost
+					// Only individual board request knows filesPerPost
+					filesPerPost: persistence?.maybeGetBoard(boardName)?.filesPerPost ?? filesPerPost
 				));
 			}
 		}
@@ -485,6 +489,7 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 			board.maxImageSizeBytes = maxFileSize.round();
 			board.maxWebmSizeBytes = maxFileSize.round();
 			board.pageCount = data['pageCount'] as int?;
+			board.filesPerPost = (data['maxFileCount'] as int?) ?? board.filesPerPost;
 			board.additionalDataTime = DateTime.now();
 		}
 		catch (e, st) {

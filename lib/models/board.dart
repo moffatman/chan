@@ -52,7 +52,7 @@ class ImageboardBoard extends HiveObject {
 	@HiveField(19, isOptimized: true)
 	final int? popularity;
 	@HiveField(20, defaultValue: 1)
-	final int filesPerPost;
+	int filesPerPost;
 
 	ImageboardBoard({
 		required String name,

@@ -194,9 +194,11 @@ class ImageboardBoardFields {
     merger: PrimitiveMerger(),
   );
   static int getFilesPerPost(ImageboardBoard x) => x.filesPerPost;
+  static void setFilesPerPost(ImageboardBoard x, int v) => x.filesPerPost = v;
   static const int kFilesPerPost = 20;
-  static const filesPerPost = ReadOnlyHiveFieldAdapter<ImageboardBoard, int>(
+  static const filesPerPost = HiveFieldAdapter<ImageboardBoard, int>(
     getter: getFilesPerPost,
+    setter: setFilesPerPost,
     fieldNumber: kFilesPerPost,
     fieldName: 'filesPerPost',
     merger: PrimitiveMerger(),
