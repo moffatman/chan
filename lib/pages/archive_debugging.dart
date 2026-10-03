@@ -103,7 +103,7 @@ class WrappedArchive extends ImageboardSite {
   String get defaultUsername => '';
   
   @override
-  String get baseUrl => 'www.example.com';
+  String get baseUrl => archive.baseUrl;
 }
 
 class ArchiveDebuggingPage extends StatelessWidget {
@@ -126,8 +126,6 @@ class ArchiveDebuggingPage extends StatelessWidget {
           child: CupertinoButton(
             child: Text(site.archives[i].name),
             onPressed: () {
-              final t = ThreadIdentifier('g', 72382464);
-              context.read<Persistence>().getThreadStateIfExists(t)?.delete();
               Navigator.of(context).push(CupertinoPageRoute(
                 builder: (context) => Provider<ImageboardSite>.value(
                   value: WrappedArchive(site.archives[i]),
