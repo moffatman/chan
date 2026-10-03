@@ -2854,7 +2854,12 @@ ImageboardSiteArchive? makeArchive(Map archive) {
 	}
 	else {
 		// Maybe it's another full site API?
-		return makeSite(archive);
+		try {
+			return makeSite(archive);
+		}
+		on UnknownSiteTypeException {
+			return null;
+		}
 	}
 }
 
@@ -2864,8 +2869,8 @@ ImageboardSite makeSite(Map data) {
 	final preferHttp3WithoutAltSvc =  data['preferHttp3WithoutAltSvc'] as bool?;
 	final archives = [
 		...(data['archives'] as List? ?? []).cast<Map>().tryMap<ImageboardSiteArchive>(makeArchive),
-		// archives2 exists because old versions will crash with unsupported archives in 'archives' list
-		...(data['archives2'] as List? ?? []).cast<Map>().tryMap<ImageboardSiteArchive>(makeArchive)
+		// archives3 exists because old versions will crash with unsupported archives in 'archives' or 'archives2' list
+		...(data['archives3'] as List? ?? []).cast<Map>().tryMap<ImageboardSiteArchive>(makeArchive)
 	].toList(growable: false);
 	final imageHeaders = (data['imageHeaders'] as Map?)?.cast<String, String>() ?? {};
 	final videoHeaders = (data['videoHeaders'] as Map?)?.cast<String, String>() ?? {};
