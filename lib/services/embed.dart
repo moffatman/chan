@@ -235,7 +235,7 @@ Future<EmbedData?> loadEmbedData(String url, {
 		if (target != null && target.$2.threadId != null) {
 			Thread? thread = await target.$1.persistence.getThreadStateIfExists(target.$2.threadIdentifier!)?.getThread();
 			try {
-				if (target.$3 == null) {
+				if (target.$3 == null && thread?.posts_.any((p) => p.id == target.$2.postId) != true) {
 					thread = await target.$1.site.getThread(target.$2.threadIdentifier!, priority: RequestPriority.lowest);
 				}
 			}
