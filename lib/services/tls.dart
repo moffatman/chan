@@ -536,6 +536,10 @@ void prepareTlsSettings({
 
 Future<void> initializeTls() async {
 	try {
+		// Earlier versions saved it without checking GREASE
+		if (Persistence.settings.cachedWebViewTlsHello?.signatureAlgorithms.any(_kGREASE.contains) ?? false) {
+			Persistence.settings.cachedWebViewTlsHello = null;
+		}
 		prepareTlsSettings(
 			quic: false,
 			desired: Persistence.settings.cachedWebViewTlsHello ??=
@@ -550,6 +554,10 @@ Future<void> initializeTls() async {
 	}
 	try {
 		if (_defaultHello3.quic) {
+			// Earlier versions saved it without checking GREASE
+			if (Persistence.settings.cachedWebViewTlsHello3?.signatureAlgorithms.any(_kGREASE.contains) ?? false) {
+				Persistence.settings.cachedWebViewTlsHello3 = null;
+			}
 			final hello3 = Persistence.settings.cachedWebViewTlsHello3 ??= await getWebViewHello(http3: true);
 			if (hello3.quic) {
 				// Will be filled in on forked_flutter_engine branch
