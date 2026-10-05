@@ -696,6 +696,14 @@ class Trie<T extends Object> {
 	}
 	Iterable<(int, T)> _descend(List<int> codeUnits, Map<int, _TrieNode<T>> map, int depth) sync* {
 		if (codeUnits.isEmpty) {
+			// Dump all descendents, they all match the codeUnits prefix
+			for (final child in map.values) {
+				final value = child.value;
+				if (value != null) {
+					yield (depth, value);
+				}
+				yield* _descend([], child.children, depth + 1);
+			}
 			return;
 		}
 		final child = map[codeUnits.first];
