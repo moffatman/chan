@@ -217,7 +217,7 @@ class SiteFutaba extends ImageboardSite {
 			}
 		), cancelToken: cancelToken);
 		if (response.statusCode == 404) {
-			throw BoardNotFoundException(board);
+			throw BoardNotFoundException(this, board);
 		}
 		return await parse(Uint8List.fromList(response.data as List<int>));
 	}
@@ -360,7 +360,7 @@ class SiteFutaba extends ImageboardSite {
 
 	@override
 	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
-		final response = await client.getThreadUri(Uri.parse(getWebUrlImpl(thread.board, thread.id)), responseType: ResponseType.bytes, priority: priority, cancelToken: cancelToken);
+		final response = await getThreadUri(thread, Uri.parse(getWebUrlImpl(thread.board, thread.id)), responseType: ResponseType.bytes, priority: priority, cancelToken: cancelToken);
 		final document = await parse(Uint8List.fromList(response.data as List<int>));
 		return _makeThread(document.querySelector('.thre')!, thread.board);
 

@@ -645,7 +645,7 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 		), cancelToken: cancelToken);
 		if (response.statusCode != 200) {
 			if (response.statusCode == 404) {
-				return Future.error(BoardNotFoundException(board));
+				return Future.error(BoardNotFoundException(this, board));
 			}
 			else {
 				return Future.error(HTTPStatusException.fromResponse(response));

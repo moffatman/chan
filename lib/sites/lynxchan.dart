@@ -520,7 +520,7 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 			responseType: ResponseType.json
 		), cancelToken: cancelToken);
 		if (response.statusCode == 404) {
-			throw BoardNotFoundException(board);
+			throw BoardNotFoundException(this, board);
 		}
 		final data = response.data as Map;
 		_updateBoardInformation(board, data);

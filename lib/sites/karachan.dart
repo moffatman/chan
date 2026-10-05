@@ -393,7 +393,7 @@ class SiteKarachan extends ImageboardSite with DecodeGenericUrlMixin {
 			cancelToken: cancelToken
 		);
 		if (response.statusCode == 404) {
-			throw BoardNotFoundException(board);
+			throw BoardNotFoundException(this, board);
 		}
 		final document = parse(response.data);
 		const kThreadsPage = 10;
@@ -413,7 +413,8 @@ class SiteKarachan extends ImageboardSite with DecodeGenericUrlMixin {
 	@override
 	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final uri = Uri.https(baseUrl,'/${thread.board}/res/${thread.id}.html');
-		final response = await client.getThreadUri(
+		final response = await getThreadUri(
+			thread,
 			uri,
 			priority: priority,
 			responseType: ResponseType.plain,

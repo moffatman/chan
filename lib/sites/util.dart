@@ -1,14 +1,17 @@
+import 'package:chan/models/thread.dart';
 import 'package:chan/services/strict_json.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:html/dom.dart' as dom;
 
-extension SiteErrorHandling on Dio {
+extension SiteErrorHandling on ImageboardSiteArchive {
 	/// No <T> because it will break statusCode processing
-	Future<Response> getThreadUri(Uri uri, {Options? options, required RequestPriority priority, required ResponseType responseType, CancelToken? cancelToken}) async {
+	@protected
+	Future<Response> getThreadUri(ThreadIdentifier thread, Uri uri, {Options? options, required RequestPriority priority, required ResponseType responseType, CancelToken? cancelToken}) async {
 		final extra = options?.extra;
 		try {
-			final response = await getUri(uri, options: options?.copyWith(
+			final response = await client.getUri(uri, options: options?.copyWith(
 				validateStatus: (_) => true,
 				extra: {
 					if (extra != null) ...extra,
@@ -27,7 +30,7 @@ extension SiteErrorHandling on Dio {
 				return response;
 			}
 			if (status == 404) {
-				throw const ThreadNotFoundException();
+				throw ThreadNotFoundException(this, thread);
 			}
 			throw HTTPStatusException.fromResponse(response);
 		}
@@ -38,7 +41,7 @@ extension SiteErrorHandling on Dio {
 					final str = err.extractedError?.toLowerCase();
 					if (str != null && str.contains('404') && str.contains('not found')) {
 						// Should cover most common error pages
-						throw const ThreadNotFoundException();
+						throw ThreadNotFoundException(this, thread);
 					}
 				}
 			}

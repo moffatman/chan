@@ -78,37 +78,42 @@ enum RequestPriority {
 }
 
 class PostNotFoundException extends ExtendedException {
-	String board;
-	int id;
-	PostNotFoundException(this.board, this.id);
+	final ImageboardSiteArchive site;
+	final String boardName;
+	final int id;
+	PostNotFoundException(this.site, this.boardName, this.id);
 	@override
-	String toString() => 'Post not found: /$board/$id';
+	String toString() => 'Post not found: ${site.formatBoardNameWithoutTrailingSlash(boardName)}/$id';
 
 	@override
 	bool get isReportable => false;
 }
 
 class ThreadNotFoundException extends ExtendedException {
-	const ThreadNotFoundException();
+	final ImageboardSiteArchive site;
+	final ThreadIdentifier identifier;
+	const ThreadNotFoundException(this.site, this.identifier);
 	@override
-	String toString() => 'Thread not found';
+	String toString() => 'Thread not found: ${site.formatBoardNameWithoutTrailingSlash(identifier.board)}/${identifier.id}';
 
 	@override
 	bool get isReportable => false;
 }
 
 class BoardNotFoundException implements Exception {
-	String board;
-	BoardNotFoundException(this.board);
+	final ImageboardSiteArchive site;
+	final String boardName;
+	BoardNotFoundException(this.site, this.boardName);
 	@override
-	String toString() => 'Board not found: /$board/';
+	String toString() => 'Board not found: ${site.formatBoardName(boardName)}';
 }
 
 class BoardNotArchivedException extends ExtendedException {
-	String board;
-	BoardNotArchivedException(this.board);
+	final ImageboardSiteArchive site;
+	final String boardName;
+	BoardNotArchivedException(this.site, this.boardName);
 	@override
-	String toString() => 'Board not archived: /$board/';
+	String toString() => 'Board not archived: ${site.formatBoardName(boardName)}';
 
 	@override
 	bool get isReportable => false;
@@ -2203,6 +2208,13 @@ abstract class ImageboardSiteArchive {
 
 	String getExtraCookie(Uri url) => '';
 
+	String formatBoardNameShort(String name) => '/$name/';
+	String formatBoardName(String name) => '/$name/';
+	String formatBoardNameWithoutTrailingSlash(String name) => '/$name';
+	String formatBoardLink(String name) => '>>/$name/';
+	String formatBoardSearchLink(String name, String query) => '>>>/$name/$query';
+	String formatUsername(String name) => name;
+
 	@override
 	bool operator == (Object other) =>
 		identical(this, other) ||
@@ -2297,7 +2309,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			throw ImageboardArchiveException(errors);
 		}
 		else {
-			throw BoardNotArchivedException(board);
+			throw BoardNotArchivedException(this, board);
 		}
 	}
 	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator, required RequestPriority priority, CancelToken? cancelToken, String? archiveName}) async {
@@ -2476,7 +2488,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 				completer.completeError(ImageboardArchiveException(errors));
 			}
 			else {
-				completer.completeError(BoardNotArchivedException(thread.board));
+				completer.completeError(BoardNotArchivedException(this, thread.board));
 			}
 		}();
 		return completer.future;
@@ -2631,12 +2643,6 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		)
 	];
 	List<ThreadVariant> get threadVariants => const [];
-	String formatBoardNameShort(String name) => '/$name/';
-	String formatBoardName(String name) => '/$name/';
-	String formatBoardNameWithoutTrailingSlash(String name) => '/$name';
-	String formatBoardLink(String name) => '>>/$name/';
-	String formatBoardSearchLink(String name, String query) => '>>>/$name/$query';
-	String formatUsername(String name) => name;
 	@override
 	void migrateFromPrevious(covariant ImageboardSite oldSite) {
 		super.migrateFromPrevious(oldSite);

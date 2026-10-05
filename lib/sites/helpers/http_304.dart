@@ -83,7 +83,7 @@ mixin Http304CachingThreadMixin on ImageboardSite {
 			t.lastUpdatedTime ??= DateTimeConversion.fromHttpHeader.maybe(response.headers.value(HttpHeaders.lastModifiedHeader))?.toLocal();
 			return t;
 		},
-		on404: () => throw const ThreadNotFoundException(),
+		on404: () => throw ThreadNotFoundException(this, thread),
 		priority: priority,
 		cancelToken: cancelToken
 	))!;
@@ -102,7 +102,7 @@ mixin Http304CachingThreadMixin on ImageboardSite {
 			t.lastUpdatedTime ??= DateTimeConversion.fromHttpHeader.maybe(response.headers.value(HttpHeaders.lastModifiedHeader))?.toLocal();
 			return t;
 		},
-		on404: () => throw const ThreadNotFoundException(),
+		on404: () => throw ThreadNotFoundException(this, thread),
 		priority: priority,
 		cancelToken: cancelToken
 	);
@@ -171,7 +171,7 @@ mixin Http304CachingCatalogMixin on ImageboardSite {
 				final c = await makeCatalog(board, response, variant: variant, priority: priority, cancelToken: cancelToken);
 				return Catalog.fromResponse(response, fetchedTime, c);
 			},
-			on404: () => throw BoardNotFoundException(board),
+			on404: () => throw BoardNotFoundException(this, board),
 			priority: priority,
 			cancelToken: cancelToken
 		))!;
@@ -190,7 +190,7 @@ mixin Http304CachingCatalogMixin on ImageboardSite {
 				final c = await makeCatalog(board, response, variant: variant, priority: priority, cancelToken: cancelToken);
 				return Catalog.fromResponse(response, fetchedTime, c);
 			},
-			on404: () => throw BoardNotFoundException(board),
+			on404: () => throw BoardNotFoundException(this, board),
 			priority: priority,
 			cancelToken: cancelToken
 		);
@@ -240,7 +240,7 @@ mixin Http304CachingCatalogMixin on ImageboardSite {
 				}
 				return CatalogPageMap.fromResponse(response, fetchedTime, pageMap);
 			},
-			on404: () => throw BoardNotFoundException(board),
+			on404: () => throw BoardNotFoundException(this, board),
 			priority: priority,
 			cancelToken: cancelToken
 		))!;
@@ -270,7 +270,7 @@ mixin Http304CachingCatalogMixin on ImageboardSite {
 				}
 				return CatalogPageMap.fromResponse(response, fetchedTime, pageMap);
 			},
-			on404: () => throw BoardNotFoundException(board),
+			on404: () => throw BoardNotFoundException(this, board),
 			on304: () async {
 				if (isSameAsCatalog) {
 					bumpCatalogInCache(board, variant, fetchedTime, lastModified);

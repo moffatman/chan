@@ -1341,7 +1341,7 @@ class SiteReddit extends ImageboardSite {
 		final children = ((response.data!['data'] as Map)['children'] as List).cast<Map>();
 		if (children.every((c) => c['kind'] == 't5')) {
 			// This is the subreddit search results
-			throw BoardNotFoundException(board);
+			throw BoardNotFoundException(this, board);
 		}
 		final threads = await Future.wait(children.map((d) async {
 			final t = await _makeThread(d['data'] as Map, cancelToken: cancelToken);
@@ -1593,7 +1593,7 @@ class SiteReddit extends ImageboardSite {
 
 	@override
 	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
-		final response = await client.getThreadUri(Uri.https(baseUrl, '/r/${thread.board}/comments/${toRedditId(thread.id)}.json', {
+		final response = await getThreadUri(thread, Uri.https(baseUrl, '/r/${thread.board}/comments/${toRedditId(thread.id)}.json', {
 			if (variant?.redditApiName != null) 'sort': variant!.redditApiName!
 		}.ifNotEmpty), priority: priority, responseType: ResponseType.json, cancelToken: cancelToken);
 		final (opData, repliesData) = switch(response.data) {

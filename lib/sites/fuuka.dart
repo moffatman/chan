@@ -205,7 +205,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 			responseType: ResponseType.plain
 		), cancelToken: cancelToken);
 		if (response.statusCode == 404) {
-			throw PostNotFoundException(board, id);
+			throw PostNotFoundException(this, board, id);
 		}
 		if ((response.statusCode ?? 400) >= 400) {
 			throw HTTPStatusException.fromResponse(response);
@@ -240,9 +240,10 @@ class FuukaArchive extends ImageboardSiteArchive {
 	@override
 	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		if (!(await getBoards(priority: priority, cancelToken: cancelToken)).any((b) => b.name == thread.board)) {
-			throw BoardNotFoundException(thread.board);
+			throw BoardNotFoundException(this, thread.board);
 		}
-		final response = await client.getThreadUri(
+		final response = await getThreadUri(
+			thread,
 			Uri.https(baseUrl, '/${thread.board}/thread/${thread.id}', {
 				'board': thread.board,
 				'num': thread.id.toString()
@@ -306,7 +307,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 		final knownBoards = await getBoards(priority: priority, cancelToken: cancelToken);
 		final unknownBoards = query.boards.where((b) => !knownBoards.any((kb) => kb.name == b));
 		if (unknownBoards.isNotEmpty) {
-			throw BoardNotFoundException(unknownBoards.first);
+			throw BoardNotFoundException(this, unknownBoards.first);
 		}
 		final response = await client.getUri(
 			Uri.https(baseUrl, '/${query.boards.first}/', {

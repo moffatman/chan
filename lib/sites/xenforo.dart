@@ -749,7 +749,7 @@ class SiteXenforo extends ImageboardSite with ForumSite {
   @override
   Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		// Little trick to always start loading on last page
-    final response = await client.getThreadUri(Uri.https(baseUrl, '$basePath/threads/${thread.id}/page-9999999'), priority: priority, responseType: ResponseType.plain, cancelToken: cancelToken);
+    final response = await getThreadUri(thread, Uri.https(baseUrl, '$basePath/threads/${thread.id}/page-9999999'), priority: priority, responseType: ResponseType.plain, cancelToken: cancelToken);
 		final document = parse(response.data);
 		final lastPostNumber = int.parse(_postNumberPattern.firstMatch(document.querySelectorAll('article.message--post').last.querySelectorAll('header.message-attribution li').last.text)!.group(1)!.replaceAll(',', ''));
 		final label = document.querySelector('.p-title-value .label')?.text;

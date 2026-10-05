@@ -279,7 +279,7 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	Future<_HNObject> _getAlgolia(int id, {required RequestPriority priority, CancelToken? cancelToken}) async {
-		final response = await client.getThreadUri(Uri.https('hn.algolia.com', '/api/v1/items/$id'), priority: priority, responseType: ResponseType.json, cancelToken: cancelToken);
+		final response = await getThreadUri(ThreadIdentifier('', id), Uri.https('hn.algolia.com', '/api/v1/items/$id'), priority: priority, responseType: ResponseType.json, cancelToken: cancelToken);
 		return (await _makeHNObjectAlgolia(response.data as Map, cancelToken: cancelToken))!;
 	}
 

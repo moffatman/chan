@@ -560,7 +560,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 		CancelToken? cancelToken
 	}) async {
 		if (response.redirects.tryLast?.location.pathSegments.tryLast?.startsWith('404.') ?? false) {
-			throw const ThreadNotFoundException();
+			throw ThreadNotFoundException(this, thread);
 		}
 		final data = response.data as Map;
 		final firstPost = (data['posts'] as List)[0] as Map;

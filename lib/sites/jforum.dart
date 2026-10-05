@@ -433,7 +433,7 @@ class SiteJForum extends ImageboardSite with ForumSite {
 
   @override
   Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
-    final response = await client.getThreadUri(Uri.https(baseUrl, '$basePath/posts/list/${thread.id}.page'), priority: priority, responseType: ResponseType.plain, cancelToken: cancelToken);
+    final response = await getThreadUri(thread, Uri.https(baseUrl, '$basePath/posts/list/${thread.id}.page'), priority: priority, responseType: ResponseType.plain, cancelToken: cancelToken);
 		final document = parse(response.data);
 		final lastPageNumber = document.querySelector('.pagination')?.querySelectorAll('a').tryMap((a) => a.text.tryParseInt).last;
 		final posts = _getPostsFromThreadPage(thread.id, document);
