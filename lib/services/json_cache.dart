@@ -8,6 +8,7 @@ import 'package:chan/services/util.dart';
 import 'package:chan/version.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:mutex/mutex.dart';
 
 class JsonCache {
@@ -29,7 +30,7 @@ class JsonCache {
 		}
 	}
 	
-	late final sites = JsonCacheEntry<Map<String, Map>>._(
+	late final JsonCacheEntry<Map<String, Map>> sites = JsonCacheEntry<Map<String, Map>>._(
 		parent: this,
 		name: 'sites',
 		updater: () async {
@@ -42,7 +43,13 @@ class JsonCache {
 			}, options: Options(responseType: ResponseType.json, headers: {
 				HttpHeaders.userAgentHeader: 'Chance/$kChanceVersion'
 			}));
-			return (response.data!['data'] as Map).cast<String, Map>();
+			final remoteMap = (response.data!['data'] as Map).cast<String, Map>();
+			final current = sites.value ?? {};
+			final result = Map<String, Map>.from({
+				...current,
+				...remoteMap,
+			});
+			return result;
 		},
 		caster: (data) => (data as Map).cast<String, Map>(),
 		defaultValue: null // force download
@@ -85,10 +92,31 @@ class JsonCacheEntry<T extends Object> extends ChangeNotifier {
 	late final _file = Persistence.documentsDirectory.file('$name.json');
 
 	Future<void> loadFromDisk() => parent.lock.protect(() async {
+		Map<String, Map>? defaultSitesMap;
+		if (name == 'sites') {
+			try {
+				final str = await rootBundle.loadString('assets/sites_default.json');
+				defaultSitesMap = (jsonDecode(str) as Map).cast<String, Map>();
+			}
+			catch (e) {
+				print('Failed to load assets/sites_default.json: $e');
+			}
+		}
+
 		if (await _file.exists()) {
 			try {
 				final str = await _file.readAsString();
-				value = caster(jsonDecode(str));
+				final decoded = jsonDecode(str);
+				if (defaultSitesMap != null) {
+					final diskMap = (decoded as Map).cast<String, Map>();
+					value = caster({
+						...defaultSitesMap,
+						...diskMap,
+					});
+				}
+				else {
+					value = caster(decoded);
+				}
 				notifyListeners();
 			}
 			on TypeError {
@@ -101,6 +129,13 @@ class JsonCacheEntry<T extends Object> extends ChangeNotifier {
 			on FileSystemException {
 				// Problem reading file
 				_file.delete(); // Throw away exception
+			}
+		}
+		else if (name == 'sites') {
+			if (defaultSitesMap != null) {
+				value = caster(defaultSitesMap);
+				notifyListeners();
+				await _file.writeAsString(jsonEncode(value));
 			}
 		}
 	});
