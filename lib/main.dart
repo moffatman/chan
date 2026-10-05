@@ -1030,7 +1030,7 @@ class ChanTabs extends ChangeNotifier {
 		}
 		else if (browseIndex == browseTabIndex) {
 			// The current tab was removed
-			newActiveTabIndex = min(browseTabIndex, Persistence.tabs.length - 1);
+			newActiveTabIndex = (browseTabIndex - 1).clamp(0, Persistence.tabs.length - 1);
 		}
 		else {
 			// A tab before the current one was removed, need to fix the index
