@@ -319,10 +319,6 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		typeaheadLoadingsNotifier.didUpdate();
 		try {
 			final newTypeaheadBoards = await imageboard.site.getBoardsForQuery(query);
-			if (currentImageboard != imageboard) {
-				// Site switched
-				return;
-			}
 			typeahead.insert(query, newTypeaheadBoards);
 			if (mounted) {
 				setState(() {});
