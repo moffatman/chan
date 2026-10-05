@@ -1229,7 +1229,7 @@ class BoardPageState extends State<BoardPage> {
 		final radius = settings.materialStyle ? const Radius.circular(4) : const Radius.circular(8);
 		List<Thread>? initialList;
 		if (_lastCatalogUpdateTime == null && !(kDebugMode && Navigator.of(context).userGestureInProgress)) {
-			final catalog = site?.getCatalogFromCatalogCache(board!.name, variant: variant);
+			final catalog = site?.getCatalogFromCatalogCache(board?.name, variant: variant);
 			if (catalog != null) {
 				initialList = catalog.threads.values.toList();
 				_lastCatalogUpdateTime = catalog.fetchedTime;
