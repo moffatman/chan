@@ -386,6 +386,10 @@ class CloudflareInterceptor extends InterceptorBase {
 		required ImageboardSiteArchive? site,
 		CancelToken? cancelToken
 	}) => _webViewLock.protect(() async {
+		if (cancelToken?.isCancelled ?? false) {
+			// May have been cancelled during a lock
+			throw CloudflareHandlerInterruptedException(gatewayName);
+		}
 		assert(initialData != null || initialUrlRequest != null);
 		HeadlessInAppWebView? headlessWebView;
 		try {
