@@ -71,7 +71,7 @@ class _SettingsSyncButton extends StatelessWidget {
 }
 */
 
-Future<Imageboard?> pickImageboard(BuildContext context, Imageboard current) {
+Future<Imageboard?> pickImageboard(BuildContext context, Imageboard? current) {
 	return showAdaptiveModalPopup<Imageboard?>(
 		context: context,
 		builder: (context) => AdaptiveActionSheet(
