@@ -193,9 +193,40 @@ class Thread extends HiveObject implements Filterable {
 	}
 
 	Future<void> _fullPreinit() async {
+		if (_initialized) {
+			return;
+		}
+		bool handleWeakQuoteLinks = false;
+		final postsById = <int, Post>{};
+		for (final post in posts_) {
+			postsById[post.id] = post..replyIds = [];
+			handleWeakQuoteLinks |= post.spanFormat.hasWeakQuoteLinks;
+		}
+		final postTexts = <int, String>{};
 		for (final post in posts_) {
 			await post.preinit();
+			if (_initialized) {
+				// Race - someone else won
+				return;
+			}
+			if (handleWeakQuoteLinks) {
+				post.updateWeakQuoteLinks(postTexts);
+				postTexts[post.id] = post.buildText(forQuoteComparison: true);
+			}
+			for (final referencedPostId in post.repliedToIds) {
+				// Already deduplicated
+				postsById[referencedPostId]?.replyIds.add(post.id);
+			}
 		}
+		for (final post in posts_) {
+			if (post.replyIds.isEmpty) {
+				post.replyIds = const [];
+			}
+			else {
+				post.replyIds = post.replyIds.toList(growable: false);
+			}
+		}
+		_initialized = true;
 	}
 
 	Future<bool> preinit({bool catalog = false}) async {
