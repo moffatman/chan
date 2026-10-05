@@ -117,6 +117,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	final imageboardUsage = <String, int>{};
 	static final typeaheads = <Imageboard, Trie<List<ImageboardBoard>>>{};
 	static final typeaheadLoadings = <Imageboard, Set<String>>{};
+	static final typeaheadInterns = <Imageboard, Map<String, ImageboardBoard>>{};
 	static final typeaheadLoadingsNotifier = EasyListenable();
 	static final boardsRefreshed = <Imageboard>{};
 	String searchString = '';
@@ -312,6 +313,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		}
 		final typeaheadLoading = typeaheadLoadings[imageboard] ??= {};
 		final typeahead = typeaheads[imageboard] ??= Trie();
+		final typeaheadIntern = typeaheadInterns[imageboard] ??= {};
 		if (query.isEmpty || typeaheadLoading.contains(query) || typeahead.contains(query)) {
 			return;
 		}
@@ -319,7 +321,9 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		typeaheadLoadingsNotifier.didUpdate();
 		try {
 			final newTypeaheadBoards = await imageboard.site.getBoardsForQuery(query);
-			typeahead.insert(query, newTypeaheadBoards);
+			typeahead.insert(query, newTypeaheadBoards.map((board) {
+				return typeaheadIntern[board.name] ??= board;
+			}).toList());
 			if (mounted) {
 				setState(() {});
 			}
