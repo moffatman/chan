@@ -2187,11 +2187,13 @@ abstract class ImageboardSiteArchive {
 		});
 	}
 
+	/// Return true if boards should be refreshed
 	@mustCallSuper
-	void migrateFromPrevious(covariant ImageboardSiteArchive oldSite) {
+	bool migrateFromPrevious(covariant ImageboardSiteArchive oldSite) {
 		_catalogCache.addAll(oldSite._catalogCache);
 		_catalogPageMapCache.addAll(oldSite._catalogPageMapCache);
 		_temporaryThreadCache.addAll(oldSite._temporaryThreadCache);
+		return false;
 	}
 
 	@mustCallSuper
@@ -2644,8 +2646,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	];
 	List<ThreadVariant> get threadVariants => const [];
 	@override
-	void migrateFromPrevious(covariant ImageboardSite oldSite) {
-		super.migrateFromPrevious(oldSite);
+	bool migrateFromPrevious(covariant ImageboardSite oldSite) {
 		final oldLoggedIn = oldSite.loginSystem?.loggedIn;
 		if (oldLoggedIn != null) {
 			loginSystem?.loggedIn = oldLoggedIn;
@@ -2654,9 +2655,11 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		for (final archive in archives) {
 			final index = oldSite.archives.indexOf(archive);
 			if (index != -1) {
+				// Archives can't refresh boards
 				archive.migrateFromPrevious(oldSite.archives[index]);
 			}
 		}
+		return super.migrateFromPrevious(oldSite);
 	}
 	@override
 	void initState() {

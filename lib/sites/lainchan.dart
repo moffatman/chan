@@ -1024,6 +1024,11 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 	String formatBoardName(String name) => '/${persistence?.maybeGetBoard(name)?.name ?? name}/';
 	@override
 	String formatBoardNameWithoutTrailingSlash(String name) => '/${persistence?.maybeGetBoard(name)?.name ?? name}';
+
+	@override
+	bool migrateFromPrevious(SiteLainchan oldSite) {
+		return super.migrateFromPrevious(oldSite) || (oldSite.filesPerPost != filesPerPost);
+	}
 }
 
 class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {

@@ -278,10 +278,10 @@ class SiteReddit extends ImageboardSite {
 	(int, DateTime)? _latestKnown;
 
 	@override
-	void migrateFromPrevious(SiteReddit oldSite) {
-		super.migrateFromPrevious(oldSite);
+	bool migrateFromPrevious(SiteReddit oldSite) {
 		_earliestKnown = oldSite._earliestKnown;
 		_latestKnown = oldSite._latestKnown;
+		return super.migrateFromPrevious(oldSite);
 	}
 
 	void _updateTimeEstimateData(int id, DateTime time) {

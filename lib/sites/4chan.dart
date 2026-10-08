@@ -1542,9 +1542,9 @@ class Site4Chan extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 	}
 
 	@override
-	void migrateFromPrevious(Site4Chan oldSite) {
-		super.migrateFromPrevious(oldSite);
+	bool migrateFromPrevious(Site4Chan oldSite) {
 		_boardFlags.addAll(oldSite._boardFlags);
+		return super.migrateFromPrevious(oldSite);
 	}
 }
 

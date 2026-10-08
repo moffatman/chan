@@ -788,6 +788,11 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 	}
 
 	@override
+	bool migrateFromPrevious(SiteLynxchan oldSite) {
+		return super.migrateFromPrevious(oldSite) || (oldSite.filesPerPost != filesPerPost);
+	}
+
+	@override
 	bool operator == (Object other) =>
 		identical(other, this) ||
 		other is SiteLynxchan &&

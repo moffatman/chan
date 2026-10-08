@@ -71,14 +71,18 @@ class Imageboard extends ChangeNotifier {
 		try {
 			final newSite = makeSite(siteData);
 			if (newSite != _site) {
+				bool shouldRefreshBoards = false;
 				if (_site != null) {
-					newSite.migrateFromPrevious(_site!);
+					shouldRefreshBoards = newSite.migrateFromPrevious(_site!);
 					_site!.dispose();
 				}
 				_site = newSite;
 				site.imageboard = this;
 				site.initState();
 				notifyListeners();
+				if (shouldRefreshBoards) {
+					refreshBoards();
+				}
 			}
 		}
 		catch (e, st) {

@@ -244,9 +244,9 @@ class SiteLainchan2 extends SiteLainchanOrg {
 	}
 
 	@override
-	void migrateFromPrevious(SiteLainchan2 oldSite) {
-		super.migrateFromPrevious(oldSite);
+	bool migrateFromPrevious(SiteLainchan2 oldSite) {
 		_boardFlags.addAll(oldSite._boardFlags);
+		return super.migrateFromPrevious(oldSite);
 	}
 
 	@override
