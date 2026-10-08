@@ -1478,7 +1478,7 @@ class ThreadPageState extends State<ThreadPage> {
 		});
 		final treeSplitId = persistentState.treeSplitId;
 		for (final p in newChildren) {
-			if (!p.isPageStub && (oldPosts[p.id]?.isStub != p.isStub) && !persistentState.youIds.contains(p.id)) {
+			if (oldPosts[p.id]?.isStub != p.isStub && !persistentState.youIds.contains(p.id)) {
 				if (treeSplitId != null && p.id <= treeSplitId) {
 					needToSave |= persistentState.upgradedStubPostIds.data.add(p.id);
 				}

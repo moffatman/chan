@@ -331,7 +331,7 @@ class ThreadWatcher extends ChangeNotifier {
 						bool needToSave = false;
 						final treeSplitId = threadState.treeSplitId;
 						for (final p in newChildren) {
-							if (!p.isPageStub && oldPosts[p.id]?.isStub != p.isStub && !threadState.youIds.contains(p.id)) {
+							if (oldPosts[p.id]?.isStub != p.isStub && !threadState.youIds.contains(p.id)) {
 								if (treeSplitId != null && p.id <= treeSplitId) {
 									needToSave |= threadState.upgradedStubPostIds.data.add(p.id);
 								}
