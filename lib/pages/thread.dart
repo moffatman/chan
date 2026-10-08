@@ -3299,7 +3299,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 													('Mark as unread', const Icon(CupertinoIcons.xmark_circle_fill, size: 19, applyTextScaling: true), () {
 														final ids = widget.persistentState.thread?.posts_.map((p) => p.id).toSet() ?? {};
 														for (final id in ids) {
-															widget.highlightPosts[id] = 1.0;
+															widget.highlightPosts[id] = ThreadPageState._kHighlightFull;
 														}
 														widget.persistentState.unseenPostIds.data.addAll(ids);
 														widget.persistentState.didUpdate();
