@@ -180,6 +180,17 @@ abstract class ExtendedException implements Exception {
 	};
 }
 
+class UnexpectedFormatException extends ExtendedException {
+	final String message;
+	const UnexpectedFormatException(this.message, {super.additionalFiles});
+
+	@override
+	bool get isReportable => true;
+
+	@override
+	String toString() => 'Unexpected format: $message';
+}
+
 extension IfMounted on BuildContext {
 	BuildContext? get ifMounted {
 		if (mounted) {

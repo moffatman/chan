@@ -29,6 +29,7 @@ import 'package:chan/services/webview_introspection.dart';
 import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/8chan.dart';
 import 'package:chan/sites/8kun.dart';
+import 'package:chan/sites/ayase_quart.dart';
 import 'package:chan/sites/dvach.dart';
 import 'package:chan/sites/erischan.dart';
 import 'package:chan/sites/foolfuuka.dart';
@@ -2853,6 +2854,16 @@ ImageboardSiteArchive? makeArchive(Map archive) {
 	}
 	else if (archive['type'] == 'fuuka') {
 		return FuukaArchive(
+			name: archive['name'] as String,
+			baseUrl: archive['baseUrl'] as String,
+			boards: boards,
+			overrideUserAgent: overrideUserAgent,
+			addIntrospectedHeaders: addIntrospectedHeaders,
+			preferHttp3WithoutAltSvc: preferHttp3WithoutAltSvc
+		);
+	}
+	else if (archive['type'] == 'ayasequart') {
+		return AyaseQuartArchive(
 			name: archive['name'] as String,
 			baseUrl: archive['baseUrl'] as String,
 			boards: boards,
