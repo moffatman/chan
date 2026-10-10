@@ -347,9 +347,6 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) async {		
 		return await _makePost(await _getPostJson(board, id, priority: priority, cancelToken: cancelToken), priority: priority, cancelToken: cancelToken);
 	}
-	Future<Thread> getThreadContainingPost(String board, int id) async {
-		throw Exception('Unimplemented');
-	}
 	Future<Thread> _makeThread(ThreadIdentifier thread, Map data, {int? currentPage, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final threadData = data[thread.id.toString()] as Map;
 		final op = threadData['op'] as Map;

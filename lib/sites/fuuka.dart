@@ -234,9 +234,6 @@ class FuukaArchive extends ImageboardSiteArchive {
 			imageCount: posts.skip(1).expand((post) => post.attachments).length
 		);
 	}
-	Future<Thread> getThreadContainingPost(String board, int id) async {
-		throw Exception('Unimplemented');
-	}
 	@override
 	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		if (!(await getBoards(priority: priority, cancelToken: cancelToken)).any((b) => b.name == thread.board)) {
