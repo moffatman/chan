@@ -701,7 +701,7 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 			text: '',
 			// To avoid wasted memory, we only need thread.posts.first to have correct OP name
 			name: pageNumber == 1 ? opName : '',
-			time: DateTime.now(), // arbitrary
+			time: DateTime(2000), // arbitrary
 			id: -pageNumber,
 			spanFormat: PostSpanFormat.pageStub,
 			attachments_: const [],

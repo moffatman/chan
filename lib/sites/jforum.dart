@@ -392,7 +392,7 @@ class SiteJForum extends ImageboardSite with ForumSite {
 			text: '',
 			// Not actually sure what will happen here now that OP name is unknown
 			name: '',
-			time: DateTime.now(), // arbitrary
+			time: DateTime(2000), // arbitrary
 			id: -pageNumber,
 			spanFormat: PostSpanFormat.pageStub,
 			attachments_: const [],
