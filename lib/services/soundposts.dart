@@ -37,6 +37,7 @@ extension SoundpostAttachment on Attachment {
 		return null;
 	}
 	Uri? get soundSource => extractSoundSourceFromFilename(filename);
+	bool get usesVideoPlayer => type.usesVideoPlayer || soundSource != null;
 
 	static String encodeSoundSourceFilename(String filename) {
 		return filename.replaceAllMapped(_soundSourceRegex, (match) {

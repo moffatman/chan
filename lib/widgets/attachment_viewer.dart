@@ -694,7 +694,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			}
 			return;
 		}
-		if (attachment.type.usesVideoPlayer && ((videoPlayerController != null && !force) || _ongoingConversion != null)) {
+		if (attachment.usesVideoPlayer && ((videoPlayerController != null && !force) || _ongoingConversion != null)) {
 			return;
 		}
 		if (force && cacheCompleted) {
@@ -1558,7 +1558,7 @@ class AttachmentViewer extends StatelessWidget {
 				// Don't allow it
 				return;
 			}
-			if (attachment.type.usesVideoPlayer && Settings.instance.doubleTapToSeekVideo) {
+			if (attachment.usesVideoPlayer && Settings.instance.doubleTapToSeekVideo) {
 				final center = state.context.globalPaintBounds?.center ?? MediaQuery.sizeOf(state.context).center(Offset.zero);
 				final tap = state.pointerDownPosition;
 				if (tap != null) {
@@ -1620,7 +1620,7 @@ class AttachmentViewer extends StatelessWidget {
 				if (controller._longPressMode == null) {
 					if (details.offsetFromOrigin.distance > 24) {
 						final dragIsHorizontal = details.offsetFromOrigin.dx.abs() > details.offsetFromOrigin.dy.abs();
-						if (attachment.type.usesVideoPlayer && (dragIsHorizontal ^ _rotate90DegreesClockwise)) {
+						if (attachment.usesVideoPlayer && (dragIsHorizontal ^ _rotate90DegreesClockwise)) {
 							lightHapticFeedback();
 							controller._longPressMode = _LongPressMode.scrub;
 							controller.onLongPressStart(absolute: false);

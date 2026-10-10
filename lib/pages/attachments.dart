@@ -10,6 +10,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/network_image_provider.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/soundposts.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
@@ -162,7 +163,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 				isPrimary: false
 			);
 			if ((Settings.instance.fullQualityThumbnails || (_columnCount == 1 && Settings.instance.autoloadAttachments)) && !attachment.attachment.isRateLimited) {
-				if (attachment.attachment.type.usesVideoPlayer) {
+				if (attachment.attachment.usesVideoPlayer) {
 					_queueVideoLoading(controller);
 				}
 				else {
@@ -368,7 +369,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 											AnimatedBuilder(
 												animation: _getController(attachment),
 												builder: (context, child) => Visibility(
-													visible: (attachment.attachment.type.usesVideoPlayer && !_getController(attachment).isPrimary),
+													visible: (attachment.attachment.usesVideoPlayer && !_getController(attachment).isPrimary),
 													child: CupertinoButton(
 														onPressed: () {
 															_lastPrimaryController?.isPrimary = false;

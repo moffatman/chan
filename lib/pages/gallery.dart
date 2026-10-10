@@ -16,6 +16,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/reverse_image_search.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
+import 'package:chan/services/soundposts.dart';
 import 'package:chan/services/status_bar.dart';
 import 'package:chan/services/storage.dart';
 import 'package:chan/services/theme.dart';
@@ -589,7 +590,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		if (Settings.instance.showThumbnailsInGallery) {
 			return max(0.2, (kMinInteractiveDimensionCupertino + _thumbnailSize + 8 + MediaQuery.paddingOf(context).bottom) / MediaQuery.sizeOf(context).height);
 		}
-		if (currentController.attachment.type.usesVideoPlayer) {
+		if (currentController.attachment.usesVideoPlayer) {
 			return (44 + MediaQuery.paddingOf(context).bottom) / MediaQuery.sizeOf(context).height;
 		}
 		return 0.0;
@@ -623,7 +624,7 @@ class _GalleryPageState extends State<GalleryPage> {
 					child: Column(
 						mainAxisSize: MainAxisSize.min,
 						children: [
-							if (currentController.attachment.type.usesVideoPlayer) SafeArea(
+							if (currentController.attachment.usesVideoPlayer) SafeArea(
 								top: false,
 								bottom: false,
 								child: VideoControls(
@@ -878,7 +879,7 @@ class _GalleryPageState extends State<GalleryPage> {
 				)
 			);
 				return Padding(
-					padding: !currentController.attachment.type.usesVideoPlayer ? const EdgeInsets.only(top: 44) : EdgeInsets.zero,
+					padding: !currentController.attachment.usesVideoPlayer ? const EdgeInsets.only(top: 44) : EdgeInsets.zero,
 					child: SingleChildScrollView(
 						controller: controller,
 						clipBehavior: Clip.none,
@@ -1176,7 +1177,7 @@ class _GalleryPageState extends State<GalleryPage> {
 												animation: _currentAttachmentChanged,
 												builder: (context, child) => Padding(
 													padding: showChrome ? EdgeInsets.only(
-														bottom: max(0, (settings.showThumbnailsInGallery ? MediaQuery.sizeOf(context).height * 0.2 : (44 + MediaQuery.paddingOf(context).bottom)) - (currentController.attachment.type.usesVideoPlayer ? 0 : 44) - 16),
+														bottom: max(0, (settings.showThumbnailsInGallery ? MediaQuery.sizeOf(context).height * 0.2 : (44 + MediaQuery.paddingOf(context).bottom)) - (currentController.attachment.usesVideoPlayer ? 0 : 44) - 16),
 														right: 8 + layoutInsets.right
 													) : layoutInsets + const EdgeInsets.only(right: 8),
 													child: child
@@ -1446,7 +1447,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																		)
 																	),
 																	if (showChrome) SizedBox(
-																		height: (settings.showThumbnailsInGallery ? MediaQuery.sizeOf(context).height * 0.2 : (44 + MediaQuery.paddingOf(context).bottom)) - (currentController.attachment.type.usesVideoPlayer ? 0 : 44),
+																		height: (settings.showThumbnailsInGallery ? MediaQuery.sizeOf(context).height * 0.2 : (44 + MediaQuery.paddingOf(context).bottom)) - (currentController.attachment.usesVideoPlayer ? 0 : 44),
 																	)
 																]
 															)
