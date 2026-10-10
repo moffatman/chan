@@ -882,7 +882,7 @@ void main() {
             'once, not measured again on every animation tick.');
   });
 
-  testWidgets('selected preferred extent is remeasured when content changes',
+  testWidgets('selected content size changes animate without changing selection',
       (tester) async {
     late StateSetter setState;
     var preferredExtent = 120.0;
@@ -903,9 +903,37 @@ void main() {
     setState(() => preferredExtent = 140);
     await tester.pump();
 
-    expect(tester.getSize(find.byKey(const ValueKey(0))).width, 80);
-    expect(tester.getSize(find.byKey(const ValueKey(1))).width, 140);
-    expect(tester.getSize(find.byKey(const ValueKey(2))).width, 80);
+    expect(tester.getSize(find.byKey(const ValueKey(0))).width, 90);
+    expect(tester.getSize(find.byKey(const ValueKey(1))).width, 120);
+    expect(tester.getSize(find.byKey(const ValueKey(2))).width, 90);
+
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 175));
+    final midWidth = tester.getSize(find.byKey(const ValueKey(1))).width;
+    expect(midWidth, inExclusiveRange(120, 140));
+
+    setState(() => preferredExtent = 150);
+    await tester.pump();
+    expect(tester.getSize(find.byKey(const ValueKey(1))).width,
+        closeTo(midWidth, 0.001));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 175));
+    expect(tester.getSize(find.byKey(const ValueKey(1))).width,
+        inExclusiveRange(midWidth, 150));
+    await tester.pumpAndSettle();
+    expect(tester.getSize(find.byKey(const ValueKey(0))).width, 75);
+    expect(tester.getSize(find.byKey(const ValueKey(1))).width, 150);
+    expect(tester.getSize(find.byKey(const ValueKey(2))).width, 75);
+
+    setState(() => preferredExtent = 110);
+    await tester.pump();
+    expect(tester.getSize(find.byKey(const ValueKey(1))).width, 150);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 175));
+    expect(tester.getSize(find.byKey(const ValueKey(1))).width,
+        inExclusiveRange(110, 150));
+    await tester.pumpAndSettle();
+    expect(tester.getSize(find.byKey(const ValueKey(1))).width, 110);
   });
 
   testWidgets('deleting the only item on the last page selects the prior page',
