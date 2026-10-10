@@ -364,8 +364,9 @@ class SiteJForum extends ImageboardSite with ForumSite {
 	}
 
 	@override
-	Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) {
-		throw UnimplementedError();
+	Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) async {
+		final posts = await getStubPosts(ThreadIdentifier(board, 0), [ParentAndChildIdentifier.same(id)], priority: priority, cancelToken: cancelToken);
+		return posts.firstWhere((p) => p.id == id);
 	}
 
 	List<Post> _getPostsFromThreadPage(int threadId, dom.Document document) {
@@ -486,8 +487,9 @@ class SiteJForum extends ImageboardSite with ForumSite {
 			),
 			cancelToken: cancelToken
 		);
+		final resolved = (await decodeUrl(response.realUri))?.threadIdentifier ?? thread;
 		final document = parse(response.data);
-		return _getPostsFromThreadPage(thread.id, document);
+		return _getPostsFromThreadPage(resolved.id, document);
 	}
 
 	@override

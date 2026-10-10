@@ -652,8 +652,9 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 	}
 
   @override
-  Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) {
-    throw UnimplementedError();
+  Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) async {
+    final posts = await getStubPosts(ThreadIdentifier(board, 0), [ParentAndChildIdentifier.same(id)], priority: priority, cancelToken: cancelToken);
+		return posts.firstWhere((p) => p.id == id);
   }
 
 	static final _absoluteSrcPattern = RegExp(r' src="//');

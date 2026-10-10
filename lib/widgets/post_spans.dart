@@ -1160,7 +1160,7 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 		else if (zone.isLoadingPostFromArchive(board, postId)) {
 			text += ' (Loading...)';
 		}
-		else {
+		else if (zone.imageboard.site.hasExpiringThreads) {
 			text += ' (Dead)';
 		}
 		final recognizer = options.overridingRecognizer ?? (TapGestureRecognizer(debugOwner: this)..onTap = () {

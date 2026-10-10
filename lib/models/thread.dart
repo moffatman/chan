@@ -344,7 +344,7 @@ class Thread extends HiveObject implements Filterable {
 					if (parentIndex != null) {
 						final parent = posts_[parentIndex];
 						parent.maybeAddReplyId(newChild.id);
-						if (repliedToId == newChild.parentId) {
+						if (repliedToId == newChild.parentId && !parent.isPageStub) {
 							// This isn't a known stub, i tmust be part of the hasOmittedReplies.
 							// This code path isn't always perfect.
 							// E.g. unknownReplies in the new thread now may now mean 2 things instead of
