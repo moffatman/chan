@@ -287,7 +287,7 @@ class Thread extends HiveObject implements Filterable {
 			if (indexToReplace != null) {
 				final postToReplace = posts_[indexToReplace];
 				if (
-					postToReplace.isStub ||
+					(postToReplace.isStub && !newChild.isStub) ||
 					newChild.archiveName != null ||
 					(postToReplace.isDeleted && !newChild.isDeleted) ||
 					(weAreOldThread && postToReplace != newChild)
