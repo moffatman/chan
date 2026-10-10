@@ -658,12 +658,14 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 
 	static final _absoluteSrcPattern = RegExp(r' src="//');
 	static final _relativeSrcPattern = RegExp(r' src="/');
-	String _fixRelativeUrls(String html) {
+	/// This changes every refresh. just strip it, we don't use it
+	static final _dataResultTokenPattern = RegExp(r' data-result-token="[^"]+"');
+	String _fixTextHtml(String html) {
 		return html.replaceAllMapped(_absoluteSrcPattern, (match) {
 			return ' src="https://';
 		}).replaceAllMapped(_relativeSrcPattern, (match) {
 			return ' src="https://$baseUrl/';
-		});
+		}).replaceAll(_dataResultTokenPattern, '');
 	}
 
 	String _fixRelativeUrl(String url) {
@@ -712,7 +714,7 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 				board: board,
 				threadId: threadId,
 				id: int.parse(e.id.split('-')[2]),
-				text: _fixRelativeUrls(e.querySelector('.message-body .bbWrapper')!.innerHtml),
+				text: _fixTextHtml(e.querySelector('.message-body .bbWrapper')!.innerHtml),
 				parentId: -currentPageNumber,
 				name: _parseUsernameFromLink(e.querySelector('.message-name a') ?? e.querySelector('.message-name .username')),
 				time: _parseTime(e.querySelector('.message-attribution-main time')!),
@@ -971,7 +973,7 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 								board: board,
 								threadId: threadId,
 								id: threadId,
-								text: _fixRelativeUrls(e.querySelector('.contentRow-snippet')!.text.trim()),
+								text: _fixTextHtml(e.querySelector('.contentRow-snippet')!.text.trim()),
 								name: name,
 								time: time,
 								spanFormat: PostSpanFormat.xenforo,
@@ -995,7 +997,7 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 					board: board,
 					threadId: threadId,
 					id: int.parse(linkMatch.group(2)!),
-					text: _fixRelativeUrls(e.querySelector('.contentRow-snippet')!.text.trim()),
+					text: _fixTextHtml(e.querySelector('.contentRow-snippet')!.text.trim()),
 					name: name,
 					time: time,
 					spanFormat: PostSpanFormat.xenforo,
