@@ -137,6 +137,23 @@ class SettingsPageState extends State<SettingsPage> {
 									child: const Text('Applied Migrations')
 								),
 								AdaptiveDialogAction(
+									onPressed: () => modalLoad(context, 'Resaving...', (c) async {
+										final total = Persistence.sharedThreadStateBox.length;
+										int i = 0;
+										c.progress.value = ('0 / $total', 0);
+										for (final state in Persistence.sharedThreadStateBox.values) {
+											if (c.cancelToken.isCancelled) {
+												break;
+											}
+											await state.save();
+											i++;
+											c.progress.value = ('$i / $total', i / total);
+										}
+										await Persistence.sharedThreadStateBox.flush();
+									}),
+									child: const Text('Resave all states')
+								),
+								AdaptiveDialogAction(
 									onPressed: () => Navigator.pop(context),
 									child: const Text('Close')
 								)
