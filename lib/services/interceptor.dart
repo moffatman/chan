@@ -24,6 +24,8 @@ class InterceptorBase extends Interceptor {
 			if (e is DioError) {
 				handler.reject(DioError(
 					requestOptions: options,
+					response: e.response,
+					type: e.type,
 					error: e.error
 				)..stackTrace = e.stackTrace, true);
 			}
@@ -47,6 +49,7 @@ class InterceptorBase extends Interceptor {
 				handler.reject(DioError(
 					requestOptions: response.requestOptions,
 					response: e.response ?? response,
+					type: e.type,
 					error: e.error
 				)..stackTrace = e.stackTrace, true);
 			}
@@ -71,6 +74,7 @@ class InterceptorBase extends Interceptor {
 				handler.reject(DioError(
 					requestOptions: err.requestOptions,
 					response: e.response ?? err.response,
+					type: e.type,
 					error: e.error
 				)..stackTrace = e.stackTrace, true);
 			}
