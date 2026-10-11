@@ -319,7 +319,7 @@ class AyaseQuartArchive extends ImageboardSiteArchive {
 	@override
 	Future<ImageboardRedirectGateway?> getRedirectGateway(Uri uri, String? Function() title, Future<String?> Function() html) async {
 		if (uri.host == baseUrl) {
-			if (title() == 'Confirming legitimate browser session') {
+			if (['Confirming legitimate browser session', 'Verifying request...'].contains(title())) {
 				return const ImageboardRedirectGateway(name: 'Anubis', alwaysNeedsManualSolving: false);
 			}
 		}
