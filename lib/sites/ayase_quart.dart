@@ -198,7 +198,7 @@ class AyaseQuartArchive extends ImageboardSiteArchive {
 		), cancelToken: cancelToken);
 		final document = parse(response.data);
 		final posts = document.querySelectorAll('.post.reply').map(_makePost).toList();
-		final (int replyCount, int imageCount) = switch (document.querySelector('.board')!.nodes) {
+		final (int replyCount, int imageCount) = switch (document.querySelector('.board')?.nodes) {
 			[dom.Text(), dom.Element(localName: 'b', text: String replyCountStr), dom.Text(), dom.Element(localName: 'b', text: String imageCountStr), ...] => (replyCountStr.parseInt, imageCountStr.parseInt),
 			_ => throw UnexpectedFormatException('Could not parse thread metadata', additionalFiles: {
 				'page.html': utf8.encode(response.data!)
