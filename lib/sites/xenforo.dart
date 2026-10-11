@@ -696,20 +696,6 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 		final currentPageNumber = pageNavPages.tryFirstWhere((e) => e.classes.contains('pageNav-page--current'))?.text.tryParseInt ?? 1;
 		final lastPageNumber = pageNavPages.tryLast?.text.tryParseInt ?? 1;
 		final opName = _parseUsernameFromLink(document.querySelector('.p-description .username'));
-		Post generateStub(int pageNumber) => Post(
-			board: board,
-			threadId: threadId,
-			text: '',
-			// To avoid wasted memory, we only need thread.posts.first to have correct OP name
-			name: pageNumber == 1 ? opName : '',
-			time: DateTime(2000), // arbitrary
-			id: -pageNumber,
-			spanFormat: PostSpanFormat.pageStub,
-			attachments_: const [],
-			hasOmittedReplies: pageNumber != currentPageNumber || pageNumber == lastPageNumber
-		);
-		final pagesBefore = Iterable.generate(currentPageNumber, (i) => generateStub(i + 1));
-		final pagesAfter = Iterable.generate(lastPageNumber - currentPageNumber, (i) => generateStub(i + 1 + currentPageNumber));
 		final realPosts = document.querySelectorAll('article.message--post').map((e) {
 			return Post(
 				board: board,
@@ -742,7 +728,21 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 					);
 				}).toList(growable: false)
 			);
-		});
+		}).toList();
+		Post generateStub(int pageNumber) => Post(
+			board: board,
+			threadId: threadId,
+			text: '',
+			// To avoid wasted memory, we only need thread.posts.first to have correct OP name
+			name: pageNumber == 1 ? opName : ((pageNumber == currentPageNumber ? realPosts.tryLast?.name : null) ?? ''),
+			time: (pageNumber == currentPageNumber ? realPosts.tryLast?.time : null) ?? DateTime(2000), // arbitrary
+			id: -pageNumber,
+			spanFormat: PostSpanFormat.pageStub,
+			attachments_: const [],
+			hasOmittedReplies: pageNumber != currentPageNumber || realPosts.length < postsPerPage
+		);
+		final pagesBefore = Iterable.generate(currentPageNumber, (i) => generateStub(i + 1));
+		final pagesAfter = Iterable.generate(lastPageNumber - currentPageNumber, (i) => generateStub(i + 1 + currentPageNumber));
 		return pagesBefore.followedBy(realPosts).followedBy(pagesAfter).toList();
 	}
 

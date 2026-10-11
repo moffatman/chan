@@ -275,6 +275,7 @@ class Thread extends HiveObject implements Filterable {
 	bool mergePosts(Thread? oldThread, List<Post> otherPosts, ImageboardSite site) {
 		final weAreOldThread = oldThread == null;
 		bool anyChanges = false;
+		final downgradedPages = <int>{};
 		if (oldThread != null) {
 			_markNewIPs(oldThread);
 			stickyReplyCap ??= oldThread.stickyReplyCap;
@@ -292,7 +293,12 @@ class Thread extends HiveObject implements Filterable {
 					(postToReplace.isDeleted && !newChild.isDeleted) ||
 					(weAreOldThread && postToReplace != newChild)
 				) {
-					anyChanges = true;
+					if (newChild.isPageStub && newChild.hasOmittedReplies && !postToReplace.hasOmittedReplies) {
+						downgradedPages.add(newChild.id);
+					}
+					else {
+						anyChanges = true;
+					}
 					posts_.removeAt(indexToReplace);
 					newChild.replyIds = postToReplace.replyIds;
 					if (postToReplace.isDeleted && !newChild.isDeleted) {
@@ -339,7 +345,7 @@ class Thread extends HiveObject implements Filterable {
 				}
 				postIdToListIndex[newChild.id] = newIndex;
 				// new post may be a child of other posts
-				for (final int? repliedToId in [newChild.parentId, ...newChild.repliedToIds]) {
+				for (final int? repliedToId in newChild.repliedToIds) {
 					final parentIndex = postIdToListIndex[repliedToId];
 					if (parentIndex != null) {
 						final parent = posts_[parentIndex];
@@ -376,9 +382,11 @@ class Thread extends HiveObject implements Filterable {
 				if (pair.value >= postsPerPage) {
 					// We have all the posts for this page
 					pageMap[pair.key]?.hasOmittedReplies = false;
+					downgradedPages.remove(pair.key);
 				}
 			}
 		}
+		anyChanges |= downgradedPages.isNotEmpty;
 		if (anyChanges && site.hasWeakQuoteLinks) {
 			// Rescan weak quote links
 			final postTexts = <int, String>{};

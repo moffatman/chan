@@ -1493,7 +1493,7 @@ class ThreadPageState extends State<ThreadPage> {
 			}
 		}
 		final anyNew = thread.mergePosts(null, newChildren, site);
-		if (ids.length == 1 && ids.single.childId == ids.single.parentId) {
+		if (ids.length == 1 && ids.single.childId == ids.single.parentId && !site.isPaged) {
 			// Clear hasOmittedReplies in case it has only omitted shadowbanned replies
 			thread.posts_.tryFirstWhere((p) => p.id == ids.single.childId)?.hasOmittedReplies = false;
 		}
