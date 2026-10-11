@@ -670,7 +670,8 @@ class ThreadPageState extends State<ThreadPage> {
 				await controller.preloadFullAttachment();
 			}
 			catch (e) {
-				if (mounted) {
+				_checkForeground();
+				if (mounted && _foreground) {
 					showToast(
 						context: context,
 						message: 'Error getting attachment: ${e.toStringDio()}',
