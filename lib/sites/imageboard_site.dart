@@ -1992,7 +1992,7 @@ abstract class ImageboardSiteArchive {
 			catalog ??= await getCatalogImpl(board, variant: variant, priority: priority, cancelToken: cancelToken);
 			insertCatalogIntoCache(board, variant, catalog);
 			return catalog;
-		});
+		}, cancelToken: cancelToken);
 	}
 	Catalog? getCatalogFromCatalogCache(String? board, {CatalogVariant? variant, CacheConstraints? constraints}) {
 		if (board == null) {
@@ -2090,7 +2090,7 @@ abstract class ImageboardSiteArchive {
 			pageMap ??= await getCatalogPageMapImpl(board, variant: variant, priority: priority, cancelToken: cancelToken);
 			(_catalogPageMapCache[key] ??= {})[variant.dataId] = pageMap;
 			return pageMap;
-		});
+		}, cancelToken: cancelToken);
 	}
 	/// If an empty list is returned from here, the bottom of the catalog has been reached.
 	@protected

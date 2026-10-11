@@ -1359,13 +1359,14 @@ class ThreadPageState extends State<ThreadPage> {
 				rethrow;
 			}
 		}
+		if (!mounted) throw StateError('Thread page disposed');
 		bool shouldScroll = false;
 		final watch = tmpPersistentState.threadWatch;
 		if (watch != null && newThread.identifier == widget.thread && mounted) {
 			_checkForeground();
 			notifications.updateLastKnownId(watch, newThread.posts_.last.id, foreground: _foreground);
 		}
-		await _listController.whenDoneAutoScrolling;
+		await _listController.waitUntilDoneAutoScrolling(cancelToken: cancelToken);
 		if (tmpPersistentState.thread != null || newThread.archiveName == null && !identical(newThread, tmpPersistentState.thread)) {
 			// Don't try to merge catalogCache onto archived thread, it will think weAreOldThread
 			newThread.mergePosts(

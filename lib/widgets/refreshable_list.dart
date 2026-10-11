@@ -1228,6 +1228,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	List<T>? sortedList;
 	late final ValueNotifier<(Object, StackTrace)?> error;
 	late final ValueNotifier<({String id, Future<void> future, CancelToken cancelToken})?> updatingNow;
+	bool _tickersEnabled = true;
 	late final TextEditingController _searchController;
 	late final FocusNode _searchFocusNode;
 	bool get searchHasFocus => _searchFocusNode.hasFocus;
@@ -1306,6 +1307,13 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		widget.updateAnimation?.addListener(_onUpdateAnimation);
 		_treeSplitId = widget.treeAdapter?.initialTreeSplitId;
 		_upgradedStubPostIds = widget.treeAdapter?.initialUpgradedStubPostIds?.toSet() ?? {};
+	}
+
+	@override
+	void didChangeDependencies() {
+		super.didChangeDependencies();
+		_tickersEnabled = TickerMode.valuesOf(context).enabled;
+		controller._scrollWaitsEnabled.value = _tickersEnabled;
 	}
 
 	/// To be used when we have a whole updated list, it will check for any stub upgrades
@@ -1433,6 +1441,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		_refreshableTreeItems.dispose();
 		updatingNow.value?.cancelToken.cancel();
 		updatingNow.dispose();
+		if (identical(controller.state, this)) controller.detach();
 		_backupController?.dispose();
 	}
 
@@ -1524,7 +1533,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					: value.representsKnownStubChildren,
 				cancelToken
 			);
-			await controller.whenDoneAutoScrolling;
+			await controller.waitUntilDoneAutoScrolling(cancelToken: cancelToken);
 			originalList = newList;
 			sortedList = newList.toList();
 			_sortList();
@@ -1550,7 +1559,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				[ParentAndChildIdentifier.same(page)],
 				cancelToken
 			);
-			await controller.whenDoneAutoScrolling;
+			await controller.waitUntilDoneAutoScrolling(cancelToken: cancelToken);
 			originalList = newList;
 			sortedList = newList.toList();
 			_sortList();
@@ -1642,8 +1651,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			return updatingNow.value?.future;
 		}
 		final cancelToken = CancelToken();
-		final future = () async {
-			final updatingWithId = widget.id;
+		final updatingWithId = widget.id;
+		final future = Future<void>.microtask(() async {
 			List<T>? newList;
 			final treeAdapter = widget.treeAdapter;
 			try {
@@ -1686,7 +1695,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					);
 				}
 				else if (extend && widget.listExtender != null && (originalList?.isNotEmpty ?? false)) {
-					final newItems = (await Future.wait([widget.listExtender!(originalList!.last, cancelToken), Future<List<T>?>.delayed(minUpdateDuration)])).first!;
+					final newItems = (await Future.wait([widget.listExtender!(originalList!.last, cancelToken), cancelToken.delayed<List<T>?>(minUpdateDuration)])).first!;
 					final filterableAdapter = widget.filterableAdapter;
 					if (filterableAdapter != null) {
 						// We have the ability to get identifier for each item
@@ -1721,7 +1730,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						newList = (await Future.wait([widget.listUpdater(RefreshableListUpdateOptions(
 							source: source,
 							cancelToken: cancelToken
-						)), Future<List<T>?>.delayed(minUpdateDuration)])).first?.toList();
+						)), cancelToken.delayed<List<T>?>(minUpdateDuration)])).first?.toList();
 						if (
 							widget.listExtender != null &&
 							source.automatic &&
@@ -1744,11 +1753,16 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				lastUpdateTime = DateTime.now();
 			}
 			catch (e, st) {
-				error.value = (e, st);
 				if (cancelToken.isCancelled) {
-					resetTimer();
+					if (mounted && updatingNow.value?.cancelToken == cancelToken) {
+						error.value = originalList == null ? (e, st) : null;
+						updatingNow.value = null;
+						resetTimer();
+					}
+					return;
 				}
 				else if (mounted) {
+					error.value = (e, st);
 					if (controller.scrollController?.hasOnePosition ?? false) {
 						final position = controller.scrollController!.position;
 						if (position.extentAfter > 0) {
@@ -1770,7 +1784,18 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					}
 				}
 			}
-			await controller.scrollController?.tryPosition?.isScrollingNotifier.waitUntilValue(false);
+			try {
+				await controller.waitUntilScrollingStops(cancelToken: cancelToken);
+			}
+			on DioError catch (e, st) {
+				if (!cancelToken.isCancelled) rethrow;
+				if (mounted && updatingNow.value?.cancelToken == cancelToken) {
+					error.value = originalList == null ? (e, st) : null;
+					updatingNow.value = null;
+					resetTimer();
+				}
+				return;
+			}
 			if (updatingWithId != widget.id) {
 				if (updatingNow.value?.id == updatingWithId) {
 					updatingNow.value = null;
@@ -1789,7 +1814,6 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			on TimeoutException {
 				// No popping
 			}
-			await controller.whenDoneAutoScrolling;
 			if (mounted && (newList != null || error.value != null)) {
 				if (hapticFeedback) {
 					mediumHapticFeedback();
@@ -1811,13 +1835,13 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					error.value = (Exception('listUpdater returned null'), StackTrace.current);
 				});
 			}
-		}();
-		Future.microtask(() => updatingNow.value = (id: widget.id, future: future, cancelToken: cancelToken));
+		});
+		Future.microtask(() => updatingNow.value = (id: updatingWithId, future: future, cancelToken: cancelToken));
 		return future;
 	}
 
 	Future<void> acceptNewList(List<T> list) async {
-		await controller.whenDoneAutoScrolling;
+		await controller.waitUntilDoneAutoScrolling();
 		_updateList(list);
 		setState(() {});
 	}
@@ -3832,6 +3856,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	int get itemsLength => _items.length;
 	RefreshableListItem<T> getItem(int i) => _items[i].item;
 	ScrollController? scrollController;
+	final _scrollWaitsEnabled = ValueNotifier<bool>(true);
 	late final ValueNotifier<double> overscrollFactor = ValueNotifier<double>(0);
 	late final ValueNotifier<bool> isScrollable = ValueNotifier<bool>(true);
 	final slowScrolls = BufferedListenable(const Duration(milliseconds: 100));
@@ -3942,9 +3967,13 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	void attach(RefreshableListState<T> list) {
 		state = list;
 		_useTree = list.useTree;
+		_scrollWaitsEnabled.value = list._tickersEnabled;
 	}
 	void detach() {
 		state = null;
+		scrollController?.removeListener(_onScrollControllerNotification);
+		scrollController = null;
+		_scrollWaitsEnabled.value = false;
 	}
 	void focusSearch() async {
 		await animateToIndex(0);
@@ -3955,21 +3984,22 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	}
 	void closeSearch() => state?.closeSearch();
 	void reportPrimaryScrollController(ScrollController? controller) {
-		if (scrollController != controller) {
-			scrollController?.removeListener(_onScrollControllerNotification);
-			scrollController = controller;
-			scrollController?.addListener(_onScrollControllerNotification);
-		}
+		if (identical(scrollController, controller)) return;
+		scrollController?.removeListener(_onScrollControllerNotification);
+		scrollController = controller;
+		scrollController?.addListener(_onScrollControllerNotification);
 	}
 	@override
 	void dispose() {
-		super.dispose();
 		_isDisposed = true;
+		_scrollWaitsEnabled.value = false;
+		_scrollWaitsEnabled.dispose();
 		scrollController?.removeListener(_onScrollControllerNotification);
 		slowScrolls.removeListener(_onSlowScroll);
 		slowScrolls.dispose();
 		overscrollFactor.dispose();
 		isScrollable.dispose();
+		super.dispose();
 	}
 	void newContentId(String contentId) {
 		if (this.contentId != null && this.contentId != contentId) {
@@ -4348,7 +4378,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				);
 			}
 			await SchedulerBinding.instance.endOfFrame;
-			await scrollController?.tryPosition?.isScrollingNotifier.waitUntilValue(false);
+			await waitUntilScrollingStops();
 		}
 		finally {
 			currentTargetIndex = null;
@@ -4644,23 +4674,40 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	}
 
 	ValueListenable<({String id, Future<void> future, CancelToken cancelToken})?> get updatingNow => state?.updatingNow ?? const StoppedValueListenable(null);
-	
-	Future<void> get whenDoneAutoScrolling {
+
+	Future<void> waitUntilScrollingStops({CancelToken? cancelToken}) =>
+		_waitUntilScrollPosition((position) => !position.isScrollingNotifier.value, cancelToken);
+
+	Future<void> waitUntilDoneAutoScrolling({CancelToken? cancelToken}) =>
+		_waitUntilScrollPosition((position) {
+			// ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+			return position.activity is! DrivenScrollActivity;
+		}, cancelToken);
+
+	Future<void> _waitUntilScrollPosition(bool Function(ScrollPosition) isDone, CancelToken? cancelToken) async {
+		if (_isDisposed || !_scrollWaitsEnabled.value) return;
 		final position = scrollController?.tryPosition;
-		if (position == null) {
-			return Future.value(null);
-		}
+		if (position == null) return;
 		final completer = Completer<void>();
 		void listener() {
-			// ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
-			if (position.activity is! DrivenScrollActivity) {
+			// Muted scroll animations cannot become idle until their tab is active.
+			if (!completer.isCompleted && (_isDisposed || !_scrollWaitsEnabled.value || isDone(position))) {
 				completer.complete();
-				position.isScrollingNotifier.removeListener(listener);
 			}
 		}
 		position.isScrollingNotifier.addListener(listener);
+		_scrollWaitsEnabled.addListener(listener);
 		listener();
-		return completer.future;
+		try {
+			await Future.any<void>([
+				completer.future,
+				if (cancelToken != null) cancelToken.whenCancel.then<void>((error) => throw error)
+			]);
+		}
+		finally {
+			position.isScrollingNotifier.removeListener(listener);
+			_scrollWaitsEnabled.removeListener(listener);
+		}
 	}
 }
 

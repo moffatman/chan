@@ -261,7 +261,7 @@ class CloudflareBlockingInterceptor extends InterceptorBase {
 	@override
 	Future<void> onRequestImpl(RequestOptions options, RequestInterceptorHandler handler) => runEphemerallyLocked(options.uri.topLevelHost, (wasLocked) async {
 		handler.next(options);
-	});
+	}, cancelToken: options.cancelToken);
 }
 
 class CloudflareInterceptor extends InterceptorBase {
@@ -742,7 +742,7 @@ class CloudflareInterceptor extends InterceptorBase {
 			site: site,
 			cancelToken: cancelToken
 		);
-	});
+	}, cancelToken: cancelToken);
 
 	static bool validateStatus(Response response) {
 		if (response.retryBecauseCloudflare) {
