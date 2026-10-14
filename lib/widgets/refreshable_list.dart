@@ -2029,9 +2029,6 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				child = CupertinoButton(
 					padding: const EdgeInsets.all(8),
 					onPressed: () async {
-						if (value.representsUnloadedPages.length == 3) {
-							_loadPage(value, value.representsUnloadedPages[1]);
-						}
 						final page = await showAdaptiveDialog<int>(
 							context: context,
 							barrierDismissible: true,
