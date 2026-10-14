@@ -25,6 +25,7 @@ import 'package:provider/provider.dart';
 import 'package:weak_map/weak_map.dart';
 
 const double _overscrollTriggerThreshold = 100;
+const double _bottomLockTolerance = 50;
 const _treeAnimationDuration = Duration(milliseconds: 250);
 
 class ItemNotFoundException implements Exception {
@@ -869,10 +870,7 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 	}
 
 	void swapSubtreeTo(RefreshableListItem<T> item) {
-		final index = state.controller._items.indexWhere((i) => i.item == item);
-		if (index != -1) {
-			state.controller._lockSliverListAtIndex(index);
-		}
+		state.controller._lockSliverListAtKey(ValueKey(item._key));
 		primarySubtreeParents[item.id] = item.parentIds.tryLast ?? -1;
 		_cache.removeWhere((key, value) => key.thisId == item.id || key.parentIds.contains(item.id));
 		state.widget.treeAdapter?.onCollapsedItemsChanged?.call(manuallyCollapsedItems, primarySubtreeParents);
@@ -905,11 +903,9 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 		});
 		state._onTreeCollapseOrExpand.call(item, false);
 		notifyListeners();
-		if (index != -1) {
-			Future.delayed(_treeAnimationDuration).then((_) {
-				state.controller._unlockSliverList();
-			});
-		}
+		Future.delayed(_treeAnimationDuration).then((_) {
+			state.controller._unlockSliverList();
+		});
 	}
 
 	void revealNewInsert(RefreshableListItem<T> item, {bool quiet = false, bool stubOnly = false}) async {
@@ -1316,6 +1312,37 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		controller._scrollWaitsEnabled.value = _tickersEnabled;
 	}
 
+	Future<void> _lockSliverForNextRebuild({bool bottomOnly = false, bool lockAtMiddle = false}) async {
+		if (!mounted) return;
+		final sliver = controller._renderSliverList;
+		Key? lockKey;
+		if (bottomOnly || controller._useTree != widget.useTree) {
+			final position = controller.scrollController?.tryPosition;
+			if (position != null && position.haveDimensions && position.extentAfter <= _bottomLockTolerance) {
+				lockKey = RenderSliverList.kLockKeyLockToEnd;
+			}
+		}
+		else {
+			var index = lockAtMiddle ? controller.middleVisibleIndex : controller.lastVisibleIndex;
+			while (index >= 0 && controller.isItemHidden(controller.getItem(index)).isHidden) {
+				index--;
+			}
+			if (index >= 0) {
+				lockKey = ValueKey(controller.getItem(index)._key);
+			}
+		}
+		try {
+			sliver?.lockKey = lockKey;
+			setState(() {});
+			await SchedulerBinding.instance.endOfFrame;
+		}
+		finally {
+			if (sliver?.lockKey == lockKey) {
+				sliver?.lockKey = null;
+			}
+		}
+	}
+
 	/// To be used when we have a whole updated list, it will check for any stub upgrades
 	void _updateList(List<T>? newList) {
 		final oldStubs = <int>{};
@@ -1339,6 +1366,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				}
 			}
 		}
+		_lockSliverForNextRebuild();
 	}
 
 	@override
@@ -1427,6 +1455,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				item.cachedOffset = null;
 				item.cachedHeight = null;
 			}
+		}
+		if (widget.useTree != oldWidget.useTree) {
+			_lockSliverForNextRebuild(bottomOnly: true);
 		}
 	}
 
@@ -1534,10 +1565,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				cancelToken
 			);
 			await controller.waitUntilDoneAutoScrolling(cancelToken: cancelToken);
+			if (!mounted || cancelToken.isCancelled) return;
 			originalList = newList;
 			sortedList = newList.toList();
 			_sortList();
-			setState(() { });
+			await _lockSliverForNextRebuild(lockAtMiddle: true);
 		}
 		catch (e, st) {
 			if (mounted && !cancelToken.isCancelled) {
@@ -1560,10 +1592,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				cancelToken
 			);
 			await controller.waitUntilDoneAutoScrolling(cancelToken: cancelToken);
+			if (!mounted || cancelToken.isCancelled) return;
 			originalList = newList;
 			sortedList = newList.toList();
 			_sortList();
-			setState(() { });
+			await _lockSliverForNextRebuild(lockAtMiddle: true);
 		}
 		catch (e, st) {
 			if (mounted && !cancelToken.isCancelled) {
@@ -1607,14 +1640,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		_treeSplitId = newTreeSplitId;
 		widget.treeAdapter?.onTreeSplitIdChanged?.call(newTreeSplitId, _upgradedStubPostIds);
 		if (rebuild) {
-			try {
-				controller._lockSliverListAtEnd();
-				setState(() {});
-				await SchedulerBinding.instance.endOfFrame;
-			}
-			finally {
-				controller._unlockSliverList();
-			}
+			await _lockSliverForNextRebuild(bottomOnly: true);
 		}
 	}
 
@@ -4206,7 +4232,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 					_lockSliverListAtEnd();
 				}
 				else {
-					_lockSliverListAtIndex(targetIndex);
+					_lockSliverListAtKey(ValueKey(_items[targetIndex].item._key));
 				}
 				useDummyItemsInRange = null;
 				state?._rebuild();
@@ -4223,8 +4249,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		}
 		await _animateToIndex(targetIndex, alignment: alignment, duration: duration, curve: curve, startPixels: startPixels, revealIfHidden: revealIfHidden);
 	}
-	void _lockSliverListAtIndex(int index) {
-		assert(index >= 0);
+	void _lockSliverListAtKey(Key key) {
 		// This is not supported on flutter master
 	}
 	void _lockSliverListAtEnd() {
@@ -4246,7 +4271,10 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			currentTargetIndex = targetIndex;
 			if (revealIfHidden && isItemHidden(_items[targetIndex].item).isHidden) {
 				if (targetIndex < firstVisibleIndex) {
-					_lockSliverListAtIndex(_items.indexWhere((i) => !isItemHidden(i.item).isHidden, targetIndex));
+					final index = _items.indexWhere((i) => !isItemHidden(i.item).isHidden, targetIndex);
+					if (index >= 0) {
+						_lockSliverListAtKey(ValueKey(_items[index].item._key));
+					}
 				}
 				await state?._refreshableTreeItems.unhideItem(_items[targetIndex].item, includingParents: true);
 			}
@@ -4459,28 +4487,33 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		}
 		return (item: _items[index].item.item, alignment: getItemAlignment(index));
 	}
-	T? get middleVisibleItem {
+	int get middleVisibleIndex {
 		if (scrollControllerPositionLooksGood) {
-			final threshold = scrollController!.position.pixels + (scrollController!.position.viewportDimension / 2);
+			final position = scrollController!.position;
+			final threshold = position.pixels + topOffset + ((position.viewportDimension - topOffset - bottomOffset) / 2);
 			test(_BuiltRefreshableListItem<RefreshableListItem<T>> i) =>
 				(i.cachedHeight != null) &&
+				(i.cachedHeight! > 0) &&
 				(i.cachedOffset != null) &&
+				_isOnscreen(i) &&
+				!isItemHidden(i.item).isHidden &&
 				((i.cachedOffset! + i.cachedHeight!) > threshold);
 			final range = _lastLaidOutRange;
 			if (range != null && range.$2 < _items.length) {
 				for (int i = range.$1; i <= range.$2; i++) {
 					if (test(_items[i])) {
-						return _items[i].item.item;
+						return i;
 					}
 				}
-				return null;
+				return -1;
 			}
-			int index = _items.indexWhere(test);
-			if (index != -1) {
-				return _items[index].item.item;
-			}
+			return _items.indexWhere(test);
 		}
-		return null;
+		return -1;
+	}
+	T? get middleVisibleItem {
+		final index = middleVisibleIndex;
+		return index < 0 ? null : _items[index].item.item;
 	}
 	int get lastVisibleIndex {
 		if (scrollControllerPositionLooksGood) {
