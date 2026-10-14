@@ -7,6 +7,8 @@ import 'package:chan/models/flag.dart';
 import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/pages/cookie_browser.dart';
+import 'package:chan/services/cloudflare.dart';
+import 'package:chan/services/cookies.dart';
 import 'package:chan/services/embed.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/interceptor.dart';
@@ -33,6 +35,7 @@ import 'package:html_unescape/html_unescape_small.dart';
 import 'package:linkify/linkify.dart';
 import 'package:markdown/markdown.dart' as markdown;
 import 'package:html/dom.dart' as dom;
+import 'package:mutex/mutex.dart';
 
 class _SuperscriptBracketedSyntax extends markdown.InlineSyntax {
   static const _pattern = r'\^\(([^)]+)\)';
@@ -246,9 +249,56 @@ class SiteRedditBlockedException extends ExtendedException {
 	String toString() => 'Blocked by Reddit: $url';
 }
 
+const _kBypassLock = '_bypass_redidt_lock';
+const _kThrowOnBlock = '_reddit_throw_on_block';
+
+
+class _SiteRedditBlockingInterceptor extends InterceptorBase {
+	final SiteReddit site;
+
+	_SiteRedditBlockingInterceptor(this.site);
+
+	@override
+	Future<void> onRequestImpl(RequestOptions options, RequestInterceptorHandler handler) async {
+		if (options.extra.containsKey(_kBypassLock)) {
+			handler.next(options);
+			return;
+		}
+		await site._interceptorLock.protect(() async {
+			handler.next(options);
+		});
+	}
+}
+
 class _SiteRedditInterceptor extends InterceptorBase {
 	final SiteReddit parent;
 	_SiteRedditInterceptor(this.parent);
+
+	Future<Response?> _resolve(Response response) async {
+		final wasLocked = parent._interceptorLock.isLocked;
+		await parent._interceptorLock.protect(() async {
+			if (wasLocked) {
+				// Assume it was logged into already
+				return;
+			}
+			final path = response.requestOptions.uri.path;
+			final uri = path.endsWith('.json') ?
+				response.requestOptions.uri.replace(
+					path: '${path.substring(0, path.length - 5)}/'
+				) : Uri.https(parent.baseUrl, '/');
+			await parent.client.getUri(uri, options: Options(
+				extra: {
+					_kBypassLock: true,
+					kCloudflare: true,
+					kPriority: response.requestOptions.extra[kPriority],
+					kExcludeCookies: response.requestOptions.extra[kExcludeCookies]
+				}
+			), cancelToken: response.requestOptions.cancelToken);
+		});
+		// Retry the request
+		response.requestOptions.extra[_kThrowOnBlock] = true;
+		return await parent.client.fetch(response.requestOptions);
+	}
 
 	@override
 	Future<void> onRequestImpl(RequestOptions options, RequestInterceptorHandler handler) async {
@@ -259,7 +309,14 @@ class _SiteRedditInterceptor extends InterceptorBase {
 	@override
 	Future<void> onResponseImpl(Response response, ResponseInterceptorHandler handler) async {
 		if (response.statusCode == 403 && parent.isKnownHost(response.realUri.host)) {
-			throw SiteRedditBlockedException(parent.imageboard, response.realUri);
+			if (response.requestOptions.extra.containsKey(_kThrowOnBlock)) {
+				throw SiteRedditBlockedException(parent.imageboard, response.realUri);
+			}
+			final response2 = await _resolve(response);
+			if (response2 != null) {
+				handler.next(response2);
+				return;
+			}
 		}
 		handler.next(response);
 	}
@@ -267,13 +324,21 @@ class _SiteRedditInterceptor extends InterceptorBase {
 	Future<void> onErrorImpl(DioError err, ErrorInterceptorHandler handler) async {
 		final response = err.response;
 		if (response != null && response.statusCode == 403 && parent.isKnownHost(response.realUri.host)) {
-			throw SiteRedditBlockedException(parent.imageboard, response.realUri);
+			if (err.requestOptions.extra.containsKey(_kThrowOnBlock)) {
+				throw SiteRedditBlockedException(parent.imageboard, response.realUri);
+			}
+			final response2 = await _resolve(response);
+			if (response2 != null) {
+				handler.resolve(response2, true);
+				return;
+			}
 		}
 		handler.next(err);
 	}
 }
 
 class SiteReddit extends ImageboardSite {
+	final _interceptorLock = Mutex();
 	(int, DateTime)? _earliestKnown;
 	(int, DateTime)? _latestKnown;
 
@@ -308,6 +373,7 @@ class SiteReddit extends ImageboardSite {
 		required super.imageHeaders,
 		required super.videoHeaders
 	}) {
+		client.interceptors.insert(1, _SiteRedditBlockingInterceptor(this));
 		client.interceptors.add(_SiteRedditInterceptor(this));
 	}
 	@override
@@ -1660,6 +1726,31 @@ class SiteReddit extends ImageboardSite {
 	@override
 	bool isKnownHost(String host) {
 		return super.isKnownHost(host) || host.endsWith(_rootUrl) || host == _videosUrl || host == _gifsUrl || host == _redditUploadsUrl;
+	}
+
+	@override
+	Future<ImageboardRedirectGateway?> getRedirectGateway(Uri uri, String? Function() title, Future<String?> Function() html) async {
+		if (uri.host == baseUrl) {
+			final t = title();
+			if (t == null) {
+				// Not HTML
+				return null;
+			}
+			if (t == 'Reddit - Prove your humanity') {
+				return const ImageboardRedirectGateway(
+					name: 'Reddit firewall',
+					alwaysNeedsManualSolving: true
+				);
+			}
+			final h = await html();
+			if (h != null && h.contains('<form hidden')) {
+				return const ImageboardRedirectGateway(
+					name: 'Reddit firewall',
+					alwaysNeedsManualSolving: false
+				);
+			}
+		}
+		return null;
 	}
 
 	@override
