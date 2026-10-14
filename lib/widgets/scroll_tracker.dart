@@ -60,11 +60,7 @@ class ScrollTracker {
 			}
 			else if (notification is ScrollEndNotification) {
 				isScrolling.value = false;
-				if (notification.metrics.extentAfter < 100 && isMeaningfullyScrollable) {
-					// At the bottom of the scroll view. Probably we want to show stuff again.
-					slowScrollDirection.value = VerticalDirection.up;
-				}
-				else if (notification.metrics.extentBefore < 5) {
+				if (notification.metrics.extentBefore < 5) {
 					// At the top of the scroll view. We may not be showing due to automated scroll.
 					// But it's still appropriate to show stuff now.
 					slowScrollDirection.value = VerticalDirection.up;
@@ -74,9 +70,10 @@ class ScrollTracker {
 				_thisScrollHasDragDetails |= notification.dragDetails != null;
 				if (_thisScrollHasDragDetails && isMeaningfullyScrollable) {
 					final delta = notification.scrollDelta ?? 0;
-					final isOverscrollBottom = notification.metrics.pixels > notification.metrics.minScrollExtent;
-					if (notification.metrics.extentAfter >= 100) {
-						if ((isOverscrollBottom || delta < 0) &&
+					final isPastTop = notification.metrics.pixels > notification.metrics.minScrollExtent;
+					final isOverscrollBottom = notification.metrics.pixels > notification.metrics.maxScrollExtent;
+					if (!isOverscrollBottom) {
+						if ((isPastTop || delta < 0) &&
 								(notification.metrics.pixels < notification.metrics.maxScrollExtent || delta > 0)) {
 							_accumulatedScrollDelta += delta;
 						}
@@ -91,8 +88,9 @@ class ScrollTracker {
 						}
 					}
 					else if (delta > 0 && isOverscrollBottom && slowScrollDirection.value != VerticalDirection.up) {
-						// The extentAfter may grow because showing the tab bar. since that has height ~80,
-						// make it require 81 pixels scrolldown to hide bars again.
+						// Reveal only once scrolling past the bottom. The forked viewport
+						// preserves the bottom-relative offset as the bars resize it.
+						// Keep some hysteresis before another downward scroll hides them.
 						_accumulatedScrollDelta = -31;
 						slowScrollDirection.value = VerticalDirection.up;
 					}
