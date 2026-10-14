@@ -8,12 +8,14 @@ class ThumbnailImageProvider extends ImageProvider<ThumbnailImageProvider> {
 	final Uri uri;
 	final Map<String, String> headers;
 	final String extraCookie;
+	final bool deduplicateCookie;
 	final double scale;
 
 	ThumbnailImageProvider({
 		required this.uri,
 		this.headers = const {},
 		this.extraCookie = '',
+		this.deduplicateCookie = false,
 		this.scale = 1.0
 	});
 
@@ -22,7 +24,7 @@ class ThumbnailImageProvider extends ImageProvider<ThumbnailImageProvider> {
 		return MultiFrameImageStreamCompleter(
 			codec: () async {
 				assert(key == this);
-				final conversion = MediaConversion.extractThumbnail(uri, headers: headers, extraCookie: extraCookie);
+				final conversion = MediaConversion.extractThumbnail(uri, headers: headers, extraCookie: extraCookie, deduplicateCookie: deduplicateCookie);
 				Uint8List bytes;
 				if (await conversion.getDestination().exists()) {
 					bytes = await conversion.getDestination().readAsBytes();

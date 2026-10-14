@@ -215,6 +215,11 @@ Future<void> _persistAllCookies(PersistCookieJar jar) async {
 }
 
 class SeparatedCookieManager extends InterceptorBase {
+	final bool deduplicate;
+
+	SeparatedCookieManager({
+		required this.deduplicate
+	});
 
   CookieJar get cookieJar => Persistence.currentCookies;
 
@@ -226,7 +231,7 @@ class SeparatedCookieManager extends InterceptorBase {
     }, toRemove: switch (options.extra[kExcludeCookies]) {
       List<String> exclude => exclude,
       _ => []
-    });
+    }, deduplicate: deduplicate);
     if (cookie.isNotEmpty) {
       options.headers[HttpHeaders.cookieHeader] = cookie;
     }
@@ -258,12 +263,14 @@ class SeparatedCookieManager extends InterceptorBase {
     }
   }
 
-  static Future<String> getCookies(Uri uri, String extraCookie, {List<String> toRemove = const []}) async {
+  static Future<String> getCookies(Uri uri, String extraCookie, {required bool deduplicate, List<String> toRemove = const []}) async {
     final cookies = await Persistence.currentCookies.loadForRequest(uri);
     cookies.removeWhere((c) => toRemove.contains(c.name));
-    // Only keep first cookie (host specific) if there is a second (domain wide)
-    final dedupe = <String, Cookie>{};
-    cookies.removeWhere((c) => (dedupe[c.name] ??= c) != c);
+		if (deduplicate) {
+			// Only keep first cookie (host specific) if there is a second (domain wide)
+			final dedupe = <String, Cookie>{};
+			cookies.removeWhere((c) => (dedupe[c.name] ??= c) != c);
+		}
     final cookie = cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ');
     return [
       if (extraCookie.isNotEmpty) extraCookie,

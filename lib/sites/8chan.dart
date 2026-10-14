@@ -194,6 +194,9 @@ class Site8Chan extends SiteLynxchan {
 	bool get supportsPinkQuotes => true;
 
 	@override
+	bool get requiresCookieDeduplication => true;
+
+	@override
 	List<ImageboardSnippet> getBoardSnippets(String board) => const [
 		greentextSnippet,
 		ImageboardSnippet.simple(

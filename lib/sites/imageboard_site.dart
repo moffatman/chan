@@ -1885,6 +1885,7 @@ abstract class ImageboardSiteArchive {
 	final String? overrideUserAgent;
 	final bool addIntrospectedHeaders;
 	final bool? preferHttp3WithoutAltSvc;
+	bool get requiresCookieDeduplication => false;
 	ImageboardSiteArchive({
 		required this.overrideUserAgent,
 		required this.addIntrospectedHeaders,
@@ -1919,7 +1920,7 @@ abstract class ImageboardSiteArchive {
 				handler.next(options);
 			}
 		));
-		client.interceptors.add(SeparatedCookieManager());
+		client.interceptors.add(SeparatedCookieManager(deduplicate: requiresCookieDeduplication));
 		client.interceptors.add(FixupInterceptor());
 		client.interceptors.add(BasedFlareInterceptor(client));
 		client.interceptors.add(CloudflareInterceptor(this));

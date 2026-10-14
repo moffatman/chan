@@ -2368,7 +2368,7 @@ class Settings extends ChangeNotifier {
 		client.interceptors.add(CloudflareBlockingInterceptor());
 		client.interceptors.add(HTTP429BackoffInterceptor(client: client));
 		client.interceptors.add(FixupInterceptor());
-		client.interceptors.add(SeparatedCookieManager());
+		client.interceptors.add(SeparatedCookieManager(deduplicate: false));
 		client.interceptors.add(InterceptorWrapperBase(
 			onRequest: (options, handler) async {
 				options.headers['user-agent'] ??= settings.userAgent;

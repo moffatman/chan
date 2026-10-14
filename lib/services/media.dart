@@ -135,6 +135,7 @@ class MediaScan {
 	static Future<MediaScan> _scan(Uri file, {
 		Map<String, String> headers = const {},
 		String extraCookie = '',
+		bool deduplicateCookie = false,
 		int tries = 0,
 		bool force = false,
 		String? forceFormat
@@ -150,7 +151,7 @@ class MediaScan {
 				}
 				final headers2 = Map.of(headers);
 				if (file.scheme != 'file') {
-					headers2[HttpHeaders.cookieHeader] = await SeparatedCookieManager.getCookies(file, extraCookie);
+					headers2[HttpHeaders.cookieHeader] = await SeparatedCookieManager.getCookies(file, extraCookie, deduplicate: deduplicateCookie);
 				}
 				final result = await FFTools.ffprobe(
 					arguments: [
@@ -286,11 +287,11 @@ class MediaScan {
 			})).value;
 		}
 		on _TryForceFormatException catch (e) {
-			return _scan(file, headers: headers, extraCookie: extraCookie, tries: tries, force: force, forceFormat: e.forceFormat);
+			return _scan(file, headers: headers, extraCookie: extraCookie, tries: tries, force: force, forceFormat: e.forceFormat, deduplicateCookie: deduplicateCookie);
 		}
 		on FormatException {
 			if (tries < 3) {
-				return _scan(file, headers: headers, extraCookie: extraCookie, tries: tries + 1, force: force);
+				return _scan(file, headers: headers, extraCookie: extraCookie, tries: tries + 1, force: force, deduplicateCookie: deduplicateCookie);
 			}
 			else {
 				rethrow;
@@ -337,6 +338,7 @@ class MediaScan {
 	static Future<MediaScan> scan(Uri file, {
 		Map<String, String> headers = const {},
 		String extraCookie = '',
+		bool deduplicateCookie = false,
 		bool force = false
 	}) async {
 		if (file.scheme == 'file') {
@@ -347,14 +349,14 @@ class MediaScan {
 				}
 			}
 			// Not cached or file size doesn't match
-			final scan = await _scan(file, force: force);
+			final scan = await _scan(file, force: force, deduplicateCookie: deduplicateCookie);
 			final key = _makeKey(file.path);
 			_fileScans[key] = scan;
 			await _mediaScanBox.put(key, scan);
 			return scan;
 		}
 		else {
-			return _scan(file, headers: headers, extraCookie: extraCookie, force: force);
+			return _scan(file, headers: headers, extraCookie: extraCookie, force: force, deduplicateCookie: deduplicateCookie);
 		}
 	}
 
@@ -489,6 +491,7 @@ class MediaConversion {
 	final String cacheKey;
 	final Map<String, String> headers;
 	final String extraCookie;
+	final bool deduplicateCookie;
 	({int attempts, double factor}) _scaleDownRetry = (attempts: 0, factor: 1);
 	int _randomizeChecksumNoiseFactor = 1;
 	int _durationArgumentFactor = 1;
@@ -516,6 +519,7 @@ class MediaConversion {
 		this.cacheKey = '',
 		this.headers = const {},
 		this.extraCookie = '',
+		this.deduplicateCookie = false,
 		this.soundSource,
 		this.requiresSubdirectory = false,
 		this.copyStreams = false,
@@ -528,6 +532,7 @@ class MediaConversion {
 	static MediaConversion toMp4(Uri inputFile, {
 		Map<String, String> headers = const {},
 		String extraCookie = '',
+		bool deduplicateCookie = false,
 		(Uri, Map<String, String>, String)? soundSource,
 		bool copyStreams = false,
 		bool stripAudio = false,
@@ -542,6 +547,7 @@ class MediaConversion {
 			outputFileExtension: 'mp4',
 			headers: headers,
 			extraCookie: extraCookie,
+			deduplicateCookie: deduplicateCookie,
 			soundSource: soundSource,
 			stripAudio: stripAudio,
 			maximumSizeInBytes: maximumSizeInBytes,
@@ -556,6 +562,7 @@ class MediaConversion {
 	static MediaConversion toHLS(Uri inputFile, {
 		Map<String, String> headers = const {},
 		String extraCookie = '',
+		bool deduplicateCookie = false,
 		(Uri, Map<String, String>, String)? soundSource,
 		required bool copyStreams
 	}) {
@@ -564,6 +571,7 @@ class MediaConversion {
 			outputFileExtension: 'm3u8',
 			headers: headers,
 			extraCookie: extraCookie,
+			deduplicateCookie: deduplicateCookie,
 			soundSource: soundSource,
 			requiresSubdirectory: true,
 			copyStreams: copyStreams
@@ -577,6 +585,7 @@ class MediaConversion {
 		int? maximumDimension,
 		Map<String, String> headers = const {},
 		String extraCookie = '',
+		bool deduplicateCookie = false,
 		(Uri, Map<String, String>, String)? soundSource,
 		bool removeMetadata = false,
 		bool randomizeChecksum = false,
@@ -593,6 +602,7 @@ class MediaConversion {
 			copyStreams: copyStreams,
 			headers: headers,
 			extraCookie: extraCookie,
+			deduplicateCookie: deduplicateCookie,
 			soundSource: soundSource,
 			removeMetadata: removeMetadata,
 			randomizeChecksum: randomizeChecksum,
@@ -650,7 +660,8 @@ class MediaConversion {
 
 	static MediaConversion extractThumbnail(Uri inputFile, {
 		Map<String, String> headers = const {},
-		String extraCookie = ''
+		String extraCookie = '',
+		bool deduplicateCookie = false,
 	}) {
 		return MediaConversion(
 			inputFile: inputFile,
@@ -663,7 +674,8 @@ class MediaConversion {
 			extraOptions: ['-frames:v', '1'],
 			cacheKey: 'thumb',
 			headers: headers,
-			extraCookie: extraCookie
+			extraCookie: extraCookie,
+			deduplicateCookie: deduplicateCookie
 		);
 	}
 
@@ -854,7 +866,7 @@ class MediaConversion {
 					Uri inputUri = inputFile;
 					Map<String, String> inputHeaders = Map.of(headers);
 					if (inputFile.scheme != 'file') {
-						inputHeaders[HttpHeaders.cookieHeader] = await SeparatedCookieManager.getCookies(inputFile, extraCookie);
+						inputHeaders[HttpHeaders.cookieHeader] = await SeparatedCookieManager.getCookies(inputFile, extraCookie, deduplicate: deduplicateCookie);
 					}
 					if (soundSource != null && inputFile.toStringFFMPEG().startsWith('http')) {
 						// Proxy cache the video file, FFMPEG will try to read it repeatedly if looping
@@ -866,7 +878,7 @@ class MediaConversion {
 					if (soundSource case (final uri, final headers, final extraCookie) when uri.scheme != 'file') {
 						soundSourceHeaders = {
 							...headers,
-							HttpHeaders.cookieHeader: await SeparatedCookieManager.getCookies(uri, extraCookie)
+							HttpHeaders.cookieHeader: await SeparatedCookieManager.getCookies(uri, extraCookie, deduplicate: deduplicateCookie)
 						};
 					}
 					final bitrateString = copyStreams || outputBitrate == 0 ? null : '${(outputBitrate / 1000).floor()}K';

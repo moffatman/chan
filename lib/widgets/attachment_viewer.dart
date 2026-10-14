@@ -817,7 +817,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				transcode |= url.path.endsWith('.m3u8');
 				transcode |= soundSource != null;
 				if (!transcode && Settings.featureWebmTranscodingForPlayback && settings.webmTranscoding == WebmTranscodingSetting.vp9 && attachment.type == AttachmentType.webm) {
-					final scan = await MediaScan.scan(url, headers: getHeaders(url), extraCookie: site.getExtraCookie(url));
+					final scan = await MediaScan.scan(url, headers: getHeaders(url), extraCookie: site.getExtraCookie(url), deduplicateCookie: site.requiresCookieDeduplication);
 					if (_isDisposed) {
 						return;
 					}
@@ -875,6 +875,7 @@ class AttachmentViewerController extends ChangeNotifier {
 						url,
 						headers: getHeaders(url),
 						extraCookie: site.getExtraCookie(url),
+						deduplicateCookie: site.requiresCookieDeduplication,
 						soundSource: soundSource
 					);
 					final result = await _ongoingConversion!.start(force: force);

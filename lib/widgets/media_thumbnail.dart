@@ -10,12 +10,14 @@ class MediaThumbnail extends StatefulWidget {
 	final Uri uri;
 	final Map<String, String> headers;
 	final String extraCookie;
+	final bool deduplicateCookie;
 	final BoxFit? fit;
 	final double? fontSize;
 	const MediaThumbnail({
 		required this.uri,
 		this.headers = const {},
 		this.extraCookie = '',
+		this.deduplicateCookie = false,
 		this.fit,
 		this.fontSize,
 		Key? key
@@ -36,7 +38,7 @@ class _MediaThumbnailState extends State<MediaThumbnail> {
 
 	Future<void> _scan() async {
 		if (isVideo) {
-			scan = await MediaScan.scan(widget.uri, headers: widget.headers, extraCookie: widget.extraCookie);
+			scan = await MediaScan.scan(widget.uri, headers: widget.headers, extraCookie: widget.extraCookie, deduplicateCookie: widget.deduplicateCookie);
 			if (mounted) setState(() {});
 		}
 	}
@@ -80,7 +82,8 @@ class _MediaThumbnailState extends State<MediaThumbnail> {
 					image: ThumbnailImageProvider(
 						uri: widget.uri,
 						headers: widget.headers,
-						extraCookie: widget.extraCookie
+						extraCookie: widget.extraCookie,
+						deduplicateCookie: widget.deduplicateCookie
 					),
 					loadingBuilder: (context, child, progress) =>
 						progress == null ? child :
