@@ -12,6 +12,7 @@ import 'package:chan/services/cookies.dart';
 import 'package:chan/services/default_user_agent.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/http_429_backoff.dart';
+import 'package:chan/services/http_rate_limit.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/interceptor.dart';
 import 'package:chan/services/json_cache.dart';
@@ -2366,6 +2367,7 @@ class Settings extends ChangeNotifier {
 	static Dio _makeClient(Settings settings) {
 		final client = Dio();
 		client.interceptors.add(CloudflareBlockingInterceptor());
+		client.interceptors.add(XRateLimitInterceptor());
 		client.interceptors.add(HTTP429BackoffInterceptor(client: client));
 		client.interceptors.add(FixupInterceptor());
 		client.interceptors.add(SeparatedCookieManager(deduplicate: false));

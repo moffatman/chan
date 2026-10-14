@@ -61,12 +61,23 @@ class _PriorityQueueGroup<Key, GroupKey> {
 		return entry.completer.future;
 	}
 
-	void end(Key key) {
+	void defer(Duration delay) {
+		final until = DateTime.now().add(delay);
+		if (delayUntil == null || until.isAfter(delayUntil!)) {
+			delayUntil = until;
+		}
+		Future.microtask(_process);
+	}
+
+	void end(Key key, {bool allowMissing = false}) {
 		if (delayUntil != null) {
 			print('[$groupKey] End $key');
 		}
 		final index = _stack.indexWhere((e) => e.key == key);
 		if (index == -1) {
+			if (allowMissing) {
+				return;
+			}
 			throw ArgumentError.value(key, 'key', 'Queue entry to end not found');
 		}
 		final removed = _stack.removeAt(index);
@@ -169,7 +180,7 @@ class PriorityQueue<Key, GroupKey> {
 		// Use .toList() to avoid ConcurrentModificationException
 		for (final group in _groups.values.toList()) {
 			// Check if group has nothing outstanding
-			if (group._stack.isEmpty) {
+			if (group._stack.isEmpty && !(group.delayUntil?.isAfter(DateTime.now()) ?? false)) {
 				group._timer?.cancel();
 				_groups.remove(group.groupKey);
 			}
@@ -185,7 +196,12 @@ class PriorityQueue<Key, GroupKey> {
 
 	Future<void> delay(Key key, Duration delay) => _getGroup(key).delay(key, delay);
 
-	void end(Key key) => _getGroup(key).end(key);
+	/// Delays subsequent requests without delaying or retrying the current one.
+	/// A shorter delay never overwrites an existing backoff.
+	void defer(Key key, Duration delay) => _getGroup(key).defer(delay);
+
+	/// Set [allowMissing] when a request may have failed before joining the queue.
+	void end(Key key, {bool allowMissing = false}) => _getGroup(key).end(key, allowMissing: allowMissing);
 
 	bool prioritize(Key key) => _groups[groupKeyer(key)]?.prioritize(key) ?? false;
 

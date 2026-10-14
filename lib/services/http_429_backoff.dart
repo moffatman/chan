@@ -190,7 +190,7 @@ class HTTP429BackoffInterceptor extends InterceptorBase {
 		}
 		finally {
 			if (currentRetries == 0) {
-				http429Queue.end(err.requestOptions.uri);
+				http429Queue.end(err.requestOptions.uri, allowMissing: true);
 			}
 		}
 	}
