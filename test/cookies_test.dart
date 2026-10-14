@@ -30,6 +30,58 @@ class _MemoryCookieStorage extends Storage {
 }
 
 void main() {
+	test('raw JSON cookies persist and reload through request and editor paths', () async {
+		const value = r'{"i_l":1,"i_ll":1791906679560,"text":"a \"quote\" and \\ slash"}';
+		final storage = _MemoryCookieStorage();
+		final uri = Uri.parse('https://www.reddit.com/');
+		PersistCookieJar newJar() => PersistCookieJar(
+			storage: storage,
+			cookieParser: MyCookie.fromSetCookieValue
+		);
+		final hostCookie = MyCookie('g_state', value)
+			..path = '/'
+			..expires = DateTime.utc(2100);
+		final domainCookie = MyCookie('shared_state', value)
+			..domain = '.reddit.com'
+			..path = '/'
+			..httpOnly = true
+			..secure = true;
+		await newJar().saveFromResponse(uri, [hostCookie, domainCookie]);
+
+		final restored = await newJar().loadForRequest(uri);
+		expect(restored, hasLength(2));
+		expect(restored.map((cookie) => cookie.value), everyElement(value));
+		expect(
+			restored.map((cookie) => '${cookie.name}=${cookie.value}').join('; '),
+			'g_state=$value; shared_state=$value'
+		);
+		expect(restored.first.expires, DateTime.utc(2100));
+		expect(restored.last.secure, isTrue);
+		expect(restored.last.httpOnly, isTrue);
+		expect(restored.last.expires, isNull);
+
+		// The editor eagerly loads host buckets using its own decoder.
+		final editingJar = newJar();
+		final stored = await loadAllCookies(editingJar);
+		expect(stored.map((cookie) => cookie.cookie.value), everyElement(value));
+		final host = stored.singleWhere((cookie) => cookie.scope == StoredCookieScope.host);
+		await replaceStoredCookie(editingJar, host, MyCookie('g_state', value)..path = '/');
+		final afterEdit = await newJar().loadForRequest(uri);
+		expect(afterEdit.singleWhere((cookie) => cookie.name == 'g_state').value, value);
+	});
+
+	test('custom cookie parser preserves JSON and rejects separators and controls', () {
+		const value = r'{"text":"a \"quote\" and \\ slash"}';
+		expect(MyCookie.fromSetCookieValue('g_state=$value; Path=/').value, value);
+		final cookie = MyCookie('g_state', 'original');
+		cookie.value = value;
+		expect(cookie.value, value);
+		for (final invalid in ['a;b', 'a\r\nb', 'a\x00b', 'a\tb', 'a\x7fb']) {
+			expect(() => MyCookie('key', invalid), throwsFormatException);
+			expect(() => cookie.value = invalid, throwsFormatException);
+		}
+	});
+
 	test('Apple WebView host-only cookies keep host scope', () {
 		expect(
 			normalizeWebViewCookieDomain(

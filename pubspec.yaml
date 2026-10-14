@@ -270,6 +270,10 @@ dependency_overrides:
     git:
       url: https://github.com/moffatman/auto_size_text.git
       ref: master
+  cookie_jar:
+    git:
+      url: https://github.com/moffatman/cookie_jar.git
+      ref: main
   analyzer: ^14.4.0
   dart_style: ^3.1.13
   js: ^0.7.1 # Needed to run with current connectivity_plus tag

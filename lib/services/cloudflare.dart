@@ -528,8 +528,8 @@ class CloudflareInterceptor extends InterceptorBase {
 					_ => null
 				};
 				if (uri != null && currentGateway == null && (!_titleMatches(title) || uri.looksLikeWebViewRedirect)) {
-					await Persistence.saveCookiesFromWebView(uri);
 					try {
+						await Persistence.saveCookiesFromWebView(uri);
 						final value = await handler(controller, uri, false, lastNavigationResponse?.$1 == uri ? lastNavigationResponse?.$2 : null);
 						if (value != null) {
 							callback(AsyncSnapshot.withData(ConnectionState.done, value));

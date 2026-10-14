@@ -627,10 +627,12 @@ class Persistence extends ChangeNotifier {
 			Future.error(e, st);
 		}
 		final wifiCookies1 = wifiCookies = PersistCookieJar(
+			cookieParser: MyCookie.fromSetCookieValue,
 			storage: await _maybeMigrateCookieStorage('')
 		);
 		await wifiCookies1.forceInit();
 		final cellularCookies1 = cellularCookies = PersistCookieJar(
+			cookieParser: MyCookie.fromSetCookieValue,
 			storage: await _maybeMigrateCookieStorage('/cellular')
 		);
 		await cellularCookies1.forceInit();

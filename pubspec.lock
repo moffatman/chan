@@ -254,11 +254,12 @@ packages:
   cookie_jar:
     dependency: "direct main"
     description:
-      name: cookie_jar
-      sha256: a6ac027d3ed6ed756bfce8f3ff60cb479e266f3b0fdabd6242b804b6765e52de
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.0.8"
+      path: "."
+      ref: main
+      resolved-ref: "5483e00b4d5601fe07b888b95781971691ed1cd6"
+      url: "https://github.com/moffatman/cookie_jar.git"
+    source: git
+    version: "4.0.9"
   coverage:
     dependency: transitive
     description:
