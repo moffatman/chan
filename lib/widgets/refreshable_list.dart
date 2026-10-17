@@ -25,7 +25,6 @@ import 'package:provider/provider.dart';
 import 'package:weak_map/weak_map.dart';
 
 const double _overscrollTriggerThreshold = 100;
-const double _bottomLockTolerance = 50;
 const _treeAnimationDuration = Duration(milliseconds: 250);
 
 class ItemNotFoundException implements Exception {
@@ -1313,34 +1312,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	}
 
 	Future<void> _lockSliverForNextRebuild({bool bottomOnly = false, bool lockAtMiddle = false}) async {
-		if (!mounted) return;
-		final sliver = controller._renderSliverList;
-		Key? lockKey;
-		if (bottomOnly || controller._useTree != widget.useTree) {
-			final position = controller.scrollController?.tryPosition;
-			if (position != null && position.haveDimensions && position.extentAfter <= _bottomLockTolerance) {
-				lockKey = RenderSliverList.kLockKeyLockToEnd;
-			}
-		}
-		else {
-			var index = lockAtMiddle ? controller.middleVisibleIndex : controller.lastVisibleIndex;
-			while (index >= 0 && controller.isItemHidden(controller.getItem(index)).isHidden) {
-				index--;
-			}
-			if (index >= 0) {
-				lockKey = ValueKey(controller.getItem(index)._key);
-			}
-		}
-		try {
-			sliver?.lockKey = lockKey;
-			setState(() {});
-			await SchedulerBinding.instance.endOfFrame;
-		}
-		finally {
-			if (sliver?.lockKey == lockKey) {
-				sliver?.lockKey = null;
-			}
-		}
+		// This is not supported on flutter master
+		await SchedulerBinding.instance.endOfFrame;
 	}
 
 	/// To be used when we have a whole updated list, it will check for any stub upgrades
