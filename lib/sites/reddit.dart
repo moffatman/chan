@@ -823,7 +823,14 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	/// Resolve image hosting sites to hotlinks
-	Future<List<({String url, String? thumbnailUrl, AttachmentType type, String ext})>?> _resolveUrl0(Uri uri, {
+	Future<List<({
+		String url,
+		String? thumbnailUrl,
+		AttachmentType type,
+		String ext,
+		int? width,
+		int? height
+	})>?> _resolveUrl0(Uri uri, {
 		required RequestPriority priority,
 		CancelToken? cancelToken
 	}) async {
@@ -839,14 +846,16 @@ class SiteReddit extends ImageboardSite {
 					},
 					responseType: ResponseType.json
 				), cancelToken: cancelToken);
-				if (response.data case {'data': {'link': String link}}) {
+				if (response.data case {'data': Map data && {'link': String link}}) {
 					return [(
 						url: link,
 						thumbnailUrl: link.replaceFirstMapped(RegExp(r'\.([^.]+)$'), (m) {
 							return 'm.${m.group(1)}';
 						}),
 						type: AttachmentType.fromFilename(link),
-						ext: '.${link.afterLast('.')}'
+						ext: '.${link.afterLast('.')}',
+						width: data['width'] as int?,
+						height: data['height'] as int?
 					)];
 				}
 			}
@@ -870,7 +879,9 @@ class SiteReddit extends ImageboardSite {
 								return 'm.${m.group(1)}';
 							}),
 							type: AttachmentType.fromFilename(link),
-							ext: '.${link.afterLast('.')}'
+							ext: '.${link.afterLast('.')}',
+							width: image['width'] as int?,
+							height: image['height'] as int?
 						)];
 					}).toList();
 				}
@@ -903,7 +914,9 @@ class SiteReddit extends ImageboardSite {
 						url: link,
 						thumbnailUrl: gfyItem['miniPosterUrl'] as String?,
 						type: AttachmentType.mp4,
-						ext: '.mp4'
+						ext: '.mp4',
+						width: null,
+						height: null
 					)];
 				}
 			}
@@ -912,7 +925,9 @@ class SiteReddit extends ImageboardSite {
 					url: uri.toString(),
 					thumbnailUrl: null,
 					type: AttachmentType.image,
-					ext: '.jpeg'
+					ext: '.jpeg',
+					width: null,
+					height: null
 				)];
 			}
 			else if (uri.host.endsWith('redgifs.com') && uri.pathSegments.length == 2 && uri.pathSegments[0] == 'watch' && persistence != null) {
@@ -949,12 +964,14 @@ class SiteReddit extends ImageboardSite {
 						rethrow;
 					}
 				}
-				if (response.data case {'gif': {'urls': Map urls && ({'hd': String url} || {'sd': String url})}}) {
+				if (response.data case {'gif': Map gif && {'urls': Map urls && ({'hd': String url} || {'sd': String url})}}) {
 					return [(
 						url: url,
 						thumbnailUrl: urls['thumbnailUrl'] as String?,
 						type: AttachmentType.mp4,
-						ext: '.mp4'
+						ext: '.mp4',
+						width: gif['width'] as int?,
+						height: gif['height'] as int?
 					)];
 				}
 			}
@@ -965,7 +982,14 @@ class SiteReddit extends ImageboardSite {
 		return null;
 	}
 
-	Future<List<({String url, String? thumbnailUrl, AttachmentType type, String ext})>> _resolveUrl1(Uri uri, {
+	Future<List<({
+		String url,
+		String? thumbnailUrl,
+		AttachmentType type,
+		String ext,
+		int? width,
+		int? height
+	})>> _resolveUrl1(Uri uri, {
 		required RequestPriority priority,
 		CancelToken? cancelToken
 	}) async {
@@ -979,7 +1003,9 @@ class SiteReddit extends ImageboardSite {
 			url: uri.toString(),
 			thumbnailUrl: null,
 			type: isDirectLink ? AttachmentType.image : AttachmentType.url,
-			ext: isDirectLink ? '.${uri.path.afterLast('.')}' : ''
+			ext: isDirectLink ? '.${uri.path.afterLast('.')}' : '',
+			width: null,
+			height: null
 		)];
 	}
 
@@ -1018,8 +1044,8 @@ class SiteReddit extends ImageboardSite {
 			url: data.url,
 			thumbnailUrl: data.thumbnailUrl ?? '',
 			md5: '',
-			width: null,
-			height: null,
+			width: data.width,
+			height: data.height,
 			threadId: null,
 			sizeInBytes: null
 		)).toList() ?? [];
@@ -1136,8 +1162,8 @@ class SiteReddit extends ImageboardSite {
 					ext: url.$2.ext,
 					filename: Uri.tryParse(url.$2.url)?.pathSegments.tryLast ?? '',
 					url: url.$2.url,
-					width: (image0?['source'] as Map?)?['width'] as int?,
-					height: (image0?['source'] as Map?)?['height'] as int?,
+					width: (image0?['source'] as Map?)?['width'] as int? ?? url.$2.width,
+					height: (image0?['source'] as Map?)?['height'] as int? ?? url.$2.height,
 					md5: '',
 					sizeInBytes: null,
 					thumbnailUrl: url.$2.thumbnailUrl ?? switch (image0) {
@@ -1159,8 +1185,8 @@ class SiteReddit extends ImageboardSite {
 				url: url.$2.url,
 				thumbnailUrl: url.$2.thumbnailUrl ?? generateThumbnailerForUrl(Uri.parse(url.$2.url)).toString(),
 				md5: '',
-				width: null,
-				height: null,
+				width: url.$2.width,
+				height: url.$2.height,
 				sizeInBytes: null
 			)));
 		}
