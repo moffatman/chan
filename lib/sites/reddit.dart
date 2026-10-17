@@ -1363,6 +1363,9 @@ class SiteReddit extends ImageboardSite {
 					},
 					responseType: ResponseType.json
 				), cancelToken: cancelToken);
+				if (response.data?['kind'] != 't5') {
+					throw BoardNotFoundException(this, board);
+				}
 				newBoard = _makeBoard(response.data!['data'] as Map)..additionalDataTime = DateTime.now();
 			}
 			await persistence?.setBoard(board, newBoard);
@@ -1392,6 +1395,9 @@ class SiteReddit extends ImageboardSite {
 	Future<Catalog> getCatalogImpl(String board, {CatalogVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
 		try {
 			await _updateBoardIfNeeded(board, priority: priority, cancelToken: cancelToken);
+		}
+		on BoardNotFoundException {
+			rethrow;
 		}
 		catch (e, st) {
 			Future.error(e, st);
