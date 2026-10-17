@@ -65,6 +65,7 @@ Widget buildTestList(
     ValueChanged<int>? onItemTap,
     bool tabGestures = false,
     Map<int, double> preferredMainAxisExtents = const {},
+    Map<int, double> paddingPreferredContentExtents = const {},
     void Function(int index, BoxConstraints constraints)? onItemLayout,
     void Function(int index, int? selectedItemDelta)?
         onItemSelectionScope,
@@ -115,6 +116,31 @@ Widget buildTestList(
                                   textDirection: TextDirection.ltr)),
                         );
                     var content = buildContent();
+                    if (paddingPreferredContentExtents[index] case final preferredContentExtent?) {
+                      final paddedChild = content;
+                      content = Builder(builder: (context) {
+                        final delta = PaginatedReorderableListItem
+                            .selectedItemDeltaOf(context);
+                        final weights = switch (delta) {
+                          1 => const Offset(1, 0),
+                          -1 => const Offset(0, 1),
+                          null => Offset.zero,
+                          _ => const Offset(1, 1)
+                        };
+                        return TweenAnimationBuilder<Offset>(
+                            tween: Tween(begin: weights, end: weights),
+                            duration: const Duration(milliseconds: 350),
+                            curve: Curves.ease,
+                            builder: (context, animatedWeights, child) =>
+                                PaginatedReorderableListItemPadding(
+                                    key: ValueKey('padding-$index'),
+                                    preferredContentExtent:
+                                        preferredContentExtent,
+                                    shrinkWeights: animatedWeights,
+                                    child: child!),
+                            child: paddedChild);
+                      });
+                    }
                     if (onItemSelectionScope != null) {
                       final scopedContent = content;
                       content = Builder(builder: (context) {
@@ -646,49 +672,49 @@ void main() {
 
   testWidgets('item padding contracts only when content needs the space',
       (tester) async {
+    final key = GlobalKey<PaginatedReorderableListState>();
     late StateSetter setState;
-    var width = 100.0;
-    var weights = const Offset(1, 0);
-    final itemKey = GlobalKey();
-    final contentKey = GlobalKey();
+    var selectedIndex = 4;
+    await tester.pumpWidget(StatefulBuilder(builder: (context, setter) {
+      setState = setter;
+      return buildTestList(
+          listKey: key,
+          itemCount: 6,
+          width: 300,
+          selectedIndex: selectedIndex,
+          preferredMainAxisExtents: const {0: 90, 1: 120, 4: 130},
+          paddingPreferredContentExtents: const {0: 90, 1: 120},
+          delegate:
+              const PaginatedReorderableListDelegateWithFixedMainAxisCount(
+                  mainAxisCount: 3));
+    }));
+    await tester.pump();
+    key.currentState!.jumpToPage(0);
+    await tester.pump();
 
-    await tester.pumpWidget(Directionality(
-        textDirection: TextDirection.ltr,
-        child: StatefulBuilder(builder: (context, setter) {
-          setState = setter;
-          return Center(
-              child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 350),
-                  curve: Curves.ease,
-                  width: width,
-                  height: 40,
-                  child: TweenAnimationBuilder<Offset>(
-                      tween: Tween(begin: weights, end: weights),
-                      duration: const Duration(milliseconds: 350),
-                      curve: Curves.ease,
-                      builder: (context, animatedWeights, child) =>
-                          PaginatedReorderableListItemPadding(
-                              key: itemKey,
-                              preferredContentExtent: 50,
-                              shrinkWeights: animatedWeights,
-                              child: child!),
-                      child: SizedBox.expand(key: contentKey))));
-        })));
-    await tester.pumpAndSettle();
-
-    double leftInset() => tester.getTopLeft(find.byKey(contentKey)).dx -
-        tester.getTopLeft(find.byKey(itemKey)).dx;
+    double leftInset() {
+      final renderObject = tester.renderObject(
+          find.byKey(const ValueKey('padding-0'))) as RenderShiftedBox;
+      return (renderObject.child!.parentData! as BoxParentData).offset.dx;
+    }
+    double contentWidth() => (tester.renderObject(
+        find.byKey(const ValueKey('padding-0'))) as RenderShiftedBox)
+        .child!
+        .size
+        .width;
     expect(leftInset(), 16);
+    final originalContentWidth = contentWidth();
 
-    setState(() => width = 70);
+    setState(() => selectedIndex = 1);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 175));
-    expect(leftInset(), inExclusiveRange(4, 16));
+    expect(leftInset(), lessThan(16));
+    expect(contentWidth(), lessThanOrEqualTo(originalContentWidth));
     await tester.pumpAndSettle();
     expect(leftInset(), closeTo(4, 0.001));
-    expect(tester.getSize(find.byKey(contentKey)).width, closeTo(50, 0.001));
+    expect(contentWidth(), lessThan(originalContentWidth));
 
-    setState(() => weights = Offset.zero);
+    setState(() => selectedIndex = 4);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 175));
     expect(leftInset(), inExclusiveRange(4, 16));
@@ -819,6 +845,77 @@ void main() {
     expect(tester.getSize(find.byKey(const ValueKey(3))).width, 90);
     expect(tester.getSize(find.byKey(const ValueKey(4))).width, 120);
     expect(tester.getSize(find.byKey(const ValueKey(5))).width, 90);
+  });
+
+  testWidgets('selecting a visible item from an off-page selection expands it',
+      (tester) async {
+    final key = GlobalKey<PaginatedReorderableListState>();
+    late StateSetter setState;
+    var selectedIndex = 4;
+    await tester.pumpWidget(StatefulBuilder(builder: (context, setter) {
+      setState = setter;
+      return buildTestList(
+          listKey: key,
+          itemCount: 6,
+          width: 300,
+          selectedIndex: selectedIndex,
+          preferredMainAxisExtents: const {1: 120, 4: 130},
+          delegate:
+              const PaginatedReorderableListDelegateWithFixedMainAxisCount(
+                  mainAxisCount: 3));
+    }));
+    await tester.pump();
+    key.currentState!.jumpToPage(0);
+    await tester.pump();
+    expect(tester.getSize(find.byKey(const ValueKey(1))).width, 100);
+
+    setState(() => selectedIndex = 1);
+    await tester.pump();
+    expect(tester.getSize(find.byKey(const ValueKey(1))).width, 100);
+    await tester.pump(const Duration(milliseconds: 175));
+    expect(tester.getSize(find.byKey(const ValueKey(1))).width,
+        inExclusiveRange(100, 120));
+    expect(tester.getSize(find.byKey(const ValueKey(0))).width,
+        inExclusiveRange(90, 100));
+    await tester.pumpAndSettle();
+    expect(tester.getSize(find.byKey(const ValueKey(1))).width, 120);
+    expect(tester.getSize(find.byKey(const ValueKey(0))).width, 90);
+  });
+
+  testWidgets('an off-page selection does not compact a page without growth',
+      (tester) async {
+    final key = GlobalKey<PaginatedReorderableListState>();
+    late StateSetter setState;
+    var selectedIndex = 4;
+    await tester.pumpWidget(StatefulBuilder(builder: (context, setter) {
+      setState = setter;
+      return buildTestList(
+          listKey: key,
+          itemCount: 6,
+          width: 300,
+          selectedIndex: selectedIndex,
+          preferredMainAxisExtents: const {0: 90, 1: 40, 4: 130},
+          paddingPreferredContentExtents: const {0: 90, 1: 40},
+          delegate:
+              const PaginatedReorderableListDelegateWithFixedMainAxisCount(
+                  mainAxisCount: 3));
+    }));
+    await tester.pump();
+    key.currentState!.jumpToPage(0);
+    await tester.pump();
+
+    final padding = find.byKey(const ValueKey('padding-0'));
+    double leftInset() {
+      final renderObject = tester.renderObject(padding) as RenderShiftedBox;
+      return (renderObject.child!.parentData! as BoxParentData).offset.dx;
+    }
+    expect(leftInset(), 16);
+
+    setState(() => selectedIndex = 1);
+    await tester.pumpAndSettle();
+    expect(tester.getSize(find.byKey(const ValueKey(1))).width, 100);
+    expect(tester.getSize(find.byKey(const ValueKey(0))).width, 100);
+    expect(leftInset(), 16);
   });
 
   testWidgets('initial selection commits without animating',

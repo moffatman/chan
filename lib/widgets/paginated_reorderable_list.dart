@@ -314,19 +314,33 @@ class _RenderPaginatedItemPadding extends RenderShiftedBox {
     }
   }
 
+  double? get _unselectedItemExtent {
+    RenderObject? ancestor = parent;
+    while (ancestor != null && ancestor is! _RenderPaginatedReorderableListItem) {
+      ancestor = ancestor.parent;
+    }
+    return (ancestor as _RenderPaginatedReorderableListItem?)
+        ?._unselectedExtent;
+  }
+
   EdgeInsets _paddingForWidth(double availableWidth) {
     final leftCapacity =
         (_normalSidePadding - _minimumSidePadding) * _shrinkWeights.dx;
     final rightCapacity =
         (_normalSidePadding - _minimumSidePadding) * _shrinkWeights.dy;
     final totalCapacity = leftCapacity + rightCapacity;
-    if (!availableWidth.isFinite || totalCapacity == 0) {
+    final unselectedExtent = _unselectedItemExtent;
+    if (!availableWidth.isFinite || totalCapacity == 0 ||
+        unselectedExtent == null) {
       return const EdgeInsets.symmetric(
           horizontal: _normalSidePadding, vertical: _verticalPadding);
     }
     final deficit = math.max(0.0,
         _preferredContentExtent + 2 * _normalSidePadding - availableWidth);
-    final shrink = math.min(deficit, totalCapacity);
+    // Do not expose more text than the unselected slot did. Only return space
+    // actually taken from this item by the selected item's expansion.
+    final selectionPressure = math.max(0.0, unselectedExtent - availableWidth);
+    final shrink = math.min(math.min(deficit, selectionPressure), totalCapacity);
     return EdgeInsets.only(
         left: _normalSidePadding - shrink * leftCapacity / totalCapacity,
         right: _normalSidePadding - shrink * rightCapacity / totalCapacity,
@@ -370,6 +384,16 @@ class _RenderPaginatedReorderableListItem extends RenderProxyBox {
 
   int _index;
 
+  _RenderSelectedFirstList? get _list {
+    RenderObject? ancestor = parent;
+    while (ancestor != null && ancestor is! _RenderSelectedFirstList) {
+      ancestor = ancestor.parent;
+    }
+    return ancestor as _RenderSelectedFirstList?;
+  }
+
+  double? get _unselectedExtent => _list?.unselectedExtentForIndex(_index);
+
   void update(int index) {
     _invalidatePreferredExtent();
     _index = index;
@@ -377,13 +401,7 @@ class _RenderPaginatedReorderableListItem extends RenderProxyBox {
   }
 
   void _invalidatePreferredExtent() {
-    RenderObject? ancestor = parent;
-    while (ancestor != null && ancestor is! _RenderSelectedFirstList) {
-      ancestor = ancestor.parent;
-    }
-    if (ancestor case final _RenderSelectedFirstList list) {
-      list.invalidatePreferredExtentForIndex(_index);
-    }
+    _list?.invalidatePreferredExtentForIndex(_index);
   }
 
   @override
@@ -634,6 +652,7 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
   bool _previousPreferredExtentNeedsMeasurement = true;
   bool _preferredExtentNeedsMeasurement = true;
   bool _didCorrectInitialSelectedPage = false;
+  bool _hasLayoutMetrics = false;
   double? _lastViewportMainAxisExtent;
   double? _lastCrossAxisExtent;
 
@@ -808,6 +827,15 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
 
   double _equalExtentForPage(int page, bool alignPagesToEnd) =>
       _pageContentExtent(page, alignPagesToEnd) / _itemsPerPage;
+
+  double? unselectedExtentForIndex(int index) {
+    if (!_hasLayoutMetrics || !_isValidIndex(index)) return null;
+    final previousPage = _pageForIndex(index, _previousAlignPagesToEnd);
+    final page = _pageForIndex(index, _alignPagesToEnd);
+    final begin = _equalExtentForPage(previousPage, _previousAlignPagesToEnd);
+    final end = _equalExtentForPage(page, _alignPagesToEnd);
+    return begin + (end - begin) * _pageAlignmentAnimation.value;
+  }
 
   double _maximumSelectedExtentForPage(int page, bool alignPagesToEnd) {
     final pageContentExtent = _pageContentExtent(page, alignPagesToEnd);
@@ -1041,6 +1069,7 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
       _lastCrossAxisExtent = constraints.crossAxisExtent;
     }
     _itemsPerPage = resolvedItemsPerPage;
+    _hasLayoutMetrics = true;
     if (!_didCorrectInitialSelectedPage &&
         _itemCount > 0 &&
         _pageExtent > 0) {
