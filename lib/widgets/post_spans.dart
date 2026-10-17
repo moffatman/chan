@@ -2053,6 +2053,24 @@ class PostLinkSpan extends PostTerminalSpan {
 							client: zone.imageboard.site.client,
 							cache: true,
 						);
+						final Object tag;
+						CreateRectTween? createRectTween;
+						if (data.attachments case final attachments? when attachments.item.isNotEmpty) {
+							final stackIds = zone.stackIds.toList();
+							if (stackIds.isNotEmpty) {
+								stackIds.removeLast();
+							}
+							tag = TaggedAttachment(
+								attachment: attachments.item.first,
+								imageboard: attachments.imageboard,
+								semanticParentIds: stackIds,
+								postId: post.id
+							);
+							createRectTween = AttachmentThumbnail.makeCreateRectTween(context, attachments.item.first, BoxFit.cover);
+						}
+						else {
+							tag = Object();
+						}
 						final FilterQuality filterQuality;
 						if (settings.thumbnailPixelation > 0) {
 							filterQuality = FilterQuality.none;
@@ -2103,27 +2121,34 @@ class PostLinkSpan extends PostTerminalSpan {
 								),
 								_ => null
 							},
-							child: ExtendedImage(
-								image: image,
-								width: 75,
-								height: 75,
-								fit: BoxFit.cover,
-								filterQuality: filterQuality,
-								loadStateChanged: (loadstate) {
-									if (loadstate.extendedImageLoadState == LoadState.failed) {
-										if (ImageboardRegistry.instance.getImageboard(imageboardTarget?.$1)?.site case final site?) {
-											return Center(
-												child: ImageboardIcon(
-													site: site,
-													size: 32,
-												)
-											);
+							child: Hero(
+								tag: tag,
+								flightShuttleBuilder: (context, animation, direction, fromContext, toContext) {
+									return (direction == HeroFlightDirection.push ? fromContext.widget as Hero : toContext.widget as Hero).child;
+								},
+								createRectTween: createRectTween,
+								child: ExtendedImage(
+									image: image,
+									width: 75,
+									height: 75,
+									fit: BoxFit.cover,
+									filterQuality: filterQuality,
+									loadStateChanged: (loadstate) {
+										if (loadstate.extendedImageLoadState == LoadState.failed) {
+											if (ImageboardRegistry.instance.getImageboard(imageboardTarget?.$1)?.site case final site?) {
+												return Center(
+													child: ImageboardIcon(
+														site: site,
+														size: 32,
+													)
+												);
+											}
+											return const Icon(CupertinoIcons.question);
 										}
-										return const Icon(CupertinoIcons.question);
+										return null;
 									}
-									return null;
-								}
-							),
+								)
+							)
 						);
 						if (settings.blurThumbnails) {
 							// No need for ClipRect, we will ClipRRect below
