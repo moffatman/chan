@@ -415,7 +415,6 @@ class SiteReddit extends ImageboardSite {
 	];
 
 	static PostNodeSpan makeSpan(String board, int threadId, String text, {List<Attachment> attachments = const []}) {
-		text = unescape.convert(text);
 		final body = parseFragment(
 			markdown.markdownToHtml(
 				const LooseUrlLinkifier(unescapeBackslashes: true, redditSafeMode: true).parse(
@@ -712,7 +711,7 @@ class SiteReddit extends ImageboardSite {
 					}
 				}
 				else {
-					yield* Site4Chan.parsePlaintext(node.text ?? '');
+					yield* Site4Chan.parsePlaintext(unescape.convert(node.text ?? ''));
 				}
 			}
 		}
