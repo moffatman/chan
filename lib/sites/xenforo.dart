@@ -705,6 +705,10 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 				parentId: -currentPageNumber,
 				name: _parseUsernameFromLink(e.querySelector('.message-name a') ?? e.querySelector('.message-name .username')),
 				time: _parseTime(e.querySelector('.message-attribution-main time')!),
+				edited: switch (e.querySelector('.message-lastEdit time')) {
+					dom.Element time => _parseTime(time),
+					null => null
+				},
 				spanFormat: PostSpanFormat.xenforo,
 				attachments_: e.querySelectorAll('.message-attachments .file-preview img').map((img) {
 					final url = _fixRelativeUrl(img.attributes['src']!);
