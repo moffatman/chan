@@ -479,7 +479,7 @@ class Post implements Filterable {
 		other.email == email &&
 		other.capcode == capcode &&
 		mapEquals(other.extraMetadata, extraMetadata) &&
-		edited == edited;
+		other.edited == edited;
 	
 	bool isIdenticalForFilteringPurposes(Post other) {
 		return 
