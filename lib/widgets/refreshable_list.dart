@@ -1550,7 +1550,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			originalList = newList;
 			sortedList = newList.toList();
 			_sortList();
-			await _lockSliverForNextRebuild(lockAtMiddle: true);
+			setState(() {});
 		}
 		catch (e, st) {
 			if (mounted && !cancelToken.isCancelled) {
