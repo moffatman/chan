@@ -1065,7 +1065,6 @@ class ChanTabs extends ChangeNotifier {
 					title: 'Close others',
 					isDestructiveAction: true,
 					onPressed: Persistence.tabs.length == 1 ? null : () async {
-						lightHapticFeedback();
 						final shouldCloseOthers = await showAdaptiveDialog<bool>(
 							context: context,
 							barrierDismissible: true,

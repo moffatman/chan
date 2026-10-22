@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/scheduler.dart';
@@ -198,6 +199,10 @@ class ScrollTrackerNavigatorObserver extends NavigatorObserver {
 	
 	@override
 	void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+		// Initial routes are also pushed when a navigator is created.
+		if (previousRoute != null) {
+			lightHapticFeedback();
+		}
 		if (_isWeakIsh(route)) {
 			ScrollTracker.instance.weakNavigatorDidPush();
 		}
@@ -208,6 +213,7 @@ class ScrollTrackerNavigatorObserver extends NavigatorObserver {
 
 	@override
 	void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+		lightHapticFeedback();
 		if (_isWeakIsh(route)) {
 			ScrollTracker.instance.weakNavigatorDidPop();
 		}

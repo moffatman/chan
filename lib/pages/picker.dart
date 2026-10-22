@@ -2,7 +2,6 @@ import 'dart:math';
 
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/settings.dart';
-import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/util.dart';
@@ -222,7 +221,6 @@ class _PickerPageState<T> extends State<PickerPage<T>> {
 		if (!_popping && _pointersDownCount == 0) {
 			if (_getOverscroll() > 50) {
 				_popping = true;
-				lightHapticFeedback();
 				Navigator.pop(context);
 			}
 		}
@@ -304,7 +302,6 @@ class _PickerPageState<T> extends State<PickerPage<T>> {
 							onSubmitted: (String board) {
 								if (filteredItems.isNotEmpty) {
 									final selected = filteredItems[effectiveSelectedIndex];
-									lightHapticFeedback();
 									Navigator.pop(context, Wrapper<T>(selected));
 								}
 								_focusNode.requestFocus();
@@ -394,7 +391,6 @@ class _PickerPageState<T> extends State<PickerPage<T>> {
 												)
 											),
 											onPressed: () {
-												lightHapticFeedback();
 												Navigator.pop(context, Wrapper<T>(item));
 											}
 										)
