@@ -2311,6 +2311,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	({
 		List<RefreshableListItem<T>> linear,
 		int? treeSplitId,
+		Set<int> upgradedStubPostIds,
 		_Tree<T> tree,
 		bool initiallyCollapseSecondLevelReplies,
 		bool repliesToOPAreTopLevel,
@@ -2332,9 +2333,14 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			return (tree: linear, automaticallyCollapsed: [], automaticallyTopLevelCollapsed: {});
 		}
 
+		// Stub loading can mutate the backing list before _updateList sees it.
+		// Include promotions recorded by the page or background watcher on every
+		// build, including rebuilds triggered within this list.
+		_upgradedStubPostIds.addAll(adapter.initialUpgradedStubPostIds ?? const <int>{});
 		final lastTree = _lastTree;
 		if (lastTree != null &&
 		    _treeSplitId == lastTree.treeSplitId &&
+				setEquals(_upgradedStubPostIds, lastTree.upgradedStubPostIds) &&
 				linear.length == lastTree.linear.length &&
 				adapter.initiallyCollapseSecondLevelReplies == lastTree.initiallyCollapseSecondLevelReplies &&
 				adapter.repliesToOPAreTopLevel == lastTree.repliesToOPAreTopLevel &&
@@ -2805,6 +2811,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		_lastTree = (
 			linear: linear.toList(growable: false),
 			treeSplitId: _treeSplitId,
+			upgradedStubPostIds: _upgradedStubPostIds.toSet(),
 			tree: tree,
 			initiallyCollapseSecondLevelReplies: adapter.initiallyCollapseSecondLevelReplies,
 			repliesToOPAreTopLevel: adapter.repliesToOPAreTopLevel,
