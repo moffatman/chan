@@ -4,6 +4,18 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:flutter/material.dart';
 
+int countTrailingMatchingDigits(int id) {
+	if (id < 0) {
+		throw ArgumentError.value(id, 'id', 'Must be nonnegative');
+	}
+	final digit = id % 10;
+	int length = 1;
+	for (int remaining = id ~/ 10; remaining > 0 && remaining % 10 == digit; remaining ~/= 10) {
+		length++;
+	}
+	return length;
+}
+
 (int total, Map<int, int> bins) _calculate() {
 	int total = 0;
 	final bins = <int, int>{};
@@ -13,74 +25,90 @@ import 'package:flutter/material.dart';
 				continue;
 			}
 			total++;
-			final codeUnits = receipt.id.toString().codeUnits;
-			int i;
-			if (codeUnits.length == 1) {
-				i = 1;
-			}
-			else {
-				final last = codeUnits.last;
-				for (i = 1; codeUnits[codeUnits.length - i] == last && i < codeUnits.length; i++) {
-					// Go through each matching digits
-				}
-				i--; // we exit loop on i == too far by one
-			}
+			final i = countTrailingMatchingDigits(receipt.id);
 			bins.update(i, (x) => x + 1, ifAbsent: () => 1);
 		}
 	}
 	return (total, bins);
 }
 
-double _erf(double x) {
-  // Abramowitz-Stegun approximation
-  final sign = x < 0 ? -1.0 : 1.0;
-  x = x.abs();
-
-  const a1 = 0.254829592;
-  const a2 = -0.284496736;
-  const a3 = 1.421413741;
-  const a4 = -1.453152027;
-  const a5 = 1.061405429;
-  const p = 0.3275911;
-
-  final t = 1.0 / (1.0 + p * x);
-  final y = 1.0 - (((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t) *
-      math.exp(-x * x);
-
-  return sign * y;
+// Lanczos approximation for positive arguments (all callers use x >= 1).
+double _logGamma(double x) {
+	const coefficients = [
+		676.5203681218851,
+		-1259.1392167224028,
+		771.3234287776531,
+		-176.6150291621406,
+		12.507343278686905,
+		-0.13857109526572012,
+		9.984369578019572e-6,
+		1.5056327351493116e-7
+	];
+	final z = x - 1;
+	double a = 0.99999999999980993;
+	for (int i = 0; i < coefficients.length; i++) {
+		a += coefficients[i] / (z + i + 1);
+	}
+	final t = z + 7.5;
+	return 0.9189385332046727 + (z + 0.5) * math.log(t) - t + math.log(a);
 }
 
-double _normalCdf(double x) {
-  return 0.5 * (1.0 + _erf(x / math.sqrt2));
-}
-
-double _negBinomialCdfApprox(int r, double p, int tMax) {
-  if (tMax < 0) return 0.0;
-  if (p <= 0.0) return 0.0;
-  if (p >= 1.0) return 1.0;
-
-  final q = 1.0 - p;
-  final mean = r * q / p;
-  final variance = r * q / (p * p);
-  final sd = math.sqrt(variance);
-
-  final z = (tMax + 0.5 - mean) / sd;
-  return _normalCdf(z).clamp(0.0, 1.0);
+double _negBinomialMidPercentile(int r, double p, int observed) {
+	if (r == 0 || p == 1) {
+		return observed == 0 ? 0.5 : 1.0;
+	}
+	final q = 1 - p;
+	// Start at the observed PMF in log space: p^r alone can underflow even
+	// when the final probability is near 50%.
+	final logMass = _logGamma((r + observed).toDouble()) -
+		_logGamma(r.toDouble()) - _logGamma((observed + 1).toDouble()) +
+		r * math.log(p) + observed * math.log(q);
+	final mass = math.exp(logMass);
+	double term = mass;
+	double tail = 0;
+	if (observed < r * q / p) {
+		// Sum the lower tail directly, avoiding 1 - CDF cancellation.
+		for (int k = observed; k > 0; k--) {
+			term *= k / (r + k - 1) / q;
+			tail += term;
+			if (term <= tail * 1e-15) break;
+		}
+		return (tail + 0.5 * mass).clamp(0.0, 1.0);
+	}
+	// Above the mean the upper tail converges faster.
+	for (int k = observed; ; k++) {
+		term *= (r + k) / (k + 1) * q;
+		tail += term;
+		if (term <= tail * 1e-15) break;
+	}
+	return (1 - tail - 0.5 * mass).clamp(0.0, 1.0);
 }
 
 double luckScore(int total, Map<int, int> bins, {double p = 0.9}) {
-  // Returns a 0–100 luck score for a set of integers.
-  // p is the geometric "success" prob (stop prob) for the trailing run extension.
-  // For uniform base-10 last digits, p = 0.9.
-
-  // Sum T_obs = Σ (k_i - 1)
-  int tObs = 0;
-  for (final bin in bins.entries) {
-    tObs += (bin.key - 1) * bin.value;
-  }
-
-  // CDF at (Tobs - 1)
-  return _negBinomialCdfApprox(total, p, tObs - 1).clamp(0, 1);
+	// Returns a 0–1 midpoint percentile for total extra matching digits.
+	// For independent uniform decimal digits, the stop probability is 0.9,
+	// and the sum of (run length - 1) follows NegativeBinomial(total, p).
+	if (total < 0) {
+		throw ArgumentError.value(total, 'total', 'Must be nonnegative');
+	}
+	if (!p.isFinite || p <= 0 || p > 1) {
+		throw ArgumentError.value(p, 'p', 'Must be in (0, 1]');
+	}
+	int count = 0;
+	int observed = 0;
+	for (final bin in bins.entries) {
+		if (bin.key < 1 || bin.value < 0) {
+			throw ArgumentError.value(bins, 'bins', 'Lengths must be positive and counts nonnegative');
+		}
+		count += bin.value;
+		observed += (bin.key - 1) * bin.value;
+	}
+	if (count != total) {
+		throw ArgumentError.value(bins, 'bins', 'Counts must sum to total');
+	}
+	// Half the probability of a tie centers the percentile at 50% under
+	// the model, unlike a strict CDF, which is biased down for discrete data.
+	return _negBinomialMidPercentile(total, p, observed);
 }
 
 double? calculateLuck({(int total, Map<int, int> bins)? data}) {
