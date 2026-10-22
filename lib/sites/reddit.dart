@@ -421,7 +421,7 @@ class SiteReddit extends ImageboardSite {
 					[TextElement(text)],
 					const LinkifyOptions(defaultToHttps: true, humanize: false)
 				).map((e) => switch(e) {
-					UrlElement() => '<a href="${const HtmlEscape(HtmlEscapeMode.attribute).convert(e.url)}">${const HtmlEscape(HtmlEscapeMode.element).convert(e.text)}</a>',
+					UrlElement() => '<a href="${e.url}">${const HtmlEscape(HtmlEscapeMode.element).convert(e.text)}</a>',
 					_ => e.text
 				}).join(''),
 				inlineSyntaxes: _inlineSyntaxes,
