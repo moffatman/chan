@@ -1291,7 +1291,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			_sortList();
 		}
 		if (!widget.disableUpdates) {
-			update();
+			update(hapticFeedback: true);
 			resetTimer();
 		}
 		_refreshableTreeItems = _RefreshableTreeItems<T>(
