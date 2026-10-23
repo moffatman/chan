@@ -4605,7 +4605,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		state?._lastTreeOrder = null;
 		state?._rebuild(); // Force [block]
 		setItems([]);
-		await state?.update();
+		await state?.update(hapticFeedback: true);
 		slowScrolls.didUpdate(now: true);
 	}
 	Future<void> update() async {
