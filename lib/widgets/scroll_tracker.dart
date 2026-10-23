@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/injecting_navigator.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
@@ -200,7 +201,7 @@ class ScrollTrackerNavigatorObserver extends NavigatorObserver {
 	@override
 	void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
 		// Initial routes are also pushed when a navigator is created.
-		if (previousRoute != null) {
+		if (previousRoute != null && route.settings.name != PrimaryScrollControllerInjectingNavigatorState.kInitialAboveRoot) {
 			lightHapticFeedback();
 		}
 		if (_isWeakIsh(route)) {

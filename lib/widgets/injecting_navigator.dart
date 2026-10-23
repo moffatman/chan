@@ -120,16 +120,16 @@ class PrimaryScrollControllerInjectingNavigatorState extends State<PrimaryScroll
 		);
 	}
 
-	static const _kInitialAboveRoot = '/iar';
+	static const kInitialAboveRoot = '/iar';
 
 	InjectingNavigator _makeNavigator() => InjectingNavigator(
 		animation: primaryScrollControllerTracker,
 		injector: _injectController,
-		initialRoute: widget.buildInitialAboveRoot != null ? _kInitialAboveRoot : '/',
+		initialRoute: widget.buildInitialAboveRoot != null ? kInitialAboveRoot : '/',
 		observers: widget.observers,
 		key: widget.navigatorKey,
 		onGenerateRoute: (settings) {
-			if (widget.buildInitialAboveRoot case final x? when settings.name == _kInitialAboveRoot) {
+			if (widget.buildInitialAboveRoot case final x? when settings.name == kInitialAboveRoot) {
 				return adaptivePageRoute(
 					settings: settings,
 					builder: (context) => _injectController(context, x.$1),
