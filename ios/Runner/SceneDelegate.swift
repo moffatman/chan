@@ -6,6 +6,27 @@ class SceneDelegate: FlutterSceneDelegate {
   private(set) var translationHelper: (any TranslationHelper)?
   private weak var translationHost: UIViewController?
 
+  // An iOS app running on macOS can outlive its temporary Wrapper/Runner.app
+  // path (for example, across a long sleep). Flutter asserts when it cannot
+  // read the executable's modification date, even without restoration data.
+  private var canAccessRestorationBundle: Bool {
+    guard let executableURL = Bundle.main.executableURL else { return false }
+    // Use a fresh URL so cached metadata cannot hide a removed executable.
+    let url = URL(fileURLWithPath: executableURL.path)
+    guard let values = try? url.resourceValues(forKeys: [.contentModificationDateKey]) else { return false }
+    return values.contentModificationDate != nil
+  }
+
+  override func stateRestorationActivity(for scene: UIScene) -> NSUserActivity? {
+    guard canAccessRestorationBundle else { return nil }
+    return super.stateRestorationActivity(for: scene)
+  }
+
+  override func scene(_ scene: UIScene, restoreInteractionStateWith stateRestorationActivity: NSUserActivity) {
+    guard canAccessRestorationBundle else { return }
+    super.scene(scene, restoreInteractionStateWith: stateRestorationActivity)
+  }
+
   #if DEBUG
   private var debugBackgroundTask: UIBackgroundTaskIdentifier = .invalid
 
