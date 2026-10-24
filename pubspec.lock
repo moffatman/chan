@@ -760,7 +760,7 @@ packages:
     description:
       path: hive
       ref: master
-      resolved-ref: da107d13db03fe9dad469c31170cc3cfdd45b997
+      resolved-ref: "304a4446de71a918aab5bdbeb4ee827ef2d5aafa"
       url: "https://github.com/moffatman/hive.git"
     source: git
     version: "3.0.0-dev"

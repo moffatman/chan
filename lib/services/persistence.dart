@@ -2556,12 +2556,14 @@ class EfficientlyStoredIntSetAdapter extends TypeAdapter<EfficientlyStoredIntSet
 
   @override
   EfficientlyStoredIntSet read(BinaryReader reader) {
-    final intWidth = reader.readByte();
+    final format = reader.readByte();
+		final exactInts = format & 0x80 != 0;
+		final intWidth = format & 0x7f;
 		if (intWidth == 0) {
 			return EfficientlyStoredIntSet({});
 		}
 		final numDiffs = reader.readWord();
-		final diffBase = reader.readInt();
+		final diffBase = exactInts ? reader.readInt64() : reader.readInt();
 		final out = List.filled(numDiffs + 1, 0, growable: false);
 		out[numDiffs] = diffBase;
 		if (intWidth == 2) {
@@ -2576,7 +2578,7 @@ class EfficientlyStoredIntSetAdapter extends TypeAdapter<EfficientlyStoredIntSet
 		}
 		else if (intWidth == 8) {
 			for (int i = 0; i < numDiffs; i++) {
-				out[i] = diffBase + reader.readInt();
+				out[i] = diffBase + (exactInts ? reader.readInt64() : reader.readInt());
 			}
 		}
 		else {
@@ -2603,9 +2605,10 @@ class EfficientlyStoredIntSetAdapter extends TypeAdapter<EfficientlyStoredIntSet
 		else {
 			intWidth = 8;
 		}
-		writer.writeByte(intWidth);
+		// High bit versions the base and wide differences as exact int64 values.
+		writer.writeByte(0x80 | intWidth);
 		writer.writeWord(diffs.length);
-		writer.writeInt(sorted.first);
+		writer.writeInt64(sorted.first);
 		if (intWidth == 2) {
 			for (final diff in diffs) {
 				writer.writeWord(diff);
@@ -2618,7 +2621,7 @@ class EfficientlyStoredIntSetAdapter extends TypeAdapter<EfficientlyStoredIntSet
 		}
 		else if (intWidth == 8) {
 			for (final diff in diffs) {
-				writer.writeInt(diff);
+				writer.writeInt64(diff);
 			}
 		}
   }
