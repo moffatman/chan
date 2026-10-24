@@ -2957,16 +2957,27 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			}
 			else if (widget.treeAdapter != null) {
 				final adapter = widget.treeAdapter!;
-				RefreshableListItem<T>? stubItem;
+				(RefreshableListItem<T>, List<ParentAndChildIdentifier>)? stub;
+				void maybeAddStubItem() {
+					final item = stub;
+					if (item == null) return;
+					values.add(RefreshableListItem(
+						item: item.$1.item,
+						options: const RefreshableListItemOptions(),
+						id: item.$1.id,
+						representsKnownStubChildren: item.$2,
+						state: this
+					));
+					stub = null;
+				}
 				final unloadedPages = <RefreshableListItem<T>>[];
 				RefreshableListItem<T>? deferredUnloadedPage;
 				final items = values;
 				values = [];
 				for (final item in items) {
 					final isUnloadedPage = adapter.getHasOmittedReplies(item.item) && adapter.getIsPageStub(item.item);
-					if (stubItem != null && !adapter.getIsStub(item.item)) {
-						values.add(stubItem);
-						stubItem = null;
+					if (!adapter.getIsStub(item.item)) {
+						maybeAddStubItem();
 					}
 					if (unloadedPages.isNotEmpty && !isUnloadedPage) {
 						if (adapter.getParentIds(item.item).contains(unloadedPages.last.id)) {
@@ -2999,14 +3010,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						}
 					}
 					if (adapter.getIsStub(item.item)) {
-						stubItem ??= RefreshableListItem(
-							item: item.item, // Arbitrary
-							options: const RefreshableListItemOptions(), // Arbitrary
-							id: item.id, // Arbitrary
-							representsKnownStubChildren: [],
-							state: this
-						);
-						stubItem.representsKnownStubChildren.add(ParentAndChildIdentifier(
+						(stub ??= (item, [])).$2.add(ParentAndChildIdentifier(
 							parentId: adapter.getParentIds(item.item).tryFirst ?? adapter.opId,
 							childId: adapter.getId(item.item)
 						));
@@ -3017,14 +3021,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					else {
 						values.add(item);
 						if (adapter.getHasOmittedReplies(item.item)) {
-							stubItem ??= RefreshableListItem(
-								item: item.item, // Arbitrary
-								options: const RefreshableListItemOptions(), // Arbitrary
-								id: item.id, // Arbitrary
-								representsKnownStubChildren: [],
-								state: this
-							);
-							stubItem.representsKnownStubChildren.add(ParentAndChildIdentifier(
+							(stub ??= (item, [])).$2.add(ParentAndChildIdentifier(
 								parentId: adapter.getId(item.item),
 								childId: adapter.getId(item.item)
 							));
@@ -3036,9 +3033,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				}
 				// Intentionally not adding deferred final page. It confuses reloading.
 				// If you just pull to refresh you will get latest page.
-				if (stubItem != null) {
-					values.add(stubItem);
-				}
+				maybeAddStubItem();
 			}
 			controller.setItems(values);
 			final addedItemsFromExtension = _addedItemsFromExtension;
