@@ -1100,12 +1100,23 @@ class RefreshableListItemOptions {
 	final bool hideThumbnails;
 	final RegExp? queryPattern;
 	final bool inFilterFooter;
+	/// Number of direct, loaded children in this occurrence of the assembled tree.
+	/// Null outside tree mode; zero when this occurrence has no children.
+	final int? knownTreeChildCount;
 
 	const RefreshableListItemOptions({
 		this.hideThumbnails = false,
 		this.queryPattern,
-		this.inFilterFooter = false
+		this.inFilterFooter = false,
+		this.knownTreeChildCount
 	});
+
+	RefreshableListItemOptions copyWith({int? knownTreeChildCount}) => RefreshableListItemOptions(
+		hideThumbnails: hideThumbnails,
+		queryPattern: queryPattern,
+		inFilterFooter: inFilterFooter,
+		knownTreeChildCount: knownTreeChildCount ?? this.knownTreeChildCount
+	);
 
 	@override
 	bool operator == (Object other) =>
@@ -1113,13 +1124,14 @@ class RefreshableListItemOptions {
 		other is RefreshableListItemOptions &&
 		other.hideThumbnails == hideThumbnails &&
 		other.queryPattern == queryPattern &&
-		other.inFilterFooter == inFilterFooter;
+		other.inFilterFooter == inFilterFooter &&
+		other.knownTreeChildCount == knownTreeChildCount;
 	
 	@override
-	int get hashCode => Object.hash(hideThumbnails, queryPattern, inFilterFooter);
+	int get hashCode => Object.hash(hideThumbnails, queryPattern, inFilterFooter, knownTreeChildCount);
 
 	@override
-	String toString() => 'RefreshableListItemOptions(hideThumbnails: $hideThumbnails, queryPattern: $queryPattern, inFilterFooter: $inFilterFooter)';
+	String toString() => 'RefreshableListItemOptions(hideThumbnails: $hideThumbnails, queryPattern: $queryPattern, inFilterFooter: $inFilterFooter, knownTreeChildCount: $knownTreeChildCount)';
 }
 
 class RefreshableList<T extends Object> extends StatefulWidget {
@@ -2377,7 +2389,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					patchedAnyItems = true;
 					for (final item in lastTree.tree.tree) {
 						if (item.id == linear[i].id) {
-							item.options = linear[i].options;
+							item.options = linear[i].options.copyWith(knownTreeChildCount: item.options.knownTreeChildCount);
 						}
 					}
 					lastTree.linear[i].options = linear[i].options;
@@ -2642,6 +2654,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				throw const _TreeTooDeepException();
 			}
 			final item = node.item.copyWith(parentIds: parentIds);
+			item.options = item.options.copyWith(knownTreeChildCount: node.children.length);
 			out.add(item);
 			final ids = [
 				...parentIds,

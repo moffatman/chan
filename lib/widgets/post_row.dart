@@ -305,6 +305,8 @@ class PostRow extends StatelessWidget {
 	final double highlight;
 	final Widget? overrideReplyCount;
 	final bool showReplyCount;
+	/// Number of direct children of this row in the current assembled tree, if known.
+	final int? knownTreeChildCount;
 	final bool dim;
 	final bool showPostNumber;
 	final double? largeImageWidth;
@@ -333,6 +335,7 @@ class PostRow extends StatelessWidget {
 		this.baseOptions,
 		this.overrideReplyCount,
 		this.showReplyCount = true,
+		this.knownTreeChildCount,
 		this.dim = false,
 		this.showPostNumber = true,
 		this.largeImageWidth,
@@ -455,7 +458,9 @@ class PostRow extends StatelessWidget {
 		);
 		final isPostHidden = isPostHiddenByThreadState || listFilterReason != null;
 		final cloverStyleRepliesButton = (settings.cloverStyleRepliesButton && replyIds.isNotEmpty && parentZone.style != PostSpanZoneStyle.tree);
-		final showReplyCount = this.showReplyCount && (overrideReplyCount != null || parentZone.style != PostSpanZoneStyle.tree || switch (replyIds) {
+		final showReplyCount = this.showReplyCount && (overrideReplyCount != null || parentZone.style != PostSpanZoneStyle.tree ||
+			// Replies in the other tree still need a button to reach them.
+			(knownTreeChildCount != null && knownTreeChildCount != replyIds.length) || switch (replyIds) {
 			// Don't show reply count for tree + single reply
 			[int _] => false,
 			// Don't show reply count for tree + single reply (no subreplies) + second reply

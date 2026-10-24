@@ -2247,6 +2247,7 @@ class ThreadPageState extends State<ThreadPage> {
 																				_showGallery(initialAttachment: attachment);
 																			},
 																			hideThumbnails: options.hideThumbnails,
+																			knownTreeChildCount: options.knownTreeChildCount,
 																			highlightReplyCount: settings.showHotPostsInScrollbar && !site.supportsPostUpvotes ? _hotPostIds.contains(post.id) : false,
 																			baseOptions: PostSpanRenderOptions(
 																				highlightPattern: options.queryPattern
