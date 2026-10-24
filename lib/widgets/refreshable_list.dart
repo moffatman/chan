@@ -1488,6 +1488,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 
 	Future<void> _onTreeCollapseOrExpand(RefreshableListItem<T> item, bool looseEquality) async {
 		Duration total = Duration.zero;
+		lightHapticFeedback();
 		while (total < _treeAnimationDuration) {
 			const incremental = Duration(milliseconds: 50);
 			await Future.delayed(incremental);
