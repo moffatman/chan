@@ -344,7 +344,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		}
 		final matchingOtherImageboards = {
 			for (final (str: keyword, fin: _) in keywords)
-				keyword: allImageboards.where((i) => i != currentImageboard && (i.site.name.toLowerCase().contains(keyword) || (i.site.name.looksForeign && i.site.baseUrl.contains(keyword)))).toSet()
+				keyword: allImageboards.where((i) => i != currentImageboard && (i.site.name.toLowerCase().contains(keyword) || (i.site.name.looksForeign && i.site.baseUrl.contains(keyword)) || (!i.site.supportsMultipleBoards && i.site.formatBoardNameShort('').toLowerCase().contains(keyword)))).toSet()
 		};
 		final imageboards = allImageboards.toList();
 		imageboards.sort((a, b) => (imageboardUsage[b.key] ?? 0) - (imageboardUsage[a.key] ?? 0));
@@ -365,11 +365,25 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			if (!settings.showBoard(board.item)) {
 				return null;
 			}
-			final target = board.item.boardKey.s.nonEmptyOrNull ?? board.imageboard.site.name.toLowerCase();
+			final targets = [board.item.boardKey.s.nonEmptyOrNull ?? board.imageboard.site.name.toLowerCase()];
+			if (!board.imageboard.site.supportsMultipleBoards) {
+				final shortName = board.imageboard.site.formatBoardNameShort('');
+				if (shortName != board.imageboard.site.name) {
+					targets.add(shortName.toLowerCase());
+				}
+			}
 			_ExactMatchType? exactMatch;
 			int bestMatchIndex = -1;
 			for (final (str: keyword, fin:isEnd) in keywords) {
-				final matchIndex = target.indexOf(keyword);
+				int matchIndex = -1;
+				int matchLength = -1;
+				for (final target in targets) {
+					final targetMatchIndex = target.indexOf(keyword);
+					if (matchIndex == -1 || (targetMatchIndex != -1 && targetMatchIndex < matchIndex)) {
+						matchIndex = targetMatchIndex;
+						matchLength = target.length;
+					}
+				}
 				if (
 					!(
 						// Name match
@@ -382,7 +396,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				) {
 					return null;
 				}
-				if (matchIndex == 0 && target.length == keyword.length) {
+				if (matchIndex == 0 && matchLength == keyword.length) {
 					bestMatchIndex = 0;
 					exactMatch = isEnd ? _ExactMatchType.finalizedMatch : _ExactMatchType.match;
 				}
