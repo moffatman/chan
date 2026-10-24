@@ -1684,11 +1684,6 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 							cancelToken
 						);
 					}
-					catch (e, st) {
-						if (mounted && !cancelToken.isCancelled) {
-							alertError(context, e, st);
-						}
-					}
 					finally {
 						_refreshableTreeItems.itemLoadingOmittedItemsEnded(lastItem);
 					}
