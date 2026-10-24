@@ -2973,3 +2973,8 @@ class VeryFastSnappingPageScrollPhysics extends ScrollPhysics {
 		bounce: 0,
 	);
 }
+
+/// Dummy thing to signal the route handles its own haptics
+mixin HapticRouteMixin<T> on PopupRoute<T> {
+
+}

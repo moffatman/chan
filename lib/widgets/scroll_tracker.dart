@@ -201,7 +201,7 @@ class ScrollTrackerNavigatorObserver extends NavigatorObserver {
 	@override
 	void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
 		// Initial routes are also pushed when a navigator is created.
-		if (previousRoute != null && route.settings.name != PrimaryScrollControllerInjectingNavigatorState.kInitialAboveRoot) {
+		if (previousRoute != null && route.settings.name != PrimaryScrollControllerInjectingNavigatorState.kInitialAboveRoot && route is! HapticRouteMixin) {
 			lightHapticFeedback();
 		}
 		if (_isWeakIsh(route)) {

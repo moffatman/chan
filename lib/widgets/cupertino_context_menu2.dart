@@ -719,7 +719,7 @@ class _DecoyChildState extends State<_DecoyChild> {
 }
 
 // The open CupertinoContextMenu modal.
-class _ContextMenuRoute<T> extends PopupRoute<T> {
+class _ContextMenuRoute<T> extends PopupRoute<T> with HapticRouteMixin<T> {
   // Build a _ContextMenuRoute.
   _ContextMenuRoute({
     required List<Widget> actions,
