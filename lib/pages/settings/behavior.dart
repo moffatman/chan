@@ -387,7 +387,8 @@ final behaviorSettings = [
 	const SwitchSettingWidget(
 		description: 'Haptic feedback',
 		icon: Icons.vibration,
-		setting: Settings.useHapticFeedbackSetting
+		setting: Settings.useHapticFeedbackSetting,
+		keywords: ['vibrate', 'vibration']
 	),
 	if (Platform.isAndroid) const SwitchSettingWidget(
 		description: 'Incognito keyboard',
