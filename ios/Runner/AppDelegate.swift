@@ -71,6 +71,28 @@ class MyFileExportDelegate : NSObject, UIDocumentPickerDelegate {
   var appleChannel: FlutterMethodChannel?
   var garbageKeepAlive: [any NSObjectProtocol] = []
 
+  // UIKit can request application restoration even when UIScene is enabled.
+  // Guard both APIs: Flutter reads the bundle date in all four callbacks.
+  override func application(_ application: UIApplication, shouldSaveSecureApplicationState coder: NSCoder) -> Bool {
+    guard Utils.canAccessRestorationBundle else { return false }
+    return super.application(application, shouldSaveSecureApplicationState: coder)
+  }
+
+  override func application(_ application: UIApplication, shouldRestoreSecureApplicationState coder: NSCoder) -> Bool {
+    guard Utils.canAccessRestorationBundle else { return false }
+    return super.application(application, shouldRestoreSecureApplicationState: coder)
+  }
+
+  override func application(_ application: UIApplication, shouldSaveApplicationState coder: NSCoder) -> Bool {
+    guard Utils.canAccessRestorationBundle else { return false }
+    return super.application(application, shouldSaveApplicationState: coder)
+  }
+
+  override func application(_ application: UIApplication, shouldRestoreApplicationState coder: NSCoder) -> Bool {
+    guard Utils.canAccessRestorationBundle else { return false }
+    return super.application(application, shouldRestoreApplicationState: coder)
+  }
+
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
     if #available(iOS 10.0, *) {
