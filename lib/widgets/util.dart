@@ -222,7 +222,9 @@ void showToast({
 							style: TextStyle(
 								color: theme.primaryColor
 							),
-							textAlign: TextAlign.center
+							textAlign: TextAlign.center,
+							maxLines: 5,
+							overflow: TextOverflow.ellipsis
 						)
 					),
 					if (button != null) ...[
