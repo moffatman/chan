@@ -233,9 +233,8 @@ class _LooseHeaderSyntax extends markdown.BlockSyntax {
 const _loginFieldRedGifsTokenKey = '_rgt';
 
 class SiteRedditBlockedException extends ExtendedException {
-	final Uri url;
 	final Imageboard? imageboard;
-	SiteRedditBlockedException(this.imageboard, this.url);
+	SiteRedditBlockedException(this.imageboard);
 
 	@override
 	Map<String, FutureOr<void> Function(BuildContext)> get remedies => {
@@ -246,7 +245,7 @@ class SiteRedditBlockedException extends ExtendedException {
 	bool get isReportable => false;
 
 	@override
-	String toString() => 'Blocked by Reddit: $url';
+	String toString() => 'Blocked by Reddit';
 }
 
 const _kBypassLock = '_bypass_redidt_lock';
@@ -310,7 +309,7 @@ class _SiteRedditInterceptor extends InterceptorBase {
 	Future<void> onResponseImpl(Response response, ResponseInterceptorHandler handler) async {
 		if (response.statusCode == 403 && parent.isKnownHost(response.realUri.host)) {
 			if (response.requestOptions.extra.containsKey(_kThrowOnBlock)) {
-				throw SiteRedditBlockedException(parent.imageboard, response.realUri);
+				throw SiteRedditBlockedException(parent.imageboard);
 			}
 			final response2 = await _resolve(response);
 			if (response2 != null) {
@@ -325,7 +324,7 @@ class _SiteRedditInterceptor extends InterceptorBase {
 		final response = err.response;
 		if (response != null && response.statusCode == 403 && parent.isKnownHost(response.realUri.host)) {
 			if (err.requestOptions.extra.containsKey(_kThrowOnBlock)) {
-				throw SiteRedditBlockedException(parent.imageboard, response.realUri);
+				throw SiteRedditBlockedException(parent.imageboard);
 			}
 			final response2 = await _resolve(response);
 			if (response2 != null) {
