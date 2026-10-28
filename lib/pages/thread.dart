@@ -170,7 +170,29 @@ class ThreadPageState extends State<ThreadPage> {
 	bool _useAllDummies = false;
 	late final RefreshableListController<Post> _listController;
 	late PostSpanRootZoneData zone;
-	bool blocked = false;
+	bool _blocked = false;
+	bool _pendingUpdateHapticFeedback = false;
+	bool get blocked => _blocked;
+	set blocked(bool value) {
+		_blocked = value;
+		if (!value && _pendingUpdateHapticFeedback) {
+			WidgetsBinding.instance.addPostFrameCallback((_) {
+				if (mounted && !blocked && _pendingUpdateHapticFeedback) {
+					_pendingUpdateHapticFeedback = false;
+					mediumHapticFeedback();
+				}
+			});
+		}
+	}
+
+	void _onUpdateHapticFeedback() {
+		if (blocked) {
+			_pendingUpdateHapticFeedback = true;
+		}
+		else {
+			mediumHapticFeedback();
+		}
+	}
 	Listenable? _threadStateListenable;
 	int lastSavedPostsLength = 0;
 	int lastHiddenMD5sLength = 0;
@@ -861,6 +883,7 @@ class ThreadPageState extends State<ThreadPage> {
 	void didUpdateWidget(ThreadPage oldWidget) {
 		super.didUpdateWidget(oldWidget);
 		if (widget.thread != oldWidget.thread) {
+			_pendingUpdateHapticFeedback = false;
 			_cached.clear();
 			_cachingQueue.clear();
 			_passedFirstLoad = false;
@@ -1986,6 +2009,7 @@ class ThreadPageState extends State<ThreadPage> {
 														Visibility.maintain(
 															visible: !blocked,
 															child: RefreshableList<Post>(
+																onUpdateHapticFeedback: _onUpdateHapticFeedback,
 																filterableAdapter: (p) => p.isThread ? switch (persistentState.thread) {
 																	Thread t => (imageboard.key, t),
 																	null => (imageboard.key, p)

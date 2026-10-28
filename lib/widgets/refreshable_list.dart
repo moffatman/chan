@@ -1182,6 +1182,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	final bool useFiltersFromContext;
 	final bool useAllDummies;
 	final Widget? injectBelowScrollbar;
+	final VoidCallback? onUpdateHapticFeedback;
 
 	const RefreshableList({
 		required this.itemBuilder,
@@ -1223,6 +1224,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		this.useFiltersFromContext = true,
 		this.useAllDummies = false,
 		this.injectBelowScrollbar,
+		this.onUpdateHapticFeedback,
 		Key? key
 	}) : super(key: key);
 
@@ -1831,7 +1833,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			}
 			if (mounted && (newList != null || error.value != null)) {
 				if (hapticFeedback) {
-					mediumHapticFeedback();
+					(widget.onUpdateHapticFeedback ?? mediumHapticFeedback)();
 				}
 				setState(() {
 					_updateList(newList ?? originalList, preserveScrollPosition:
@@ -1842,7 +1844,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			else if (mounted && newList == null && originalList != null && mergeTrees) {
 				// Just merge trees
 				if (hapticFeedback) {
-					mediumHapticFeedback();
+					(widget.onUpdateHapticFeedback ?? mediumHapticFeedback)();
 				}
 				setState(() {});
 			}
