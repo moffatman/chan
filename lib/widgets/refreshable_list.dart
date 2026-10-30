@@ -1659,7 +1659,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			return;
 		}
 		_addedNetworkResumeCallback = false;
-		await update(source: RefreshableListUpdateSource.timer, extend: true);
+		await update(source: RefreshableListUpdateSource.timer);
 	}
 
 	Future<void> update({
