@@ -406,16 +406,17 @@ class PersistentThreadStateFields {
     fieldName: 'deprecatedReplyOptions',
     merger: PrimitiveMerger(),
   );
-  static int? getTreeSplitId(PersistentThreadState x) => x.treeSplitId;
-  static void setTreeSplitId(PersistentThreadState x, int? v) =>
-      x.treeSplitId = v;
-  static const int kTreeSplitId = 30;
-  static const treeSplitId = HiveFieldAdapter<PersistentThreadState, int?>(
-    getter: getTreeSplitId,
-    setter: setTreeSplitId,
-    fieldNumber: kTreeSplitId,
-    fieldName: 'treeSplitId',
-    merger: PrimitiveMerger(),
+  static List<int> getTreeSplitIds(PersistentThreadState x) => x.treeSplitIds;
+  static void setTreeSplitIds(PersistentThreadState x, List<int> v) =>
+      x.treeSplitIds = v;
+  static const int kTreeSplitIds = 30;
+  static const treeSplitIds =
+      HiveFieldAdapter<PersistentThreadState, List<int>>(
+    getter: getTreeSplitIds,
+    setter: setTreeSplitIds,
+    fieldNumber: kTreeSplitIds,
+    fieldName: 'treeSplitIds',
+    merger: ListEqualsMerger<int>(),
   );
   static DraftPost? getDraft(PersistentThreadState x) => x.draft;
   static void setDraft(PersistentThreadState x, DraftPost? v) => x.draft = v;
@@ -440,16 +441,20 @@ class PersistentThreadStateFields {
     fieldName: 'translatedTitle',
     merger: PrimitiveMerger(),
   );
-  static EfficientlyStoredIntSet getUpgradedStubPostIds(
+  static List<EfficientlyStoredIntSet> getUpgradedStubPostIds(
           PersistentThreadState x) =>
       x.upgradedStubPostIds;
+  static void setUpgradedStubPostIds(
+          PersistentThreadState x, List<EfficientlyStoredIntSet> v) =>
+      x.upgradedStubPostIds = v;
   static const int kUpgradedStubPostIds = 33;
   static const upgradedStubPostIds =
-      ReadOnlyHiveFieldAdapter<PersistentThreadState, EfficientlyStoredIntSet>(
+      HiveFieldAdapter<PersistentThreadState, List<EfficientlyStoredIntSet>>(
     getter: getUpgradedStubPostIds,
+    setter: setUpgradedStubPostIds,
     fieldNumber: kUpgradedStubPostIds,
     fieldName: 'upgradedStubPostIds',
-    merger: AdaptedMerger(EfficientlyStoredIntSetAdapter.kTypeId),
+    merger: TreeStubBatchesMerger(),
   );
   static String getBoard(PersistentThreadState x) => x.board;
   static void setBoard(PersistentThreadState x, String v) => x.board = v;
@@ -511,7 +516,7 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
     27: PersistentThreadStateFields.postIdsToStartRepliesAtBottom,
     28: PersistentThreadStateFields.overrideShowPostIds,
     29: PersistentThreadStateFields.deprecatedReplyOptions,
-    30: PersistentThreadStateFields.treeSplitId,
+    30: PersistentThreadStateFields.treeSplitIds,
     31: PersistentThreadStateFields.draft,
     32: PersistentThreadStateFields.translatedTitle,
     33: PersistentThreadStateFields.upgradedStubPostIds,
@@ -535,6 +540,7 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
     fields[21] = <int, int>{};
     fields[22] = true;
     fields[28] = <int>[];
+    fields[30] = <int>[];
     fields[19] = '';
     fields[20] = 0;
     for (int i = 0; i < numOfFields; i++) {
@@ -544,6 +550,7 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
         fields[fieldId] = value;
       }
     }
+    _readHookPersistentThreadStateFields(fields);
     return PersistentThreadState(
       imageboardKey: fields[18] as String,
       board: fields[19] as String,
@@ -553,7 +560,8 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       postSortingMethod: fields[26] as PostSortingMethod?,
       postIdsToStartRepliesAtBottom: fields[27] as EfficientlyStoredIntSet?,
       draft: fields[31] as DraftPost?,
-      upgradedStubPostIds: fields[33] as EfficientlyStoredIntSet?,
+      upgradedStubPostIds:
+          (fields[33] as List?)?.cast<EfficientlyStoredIntSet>(),
     )
       ..lastSeenPostId = fields[0] as int?
       ..lastOpenedTime = fields[1] as DateTime
@@ -579,7 +587,7 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       ..firstVisiblePostAlignment = fields[25] as double?
       ..overrideShowPostIds = (fields[28] as List).cast<int>()
       ..deprecatedReplyOptions = fields[29] as String?
-      ..treeSplitId = fields[30] as int?
+      ..treeSplitIds = (fields[30] as List).cast<int>()
       ..translatedTitle = fields[32] as String?;
   }
 
@@ -642,7 +650,7 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       ..writeByte(29)
       ..write(obj.deprecatedReplyOptions)
       ..writeByte(30)
-      ..write(obj.treeSplitId)
+      ..write(obj.treeSplitIds)
       ..writeByte(31)
       ..write(obj.draft)
       ..writeByte(32)

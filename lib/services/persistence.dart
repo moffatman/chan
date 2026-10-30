@@ -4,6 +4,7 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:chan/main.dart';
+import 'package:chan/services/tree_batches.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
@@ -1627,7 +1628,47 @@ class TreePathListMerger extends FieldMerger<List<List<int>>> {
 	}
 }
 
-@HiveType(typeId: 3)
+// These are positional batches, so merging lists by union would change their
+// meaning. Merge the whole list, comparing the contents of the efficient sets.
+class TreeStubBatchesMerger extends FieldMerger<List<EfficientlyStoredIntSet>> {
+	const TreeStubBatchesMerger();
+
+	@override
+	bool merge(MergerController<List<EfficientlyStoredIntSet>> merger,
+			List<EfficientlyStoredIntSet> yours, List<EfficientlyStoredIntSet> theirs,
+			List<EfficientlyStoredIntSet>? base) {
+		if (treeStubBatchesEqual(yours.map((batch) => batch.data), theirs.map((batch) => batch.data))) {
+			return true;
+		}
+		if (!merger.canWrite) return false;
+		if (base != null && treeStubBatchesEqual(theirs.map((batch) => batch.data), base.map((batch) => batch.data))) {
+			merger.writeTheirs([for (final batch in yours) EfficientlyStoredIntSet(batch.data.toSet())]);
+		}
+		else if (base != null && treeStubBatchesEqual(yours.map((batch) => batch.data), base.map((batch) => batch.data))) {
+			merger.writeYours([for (final batch in theirs) EfficientlyStoredIntSet(batch.data.toSet())]);
+		}
+		else {
+			merger.reportSelfConflict();
+		}
+		return true;
+	}
+}
+
+void _readHookPersistentThreadStateFields(List<dynamic> fields) {
+	// Field 30 used to hold the single boundary between old and new replies.
+	fields[30] ??= <int>[];
+	if (fields[30] case final int splitId) {
+		fields[30] = <int>[splitId];
+	}
+	// The old promotion set belongs to batch 1, stored at list index 0.
+	if (fields[33] case final EfficientlyStoredIntSet upgradedStubs) {
+		fields[33] = <EfficientlyStoredIntSet>[
+			if (upgradedStubs.data.isNotEmpty) upgradedStubs
+		];
+	}
+}
+
+@HiveType(typeId: 3, readHook: _readHookPersistentThreadStateFields)
 
 class PersistentThreadState extends EasyListenable with HiveObjectMixin implements Filterable, ValueListenable<PersistentThreadState> {
 	@HiveField(0)
@@ -1690,14 +1731,20 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	List<int> overrideShowPostIds = [];
 	@HiveField(29)
 	String? deprecatedReplyOptions;
-	@HiveField(30)
-	int? treeSplitId;
+	/// Inclusive ends of sealed arrival batches. The last entry is also the
+	/// watermark separating existing posts from future arrivals: [maxPostId]
+	/// means all existing posts belong to the old tree, with no internal splits.
+	/// Empty means no batch has been exposed yet. Equal ends allow stub-only batches.
+	@HiveField(30, defaultValue: <int>[], merger: ListEqualsMerger<int>())
+	List<int> treeSplitIds = [];
 	@HiveField(31)
 	DraftPost? draft;
 	@HiveField(32)
 	String? translatedTitle;
-	@HiveField(33)
-	final EfficientlyStoredIntSet upgradedStubPostIds;
+	/// IDs loaded late: element i belongs to arrival batch i + 1.
+	/// The original batch has no promotions; absent trailing sets are empty.
+	@HiveField(33, merger: TreeStubBatchesMerger())
+	List<EfficientlyStoredIntSet> upgradedStubPostIds;
 
 	Imageboard? get imageboard => ImageboardRegistry.instance.getImageboard(imageboardKey);
 
@@ -1714,12 +1761,25 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 		this.postSortingMethod,
 		EfficientlyStoredIntSet? postIdsToStartRepliesAtBottom,
 		this.draft,
-		EfficientlyStoredIntSet? upgradedStubPostIds
+		List<EfficientlyStoredIntSet>? upgradedStubPostIds
 	}) : lastOpenedTime = DateTime.now(),
 	     unseenPostIds = unseenPostIds ?? EfficientlyStoredIntSet({}),
 			 postIdsToStartRepliesAtBottom = postIdsToStartRepliesAtBottom ?? EfficientlyStoredIntSet({}),
-			 upgradedStubPostIds = upgradedStubPostIds ?? EfficientlyStoredIntSet({}) {
+			 upgradedStubPostIds = upgradedStubPostIds ?? [] {
 		Settings.instance.filterListenable.addListener(_onGlobalFilterUpdate);
+	}
+
+	/// Record a late-loaded body once, whether its previous state was a stub or
+	/// entirely missing. The arriving batch stays open until exposed in the list.
+	bool recordTreeStubUpgrade(int postId) {
+		if (treeSplitIds.isEmpty || postId > treeSplitIds.last ||
+				upgradedStubPostIds.any((batch) => batch.data.contains(postId))) {
+			return false;
+		}
+		while (upgradedStubPostIds.length < treeSplitIds.length) {
+			upgradedStubPostIds.add(EfficientlyStoredIntSet({}));
+		}
+		return upgradedStubPostIds[treeSplitIds.length - 1].data.add(postId);
 	}
 
 	@override
@@ -1784,7 +1844,6 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	Thread? get thread => _thread;
 	set thread(Thread? newThread) {
 		final oldThread = _thread;
-		final treeSplitId = this.treeSplitId;
 		if (newThread != oldThread) {
 			bool needToSave = false;
 			if (oldThread != null && newThread != null) {
@@ -1793,11 +1852,11 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 						post.id: post
 				};
 				for (final p in newThread.posts_) {
-					if (oldPosts[p.id]?.isStub != p.isStub && !youIds.contains(p.id)) {
-						if (treeSplitId != null && p.id <= treeSplitId) {
-							needToSave |= upgradedStubPostIds.data.add(p.id);
+					if (!p.isStub && oldPosts[p.id]?.isStub != false) {
+						needToSave |= recordTreeStubUpgrade(p.id);
+						if (!youIds.contains(p.id)) {
+							needToSave |= unseenPostIds.data.add(p.id);
 						}
-						needToSave |= unseenPostIds.data.add(p.id);
 					}
 					else if (oldPosts[p.id]?.edited != p.edited) {
 						needToSave |= unseenPostIds.data.add(p.id);

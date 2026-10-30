@@ -1101,14 +1101,18 @@ class ThreadPageState extends State<ThreadPage> {
 		final thread = persistentState.thread;
 		if (persistentState.identifier == asArchived.threadIdentifier && thread != null) {
 			final newInsert = zone.findPost(asArchived.id) == null;
+			final oldPost = thread.posts_.tryFirstWhere((post) => post.id == asArchived.id);
+			bool needToSave = !asArchived.isStub && oldPost?.isStub != false &&
+				persistentState.recordTreeStubUpgrade(asArchived.id);
 			thread.mergePosts(null, [asArchived], context.read<ImageboardSite>());
 			if (newInsert) {
 				_highlightPosts[asArchived.id] = _kHighlightFull;
-				persistentState.unseenPostIds.data.add(asArchived.id);
+				needToSave |= persistentState.unseenPostIds.data.add(asArchived.id);
 			}
 			zone.addThread(thread);
 			_updateHotPostIds();
 			await persistentState.didMutateThread();
+			if (needToSave) await persistentState.save();
 			await _listController.state?.acceptNewList(thread.postsToShow.toList());
 			setState(() {});
 		}
@@ -1409,6 +1413,12 @@ class ThreadPageState extends State<ThreadPage> {
 		_checkForNewGeneral();
 		if (newThread != tmpPersistentState.thread) {
 			await newThread.preinit();
+			// The watcher or a stub load may have updated the shared thread
+			// while references and spans were being loaded above.
+			final latestThread = tmpPersistentState.thread;
+			if (latestThread != null && !identical(latestThread, newThread)) {
+				newThread.mergePosts(latestThread, latestThread.posts_, site);
+			}
 			tmpPersistentState.thread = newThread;
 			if (persistentState == tmpPersistentState) {
 				zone.addThread(newThread);
@@ -1483,13 +1493,14 @@ class ThreadPageState extends State<ThreadPage> {
 	}
 
 	Future<List<Post>> _updateWithStubItems(List<ParentAndChildIdentifier> ids, {CancelToken? cancelToken}) async {
-		final thread = persistentState.thread;
-		if (thread == null) {
+		final requestedThread = persistentState.thread;
+		if (requestedThread == null) {
 			throw Exception('Thread not loaded');
 		}
 		final site = context.read<ImageboardSite>();
-		final newChildren = await site.getStubPosts(thread.identifier, ids, priority: RequestPriority.interactive, cancelToken: cancelToken);
-		if (widget.thread != thread.identifier) {
+		final newChildren = await site.getStubPosts(requestedThread.identifier, ids, priority: RequestPriority.interactive, cancelToken: cancelToken);
+		final thread = persistentState.thread;
+		if (thread == null || widget.thread != requestedThread.identifier || thread.identifier != requestedThread.identifier) {
 			throw Exception('Thread changed');
 		}
 		final oldPosts = {
@@ -1508,14 +1519,13 @@ class ThreadPageState extends State<ThreadPage> {
 			}
 			return false;
 		});
-		final treeSplitId = persistentState.treeSplitId;
 		for (final p in newChildren) {
-			if (oldPosts[p.id]?.isStub != p.isStub && !persistentState.youIds.contains(p.id)) {
-				if (treeSplitId != null && p.id <= treeSplitId) {
-					needToSave |= persistentState.upgradedStubPostIds.data.add(p.id);
+			if (!p.isStub && oldPosts[p.id]?.isStub != false) {
+				needToSave |= persistentState.recordTreeStubUpgrade(p.id);
+				if (!persistentState.youIds.contains(p.id)) {
+					needToSave |= persistentState.unseenPostIds.data.add(p.id);
+					_highlightPosts[p.id] = _kHighlightFull;
 				}
-				needToSave |= persistentState.unseenPostIds.data.add(p.id);
-				_highlightPosts[p.id] = _kHighlightFull;
 			}
 			else if (oldPosts[p.id]?.edited != p.edited) {
 				needToSave |= persistentState.unseenPostIds.data.add(p.id);
@@ -2022,8 +2032,8 @@ class ThreadPageState extends State<ThreadPage> {
 																key: _listKey,
 																sortMethods: zone.postSortingMethods,
 																id: '/${widget.thread.board}/${widget.thread.id}${persistentState.variant?.dataId ?? ''}',
-																disableUpdates: persistentState.disableUpdates && !(_highlightPosts.isNotEmpty || persistentState.upgradedStubPostIds.data.isNotEmpty || switch ((persistentState.treeSplitId, persistentState.thread?.posts_)) {
-																	(int treeSplitId, List<Post> posts) => treeSplitId < posts.fold(0, (m, p) => max(m, p.id)),
+																disableUpdates: persistentState.disableUpdates && !(_highlightPosts.isNotEmpty || persistentState.upgradedStubPostIds.any((batch) => batch.data.isNotEmpty) || switch ((persistentState.treeSplitIds, persistentState.thread?.posts_)) {
+																	(List<int> splits, List<Post> posts) when splits.isNotEmpty => splits.first < posts.fold(0, (m, p) => max(m, p.id)),
 																	_ => false
 																}),
 																autoUpdateDuration: persistentState.disableUpdates ? null : autoUpdateDuration,
@@ -2142,12 +2152,24 @@ class ThreadPageState extends State<ThreadPage> {
 																	collapsedItemsShowBody: treeModeCollapsedPostsShowBody,
 																	repliesToOPAreTopLevel: treeModeRepliesToOPAreTopLevel,
 																	newRepliesAreLinear: treeModeNewRepliesAreLinear,
-																	initialTreeSplitId: persistentState.treeSplitId,
-																	initialUpgradedStubPostIds: persistentState.upgradedStubPostIds.data,
-																	onTreeSplitIdChanged: (newId, upgradedStubPostIds) {
-																		persistentState.treeSplitId = newId;
-																		persistentState.upgradedStubPostIds.data.clear();
-																		persistentState.upgradedStubPostIds.data.addAll(upgradedStubPostIds);
+																	initialTreeSplitIds: persistentState.treeSplitIds,
+																	getUpgradedStubIds: () => persistentState.upgradedStubPostIds.map((batch) => batch.data),
+																	onTreeSplitIdsChanged: (newIds, upgradedStubPostIds) {
+																		persistentState.treeSplitIds = newIds;
+																		persistentState.upgradedStubPostIds = [
+																			for (final ids in upgradedStubPostIds) EfficientlyStoredIntSet(ids)
+																		];
+																		final acceptedPosts = _listController.state?.originalList;
+																		if (treeModeNewRepliesAreLinear && acceptedPosts != null) {
+																			// A boundary can advance before watcher arrivals reach the
+																			// list. Keep those missing/stub -> body arrivals in the open batch.
+																			final oldPosts = {for (final post in acceptedPosts) post.id: post};
+																			for (final post in persistentState.thread?.postsToShow ?? const <Post>[]) {
+																				if (!post.isStub && oldPosts[post.id]?.isStub != false) {
+																					persistentState.recordTreeStubUpgrade(post.id);
+																				}
+																			}
+																		}
 																		runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
 																	},
 																	initialCollapsedItems: persistentState.collapsedItems,

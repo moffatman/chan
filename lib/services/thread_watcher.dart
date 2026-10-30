@@ -329,13 +329,12 @@ class ThreadWatcher extends ChangeNotifier {
 								post.id: post
 						};
 						bool needToSave = false;
-						final treeSplitId = threadState.treeSplitId;
 						for (final p in newChildren) {
-							if (oldPosts[p.id]?.isStub != p.isStub && !threadState.youIds.contains(p.id)) {
-								if (treeSplitId != null && p.id <= treeSplitId) {
-									needToSave |= threadState.upgradedStubPostIds.data.add(p.id);
+							if (!p.isStub && oldPosts[p.id]?.isStub != false) {
+								needToSave |= threadState.recordTreeStubUpgrade(p.id);
+								if (!threadState.youIds.contains(p.id)) {
+									needToSave |= threadState.unseenPostIds.data.add(p.id);
 								}
-								needToSave |= threadState.unseenPostIds.data.add(p.id);
 							}
 							else if (oldPosts[p.id]?.edited != p.edited) {
 								needToSave |= threadState.unseenPostIds.data.add(p.id);
