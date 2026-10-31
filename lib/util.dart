@@ -371,6 +371,23 @@ class ExpiringMutexResource<T> {
 }
 
 extension ToStringDio on Object {
+	String toStringDioShort() => switch (this) {
+		DioError err => switch (err.type) {
+			DioErrorType.connectTimeout => 'Connection timeout',
+			DioErrorType.sendTimeout => 'Send timeout',
+			DioErrorType.receiveTimeout => 'Receive timeout',
+			DioErrorType.response => switch (err.response?.statusCode) {
+				int code => 'HTTP Error $code',
+				null => switch (err.error) {
+					null => 'Unknown response error',
+					Object obj => obj.toString()
+				}
+			},
+			DioErrorType.cancel => 'Request cancelled',
+			DioErrorType.other => err.error.toString()
+		},
+		_ => toString()
+	};
 	String toStringDio() => switch (this) {
 		DioError err => switch (err.type) {
 			DioErrorType.connectTimeout => 'Connection timeout: ${err.requestOptions.uri}',

@@ -3680,7 +3680,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 																				constraints: const BoxConstraints(maxWidth: 200),
 																					child: Text(switch (error.$1) {
 																						ThreadNotFoundException() => '404',
-																						Object obj => obj.toStringDio()
+																						Object obj => obj.toStringDioShort()
 																					}, style: TextStyle(
 																						color: theme.backgroundColor
 																					), maxLines: 1, overflow: TextOverflow.ellipsis)
