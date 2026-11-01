@@ -49,7 +49,7 @@ class Thread extends HiveObject implements Filterable {
 	final String board;
 	BoardKey get boardKey => ImageboardBoard.getKey(board);
 	@HiveField(8)
-	final String? title;
+	String? title;
 	@override
 	@HiveField(9)
 	bool isSticky;
@@ -313,6 +313,7 @@ class Thread extends HiveObject implements Filterable {
 						if (postToReplace.id == id) {
 							// Try to fix up Thread
 							attachments = newChild.attachments_;
+							title = oldThread?.title ?? title;
 							isDeleted = true;
 						}
 					}

@@ -71,9 +71,11 @@ class ThreadFields {
     merger: PrimitiveMerger(),
   );
   static String? getTitle(Thread x) => x.title;
+  static void setTitle(Thread x, String? v) => x.title = v;
   static const int kTitle = 8;
-  static const title = ReadOnlyHiveFieldAdapter<Thread, String?>(
+  static const title = HiveFieldAdapter<Thread, String?>(
     getter: getTitle,
+    setter: setTitle,
     fieldNumber: kTitle,
     fieldName: 'title',
     merger: PrimitiveMerger(),
