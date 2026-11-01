@@ -504,7 +504,9 @@ class PostRow extends StatelessWidget {
 										// The post has a parentId
 										post.parentId != null &&
 										// The parentId is not obvious based on context
-										post.parentId != parentZone.stackIds.tryLast
+										post.parentId != parentZone.stackIds.tryLast &&
+										// Skip it for OP
+										post.parentId != post.threadId
 									) ...[
 										PostQuoteLinkSpan(
 											board: latestPost.board,
