@@ -2534,6 +2534,12 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			orphans.remove(id);
 			node.stubChildIds.addAll(orphanStubs[id] ?? []);
 			orphanStubs.remove(id);
+			if (id == adapter.opId) {
+				// The tree root may quote items outside this tree. Those links
+				// must not also register it as a child or an unresolved orphan.
+				batchRoots[0].insert(0, node);
+				return;
+			}
 			final parentIds = adapter.getParentIds(item.item).toList();
 			if (adapter.newRepliesAreLinear && adapter.getIsStub(item.item)) {
 				// Pending children keep their source parents, regardless of which
@@ -2551,12 +2557,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				}
 				return;
 			}
-			final batch = id == adapter.opId ? 0 : batchFor(id);
+			final batch = batchFor(id);
 			final treeRoots1 = batchRoots[batch];
-			if (id == adapter.opId) {
-				treeRoots1.insert(0, node);
-			}
-			else if (parentIds.isEmpty) {
+			if (parentIds.isEmpty) {
 				treeRoots1.add(node);
 			}
 			else if (adapter.newRepliesAreLinear) {
@@ -2744,6 +2747,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			if (lastTreeOrder != null) {
 				const infiniteIndex = 1 << 50;
 				mergeSort(treeRoots, compare: (a, b) {
+					if (a.id == adapter.opId) return b.id == adapter.opId ? 0 : -1;
+					if (b.id == adapter.opId) return 1;
 					final batchComparison = batchFor(a.id).compareTo(batchFor(b.id));
 					if (batchComparison != 0) return batchComparison;
 					if (adapter.newRepliesAreLinear && batchFor(a.id) == splits.length) return 0;
