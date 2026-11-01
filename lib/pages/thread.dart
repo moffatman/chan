@@ -1103,7 +1103,7 @@ class ThreadPageState extends State<ThreadPage> {
 			final newInsert = zone.findPost(asArchived.id) == null;
 			final oldPost = thread.posts_.tryFirstWhere((post) => post.id == asArchived.id);
 			bool needToSave = !asArchived.isStub && oldPost?.isStub != false &&
-				persistentState.recordTreeStubUpgrade(asArchived.id);
+				persistentState.recordTreeLateArrival(asArchived.id);
 			thread.mergePosts(null, [asArchived], context.read<ImageboardSite>());
 			if (newInsert) {
 				_highlightPosts[asArchived.id] = _kHighlightFull;
@@ -1521,7 +1521,7 @@ class ThreadPageState extends State<ThreadPage> {
 		});
 		for (final p in newChildren) {
 			if (!p.isStub && oldPosts[p.id]?.isStub != false) {
-				needToSave |= persistentState.recordTreeStubUpgrade(p.id);
+				needToSave |= persistentState.recordTreeLateArrival(p.id);
 				if (!persistentState.youIds.contains(p.id)) {
 					needToSave |= persistentState.unseenPostIds.data.add(p.id);
 					_highlightPosts[p.id] = _kHighlightFull;
@@ -2032,8 +2032,8 @@ class ThreadPageState extends State<ThreadPage> {
 																key: _listKey,
 																sortMethods: zone.postSortingMethods,
 																id: '/${widget.thread.board}/${widget.thread.id}${persistentState.variant?.dataId ?? ''}',
-																disableUpdates: persistentState.disableUpdates && !(_highlightPosts.isNotEmpty || persistentState.upgradedStubPostIds.any((batch) => batch.data.isNotEmpty) || switch ((persistentState.treeSplitIds, persistentState.thread?.posts_)) {
-																	(List<int> splits, List<Post> posts) when splits.isNotEmpty => splits.first < posts.fold(0, (m, p) => max(m, p.id)),
+																disableUpdates: persistentState.disableUpdates && !(_highlightPosts.isNotEmpty || persistentState.treeBatchOverrides.any((batch) => batch.data.isNotEmpty) || switch ((persistentState.treeBatchBoundaries, persistentState.thread?.posts_)) {
+																	(List<int> boundaries, List<Post> posts) when boundaries.isNotEmpty => boundaries.first < posts.fold(0, (m, p) => max(m, p.id)),
 																	_ => false
 																}),
 																autoUpdateDuration: persistentState.disableUpdates ? null : autoUpdateDuration,
@@ -2152,12 +2152,12 @@ class ThreadPageState extends State<ThreadPage> {
 																	collapsedItemsShowBody: treeModeCollapsedPostsShowBody,
 																	repliesToOPAreTopLevel: treeModeRepliesToOPAreTopLevel,
 																	newRepliesAreLinear: treeModeNewRepliesAreLinear,
-																	initialTreeSplitIds: persistentState.treeSplitIds,
-																	getUpgradedStubIds: () => persistentState.upgradedStubPostIds.map((batch) => batch.data),
-																	onTreeSplitIdsChanged: (newIds, upgradedStubPostIds) {
-																		persistentState.treeSplitIds = newIds;
-																		persistentState.upgradedStubPostIds = [
-																			for (final ids in upgradedStubPostIds) EfficientlyStoredIntSet(ids)
+																	initialTreeBatchBoundaries: persistentState.treeBatchBoundaries,
+																	getTreeBatchOverrides: () => persistentState.treeBatchOverrides.map((batch) => batch.data),
+																	onTreeBatchBoundariesChanged: (newBoundaries, treeBatchOverrides) {
+																		persistentState.treeBatchBoundaries = newBoundaries;
+																		persistentState.treeBatchOverrides = [
+																			for (final ids in treeBatchOverrides) EfficientlyStoredIntSet(ids)
 																		];
 																		final acceptedPosts = _listController.state?.originalList;
 																		if (treeModeNewRepliesAreLinear && acceptedPosts != null) {
@@ -2166,7 +2166,7 @@ class ThreadPageState extends State<ThreadPage> {
 																			final oldPosts = {for (final post in acceptedPosts) post.id: post};
 																			for (final post in persistentState.thread?.postsToShow ?? const <Post>[]) {
 																				if (!post.isStub && oldPosts[post.id]?.isStub != false) {
-																					persistentState.recordTreeStubUpgrade(post.id);
+																					persistentState.recordTreeLateArrival(post.id);
 																				}
 																			}
 																		}

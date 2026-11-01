@@ -406,16 +406,17 @@ class PersistentThreadStateFields {
     fieldName: 'deprecatedReplyOptions',
     merger: PrimitiveMerger(),
   );
-  static List<int> getTreeSplitIds(PersistentThreadState x) => x.treeSplitIds;
-  static void setTreeSplitIds(PersistentThreadState x, List<int> v) =>
-      x.treeSplitIds = v;
-  static const int kTreeSplitIds = 30;
-  static const treeSplitIds =
+  static List<int> getTreeBatchBoundaries(PersistentThreadState x) =>
+      x.treeBatchBoundaries;
+  static void setTreeBatchBoundaries(PersistentThreadState x, List<int> v) =>
+      x.treeBatchBoundaries = v;
+  static const int kTreeBatchBoundaries = 30;
+  static const treeBatchBoundaries =
       HiveFieldAdapter<PersistentThreadState, List<int>>(
-    getter: getTreeSplitIds,
-    setter: setTreeSplitIds,
-    fieldNumber: kTreeSplitIds,
-    fieldName: 'treeSplitIds',
+    getter: getTreeBatchBoundaries,
+    setter: setTreeBatchBoundaries,
+    fieldNumber: kTreeBatchBoundaries,
+    fieldName: 'treeBatchBoundaries',
     merger: ListEqualsMerger<int>(),
   );
   static DraftPost? getDraft(PersistentThreadState x) => x.draft;
@@ -441,20 +442,20 @@ class PersistentThreadStateFields {
     fieldName: 'translatedTitle',
     merger: PrimitiveMerger(),
   );
-  static List<EfficientlyStoredIntSet> getUpgradedStubPostIds(
+  static List<EfficientlyStoredIntSet> getTreeBatchOverrides(
           PersistentThreadState x) =>
-      x.upgradedStubPostIds;
-  static void setUpgradedStubPostIds(
+      x.treeBatchOverrides;
+  static void setTreeBatchOverrides(
           PersistentThreadState x, List<EfficientlyStoredIntSet> v) =>
-      x.upgradedStubPostIds = v;
-  static const int kUpgradedStubPostIds = 33;
-  static const upgradedStubPostIds =
+      x.treeBatchOverrides = v;
+  static const int kTreeBatchOverrides = 33;
+  static const treeBatchOverrides =
       HiveFieldAdapter<PersistentThreadState, List<EfficientlyStoredIntSet>>(
-    getter: getUpgradedStubPostIds,
-    setter: setUpgradedStubPostIds,
-    fieldNumber: kUpgradedStubPostIds,
-    fieldName: 'upgradedStubPostIds',
-    merger: TreeStubBatchesMerger(),
+    getter: getTreeBatchOverrides,
+    setter: setTreeBatchOverrides,
+    fieldNumber: kTreeBatchOverrides,
+    fieldName: 'treeBatchOverrides',
+    merger: TreeBatchOverridesMerger(),
   );
   static String getBoard(PersistentThreadState x) => x.board;
   static void setBoard(PersistentThreadState x, String v) => x.board = v;
@@ -516,10 +517,10 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
     27: PersistentThreadStateFields.postIdsToStartRepliesAtBottom,
     28: PersistentThreadStateFields.overrideShowPostIds,
     29: PersistentThreadStateFields.deprecatedReplyOptions,
-    30: PersistentThreadStateFields.treeSplitIds,
+    30: PersistentThreadStateFields.treeBatchBoundaries,
     31: PersistentThreadStateFields.draft,
     32: PersistentThreadStateFields.translatedTitle,
-    33: PersistentThreadStateFields.upgradedStubPostIds,
+    33: PersistentThreadStateFields.treeBatchOverrides,
     19: PersistentThreadStateFields.board,
     20: PersistentThreadStateFields.id
   };
@@ -560,7 +561,7 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       postSortingMethod: fields[26] as PostSortingMethod?,
       postIdsToStartRepliesAtBottom: fields[27] as EfficientlyStoredIntSet?,
       draft: fields[31] as DraftPost?,
-      upgradedStubPostIds:
+      treeBatchOverrides:
           (fields[33] as List?)?.cast<EfficientlyStoredIntSet>(),
     )
       ..lastSeenPostId = fields[0] as int?
@@ -587,7 +588,7 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       ..firstVisiblePostAlignment = fields[25] as double?
       ..overrideShowPostIds = (fields[28] as List).cast<int>()
       ..deprecatedReplyOptions = fields[29] as String?
-      ..treeSplitIds = (fields[30] as List).cast<int>()
+      ..treeBatchBoundaries = (fields[30] as List).cast<int>()
       ..translatedTitle = fields[32] as String?;
   }
 
@@ -650,13 +651,13 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       ..writeByte(29)
       ..write(obj.deprecatedReplyOptions)
       ..writeByte(30)
-      ..write(obj.treeSplitIds)
+      ..write(obj.treeBatchBoundaries)
       ..writeByte(31)
       ..write(obj.draft)
       ..writeByte(32)
       ..write(obj.translatedTitle)
       ..writeByte(33)
-      ..write(obj.upgradedStubPostIds)
+      ..write(obj.treeBatchOverrides)
       ..writeByte(19)
       ..write(obj.board)
       ..writeByte(20)
