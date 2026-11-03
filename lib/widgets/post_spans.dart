@@ -1178,6 +1178,10 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 	}
 	(TextSpan, TapGestureRecognizer, bool) _buildNormalLink(BuildContext context, Post post, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options, int? threadId) {
 		String text = '>>$postId';
+		final linkedPost = zone.findPost(postId);
+		if (linkedPost != null && !zone.imageboard.site.explicitIds) {
+			text = '@${zone.imageboard.site.formatUsername(linkedPost.name)}';
+		}
 		Color color = theme.secondaryColor;
 		if (postId == threadId) {
 			text += ' (OP)';
@@ -1196,9 +1200,11 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 		) {
 			text += ' (You)';
 		}
-		final linkedPost = zone.findPost(postId);
 		if (linkedPost != null && Filter.of(context).filter(zone.imageboard.key, linkedPost)?.type.hide == true && !options.imageShareMode) {
 			text += ' (Hidden)';
+		}
+		if (linkedPost != null && linkedPost.isDeleted && linkedPost.text.isEmpty) {
+			text += ' (Deleted)';
 		}
 		final bool expandedImmediatelyAbove = zone.shouldExpandPost(this) || zone.stackIds.length > 1 && zone.stackIds.elementAt(zone.stackIds.length - 2) == postId;
 		final bool expandedSomewhereAbove = expandedImmediatelyAbove || zone.stackIds.contains(postId);
@@ -1409,6 +1415,9 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 	@override
 	void _estimateHeight(_HeightEstimator estimator) {
 		int characters = 2 + postId.numberOfDigits;
+		if ((estimator.zone, estimator.zone?.findPost(postId)) case (final zone?, final post?) when boardKey == zone.boardKey && !zone.imageboard.site.explicitIds) {
+			characters = 1 + zone.imageboard.site.formatUsername(post.name).length;
+		}
 		if (threadId == null) {
 			// Treated like normal text
 			estimator.addCharacters(characters + 7); // ' (Dead)'
@@ -4309,7 +4318,7 @@ TextSpan buildPostInfoRow({
 					}) : null
 				)
 			]
-			else if (field == PostDisplayField.postId && (site.explicitIds || zone.style != PostSpanZoneStyle.tree)) ...[
+			else if (field == PostDisplayField.postId && site.explicitIds) ...[
 				if (showSiteIcon) WidgetSpan(
 					alignment: PlaceholderAlignment.middle,
 					child: Padding(
