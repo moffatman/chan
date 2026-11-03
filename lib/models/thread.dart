@@ -571,6 +571,7 @@ class BoardThreadOrPostIdentifier {
 	BoardThreadOrPostIdentifier(String board, [this.threadId, this.postId]) : board = intern(board);
 	@override
 	String toString() => '/$board/$threadId/$postId';
+	ThreadOrPostIdentifier? get threadOrPostIdentifier => threadId == null ? null : ThreadOrPostIdentifier(board, threadId!, postId);
 	ThreadIdentifier? get threadIdentifier => threadId == null ? null : ThreadIdentifier(board, threadId!);
 	PostIdentifier? get postIdentifier => threadId == null ?
 																					null :

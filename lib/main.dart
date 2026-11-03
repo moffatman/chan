@@ -1166,7 +1166,7 @@ class ChanTabs extends ChangeNotifier {
 			case 3:
 				final value = _searchPageKey.currentState?.masterDetailKey.currentState?.getValue();
 				if (value != null) {
-					return value.imageboard.scope(value.result.threadIdentifier);
+					return value.imageboard.scope(value.result.thread);
 				}
 			case 4:
 				final zone = _devFakeTab.threadPageState?.zone;

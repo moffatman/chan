@@ -1212,6 +1212,7 @@ class ImageboardArchiveSearchResult {
 	const ImageboardArchiveSearchResult.thread(Thread this.thread) : post = null;
 
 	ThreadIdentifier get threadIdentifier => (post?.threadIdentifier ?? thread?.identifier)!;
+	ThreadOrPostIdentifier get threadOrPostIdentifier => (post?.identifier.threadOrPostId ?? thread?.identifier.threadOrPostIdentifier)!;
 	int get id => (post?.id ?? thread?.id)!;
 
 	@override toString() => 'ImageboardArchiveSearchResult(${post ?? thread})';

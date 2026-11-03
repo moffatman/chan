@@ -24,7 +24,7 @@ import 'board_switcher.dart';
 
 class SelectedSearchResult {
 	final Imageboard imageboard;
-	final ImageboardArchiveSearchResult result;
+	final ThreadOrPostIdentifier result;
 	final String? threadSearch;
 	final String? fromArchive;
 
@@ -119,8 +119,8 @@ class SearchPageState extends State<SearchPage> {
 							imageboardKey: null,
 							imageboard: post.imageboard,
 							child: ThreadPage(
-								thread: post.result.threadIdentifier,
-								initialPostId: post.result.id,
+								thread: post.result.thread,
+								initialPostId: post.result.postId,
 								initiallyUseArchive: post.fromArchive,
 								initialSearch: post.threadSearch,
 								boardSemanticId: -1
@@ -377,16 +377,11 @@ class _SearchComposePageState extends State<SearchComposePage> {
 								}
 							)
 						),
-						AdaptiveIconButton(
-							icon: const Icon(CupertinoIcons.number_square),
-							onPressed: () async {
-								final idController = TextEditingController();
-								final initialBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
-									builder: (ctx) => const BoardSwitcherPage()
-								));
-								if (context.mounted && initialBoard != null) {
-									ImageboardScoped<ImageboardBoard> board = initialBoard;
-									final target = await showAdaptiveDialog<(Imageboard, String, int)>(
+						GestureDetector(
+							onLongPress: () async {
+								try {
+									final controller = TextEditingController();
+									final url = await showAdaptiveDialog<String>(
 										context: context,
 										barrierDismissible: true,
 										builder: (context) => StatefulBuilder(
@@ -396,38 +391,15 @@ class _SearchComposePageState extends State<SearchComposePage> {
 													mainAxisSize: MainAxisSize.min,
 													children: [
 														const SizedBox(height: 8),
-														CupertinoButton(
-															onPressed: () async {
-																final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
-																	builder: (ctx) => const BoardSwitcherPage()
-																));
-																if (newBoard != null) {
-																	setInnerState(() {
-																		board = newBoard;
-																	});
-																}
-															},
-															child: Row(
-																mainAxisSize: MainAxisSize.min,
-																children: [
-																	ImageboardIcon(imageboardKey: board.imageboard.key, boardName: board.item.name),
-																	const SizedBox(width: 4),
-																	Text(board.item.name, style: const TextStyle(
-																		color: Colors.white
-																	))
-																]
-															)
-														),
-														const SizedBox(height: 8),
 														AdaptiveTextField(
-															controller: idController,
+															controller: controller,
 															enableIMEPersonalizedLearning: false,
-															placeholder: 'Post ID',
+															placeholder: 'URL',
 															autofocus: true,
-															keyboardType: TextInputType.number,
+															keyboardType: TextInputType.url,
 															onChanged: (_) => setInnerState(() {}),
 															onSubmitted: (str) {
-																Navigator.of(context).pop((board.imageboard, board.item.name, int.parse(idController.text)));
+																Navigator.of(context).pop(controller.text);
 															}
 														)
 													]
@@ -435,9 +407,9 @@ class _SearchComposePageState extends State<SearchComposePage> {
 												actions: [
 													AdaptiveDialogAction(
 														isDefaultAction: true,
-														onPressed: int.tryParse(idController.text) != null ? () {
-															Navigator.of(context).pop((board.imageboard, board.item.name, int.parse(idController.text)));
-														} : null,
+														onPressed: () {
+															Navigator.of(context).pop(controller.text);
+														},
 														child: const Text('Go')
 													),
 													AdaptiveDialogAction(
@@ -450,53 +422,158 @@ class _SearchComposePageState extends State<SearchComposePage> {
 											)
 										)
 									);
-									idController.dispose();
-									if (context.mounted && target != null) {
-										try {
-											final result = await modalLoad(context, 'Finding post...', (controller) async {
-												try {
-													final thread = await target.$1.site.getThread(ThreadIdentifier(target.$2, target.$3), priority: RequestPriority.interactive);
-													return SelectedSearchResult(
-														fromArchive: null,
-														threadSearch: null,
-														imageboard: target.$1,
-														result: ImageboardArchiveSearchResult.thread(thread)
-													);
-												}
-												on ThreadNotFoundException {
-													// Not a thread
-												}
-												final post = await target.$1.site.getPostFromArchive(target.$2, target.$3, priority: RequestPriority.interactive);
-												try {
-													final liveThread = await target.$1.site.getThread(post.threadIdentifier, priority: RequestPriority.interactive);
-													final livePost = liveThread.posts_.firstWhere((p) => p.id == target.$3);
-													return SelectedSearchResult(
-														fromArchive: null,
-														threadSearch: null,
-														imageboard: target.$1,
-														result: ImageboardArchiveSearchResult.post(livePost)
-													);
-												}
-												catch (_) {
-													// Truly archived
-													return SelectedSearchResult(
-														fromArchive: post.archiveName,
-														threadSearch: null,
-														imageboard: target.$1,
-														result: ImageboardArchiveSearchResult.post(post)
-													);
-												}
-											});
+									controller.dispose();
+									if (context.mounted && url != null) {
+										final result = await modalLoad(context, 'Looking up...', (controller) async {
+											final target = await ImageboardRegistry.instance.decodeUrl(Uri.parse(url));
+											if (target == null) {
+												return null;
+											}
+											final result = target.$2.threadOrPostIdentifier;
+											if (result == null) {
+												// Boards not supported
+												throw Exception('Board links not supported here');
+											}
+											return SelectedSearchResult(
+												fromArchive: target.$3,
+												threadSearch: null,
+												imageboard: target.$1,
+												result: result
+											);
+										});
+										if (result != null) {
 											widget.onManualResult(result);
 										}
-										catch (e, st) {
-											if (context.mounted) {
-												alertError(context, e, st);
+									}
+								}
+								catch (e, st) {
+									if (context.mounted) {
+										alertError(context, e, st);
+									}
+								}
+							},
+							child: AdaptiveIconButton(
+								icon: const Icon(CupertinoIcons.number_square),
+								onPressed: () async {
+									final idController = TextEditingController();
+									final initialBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
+										builder: (ctx) => const BoardSwitcherPage()
+									));
+									if (context.mounted && initialBoard != null) {
+										ImageboardScoped<ImageboardBoard> board = initialBoard;
+										final target = await showAdaptiveDialog<(Imageboard, String, int)>(
+											context: context,
+											barrierDismissible: true,
+											builder: (context) => StatefulBuilder(
+												builder: (context, setInnerState) => AdaptiveAlertDialog(
+													title: const Text('Go to post'),
+													content: Column(
+														mainAxisSize: MainAxisSize.min,
+														children: [
+															const SizedBox(height: 8),
+															CupertinoButton(
+																onPressed: () async {
+																	final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
+																		builder: (ctx) => const BoardSwitcherPage()
+																	));
+																	if (newBoard != null) {
+																		setInnerState(() {
+																			board = newBoard;
+																		});
+																	}
+																},
+																child: Row(
+																	mainAxisSize: MainAxisSize.min,
+																	children: [
+																		ImageboardIcon(imageboardKey: board.imageboard.key, boardName: board.item.name),
+																		const SizedBox(width: 4),
+																		Text(board.item.name, style: const TextStyle(
+																			color: Colors.white
+																		))
+																	]
+																)
+															),
+															const SizedBox(height: 8),
+															AdaptiveTextField(
+																controller: idController,
+																enableIMEPersonalizedLearning: false,
+																placeholder: 'Post ID',
+																autofocus: true,
+																keyboardType: TextInputType.number,
+																onChanged: (_) => setInnerState(() {}),
+																onSubmitted: (str) {
+																	Navigator.of(context).pop((board.imageboard, board.item.name, int.parse(idController.text)));
+																}
+															)
+														]
+													),
+													actions: [
+														AdaptiveDialogAction(
+															isDefaultAction: true,
+															onPressed: int.tryParse(idController.text) != null ? () {
+																Navigator.of(context).pop((board.imageboard, board.item.name, int.parse(idController.text)));
+															} : null,
+															child: const Text('Go')
+														),
+														AdaptiveDialogAction(
+															child: const Text('Cancel'),
+															onPressed: () {
+																Navigator.of(context).pop();
+															}
+														)
+													]
+												)
+											)
+										);
+										idController.dispose();
+										if (context.mounted && target != null) {
+											try {
+												final result = await modalLoad(context, 'Finding post...', (controller) async {
+													try {
+														final thread = await target.$1.site.getThread(ThreadIdentifier(target.$2, target.$3), priority: RequestPriority.interactive);
+														return SelectedSearchResult(
+															fromArchive: null,
+															threadSearch: null,
+															imageboard: target.$1,
+															result: thread.identifier.threadOrPostIdentifier
+														);
+													}
+													on ThreadNotFoundException {
+														// Not a thread
+													}
+													final post = await target.$1.site.getPostFromArchive(target.$2, target.$3, priority: RequestPriority.interactive);
+													try {
+														final liveThread = await target.$1.site.getThread(post.threadIdentifier, priority: RequestPriority.interactive);
+														// Throws if the post is not there
+														liveThread.posts_.firstWhere((p) => p.id == target.$3);
+														return SelectedSearchResult(
+															fromArchive: null,
+															threadSearch: null,
+															imageboard: target.$1,
+															result: post.identifier.threadOrPostId
+														);
+													}
+													catch (_) {
+														// Truly archived
+														return SelectedSearchResult(
+															fromArchive: post.archiveName,
+															threadSearch: null,
+															imageboard: target.$1,
+															result: post.identifier.threadOrPostId
+														);
+													}
+												});
+												widget.onManualResult(result);
+											}
+											catch (e, st) {
+												if (context.mounted) {
+													alertError(context, e, st);
+												}
 											}
 										}
 									}
 								}
-							}
+							)
 						)
 					]
 				)

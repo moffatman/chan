@@ -265,10 +265,10 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 												showBoardName: true,
 												allowTappingLinks: false,
 												showPostNumber: false,
-												isSelected: (context.watch<MasterDetailLocation?>()?.twoPane != false) && currentValue?.result == row,
+												isSelected: (context.watch<MasterDetailLocation?>()?.twoPane != false) && currentValue?.result == row.threadOrPostIdentifier,
 												onTap: () => setValue(SelectedSearchResult(
 													imageboard: imageboard,
-													result: row,
+													result: row.threadOrPostIdentifier,
 													threadSearch: null,
 													fromArchive: result.data!.archive.isArchive ? result.data!.archive.name : null
 												)),
@@ -285,7 +285,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 								return GestureDetector(
 									onTap: () => setValue(SelectedSearchResult(
 										imageboard: imageboard,
-										result: row,
+										result: row.threadOrPostIdentifier,
 										// Only do a thread-search if we have a match in lastReplies and not OP
 										threadSearch: (matchingPostIndex > 0) ? widget.query.query : null,
 										fromArchive: result.data!.archive.isArchive ? result.data!.archive.name : null
@@ -293,7 +293,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 									child: ThreadRow(
 										thread: row.thread!,
 										onThumbnailTap: (attachment) => _showGallery(context, attachment),
-										isSelected: (context.watch<MasterDetailLocation?>()?.twoPane != false) && currentValue?.result == row,
+										isSelected: (context.watch<MasterDetailLocation?>()?.twoPane != false) && currentValue?.result == row.threadOrPostIdentifier,
 										replyCountUnreliable: result.data!.replyCountsUnreliable,
 										imageCountUnreliable: result.data!.imageCountsUnreliable,
 										semanticParentIds: const [-7],
@@ -466,8 +466,8 @@ openSearch({
 								imageboardKey: null,
 								imageboard: result.imageboard,
 								child: ThreadPage(
-									thread: result.result.threadIdentifier,
-									initialPostId: result.result.id,
+									thread: result.result.thread,
+									initialPostId: result.result.postId,
 									initiallyUseArchive: result.fromArchive,
 									initialSearch: result.threadSearch,
 									boardSemanticId: -1
