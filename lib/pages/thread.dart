@@ -1322,6 +1322,10 @@ class ThreadPageState extends State<ThreadPage> {
 	}
 
 	Future<Thread> _getUpdatedThread(CancelToken? cancelToken) async {
+		if (_updateHighlightedPosts(restoring: false)) {
+			_listController.state?.forceRebuildId++;
+			setState(() {});
+		}
 		final tmpPersistentState = persistentState;
 		final site = context.read<ImageboardSite>();
 		final settings = Settings.instance;
@@ -2254,11 +2258,12 @@ class ThreadPageState extends State<ThreadPage> {
 																listUpdater: (options) async {
 																	if (persistentState.disableUpdates && _listController.state?.originalList != null) {
 																		if (options.source.manual) {
-																			await Future.delayed(const Duration(milliseconds: 650));
 																			// This is just to clear highlighted posts / resort tree on archived threads
 																			_highlightPosts.clear();
 																			_listController.state?.forceRebuildId++; // To force widgets to re-build and re-compute [highlight]
 																			Future.microtask(() => setState(() {}));
+																			// Keep the refresh indicator visible on archived threads.
+																			await Future.delayed(const Duration(milliseconds: 650));
 																		}
 																		return null;
 																	}
