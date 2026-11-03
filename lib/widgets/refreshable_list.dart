@@ -1146,6 +1146,9 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		required bool alreadyDim
 	})? collapsedItemBuilder;
 	final List<T>? initialList;
+	/// When the initial data was fetched. Skip the initial refresh while it is
+	/// within the auto-update interval, or five minutes if auto-update is off.
+	final DateTime? initialListTime;
 	final Future<List<T>?> Function(RefreshableListUpdateOptions options) listUpdater;
 	final Future<List<T>> Function(T after, CancelToken cancelToken)? listExtender;
 	final String id;
@@ -1195,6 +1198,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		this.autoUpdateDuration,
 		this.remedies = const {},
 		this.initialList,
+		this.initialListTime,
 		this.disableUpdates = false,
 		this.disableBottomUpdates = false,
 		this.gridDelegate,
@@ -1306,8 +1310,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			_sortList();
 		}
 		if (!widget.disableUpdates) {
-			update(hapticFeedback: true);
-			resetTimer();
+			_startInitialUpdate(hapticFeedback: true);
 		}
 		_refreshableTreeItems = _RefreshableTreeItems<T>(
 			manuallyCollapsedItems: widget.treeAdapter?.initialCollapsedItems?.toList() ?? [],
@@ -1411,7 +1414,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			);
 			_lastTreeOrder = null;
 			if (!widget.disableUpdates) {
-				update(hapticFeedback: true);
+				_startInitialUpdate(hapticFeedback: true);
 			}
 		}
 		else if (oldWidget.disableUpdates != widget.disableUpdates) {
@@ -1513,14 +1516,28 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 	}
 
-	void resetTimer() {
+	void _startInitialUpdate({bool hapticFeedback = false}) {
+		lastUpdateTime = widget.initialList == null ? null : widget.initialListTime;
+		final time = lastUpdateTime;
+		final interval = widget.autoUpdateDuration ?? const Duration(minutes: 5);
+		if (time != null && time.add(interval).isAfter(DateTime.now())) {
+			resetTimer(from: time);
+		}
+		else {
+			update(hapticFeedback: hapticFeedback);
+			resetTimer();
+		}
+	}
+
+	void resetTimer({DateTime? from}) {
 		if (!mounted) {
 			return;
 		}
 		autoUpdateTimer?.cancel();
 		if (widget.autoUpdateDuration != null) {
-			autoUpdateTimer = Timer(widget.autoUpdateDuration!, _autoUpdate);
-			nextUpdateTime = DateTime.now().add(widget.autoUpdateDuration!);
+			final now = DateTime.now();
+			nextUpdateTime = (from ?? now).add(widget.autoUpdateDuration!);
+			autoUpdateTimer = Timer(nextUpdateTime!.difference(now), _autoUpdate);
 		}
 		else {
 			nextUpdateTime = null;
