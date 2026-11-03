@@ -1599,7 +1599,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 		catch (e, st) {
 			if (mounted && !cancelToken.isCancelled) {
-				alertError(context, e, st);
+				alertError(context, e, st, barrierDismissible: true);
 			}
 		}
 		finally {
@@ -1628,7 +1628,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 		catch (e, st) {
 			if (mounted && !cancelToken.isCancelled) {
-				alertError(context, e, st);
+				alertError(context, e, st, barrierDismissible: true);
 			}
 		}
 		finally {
