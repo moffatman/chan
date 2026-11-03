@@ -1411,7 +1411,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			);
 			_lastTreeOrder = null;
 			if (!widget.disableUpdates) {
-				update();
+				update(hapticFeedback: true);
 			}
 		}
 		else if (oldWidget.disableUpdates != widget.disableUpdates) {
