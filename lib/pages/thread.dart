@@ -2427,14 +2427,15 @@ class ThreadPageState extends State<ThreadPage> {
 																						'${collapsedChildIds.length}${collapsedChildIds.contains(-1) ? '+' : ''} ',
 																						style: style
 																					),
-																					if (unseenCount > 0) Text(
-																						'($unseenCount unseen) ',
-																						style: style
-																					)
-																					else if (newCount > 0) Text(
-																						'($newCount new) ',
-																						style: style
-																					),
+																					if (value != null)
+																						if (unseenCount > 0) Text(
+																							'($unseenCount unseen) ',
+																							style: style
+																						)
+																						else if (newCount > 0) Text(
+																							'($newCount new) ',
+																							style: style
+																						),
 																					const Icon(CupertinoIcons.chevron_down, size: 18, applyTextScaling: true)
 																				]
 																			)
