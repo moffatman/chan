@@ -1469,7 +1469,7 @@ class Persistence extends ChangeNotifier {
 			};
 			await jar.deleteAll();
 			for (final imageboard in ImageboardRegistry.instance.imageboardsIncludingDev) {
-				imageboard.site.loginSystem?.didClearCookies(jar);
+				imageboard.site.didClearCookies(jar);
 			}
 			showToast(
 				context: ImageboardRegistry.instance.context!,

@@ -133,7 +133,7 @@ class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 				getHasOmittedReplies: (i) => i.hasUnknownStubChildren,
 				updateWithStubItems: (input, stubIds, cancelToken) async {
 					final output = input.map((item) {
-						if (stubIds.any((i) => i.childId == item.id)) {
+						if (stubIds.any((i) => i == item.id)) {
 							return _DebuggingItem(
 								id: item.id,
 								parentIds: item.parentIds,
@@ -144,11 +144,11 @@ class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 						}
 						return item;
 					}).toList();
-					if (stubIds.length == 1 && stubIds.single.childId == stubIds.single.parentId) {
+					if (stubIds.length == 1 && (input.tryFirstWhere((i) => i.id == stubIds.single)?.hasUnknownStubChildren ?? false)) {
 						// Expanding unknownStubChildren
 						output.add(_DebuggingItem(
 							id: _id++,
-							parentIds: [stubIds.single.childId],
+							parentIds: [stubIds.single],
 							isStub: false,
 							isPageStub: false,
 							hasUnknownStubChildren: false

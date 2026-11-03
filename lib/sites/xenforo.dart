@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
-import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
@@ -653,7 +652,7 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 
   @override
   Future<Post> getPostFromArchive(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) async {
-    final posts = await getStubPosts(ThreadIdentifier(board, 0), [ParentAndChildIdentifier.same(id)], priority: priority, cancelToken: cancelToken);
+    final posts = await _getStubPosts(ThreadIdentifier(board, 0), [id], priority: priority, cancelToken: cancelToken);
 		return posts.firstWhere((p) => p.id == id);
   }
 
@@ -791,13 +790,17 @@ class SiteXenforo extends ImageboardSite with ForumSite {
   }
 
 	@override
-	Future<List<Post>> getStubPosts(ThreadIdentifier thread, List<ParentAndChildIdentifier> postIds, {required RequestPriority priority, CancelToken? cancelToken}) async {
+	Future<List<Post>> getStubPosts(Thread thread, List<int> postIds, {required RequestPriority priority, CancelToken? cancelToken}) async {
+		return _getStubPosts(thread.identifier, postIds, priority: priority, cancelToken: cancelToken);
+	}
+
+	Future<List<Post>> _getStubPosts(ThreadIdentifier thread, List<int> postIds, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		// Just do one at a time
 		final postId = postIds.first;
-		if (postId.childId.isNegative) {
+		if (postId.isNegative) {
 			// Request for page
 			final response = await client.getUri(
-				Uri.https(baseUrl, '$basePath/threads/${thread.id}/page-${-postId.childId}'),
+				Uri.https(baseUrl, '$basePath/threads/${thread.id}/page-${-postId}'),
 				options: Options(
 					responseType: ResponseType.plain,
 					extra: {
@@ -811,7 +814,7 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 		}
 		// Request for post
 		final response = await client.getUri(
-			Uri.https(baseUrl, '$basePath/goto/post', {'id': postId.childId.toString()}),
+			Uri.https(baseUrl, '$basePath/goto/post', {'id': postId.toString()}),
 			options: Options(
 				responseType: ResponseType.plain,
 				extra: {

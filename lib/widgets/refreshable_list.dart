@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/report_bug.dart';
@@ -336,7 +335,7 @@ class RefreshableListItem<T extends Object> {
 	T item;
 	RefreshableListItemOptions options;
 	final bool representsUnknownStubChildren;
-	final List<ParentAndChildIdentifier> representsKnownStubChildren;
+	final List<int> representsKnownStubChildren;
 	final List<int> representsUnloadedPages;
 	final bool highlighted;
 	final bool pinned;
@@ -413,7 +412,7 @@ class RefreshableListItem<T extends Object> {
 	RefreshableListItem<T> copyWith({
 		List<int>? parentIds,
 		bool? representsUnknownStubChildren,
-		List<ParentAndChildIdentifier>? representsKnownStubChildren,
+		List<int>? representsKnownStubChildren,
 		int? depth,
 	}) => RefreshableListItem(
 		item: item,
@@ -469,7 +468,7 @@ class RefreshableTreeAdapter<T extends Object> {
 	final int Function(T item) getId;
 	final Iterable<int> Function(T item) getParentIds;
 	final bool Function(T item) getHasOmittedReplies;
-	final Future<List<T>> Function(List<T> currentList, List<ParentAndChildIdentifier> stubIds, CancelToken? cancelToken) updateWithStubItems;
+	final Future<List<T>> Function(List<T> currentList, List<int> stubIds, CancelToken? cancelToken) updateWithStubItems;
 	final Widget Function(Widget, List<int>) wrapTreeChild;
 	final int opId;
 	final double Function(T item, List<int> parentIds, double width)? estimateHeight;
@@ -1143,7 +1142,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		required Set<int> collapsedChildIds,
 		required bool loading,
 		required double? peekContentHeight,
-		required List<ParentAndChildIdentifier>? stubChildIds,
+		required List<int>? stubChildIds,
 		required bool alreadyDim
 	})? collapsedItemBuilder;
 	final List<T>? initialList;
@@ -1565,7 +1564,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		final previousList = originalList;
 		final previouslyLoadedIds = _getLoadedItemIds();
 		final stubIds = value.representsUnknownStubChildren
-			? [ParentAndChildIdentifier.same(value.id)]
+			? [value.id]
 			: value.representsKnownStubChildren;
 		final cancelToken = CancelToken();
 		_refreshableTreeItems.itemLoadingOmittedItemsStarted(value.parentIds, value.id, cancelToken);
@@ -1578,7 +1577,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			await controller.waitUntilDoneAutoScrolling(cancelToken: cancelToken);
 			if (!mounted || cancelToken.isCancelled || widget.id != contentId) return;
 			_updateList(newList, previouslyLoadedIds: identical(previousList, originalList) ? previouslyLoadedIds : null);
-			_placeLoadedSubtree(newList, previouslyLoadedIds, stubIds);
+			_placeLoadedSubtree(newList, previouslyLoadedIds, value.id);
 			setState(() {});
 		}
 		catch (e, st) {
@@ -1601,13 +1600,13 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		try {
 			final newList = await widget.treeAdapter!.updateWithStubItems(
 				originalList!,
-				[ParentAndChildIdentifier.same(page)],
+				[page],
 				cancelToken
 			);
 			await controller.waitUntilDoneAutoScrolling(cancelToken: cancelToken);
 			if (!mounted || cancelToken.isCancelled || widget.id != contentId) return;
 			_updateList(newList, previouslyLoadedIds: identical(previousList, originalList) ? previouslyLoadedIds : null);
-			_placeLoadedSubtree(newList, previouslyLoadedIds, [ParentAndChildIdentifier.same(page)]);
+			_placeLoadedSubtree(newList, previouslyLoadedIds, page);
 			await _lockSliverForNextRebuild(lockAtMiddle: true);
 		}
 		catch (e, st) {
@@ -1622,47 +1621,44 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 
 	/// A tap chooses where the fetched subtree belongs. Automatic extension
 	/// bypasses this and continues to use arrival batches.
-	void _placeLoadedSubtree(List<T> newList, Set<int>? previouslyLoadedIds, List<ParentAndChildIdentifier> requested) {
+	void _placeLoadedSubtree(List<T> newList, Set<int>? previouslyLoadedIds, int loadingParentId) {
 		final adapter = widget.treeAdapter;
 		if (adapter == null || !adapter.newRepliesAreLinear || previouslyLoadedIds == null) return;
 		_syncTreeBatchOverrides();
 		final itemsById = {for (final item in newList) adapter.getId(item): item};
-		final requestedChildren = {
-			for (final pair in requested)
-				if (pair.childId != pair.parentId) pair.childId: pair.parentId
-		};
-		final requestedParents = {
-			for (final pair in requested)
-				if (pair.childId == pair.parentId) pair.parentId
-		};
-		final newItems = itemsById.values.where((item) => !adapter.getIsStub(item) &&
-			adapter.getId(item) != adapter.opId && !previouslyLoadedIds.contains(adapter.getId(item))).toList();
-		final placed = <int>{};
-		while (newItems.isNotEmpty) {
-			final previousLength = newItems.length;
-			newItems.removeWhere((item) {
-				final id = adapter.getId(item);
-				final parentId = requestedChildren[id] ?? adapter.getParentIds(item)
-					.tryFirstWhere((parentId) => requestedParents.contains(parentId) || placed.contains(parentId));
-				final parent = itemsById[parentId];
-				if (parentId == null || parentId == id || parent == null || adapter.getIsStub(parent)) return false;
-				if (requestedChildren.containsKey(parentId) && !previouslyLoadedIds.contains(parentId) && !placed.contains(parentId)) {
-					return false;
-				}
-				final batch = parentId == adapter.opId ? 0 : treeBatchForId(_treeBatchBoundaries, _treeBatchOverrides, parentId);
-				for (final ids in _treeBatchOverrides) {
-					ids.remove(id);
-				}
-				_treeBatchOverrides[batch].add(id);
-				placed.add(id);
-				return true;
-			});
-			if (newItems.length == previousLength) break;
+		final childrenByParent = <int, List<int>>{};
+		for (final item in newList) {
+			if (adapter.getIsStub(item) || adapter.getId(item) == adapter.opId) continue;
+			for (final parentId in adapter.getParentIds(item)) {
+				childrenByParent.putIfAbsent(parentId, () => []).add(adapter.getId(item));
+			}
 		}
-		if (placed.isNotEmpty) {
-			_lastTree = null;
-			_saveTreeBatches();
+		bool placedAny = false;
+		final visited = <int>{};
+		final pending = [loadingParentId];
+		for (int i = 0; i < pending.length; i++) {
+			final id = pending[i];
+			if (!visited.add(id)) continue;
+			final item = itemsById[id];
+			if (item == null || adapter.getIsStub(item)) continue;
+			// Walk through existing bodies too: a response can fill holes below
+			// them, or include siblings that were not among the requested IDs.
+			pending.addAll(childrenByParent[id] ?? []);
+			if (id == adapter.opId || previouslyLoadedIds.contains(id)) continue;
+			final parentId = adapter.getParentIds(item).tryFirstWhere((parentId) => parentId != id &&
+				(id == loadingParentId || visited.contains(parentId)) &&
+				itemsById[parentId] != null && !adapter.getIsStub(itemsById[parentId]!));
+			if (parentId == null) continue;
+			final batch = parentId == adapter.opId ? 0 : treeBatchForId(_treeBatchBoundaries, _treeBatchOverrides, parentId);
+			for (final ids in _treeBatchOverrides) {
+				ids.remove(id);
+			}
+			_treeBatchOverrides[batch].add(id);
+			placedAny = true;
 		}
+		if (!placedAny) return;
+		_lastTree = null;
+		_saveTreeBatches();
 	}
 
 	void _onUpdateAnimation() {
@@ -1762,7 +1758,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	}
 
 	Future<void> _mergeTrees({required bool rebuild}) async {
-		final maxId = controller.items.fold<int>(0, (m, i) => max(m, i.representsKnownStubChildren.fold<int>(i.id, (n, j) => max(n, j.childId))));
+		final maxId = controller.items.fold<int>(0, (m, i) => max(m, i.representsKnownStubChildren.fold<int>(i.id, (n, j) => max(n, j))));
 		_treeBatchBoundaries = [maxId];
 		_treeBatchOverrides = [<int>{}, <int>{}];
 		_lastTreeOrder = null; // Explicit merge permits reordering.
@@ -1837,7 +1833,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						newList = await treeAdapter.updateWithStubItems(
 							originalList!,
 							lastItem.representsUnknownStubChildren
-								? [ParentAndChildIdentifier.same(lastItem.id)]
+								? [lastItem.id]
 								: lastItem.representsKnownStubChildren,
 							cancelToken
 						);
@@ -1850,7 +1846,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					// If we aren't ending on unloaded pages, first reload the last loaded page
 					newList = await treeAdapter.updateWithStubItems(
 						originalList!,
-						[ParentAndChildIdentifier.same(treeAdapter.getParentIds(lastItem.item).first)],
+						[treeAdapter.getParentIds(lastItem.item).first],
 						cancelToken
 					);
 				}
@@ -1881,7 +1877,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						// Load the first unloaded page
 						newList = await treeAdapter.updateWithStubItems(
 							originalList!,
-							[ParentAndChildIdentifier.same(firstUnloadedPageId)],
+							[firstUnloadedPageId],
 							cancelToken
 						);
 					}
@@ -2230,7 +2226,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			child = widget.collapsedItemBuilder?.call(
 				context: context,
 				value: null,
-				collapsedChildIds: value.representsKnownStubChildren.map((x) => x.childId).toSet(),
+				collapsedChildIds: value.representsKnownStubChildren.toSet(),
 				loading: loadingOmittedItems != null,
 				peekContentHeight: null,
 				stubChildIds: value.representsKnownStubChildren,
@@ -2557,7 +2553,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 
 		final firstTreeBuild = _treeBatchBoundaries.isEmpty;
-		final maxId = linear.fold<int>(0, (m, i) => max(m, i.representsKnownStubChildren.fold<int>(i.id, (n, j) => max(n, j.childId))));
+		final maxId = linear.fold<int>(0, (m, i) => max(m, i.representsKnownStubChildren.fold<int>(i.id, (n, j) => max(n, j))));
 		final boundaries = _treeBatchBoundaries;
 		final firstBoundary = boundaries.tryFirst ?? maxId;
 		int batchFor(int id) => adapter.newRepliesAreLinear ? treeBatchForId(boundaries, _treeBatchOverrides, id) : 0;
@@ -2922,10 +2918,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					_refreshableTreeItems._cache.removeWhere((k, _) => k.thisId == node.id);
 				}
 				out.add(item.copyWith(
-					representsKnownStubChildren: node.stubChildIds.map((childId) => ParentAndChildIdentifier(
-						parentId: node.id,
-						childId: childId
-					)).toList(),
+					representsKnownStubChildren: node.stubChildIds.toList(),
 					representsUnknownStubChildren: node.hasOmittedReplies
 				));
 				item.treeDescendantIds.addAll(node.stubChildIds);
@@ -2988,18 +2981,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			out.add(firstRoot.item.copyWith(
 				parentIds: [],
 				representsKnownStubChildren: [
-					...firstRoot.stubChildIds.map((childId) => ParentAndChildIdentifier(
-						parentId: firstRoot!.id,
-						childId: childId
-					)),
+					...firstRoot.stubChildIds,
 					if (adapter.newRepliesAreLinear)
 						for (final entry in orphanStubs.entries)
-							for (final childId in entry.value)
-								ParentAndChildIdentifier(parentId: entry.key, childId: childId),
-					...stubRoots.map((r) => ParentAndChildIdentifier(
-						parentId: r.parents.tryLast?.id ?? firstRoot!.id,
-						childId: r.id
-					))
+							...entry.value,
+					...stubRoots.map((r) => r.id)
 				].toList(),
 				representsUnknownStubChildren: firstRoot.hasOmittedReplies,
 				depth: 0
@@ -3179,7 +3165,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			}
 			else if (widget.treeAdapter != null) {
 				final adapter = widget.treeAdapter!;
-				(RefreshableListItem<T>, List<ParentAndChildIdentifier>)? stub;
+				(RefreshableListItem<T>, List<int>)? stub;
 				void maybeAddStubItem() {
 					final item = stub;
 					if (item == null) return;
@@ -3232,10 +3218,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						}
 					}
 					if (adapter.getIsStub(item.item)) {
-						(stub ??= (item, [])).$2.add(ParentAndChildIdentifier(
-							parentId: adapter.getParentIds(item.item).tryFirst ?? adapter.opId,
-							childId: adapter.getId(item.item)
-						));
+						(stub ??= (item, [])).$2.add(adapter.getId(item.item));
 					}
 					else if (isUnloadedPage) {
 						unloadedPages.add(item);
@@ -3243,10 +3226,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					else {
 						values.add(item);
 						if (adapter.getHasOmittedReplies(item.item)) {
-							(stub ??= (item, [])).$2.add(ParentAndChildIdentifier(
-								parentId: adapter.getId(item.item),
-								childId: adapter.getId(item.item)
-							));
+							(stub ??= (item, [])).$2.add(adapter.getId(item.item));
 						}
 					}
 				}

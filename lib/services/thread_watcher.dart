@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:chan/models/board.dart';
-import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
@@ -319,8 +318,8 @@ class ThreadWatcher extends ChangeNotifier {
 					final lastIncompletePageParentId = oldThread.posts_.tryLast?.parentId;
 					if (lastIncompletePageParentId != null && lastIncompletePageParentId.isNegative) {
 						final newChildren = await site.getStubPosts(
-							oldThread.identifier,
-							[ParentAndChildIdentifier.same(lastIncompletePageParentId)],
+							oldThread,
+							[lastIncompletePageParentId],
 							priority: priority,
 							cancelToken: cancelToken
 						);

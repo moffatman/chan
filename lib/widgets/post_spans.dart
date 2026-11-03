@@ -7,7 +7,6 @@ import 'package:chan/main.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/intern.dart';
-import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/board.dart';
@@ -3289,7 +3288,7 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	double Function(int postId)? get shouldHighlightPost;
 	bool Function(int postId)? get isPostOnscreen;
 	void Function(int postId, bool glow)? get glowOtherPost;
-	Future<void> Function(List<ParentAndChildIdentifier>)? get onNeedUpdateWithStubItems;
+	Future<void> Function(List<int>)? get onNeedUpdateWithStubItems;
 	bool disposed = false;
 	List<Comparator<Post>> get postSortingMethods;
 	PostSpanZoneStyle get style;
@@ -3583,7 +3582,7 @@ class _PostSpanChildZoneData extends PostSpanZoneData {
 	void Function(int, bool)? get glowOtherPost => parent.glowOtherPost;
 
 	@override
-	Future<void> Function(List<ParentAndChildIdentifier>)? get onNeedUpdateWithStubItems => parent.onNeedUpdateWithStubItems;
+	Future<void> Function(List<int>)? get onNeedUpdateWithStubItems => parent.onNeedUpdateWithStubItems;
 
 	@override
 	Iterable<int> get stackIds {
@@ -3672,7 +3671,7 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	@override
 	final void Function(int, bool)? glowOtherPost;
 	@override
-	Future<void> Function(List<ParentAndChildIdentifier>)? onNeedUpdateWithStubItems;
+	Future<void> Function(List<int>)? onNeedUpdateWithStubItems;
 	final Map<(BoardKey, int), bool> _isLoadingPostFromArchive = {};
 	final Map<(BoardKey, int), Post> _crossThreadPostsFromArchive = {};
 	final Map<(BoardKey, int), (Object, StackTrace)> _postFromArchiveErrors = {};

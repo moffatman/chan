@@ -1,6 +1,5 @@
 import 'dart:math';
 
-import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/services/imageboard.dart';
@@ -27,16 +26,16 @@ import 'package:provider/provider.dart';
 import 'package:chan/pages/overscroll_modal.dart';
 
 class _PostsPageItem {
-	final ParentAndChildIdentifier? stubId;
+	final int? stubId;
 	final Post? post;
 	final PostReceipt? spamFiltered;
-	final List<ParentAndChildIdentifier>? stubIds;
+	final List<int>? stubIds;
 	bool get stub => stubId != null || stubIds != null;
 	bool loading = false;
 
 	_PostsPageItem.post(Post this.post) : stubIds = null, stubId = null, spamFiltered = null;
-	_PostsPageItem.primaryStub(List<ParentAndChildIdentifier> this.stubIds) : post = null, stubId = null, spamFiltered = null;
-	_PostsPageItem.secondaryStub(ParentAndChildIdentifier this.stubId) : stubIds = null, post = null, spamFiltered = null;
+	_PostsPageItem.primaryStub(List<int> this.stubIds) : post = null, stubId = null, spamFiltered = null;
+	_PostsPageItem.secondaryStub(int this.stubId) : stubIds = null, post = null, spamFiltered = null;
 	_PostsPageItem.spamFiltered(PostReceipt this.spamFiltered) : post = null, stubIds = null, stubId = null;
 
 	@override
@@ -137,10 +136,7 @@ class _PostsPageState extends State<PostsPage> {
 			final matchingDraft = widget.zone.primaryThreadState?.receipts.tryFirstWhere((r) => r.id == id);
 			if (matchingPost != null) {
 				if (matchingPost.isStub) {
-					replies.add(_PostsPageItem.secondaryStub(ParentAndChildIdentifier(
-						parentId: matchingPost.parentId ?? matchingPost.threadId,
-						childId: matchingPost.id
-					)));
+					replies.add(_PostsPageItem.secondaryStub(matchingPost.id));
 				}
 				else {
 					replies.add(_PostsPageItem.post(matchingPost));
@@ -156,10 +152,7 @@ class _PostsPageState extends State<PostsPage> {
 				}
 				else if (context.read<ImageboardSite?>()?.isPaged ?? false) {
 					// It must be on another page
-					replies.add(_PostsPageItem.secondaryStub(ParentAndChildIdentifier(
-						parentId: widget.zone.primaryThreadId,
-						childId: id
-					)));
+					replies.add(_PostsPageItem.secondaryStub(id));
 				}
 			}
 		}

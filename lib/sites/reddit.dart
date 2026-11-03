@@ -4,7 +4,6 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:chan/models/flag.dart';
-import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/pages/cookie_browser.dart';
 import 'package:chan/services/cloudflare.dart';
@@ -27,6 +26,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
+import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -281,6 +281,10 @@ class _SiteRedditInterceptor extends InterceptorBase {
 				return;
 			}
 			final path = response.requestOptions.uri.path;
+			if (path == '/api/morechildren') {
+				// Don't bother, it seems to always fail
+				throw SiteRedditBlockedException(parent.imageboard);
+			}
 			final uri = path.endsWith('.json') ?
 				response.requestOptions.uri.replace(
 					path: '${path.substring(0, path.length - 5)}/'
@@ -340,11 +344,13 @@ class SiteReddit extends ImageboardSite {
 	final _interceptorLock = Mutex();
 	(int, DateTime)? _earliestKnown;
 	(int, DateTime)? _latestKnown;
+	final _lastFailedMoreChildrenApiCall = <CookieJar, DateTime>{};
 
 	@override
 	bool migrateFromPrevious(SiteReddit oldSite) {
 		_earliestKnown = oldSite._earliestKnown;
 		_latestKnown = oldSite._latestKnown;
+		_lastFailedMoreChildrenApiCall.addAll(oldSite._lastFailedMoreChildrenApiCall);
 		return super.migrateFromPrevious(oldSite);
 	}
 
@@ -1451,94 +1457,181 @@ class SiteReddit extends ImageboardSite {
 		);
 	}
 
+	Stream<Post> _getStubPostsSingle(ThreadIdentifier thread, int postId, {required RequestPriority priority, CancelToken? cancelToken}) async* {
+		final response = await client.getUri(Uri.https(baseUrl, '/r/${thread.board}/comments/${toRedditId(thread.id)}/_/${toRedditId(postId)}.json'));
+		final (opData, repliesData) = switch(response.data) {
+			[
+				{'data': {'children': [{'data': Map data}, ...]}},
+				{'data': {'children': List children}},
+				...
+			] => (data, children),
+			_ => throw PatternException(response.data)
+		};
+		yield* _makeReplies(thread, repliesData, null, cancelToken);
+	}
+
 	@override
-	Future<List<Post>> getStubPosts(ThreadIdentifier thread, List<ParentAndChildIdentifier> postIds, {required RequestPriority priority, CancelToken? cancelToken}) async {
+	Future<List<Post>> getStubPosts(Thread thread, List<int> postIds, {required RequestPriority priority, CancelToken? cancelToken}) async {
+		if (postIds.isEmpty) {
+			return [];
+		}
 		final ret = <Post>[];
-		final childIdsToGet = postIds.take(20).toList();
+		int? singleRequest;
+		final childIdsToExpect = <int>[];
 		final newPosts = <int, Post>{};
 		final Set<int> newPostsWithReplies = {};
-		if (childIdsToGet.isNotEmpty) {
-			final response = await client.getUri<Map>(Uri.https(baseUrl, '/api/morechildren', {
-				'link_id': 't3_${toRedditId(thread.id)}',
-				'children': 'c1:${childIdsToGet.map((cid) => 't1_${toRedditId(cid.childId)}').join(',')}',
-				'api_type': 'json',
-				'renderstyle': 'html',
-				'r': thread.board
-			}), options: Options(
-				extra: {
-					kPriority: priority
-				},
-				responseType: ResponseType.json
-			), cancelToken: cancelToken);
-			final things = switch(response.data) {
-				{'json': {'data': {'things': List things}}} => things.cast<Map>(),
-				_ => throw PatternException(response.data, 'Bad morechildren resp')
-			};
-			for (final thing in things) {
-				final data = thing['data'] as Map;
-				final parentId = fromRedditId((data['parent'] as String).split('_')[1]);
-				if (thing['kind'] == 'more' || data['id'] == 't1__') {
-					newPosts[parentId]?.hasOmittedReplies = true;
+		final currentPosts = {
+			for (final post in thread.posts_)
+				post.id: post
+		};
+		if (postIds.length == 1) {
+			singleRequest = postIds.first;
+		}
+		else {
+			Iterable<int> getPathToRoot(int start) sync* {
+				int? pointer = start;
+				while (pointer != null) {
+					yield pointer;
+					pointer = currentPosts[pointer]?.parentId;
 				}
-				else {
-					final id = fromRedditId((data['id'] as String).split('_')[1])!;
-					final doc = parseFragment(HtmlUnescape().convert(data['content'] as String));
-					ImageboardMultiFlag? flag;
-					final flair = doc.querySelector('.flairrichtext');
-					if (flair != null) {
-						flag = ImageboardMultiFlag(
-							parts: flair.children.map((c) {
-								final imageUrl = RegExp(r'background-image: *url\((.*)\)').firstMatch(c.attributes['style'] ?? '')?.group(1);
-								return ImageboardFlag(
-									imageHeight: imageUrl == null ? 0 : 16,
-									imageWidth: imageUrl == null ? 0 : 16,
-									name: c.text,
-									imageUrl: imageUrl ?? ''
-								);
-							}).toList()
-						);
+			}
+			final ancestors = <int>{...getPathToRoot(postIds.first)};
+			for (final postId in postIds.skip(1)) {
+				ancestors.retainAll(getPathToRoot(postId));
+				if (ancestors.isEmpty) {
+					break;
+				}
+			}
+			// Don't count OP
+			ancestors.remove(thread.id);
+			final ancestor = thread.posts_.tryFirstWhere((p) => p.id == ancestors.tryFirst);
+			if (ancestor != null) {
+				final currentDescendants = <int>{};
+				void dump(Post? post) {
+					if (post == null || post.isStub) {
+						return;
 					}
-					final html = unescape.convert(data['contentHTML'] as String);
-					final text = (data['contentText'] as String).replaceAllMapped(RegExp(r'!\[img\]\(([^)]+)\)'), (match) {
-						final regex = r'href="([^"]+' + match.group(1)! + r'[^"]+)"';
-						final matchInHtml = RegExp(regex).firstMatch(html)?.group(1);
-						if (matchInHtml != null) {
-							return '![img]($matchInHtml)';
+					for (final replyId in post.replyIds) {
+						if (currentDescendants.add(replyId)) {
+							dump(currentPosts[replyId]);
 						}
-						return match.group(0)!;
-					});
-					final author = doc.querySelector('.author')?.text ?? '';
-					final authorIsDeleted = author == _kDeleted;
-					final edited = DateTime.tryParse(doc.querySelector('.edited-timestamp')?.attributes['datetime'] ?? '');
-					final textIsDeleted = text == _kRemoved || text == _kDeleted || (edited != null && text == _kCleaned);
-					final post = Post(
-						board: thread.board,
-						text: textIsDeleted ? '' : text,
-						name: authorIsDeleted ? '' : author,
-						isDeleted: authorIsDeleted || textIsDeleted,
-						flag: flag,
-						time: DateTime.tryParse(doc.querySelector('.live-timestamp')?.attributes['datetime'] ?? '') ?? _estimateTime(id),
-						edited: edited,
-						threadId: thread.id,
-						parentId: parentId,
-						id: id,
-						spanFormat: PostSpanFormat.reddit,
-						attachments_: const [],
-						upvotes: doc.querySelector('.score.unvoted')?.attributes['title']?.tryParseInt
-					);
-					_updateTimeEstimateData(post.id, post.time);
-					newPosts[id] = post;
-					if (!(doc.querySelector('.numchildren')?.text.contains('(0 children)') ?? true)) {
-						newPostsWithReplies.add(id);
 					}
+				}
+				dump(ancestor);
+				if (currentDescendants.length < 100) {
+					singleRequest = ancestor.id;
+				}
+			}
+		}
+		if (singleRequest != null) {
+			childIdsToExpect.addAll(postIds);
+			await for (final post in _getStubPostsSingle(thread.identifier, singleRequest, priority: priority, cancelToken: cancelToken)) {
+				_updateTimeEstimateData(post.id, post.time);
+				newPosts[post.id] = post;
+			}
+		}
+		else {
+			try {
+				if (_lastFailedMoreChildrenApiCall[Persistence.currentCookies]?.isAfter(DateTime.now().subtract(const Duration(minutes: 5))) ?? false) {
+					// Don't retry for 5 minutes, hacky DioError here
+					throw DioError(requestOptions: RequestOptions(path: ''), error: SiteRedditBlockedException(imageboard));
+				}
+				childIdsToExpect.addAll(postIds.take(20));
+				final response = await client.getUri<Map>(Uri.https(baseUrl, '/api/morechildren', {
+					'link_id': 't3_${toRedditId(thread.id)}',
+					'children': 'c1:${childIdsToExpect.map((cid) => 't1_${toRedditId(cid)}').join(',')}',
+					'api_type': 'json',
+					'renderstyle': 'html',
+					'r': thread.board
+				}), options: Options(
+					extra: {
+						kPriority: priority
+					},
+					responseType: ResponseType.json
+				), cancelToken: cancelToken);
+				final things = switch(response.data) {
+					{'json': {'data': {'things': List things}}} => things.cast<Map>(),
+					_ => throw PatternException(response.data, 'Bad morechildren resp')
+				};
+				for (final thing in things) {
+					final data = thing['data'] as Map;
+					final parentId = fromRedditId((data['parent'] as String).split('_')[1]);
+					if (thing['kind'] == 'more' || data['id'] == 't1__') {
+						newPosts[parentId]?.hasOmittedReplies = true;
+					}
+					else {
+						final id = fromRedditId((data['id'] as String).split('_')[1])!;
+						final doc = parseFragment(HtmlUnescape().convert(data['content'] as String));
+						ImageboardMultiFlag? flag;
+						final flair = doc.querySelector('.flairrichtext');
+						if (flair != null) {
+							flag = ImageboardMultiFlag(
+								parts: flair.children.map((c) {
+									final imageUrl = RegExp(r'background-image: *url\((.*)\)').firstMatch(c.attributes['style'] ?? '')?.group(1);
+									return ImageboardFlag(
+										imageHeight: imageUrl == null ? 0 : 16,
+										imageWidth: imageUrl == null ? 0 : 16,
+										name: c.text,
+										imageUrl: imageUrl ?? ''
+									);
+								}).toList()
+							);
+						}
+						final html = unescape.convert(data['contentHTML'] as String);
+						final text = (data['contentText'] as String).replaceAllMapped(RegExp(r'!\[img\]\(([^)]+)\)'), (match) {
+							final regex = r'href="([^"]+' + match.group(1)! + r'[^"]+)"';
+							final matchInHtml = RegExp(regex).firstMatch(html)?.group(1);
+							if (matchInHtml != null) {
+								return '![img]($matchInHtml)';
+							}
+							return match.group(0)!;
+						});
+						final author = doc.querySelector('.author')?.text ?? '';
+						final authorIsDeleted = author == _kDeleted;
+						final edited = DateTime.tryParse(doc.querySelector('.edited-timestamp')?.attributes['datetime'] ?? '');
+						final textIsDeleted = text == _kRemoved || text == _kDeleted || (edited != null && text == _kCleaned);
+						final post = Post(
+							board: thread.board,
+							text: textIsDeleted ? '' : text,
+							name: authorIsDeleted ? '' : author,
+							isDeleted: authorIsDeleted || textIsDeleted,
+							flag: flag,
+							time: DateTime.tryParse(doc.querySelector('.live-timestamp')?.attributes['datetime'] ?? '') ?? _estimateTime(id),
+							edited: edited,
+							threadId: thread.id,
+							parentId: parentId,
+							id: id,
+							spanFormat: PostSpanFormat.reddit,
+							attachments_: const [],
+							upvotes: doc.querySelector('.score.unvoted')?.attributes['title']?.tryParseInt
+						);
+						_updateTimeEstimateData(post.id, post.time);
+						newPosts[id] = post;
+						if (!(doc.querySelector('.numchildren')?.text.contains('(0 children)') ?? true)) {
+							newPostsWithReplies.add(id);
+						}
+					}
+				}
+			}
+			on DioError catch (e) {
+				if (e.error is! SiteRedditBlockedException) {
+					rethrow;
+				}
+				_lastFailedMoreChildrenApiCall[Persistence.currentCookies] = DateTime.now();
+				// Fallback to single request
+				childIdsToExpect.clear();
+				childIdsToExpect.add(postIds.first);
+				await for (final post in _getStubPostsSingle(thread.identifier, postIds.first, priority: priority, cancelToken: cancelToken)) {
+					_updateTimeEstimateData(post.id, post.time);
+					newPosts[post.id] = post;
 				}
 			}
 		}
 		final newPostsMatched = newPosts.values.toList();
-		for (final id in childIdsToGet) {
-			final newPost = newPosts[id.childId];
+		for (final id in childIdsToExpect) {
+			final newPost = newPosts[id];
 			if (newPost != null) {
-				newPosts[newPost.parentId]?.maybeAddReplyId(id.childId);
+				newPosts[newPost.parentId]?.maybeAddReplyId(id);
 				ret.add(newPost);
 				newPostsMatched.remove(newPost);
 			}
@@ -1547,12 +1640,12 @@ class SiteReddit extends ImageboardSite {
 					board: thread.board,
 					text: '[shadowbanned]',
 					name: '[shadowbanned]',
-					time: _estimateTime(id.childId),
+					time: _estimateTime(id),
 					threadId: thread.id,
-					id: id.childId,
+					id: id,
 					spanFormat: PostSpanFormat.reddit,
 					attachments_: [],
-					parentId: id.parentId
+					parentId: currentPosts[id]?.parentId
 				));
 			}
 		}
@@ -1641,7 +1734,7 @@ class SiteReddit extends ImageboardSite {
 
 	static final _emotePattern = RegExp(r'!\[img\]\((emote|[^)]+)\)');
 
-	Future<Post> _makePost(Map child, {int? parentId, required ThreadIdentifier thread, CancelToken? cancelToken}) async {
+	Future<Post> _makePost(Map child, {required ThreadIdentifier thread, CancelToken? cancelToken}) async {
 		final id = fromRedditId(child['id'] as String)!;
 		String text = unescape.convert(child['body'] as String).replaceAllMapped(_emotePattern, (match) {
 			final metadata = (child['media_metadata'] as Map?)?[match.group(1)] as Map?;
@@ -1681,10 +1774,48 @@ class SiteReddit extends ImageboardSite {
 			id: id,
 			spanFormat: PostSpanFormat.reddit,
 			attachments_: attachments,
-			parentId: parentId,
+			parentId: fromRedditId((child['parent_id'] as String).split('_')[1]),
 			upvotes: (child['score_hidden'] == true || child['hide_score'] == true) ? null : child['score'] as int?,
 			capcode: child['distinguished'] as String?
 		);
+	}
+
+	Stream<Post> _makeReplies(ThreadIdentifier thread, List<dynamic> childData, Post? parent, CancelToken? cancelToken) async* {
+		for (final childContainer in childData.cast<Map>()) {
+			final child = childContainer['data'] as Map;
+			if (childContainer['kind'] == 't1') {
+				final post = await _makePost(child, thread: thread, cancelToken: cancelToken);
+				yield post;
+				_updateTimeEstimateData(post.id, post.time);
+				if (child['replies'] case {'data': {'children': List children}}) {
+					yield* _makeReplies(thread, children, post, cancelToken);
+				}
+			}
+			else if (childContainer['kind'] == 'more') {
+				if (child['id'] == '_') {
+					parent?.hasOmittedReplies = true;
+				}
+				for (final childId in child['children'] as List) {
+					final id = fromRedditId(childId as String)!;
+					final parentId = fromRedditId((child['parent_id'] as String).split('_')[1]);
+					yield Post(
+						board: thread.board,
+						text: '',
+						name: '',
+						time: _estimateTime(id),
+						threadId: thread.id,
+						id: id,
+						spanFormat: PostSpanFormat.stub,
+						parentId: parentId,
+						attachments_: []
+					);
+				}
+			}
+			else {
+				print('Ignoring child with kind ${child['kind']}');
+				print(child);
+			}
+		}
 	}
 
 	@override
@@ -1701,43 +1832,9 @@ class SiteReddit extends ImageboardSite {
 			_ => throw PatternException(response.data)
 		};
 		final ret = await _makeThread(opData, cancelToken: cancelToken);
-		Future<void> addChildren(int parentId, List<dynamic> childData, Post? parent) async {
-			for (final childContainer in childData.cast<Map>()) {
-				final child = childContainer['data'] as Map;
-				if (childContainer['kind'] == 't1') {
-					final post = await _makePost(child, parentId: parentId, thread: thread, cancelToken: cancelToken);
-					ret.posts_.add(post);
-					_updateTimeEstimateData(post.id, post.time);
-					if (child['replies'] case {'data': {'children': List children}}) {
-						await addChildren(post.id, children, post);
-					}
-				}
-				else if (childContainer['kind'] == 'more') {
-					if (child['id'] == '_') {
-						parent?.hasOmittedReplies = true;
-					}
-					for (final childId in child['children'] as List) {
-						final id = fromRedditId(childId as String)!;
-						ret.posts_.add(Post(
-							board: thread.board,
-							text: '',
-							name: '',
-							time: _estimateTime(id),
-							threadId: thread.id,
-							id: id,
-							spanFormat: PostSpanFormat.stub,
-							parentId: parentId,
-							attachments_: []
-						));
-					}
-				}
-				else {
-					print('Ignoring child with kind ${child['kind']}');
-					print(child);
-				}
-			}
+		await for (final reply in _makeReplies(thread, repliesData, null, cancelToken)) {
+			ret.posts.add(reply);
 		}
-		await addChildren(thread.id, repliesData, null);
 		return ret;
 	}
 
@@ -2001,6 +2098,12 @@ class SiteReddit extends ImageboardSite {
 	Uri? get authPage => Uri.https(baseUrl, '/login');
 	@override
 	Set<String> get authPageFormFields => const {'username', 'password'};
+
+	@override
+	void didClearCookies(CookieJar jar) {
+		super.didClearCookies(jar);
+		_lastFailedMoreChildrenApiCall.remove(jar);
+	}
 
 	@override
 	bool operator == (Object other) =>

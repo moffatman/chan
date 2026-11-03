@@ -1,6 +1,5 @@
 
 import 'package:auto_size_text/auto_size_text.dart';
-import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
@@ -154,7 +153,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 						required Set<int> collapsedChildIds,
 						required bool loading,
 						required double? peekContentHeight,
-						required List<ParentAndChildIdentifier>? stubChildIds,
+						required List<int>? stubChildIds,
 						required bool alreadyDim
 					}) {
 						final settings = context.watch<Settings>();
