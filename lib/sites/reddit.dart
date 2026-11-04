@@ -1851,7 +1851,7 @@ class SiteReddit extends ImageboardSite {
 		};
 		final ret = await _makeThread(opData, cancelToken: cancelToken);
 		await for (final reply in _makeReplies(thread, repliesData, null, cancelToken)) {
-			ret.posts.add(reply);
+			ret.posts_.add(reply);
 		}
 		return ret;
 	}
