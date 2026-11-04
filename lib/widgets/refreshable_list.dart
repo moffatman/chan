@@ -4510,6 +4510,13 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 					duration = minDuration;
 				}
 			}
+			Duration remainingDuration(double destination) {
+				final totalDistance = (startPixels - destination).abs();
+				final remainingDistance = (scrollController!.position.pixels - destination).abs();
+				final fraction = totalDistance.isFinite && remainingDistance.isFinite && totalDistance >= 1
+					? (remainingDistance / totalDistance).clamp(0.0, 1.0) : 1.0;
+				return Duration(milliseconds: max(50, (duration.inMilliseconds * fraction).round()));
+			}
 			Future<bool> attemptResolve() async {
 				if (scrollController!.position.outOfRange) {
 					scrollController!.position.jumpTo(scrollController!.position.maxScrollExtent);
@@ -4542,7 +4549,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				if ((estimate - scrollController!.position.pixels < 50)) {
 					await _tryCachingItem(targetIndex);
 				}
-				final delay = Duration(milliseconds: max(50, (duration * ((estimate - scrollController!.position.pixels) / (startPixels - estimate)).abs()).inMilliseconds));
+				final delay = remainingDuration(estimate);
 				scrollController!.animateTo(
 					estimate,
 					duration: delay,
@@ -4570,30 +4577,14 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			if (_isDisposed) {
 				return;
 			}
-			double atAlignment0 = _items[targetIndex].cachedOffset! - topOffset;
-			final alignmentSlidingWindow = scrollController!.position.viewportDimension - (_items[targetIndex].cachedHeight! + topOffset + bottomOffset);
-			if (targetIndex == _items.length - 1) {
-				// add offset to reveal the full footer
-				atAlignment0 += 110;
-				if (state?.filteredValues.isNotEmpty ?? false) {
-					atAlignment0 += 50;
-				}
-			}
-			else if (targetIndex == 0 && state?.widget.filterableAdapter != null && alignment >= 0) {
-				// subtract offset to reveal the search bar
-				atAlignment0 = 0;
-			}
-			else {
-				atAlignment0 += 1;
-			}
-			final finalDestinationUnclamped = atAlignment0 - (alignmentSlidingWindow * alignment);
+			final finalDestinationUnclamped = _alignmentDestination(targetIndex, alignment);
 			if (finalDestinationUnclamped > scrollController!.position.maxScrollExtent &&
 					(_items.last.cachedHeight == null || _items.last.cachedOffset == null)) {
 				// Need to actually figure out the height
-				final penultimateDuration = duration * ((scrollController!.position.maxScrollExtent - scrollController!.position.pixels) / (startPixels - scrollController!.position.maxScrollExtent)).abs();
+				final penultimateDuration = remainingDuration(scrollController!.position.maxScrollExtent);
 				await scrollController!.animateTo(
 					scrollController!.position.maxScrollExtent,
-					duration: penultimateDuration > const Duration(milliseconds: 50) ? penultimateDuration : const Duration(milliseconds: 50),
+					duration: penultimateDuration,
 					curve: curve.recurve(
 						start: startPixels,
 						current: scrollController!.position.pixels,
@@ -4618,10 +4609,10 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			}
 			final finalDestination = finalDestinationUnclamped.clamp(0.0, maxScrollExtent);
 			if (scrollController!.position.pixels != finalDestination) {
-				final finalDuration = duration * ((finalDestination - scrollController!.position.pixels) / (startPixels - finalDestination)).abs();
+				final finalDuration = remainingDuration(finalDestination);
 				await scrollController!.animateTo(
 					finalDestination,
-					duration: finalDuration > const Duration(milliseconds: 50) ? finalDuration : const Duration(milliseconds: 50),
+					duration: finalDuration,
 					curve: curve.recurve(
 						start: startPixels,
 						current: scrollController!.position.pixels,
@@ -4640,6 +4631,35 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	void cancelCurrentAnimation() {
 		currentTargetIndex = null;
 	}
+	double? _alignmentOffset(int index, double alignment) {
+		final viewportHeight = scrollController!.position.viewportDimension - topOffset - bottomOffset;
+		final itemHeight = _items[index].cachedHeight!;
+		final offset = (viewportHeight - itemHeight) * alignment;
+		return offset.isFinite && offset < viewportHeight && offset > -itemHeight ? offset : null;
+	}
+	double _alignmentDestination(int index, double alignment) {
+		final itemTop = _items[index].cachedOffset! - topOffset;
+		final offset = _alignmentOffset(index, alignment);
+		// Height changes can turn a valid saved alignment into a destination
+		// outside the post. Fall back to that post, not an unrelated thread edge.
+		if (offset == null) return itemTop;
+		// Chrome adjustments belong to explicit top/bottom alignments, not every
+		// saved reading position within the first or last post.
+		if (index == _items.length - 1 && alignment == 1) {
+			return itemTop + 110 + ((state?.filteredValues.isNotEmpty ?? false) ? 50 : 0) - offset;
+		}
+		if (index == 0 && state?.widget.filterableAdapter != null && alignment == 0) return 0;
+		return itemTop + 1 - offset;
+	}
+	bool isAtAlignment(bool Function(T val) f, {double? alignment}) {
+		if (!scrollControllerPositionLooksGood) return false;
+		final index = _items.indexWhere((item) => f(item.item.item));
+		if (index == -1 || _items[index].cachedOffset == null || _items[index].cachedHeight == null) return false;
+		if (alignment == null) return _isOnscreen(_items[index]);
+		final position = scrollController!.position;
+		final destination = _alignmentDestination(index, alignment).clamp(position.minScrollExtent, position.maxScrollExtent);
+		return (position.pixels - destination).abs() <= 1;
+	}
 	double getItemAlignment(int index) {
 		if (!scrollControllerPositionLooksGood) {
 			// A guess at alignment
@@ -4647,7 +4667,11 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		}
 		final viewportStart = scrollController!.position.pixels + topOffset;
 		final itemStart = _items[index].cachedOffset ?? viewportStart;
-		return (itemStart - viewportStart) / (scrollController!.position.viewportDimension - ((_items[index].cachedHeight ?? 0) + topOffset + bottomOffset));
+		final window = scrollController!.position.viewportDimension - ((_items[index].cachedHeight ?? 0) + topOffset + bottomOffset);
+		// Below one logical pixel, the alignment is too sensitive to layout noise.
+		if (window.abs() < 1) return 0;
+		final alignment = (itemStart - viewportStart) / window;
+		return alignment.isFinite ? alignment : 0;
 	}
 	double getItemEndAlignment(int index) {
 		if (!scrollControllerPositionLooksGood) {

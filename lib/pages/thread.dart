@@ -453,15 +453,7 @@ class ThreadPageState extends State<ThreadPage> {
 			return;
 		}
 		if (persistentState.thread != null) {
-			double? alignment = _listController.findItem((p) => p.id == postId)?.alignment;
-			bool alignmentMatches() => switch ((alignment, targetAlignment)) {
-				// Alignment is close enough
-				(double a, double ta) => (ta - a).abs() < 0.05,
-				// Just ensure it's onscreen
-				(double a, null) => a >= 0 && a <= 1.0,
-				// Item not built yet
-				(null, _) => false
-			};
+			bool alignmentMatches() => _listController.isAtAlignment((p) => p.id == postId, alignment: targetAlignment);
 			if (alignmentMatches()) {
 				if (_useAllDummies || blocked) {
 					setState(() {
@@ -485,7 +477,6 @@ class ThreadPageState extends State<ThreadPage> {
 					await WidgetsBinding.instance.endOfFrame;
 				}
 				if (!mounted) return;
-				alignment = _listController.findItem((p) => p.id == postId)?.alignment;
 				if (alignmentMatches()) {
 					if (_useAllDummies) {
 						//await Future.delayed(const Duration(milliseconds: 500));
