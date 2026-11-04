@@ -1457,8 +1457,10 @@ class SiteReddit extends ImageboardSite {
 		);
 	}
 
-	Stream<Post> _getStubPostsSingle(ThreadIdentifier thread, int postId, {required RequestPriority priority, CancelToken? cancelToken}) async* {
-		final response = await client.getUri(Uri.https(baseUrl, '/r/${thread.board}/comments/${toRedditId(thread.id)}/_/${toRedditId(postId)}.json'));
+	Stream<Post> _getStubPostsSingle(ThreadIdentifier thread, int postId, int? depth, {required RequestPriority priority, CancelToken? cancelToken}) async* {
+		final response = await client.getUri(Uri.https(baseUrl, '/r/${thread.board}/comments/${toRedditId(thread.id)}/_/${toRedditId(postId)}.json', {
+			if (depth != null) 'depth': depth.toString()
+		}.ifNotEmpty));
 		final (opData, repliesData) = switch(response.data) {
 			[
 				{'data': {'children': [{'data': Map data}, ...]}},
@@ -1470,13 +1472,67 @@ class SiteReddit extends ImageboardSite {
 		yield* _makeReplies(thread, repliesData, null, cancelToken);
 	}
 
+	/// Hacky BFS to calculate optimal depth parameter to fetch most new posts
+	static ({int id, int? depth})? _calculateRequest(Map<int, Post> posts, List<int> postIds) {
+		if (postIds.length == 1) {
+			return (id: postIds.first, depth: null);
+		}
+		Iterable<int> getPathToRoot(int start) sync* {
+			int? pointer = start;
+			while (pointer != null) {
+				yield pointer;
+				pointer = posts[pointer]?.parentId;
+			}
+		}
+		final ancestors = <int>{...getPathToRoot(postIds.first)};
+		for (final postId in postIds.skip(1)) {
+			ancestors.retainAll(getPathToRoot(postId));
+			if (ancestors.isEmpty) {
+				break;
+			}
+		}
+		/// I think it's really 200. but just to be safe.
+		const targetCost = 150;
+		final ancestor = posts[ancestors.tryFirst];
+		if (ancestor != null) {
+			late Set<int> previous;
+			Set<int> current = <int>{ancestor.id};
+			int depth = 1;
+			int cost = 0;
+			while (current.isNotEmpty) {
+				previous = current;
+				current = {};
+				for (final parentId in previous) {
+					final parent = posts[parentId];
+					for (final childId in parent?.replyIds ?? <int>[]) {
+						final child = posts[childId];
+						if (child != null && !child.isStub) {
+							current.add(childId);
+						}
+					}
+				}
+				cost += current.length;
+				if (cost > targetCost) {
+					if (depth == 1) {
+						// No point fetching anything
+						return null;
+					}
+					return (id: ancestor.id, depth: depth - 1);
+				}
+				depth++;
+			}
+			// No problem with fetching everything
+			return (id: ancestor.id, depth: null);
+		}
+		return null;
+	}
+
 	@override
 	Future<List<Post>> getStubPosts(Thread thread, List<int> postIds, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		if (postIds.isEmpty) {
 			return [];
 		}
 		final ret = <Post>[];
-		int? singleRequest;
 		final childIdsToExpect = <int>[];
 		final newPosts = <int, Post>{};
 		final Set<int> newPostsWithReplies = {};
@@ -1484,48 +1540,10 @@ class SiteReddit extends ImageboardSite {
 			for (final post in thread.posts_)
 				post.id: post
 		};
-		if (postIds.length == 1) {
-			singleRequest = postIds.first;
-		}
-		else {
-			Iterable<int> getPathToRoot(int start) sync* {
-				int? pointer = start;
-				while (pointer != null) {
-					yield pointer;
-					pointer = currentPosts[pointer]?.parentId;
-				}
-			}
-			final ancestors = <int>{...getPathToRoot(postIds.first)};
-			for (final postId in postIds.skip(1)) {
-				ancestors.retainAll(getPathToRoot(postId));
-				if (ancestors.isEmpty) {
-					break;
-				}
-			}
-			// Don't count OP
-			ancestors.remove(thread.id);
-			final ancestor = thread.posts_.tryFirstWhere((p) => p.id == ancestors.tryFirst);
-			if (ancestor != null) {
-				final currentDescendants = <int>{};
-				void dump(Post? post) {
-					if (post == null || post.isStub) {
-						return;
-					}
-					for (final replyId in post.replyIds) {
-						if (currentDescendants.add(replyId)) {
-							dump(currentPosts[replyId]);
-						}
-					}
-				}
-				dump(ancestor);
-				if (currentDescendants.length < 100) {
-					singleRequest = ancestor.id;
-				}
-			}
-		}
+		final singleRequest = _calculateRequest(currentPosts, postIds);
 		if (singleRequest != null) {
 			childIdsToExpect.addAll(postIds);
-			await for (final post in _getStubPostsSingle(thread.identifier, singleRequest, priority: priority, cancelToken: cancelToken)) {
+			await for (final post in _getStubPostsSingle(thread.identifier, singleRequest.id, singleRequest.depth, priority: priority, cancelToken: cancelToken)) {
 				_updateTimeEstimateData(post.id, post.time);
 				newPosts[post.id] = post;
 			}
@@ -1621,7 +1639,7 @@ class SiteReddit extends ImageboardSite {
 				// Fallback to single request
 				childIdsToExpect.clear();
 				childIdsToExpect.add(postIds.first);
-				await for (final post in _getStubPostsSingle(thread.identifier, postIds.first, priority: priority, cancelToken: cancelToken)) {
+				await for (final post in _getStubPostsSingle(thread.identifier, postIds.first, null, priority: priority, cancelToken: cancelToken)) {
 					_updateTimeEstimateData(post.id, post.time);
 					newPosts[post.id] = post;
 				}
