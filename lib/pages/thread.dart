@@ -2390,8 +2390,11 @@ class ThreadPageState extends State<ThreadPage> {
 																		child: Container(
 																			width: double.infinity,
 																			padding: const EdgeInsets.all(8),
-																			// TODO: The below?
-																			color: switch (([value?.id ?? -1, ...(stubChildIds ?? <int>[])]).fold(0.0, (t, i) => max(t, _shouldHighlightPost(i)))) {
+																			// A loading row can briefly outlive the stubs it represents.
+																			color: switch (([
+																				if (value != null) value.id,
+																				...(stubChildIds ?? <int>[]).where((id) => zone.findPost(id)?.isStub != false)
+																			]).fold(0.0, (t, i) => max(t, _shouldHighlightPost(i)))) {
 																				0.0 => null,
 																				double x => theme.primaryColorWithBrightness(0.1 * x)
 																			},

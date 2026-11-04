@@ -25,6 +25,7 @@ import 'package:provider/provider.dart';
 import 'package:weak_map/weak_map.dart';
 
 const double _overscrollTriggerThreshold = 100;
+const double _bottomLockTolerance = 50;
 const _treeAnimationDuration = Duration(milliseconds: 250);
 
 class ItemNotFoundException implements Exception {
@@ -1348,7 +1349,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		// At the top, let new content appear instead of anchoring an old row.
 		if (preserveScrollPosition && newList != null && controller.itemsLength > 0 &&
 				(controller.scrollController?.tryPosition?.extentBefore ?? 0) > 0) {
-			_lockSliverForNextRebuild(lockAtMiddle: true);
+			// At the bottom, keep the last body stationary as new items replace
+			// the trailing loading controls. Elsewhere, preserve the reading position.
+			_lockSliverForNextRebuild(lockAtMiddle:
+				(controller.scrollController?.tryPosition?.extentAfter ?? double.infinity) > _bottomLockTolerance);
 		}
 		if (widget.treeAdapter case final adapter? when newList != null) {
 			final oldIds = previouslyLoadedIds ?? _getLoadedItemIds();
@@ -1821,6 +1825,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 		final cancelToken = CancelToken();
 		final updatingWithId = widget.id;
+		RefreshableListItem<T>? loadingStub;
 		final future = Future<void>.microtask(() async {
 			final previousList = originalList;
 			final previouslyLoadedIds = _getLoadedItemIds();
@@ -1838,26 +1843,20 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					await _mergeTrees(rebuild: true);
 				}
 				if (extend && useTree && treeAdapter?.newRepliesAreLinear == true) {
-					// Loading controls stay beside their subtrees. Prefer the root
-					// continuation at the end, then another available control.
-					final visibleItems = controller._items.reversed.map((i) => i.item)
-						.where((item) => !_refreshableTreeItems.isItemHidden(item).isHidden);
-					lastItem = visibleItems.tryFirstWhere((item) => item.representsStubChildren) ?? visibleItems.tryFirst;
+					// Only expand a control at the end; earlier subtrees stay untouched.
+					lastItem = controller._items.reversed.map((i) => i.item)
+						.tryFirstWhere((item) => !_refreshableTreeItems.isItemHidden(item).isHidden);
 				}
 				if (extend && treeAdapter != null && lastItem != null && lastItem.representsStubChildren) {
+					loadingStub = lastItem;
 					_refreshableTreeItems.itemLoadingOmittedItemsStarted(lastItem.parentIds, lastItem.id, cancelToken);
-					try {
-						newList = await treeAdapter.updateWithStubItems(
-							originalList!,
-							lastItem.representsUnknownStubChildren
-								? [lastItem.id]
-								: lastItem.representsKnownStubChildren,
-							cancelToken
-						);
-					}
-					finally {
-						_refreshableTreeItems.itemLoadingOmittedItemsEnded(lastItem);
-					}
+					newList = await treeAdapter.updateWithStubItems(
+						originalList!,
+						lastItem.representsUnknownStubChildren
+							? [lastItem.id]
+							: lastItem.representsKnownStubChildren,
+						cancelToken
+					);
 				}
 				else if (extend && lastItem != null && treeAdapter != null && treeAdapter.isPaged && !treeAdapter.getIsPageStub(lastItem.item) && treeAdapter.getParentIds(lastItem.item).isNotEmpty) {
 					// If we aren't ending on unloaded pages, first reload the last loaded page
@@ -1976,11 +1975,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				return;
 			}
 			if (!mounted) return;
-			updatingNow.value = null;
 			try {
 				if (mounted) {
 					await ModalRoute.of(context)?.popped.timeout(Duration.zero);
 					// Route is popping, just quit
+					updatingNow.value = null;
 					return;
 				}
 			}
@@ -2009,6 +2008,14 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				setState(() {
 					error.value = (Exception('listUpdater returned null'), StackTrace.current);
 				});
+			}
+			// Remove the footer's loading space in the same frame as the new
+			// items, after _updateList has installed the scroll anchor.
+			updatingNow.value = null;
+		}).whenComplete(() {
+			final item = loadingStub;
+			if (item != null && mounted && widget.id == updatingWithId) {
+				_refreshableTreeItems.itemLoadingOmittedItemsEnded(item);
 			}
 		});
 		Future.microtask(() => updatingNow.value = (id: updatingWithId, future: future, cancelToken: cancelToken));
