@@ -1345,7 +1345,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 		else {
 			var index = lockAtMiddle ? controller.middleVisibleIndex : controller.lastVisibleIndex;
-			while (index >= 0 && controller.isItemHidden(controller.getItem(index)).isHidden) {
+			while (index >= 0 && (controller.isItemHidden(controller.getItem(index)).isHidden ||
+					controller.getItem(index).representsStubChildren ||
+					controller.getItem(index).representsUnloadedPages.isNotEmpty)) {
 				index--;
 			}
 			if (index >= 0) {
