@@ -1404,7 +1404,7 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	static (String, Map<String, String>?) _getCatalogSuffix(CatalogVariant? variant) => const {
-			CatalogVariant.redditHot: ('/hot.json', null),
+			CatalogVariant.redditHot: ('/.json', null),
 			CatalogVariant.redditNew: ('/new.json', null),
 			CatalogVariant.redditRising: ('/rising.json', null),
 			CatalogVariant.redditControversialPastHour: ('/controversial.json', {'t': 'hour'}),
