@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
@@ -16,8 +15,21 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:html/parser.dart' show parseFragment;
+import 'package:html/parser.dart' show parse, parseFragment;
 import 'package:html/dom.dart' as dom;
+
+int _parseInt(dynamic x) => switch (x) {
+	num number => number.toInt(),
+	String str => str.parseInt,
+	dynamic other => throw PatternException('Cannot parse ${other.runtimeType} to int: $other')
+};
+
+int? _tryParseInt(dynamic x) => switch (x) {
+	num number => number.toInt(),
+	String str => str.tryParseInt,
+	null => null,
+	dynamic other => throw PatternException('Cannot parse ${other.runtimeType} to int: $other')
+};
 
 extension _FoolFuukaApiName on PostTypeFilter {
 	String? get apiName => switch (this) {
@@ -190,15 +202,15 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	Attachment? _makeAttachment(Map data) {
 		if (data case {
 			'board': {'shortname': String board},
-			'thread_num': String threadNum,
+			'thread_num': Object threadNum,
 			'media': Map media && {
 				'media_orig': String mediaOrig,
 				'thumb_link': String thumbLink,
 				'media_filename': String filename,
 				'safe_media_hash': String md5,
-				'media_w': String width,
-				'media_h': String height,
-				'media_size': String size,
+				'media_w': Object width,
+				'media_h': Object height,
+				'media_size': Object size,
 			} && ({
 				'media_link': String link
 			} || {
@@ -232,10 +244,10 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				thumbnailUrl: thumbnailUrl.toString(),
 				md5: md5,
 				spoiler: media['spoiler'] == '1',
-				width: width.parseInt,
-				height: height.parseInt,
-				threadId: threadNum.tryParseInt,
-				sizeInBytes: size.tryParseInt,
+				width: _parseInt(width),
+				height: _parseInt(height),
+				threadId: _tryParseInt(threadNum),
+				sizeInBytes: _tryParseInt(size),
 				useRandomUseragent: useRandomUseragent,
 				isRateLimited: hasAttachmentRateLimit
 			);
@@ -247,8 +259,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 
 	Future<Post> _makePost(Map data, {bool resolveIds = true, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final board = (data['board'] as Map)['shortname'] as String;
-		final int threadId = int.parse(data['thread_num'] as String);
-		final int id = int.parse(data['num'] as String);
+		final int threadId = _parseInt(data['thread_num']);
+		final int id = _parseInt(data['num']);
 		_precachePostThreadId(board, id, threadId);
 		final Map<String, int> linkedPostThreadIds = {};
 		if (resolveIds) {
@@ -265,7 +277,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		if (data['exif'] case String exifStr) {
 			try {
 				final exifData = jsonDecode(exifStr) as Map;
-				passSinceYear = (exifData['since4pass'] as String?)?.tryParseInt;
+				passSinceYear = _tryParseInt(exifData['since4pass']);
 			}
 			catch (e) {
 				// Malformed EXIF JSON
@@ -327,7 +339,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	final _postThreadIdCache = <String, Map<int, int?>>{};
 	Future<int?> __getPostThreadId(String board, int postId, {required RequestPriority priority, CancelToken? cancelToken}) async {
 		try {
-			return ((await _getPostJson(board, postId, priority: priority, cancelToken: cancelToken))['thread_num'] as String?)?.tryParseInt;
+			return _tryParseInt((await _getPostJson(board, postId, priority: priority, cancelToken: cancelToken))['thread_num']);
 		}
 		on PostNotFoundException {
 			return null;
@@ -371,7 +383,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			isSticky: op['sticky'] == 1,
 			isLocked: op['locked'] == 1,
 			time: posts.first.time,
-			uniqueIPCount: (op['unique_ips'] as String?)?.tryParseInt,
+			uniqueIPCount: _tryParseInt(op['unique_ips']),
 			currentPage: currentPage
 		);
 	}
@@ -457,6 +469,9 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		return boards ??= await _getBoards(priority: priority, cancelToken: cancelToken);
 	}
 
+	static final _fileMetadataPattern = RegExp(r'(\d+(?:\.\d+)?)(B|KiB|MiB), (\d+)x(\d+)');
+	static final _threadRepliesPattern = RegExp(r'Replies: (\d+)');
+
 	@override
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority, CancelToken? cancelToken}) async {
 		final knownBoards = await getBoards(priority: RequestPriority.interactive);
@@ -464,9 +479,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		if (unknownBoards.isNotEmpty) {
 			throw BoardNotFoundException(this, unknownBoards.first);
 		}
-		// Don't put <Map> here. We will fail in DioMixin.assureResponse if the page gives us HTML error
 		final response = await client.getUri(
-			Uri.https(baseUrl, '/_/api/chan/search', {
+			Uri.https(baseUrl, '/_/search/${{
 				'text': query.query,
 				'page': page.toString(),
 				if (query.boards.isNotEmpty) 'boards': query.boards.join('.'),
@@ -483,10 +497,10 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				if (query.filename != null) 'filename': query.filename,
 				if (query.countryCode != null) 'country': query.countryCode,
 				if (query.oldestFirst) 'order': 'asc'
- 			}),
+			}.entries.map((e) => '${e.key}/${e.value}').join('/')}/'),
 			options: Options(
 				validateStatus: (x) => true,
-				responseType: ResponseType.json,
+				responseType: ResponseType.plain,
 				extra: {
 					kPriority: priority
 				}
@@ -496,45 +510,113 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		if (response.statusCode != 200) {
 			throw HTTPStatusException.fromResponse(response);
 		}
-		final data = response.data! as Map;
-		if (data['error'] case String error) {
-			throw FoolFuukaException(error);
+		final document = parse(response.data);
+		if (document.querySelector('.alert') case dom.Element alert) {
+			throw FoolFuukaException(alert.nodes.last.text?.trim() ?? alert.innerHtml);
 		}
-		final posts = ((data['0'] as Map?)?['posts'] as Iterable).cast<Map>();
+		final posts = document.querySelectorAll('.post');
 		if (posts.isEmpty) {
 			throw FoolFuukaException('No results');
 		}
-		/// Actual number of matched results
-		final totalFound = (data['meta'] as Map)['total_found'] as int;
 		/// Maximum number the API will page through
-		final maxResults = ((data['meta'] as Map)['max_results'] as String?)?.tryParseInt ?? totalFound;
+		final maxResults = RegExp(r'(\d+) results found').firstMatch(document.querySelector('small')!.text)!.group(1)!.parseInt;
 		return ImageboardArchiveSearchResultPage(
-			posts: (await Future.wait(posts.map((Map data) async {
-				if (data case {
-					'op': '1',
-					'board': {'shortname': String board},
-					'num': String id
-				}) {
-					return ImageboardArchiveSearchResult.thread(
-						await _makeThread(ThreadIdentifier(
-							board,
-							id.parseInt
-						), {
-							data['num']: {
-								'op': data
-							}
-						}, priority: priority, cancelToken: cancelToken)
+			posts: posts.map((dom.Element data) => unsafe(data.outerHtml, () {
+				final board = data.attributes['data-board']!;
+				final id = data.id.parseInt;
+				final asLink = _decodeUrl(Uri.parse(data.querySelector('.post_controls a.parent')!.attributes['href']!))!;
+				Attachment? attachment;
+				final img = data.querySelector('img.post_image');
+				final filename = data.querySelector('.post_file_filename')?.text;
+				final fileMetadata = data.querySelector('.post_file_metadata')?.text.trim();
+				if (img != null && filename != null && fileMetadata != null) {
+					final href = img.parent!.attributes['href']!;
+					final url = Uri.parse(href);
+					final metadata = _fileMetadataPattern.firstMatch(fileMetadata)!;
+					int multiplier = 1;
+					final fileSizePrefix = metadata.group(2)!.toLowerCase();
+					if (fileSizePrefix.startsWith('m')) {
+						multiplier = kMB;
+					} else if (fileSizePrefix.startsWith('k')) {
+						multiplier = kKB;
+					}
+					final serverFilename = url.pathSegments.last;
+					attachment = Attachment(
+						board: board,
+						type: AttachmentType.fromFilename(serverFilename),
+						id: serverFilename.beforeFirst('.'),
+						ext: '.${serverFilename.afterLast('.')}',
+						filename: filename,
+						url: href,
+						thumbnailUrl: img.attributes['src']!,
+						md5: img.attributes['data-md5'] ?? '',
+						width: metadata.group(3)?.parseInt,
+						height: metadata.group(4)?.parseInt,
+						threadId: asLink.threadId,
+						sizeInBytes: (metadata.group(1)!.parseDouble * multiplier).round(),
+						useRandomUseragent: useRandomUseragent,
+						isRateLimited: hasAttachmentRateLimit,
+						spoiler: img.classes.contains('is_spoiler_image')
 					);
 				}
-				else {
-					return ImageboardArchiveSearchResult.post(
-						await _makePost(data, resolveIds: false, priority: priority, cancelToken: cancelToken)
+				ImageboardFlag? flag;
+				if (data.querySelector('.flag') case final flagElement?) {
+					final pathParts = Uri.parse(flagElement.parent!.attributes['href']!).pathSegments;
+					final String imagePath;
+					if (pathParts[1] == 'troll_country') {
+						// /$board/troll_country/$code
+						imagePath = '/image/flags/${pathParts[0]}/${pathParts[2].toLowerCase()}.gif';
+					}
+					else {
+						// /$board/country/$code
+						imagePath = '/image/country/${pathParts[2].toLowerCase()}.gif';
+					}
+					flag = ImageboardFlag(
+						imageHeight: 11,
+						imageWidth: 16,
+						name: flagElement.attributes['title']!.beforeFirst('.'),
+						imageUrl: Uri.https(staticUrl, imagePath).toString()
 					);
 				}
-			}))).toList(),
+				final asPost = Post(
+					board: board,
+					text: data.querySelector('.text')!.innerHtml,
+					name: data.querySelector('.post_author')!.text,
+					time: DateTime.parse(data.querySelector('time')!.attributes['datetime']!),
+					threadId: asLink.threadId!,
+					id: id,
+					spanFormat: PostSpanFormat.foolFuuka,
+					attachments_: attachment == null ? [] : [attachment],
+					flag: flag,
+					trip: data.querySelector('.post_tripcode')?.text.trim().nonEmptyOrNull,
+					posterId: data.querySelector('.poster_hash')?.text.trim().afterLast(':'),
+					// 'Pass user since 2026.'
+					passSinceYear: data.querySelector('i.icon-tag')?.attributes['title']?.afterLast(' ').beforeFirst('.').tryParseInt,
+					isDeleted: data.querySelector('i.icon-trash') != null
+				);
+				if (!data.classes.contains('post_is_op')) {
+					return ImageboardArchiveSearchResult.post(asPost);
+				}
+				return ImageboardArchiveSearchResult.thread(Thread(
+					posts_: [asPost],
+					replyCount: data.querySelector('.post_data')!.nodes.tryMapOnce((node) {
+						if (node is dom.Text) {
+							return _threadRepliesPattern.firstMatch(node.text)?.group(1)?.tryParseInt;
+						}
+						return null;
+					})!,
+					imageCount: 1, // unreliable
+					id: id,
+					board: board,
+					title: data.querySelector('.post_title')?.text,
+					isSticky: data.querySelector('i.icon-pushpin') != null,
+					time: asPost.time,
+					attachments: asPost.attachments_
+				));
+			})).toList(),
 			page: page,
-			maxPage: (min(totalFound, maxResults) / 25).ceil(),
-			count: min(totalFound, maxResults),
+			maxPage: (maxResults / 25).ceil(),
+			count: maxResults,
 			replyCountsUnreliable: false,
 			imageCountsUnreliable: true,
 			canJumpToArbitraryPage: true,
