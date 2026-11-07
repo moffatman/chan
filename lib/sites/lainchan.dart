@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:chan/models/attachment.dart';
@@ -738,8 +739,9 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 			cancelToken: cancelToken
 		);
 		final pageDoc = parse(page.data);
+		final form = pageDoc.querySelector('form[name="post"]');
 		final inputs =
-				pageDoc.querySelector('form[name="post"]')
+				form
 				?.querySelectorAll('input[type="text"], input[type="submit"], input[type="hidden"], textarea')
 				?? [];
 		final Map<String, dynamic> fields = {
@@ -820,6 +822,10 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 		else if (captchaSolution is CloudflareTurnstileCaptchaSolution) {
 			fields['cf-turnstile-response'] = captchaSolution.token;
 		}
+		if (form?.attributes['onsubmit']?.contains('doPost') ?? false) {
+			// Lainchan software seems updated, use the better API
+			fields['json_response'] = '1';
+		}
 		await updatePostingFields(post, fields, cancelToken);
 		final response = await client.postUri(
 			Uri.https(sysUrl, '$basePath/post.php'),
@@ -865,6 +871,30 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 			}
 			else {
 				throw HTTPStatusException.fromResponse(response);
+			}
+		}
+		if (response.data case final String str) {
+			try {
+				final id = switch (json.decode(str)) {
+					{'id': num id} => id.toInt(),
+					{'id': String id} => id.tryParseInt,
+					{'error': String error} => throw PostFailedException(error),
+					_ => null
+				};
+				if (id != null) {
+					return PostReceipt(
+						post: post,
+						id: id,
+						password: password,
+						name: post.name ?? '',
+						options: post.options ?? '',
+						time: DateTime.now(),
+						ip: captchaSolution.ip
+					);
+				}
+			}
+			on FormatException {
+				// Not json_response
 			}
 		}
 		final doc = parse(response.data);
