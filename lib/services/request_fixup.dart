@@ -10,6 +10,9 @@ class FixupInterceptor extends InterceptorBase {
 		if (options.uri.host == 'yewtu.be') {
 			options.headers[HttpHeaders.acceptHeader] = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7';
 		}
+		if (options.uri.host == 'gelbooru.com' || options.uri.host.endsWith('.gelbooru.com')) {
+			options.headers[HttpHeaders.refererHeader] = 'https://gelbooru.com';
+		}
 		handler.next(options);
 	}
 }
