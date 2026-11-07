@@ -2449,8 +2449,9 @@ Future<_ReplyBoxFile?> _makeAttachment(PickedAttachment? originalAttachment, Fil
 						child: Icon(CupertinoIcons.exclamationmark_shield)
 					) : ClipRRect(
 						borderRadius: const BorderRadius.all(Radius.circular(8)),
-						child: Image.network(
-							_proposedAttachmentUrl!.imageUrl,
+						child: CNetworkImage(
+							client: context.read<ImageboardSite>().client,
+							url: _proposedAttachmentUrl!.imageUrl,
 							width: 100
 						)
 					)
