@@ -1,4 +1,6 @@
+import 'package:chan/services/theme.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart' hide WeakMap;
 import 'package:provider/provider.dart';
@@ -21,9 +23,55 @@ class AutoWatchType {
 	String toString() => 'AutoWatchType(push: $push)';
 }
 
+sealed class HighlightColor {
+	const HighlightColor();
+	Color resolve(BuildContext context);
+}
+
+class DefaultHighlightColor extends HighlightColor {
+	const DefaultHighlightColor();
+	
+	@override
+	Color resolve(BuildContext context) {
+		return ChanceTheme.secondaryColorOf(context);
+	}
+
+	@override
+	String toString() => 'DefaultHighlightColor()';
+
+	@override
+	int get hashCode => 0;
+	@override
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is DefaultHighlightColor;
+}
+
+class CustomHighlightColor extends HighlightColor {
+	final Color color;
+	const CustomHighlightColor(this.color);
+
+	@override
+	Color resolve(BuildContext context) {
+		return color;
+	}
+
+	@override
+	String toString() => 'CustomHighlightColor($color)';
+
+	@override
+	int get hashCode => color.hashCode;
+	@override
+	bool operator == (Object other) =>
+		identical(this, other) ||
+		other is CustomHighlightColor &&
+		other.color == color;
+}
+
+
 class FilterResultType {
 	final bool hide;
-	final bool highlight;
+	final HighlightColor? highlight;
 	final bool pinToTop;
 	final bool autoSave;
 	final AutoWatchType? autoWatch;
@@ -35,7 +83,7 @@ class FilterResultType {
 
 	const FilterResultType({
 		this.hide = false,
-		this.highlight = false,
+		this.highlight,
 		this.pinToTop = false,
 		this.autoSave = false,
 		this.autoWatch,
@@ -51,7 +99,7 @@ class FilterResultType {
 	@override
 	String toString() => 'FilterResultType(${[
 		if (hide) 'hide',
-		if (highlight) 'highlight',
+		if (highlight != null) 'highlight: $highlight',
 		if (pinToTop) 'pinToTop',
 		if (autoSave) 'autoSave',
 		if (autoWatch != null) autoWatch.toString(),
@@ -314,7 +362,7 @@ class CustomFilter implements Filter {
 			);
 			int i = 4;
 			bool hide = true;
-			bool highlight = false;
+			HighlightColor? highlight;
 			bool pinToTop = false;
 			bool autoSave = false;
 			AutoWatchType? autoWatch;
@@ -328,8 +376,18 @@ class CustomFilter implements Filter {
 				if (s == null) {
 					break;
 				}
-				else if (s == 'highlight') {
-					highlight = true;
+				else if (s == 'highlight' || s.startsWith('highlight:')) {
+					final str = s.split(_separatorPattern).skip(1).tryLast?.nonEmptyOrNull;
+					if (str != null) {
+						final color = colorToHex(str);
+						if (color == null) {
+							throw Exception('Unrecognized color: $str');
+						}
+						highlight = CustomHighlightColor(color);
+					}
+					else {
+						highlight = const DefaultHighlightColor();
+					}
 					hide = false;
 				}
 				else if (s == 'top') {
@@ -505,8 +563,17 @@ class CustomFilter implements Filter {
 		if (!pattern.isMultiLine) {
 			out.write('s');
 		}
-		if (outputType.highlight) {
+		if (outputType.highlight != null) {
 			out.write(';highlight');
+			switch (outputType.highlight) {
+				case null:
+				case DefaultHighlightColor():
+					// Do nothing
+					break;
+				case CustomHighlightColor(color: final color):
+					out.write(':');
+					out.write(color.toCssHex());
+			}
 		}
 		if (outputType.pinToTop) {
 			out.write(';top');

@@ -338,7 +338,7 @@ class RefreshableListItem<T extends Object> {
 	final bool representsUnknownStubChildren;
 	final List<int> representsKnownStubChildren;
 	final List<int> representsUnloadedPages;
-	final bool highlighted;
+	final HighlightColor? highlighted;
 	final bool pinned;
 	bool filterCollapsed;
 	final String? filterReason;
@@ -353,7 +353,7 @@ class RefreshableListItem<T extends Object> {
 		required this.item,
 		required this.options,
 		required RefreshableListState state,
-		this.highlighted = false,
+		this.highlighted,
 		this.pinned = false,
 		this.filterCollapsed = false,
 		this.filterReason,
@@ -378,7 +378,7 @@ class RefreshableListItem<T extends Object> {
 		if (long) ...[
 			'item: $item',
 			if (representsUnloadedPages.isNotEmpty) 'representsUnloadedPages: $representsUnloadedPages',
-			if (highlighted) 'highlighted',
+			if (highlighted != null) 'highlighted: $highlighted',
 			if (pinned) 'pinned',
 			if (filterCollapsed) 'filterCollapsed',
 			if (filterReason != null) 'filterReason: $filterReason',
@@ -2422,10 +2422,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				child: child
 			);
 		}
-		if (value.highlighted) {
+		if (value.highlighted case final color?) {
 			child = ClipRect(
 				child: ColorFiltered(
-					colorFilter: ColorFilter.mode(ChanceTheme.secondaryColorOf(context).withValues(alpha: 0.2), BlendMode.srcOver),
+					colorFilter: ColorFilter.mode(color.resolve(context).withValues(alpha: 0.2), BlendMode.srcOver),
 					child: child
 				)
 			);
@@ -2433,7 +2433,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		if (value.pinned) {
 			child = ClipRect(
 				child: ColorFiltered(
-					colorFilter: ColorFilter.mode(ChanceTheme.secondaryColorOf(context).withValues(alpha: 0.05), BlendMode.srcOver),
+					colorFilter: ColorFilter.mode((value.highlighted?.resolve(context) ?? ChanceTheme.secondaryColorOf(context)).withValues(alpha: 0.05), BlendMode.srcOver),
 					child: child
 				)
 			);

@@ -2444,7 +2444,11 @@ class ThreadPageState extends State<ThreadPage> {
 																			persistentState: persistentState,
 																			listController: _listController,
 																			hotPostIds: settings.showHotPostsInScrollbar ? _hotPostIds : const {},
-																			highlightedPostIds: _listController.items.where((i) => i.highlighted).map((i) => i.id).toSet()
+																			highlightedPostIds: {
+																				for (final i in _listController.items)
+																					if (i.highlighted case final highlighted?)
+																						i.id: highlighted
+																			}
 																		)
 																	)
 																) : null
@@ -4117,7 +4121,7 @@ class _ThreadScrollbar extends StatefulWidget {
 	final PersistentThreadState persistentState;
 	final RefreshableListController<Post> listController;
 	final Set<int> hotPostIds;
-	final Set<int> highlightedPostIds;
+	final Map<int, HighlightColor> highlightedPostIds;
 
 	const _ThreadScrollbar({
 		required this.persistentState,
@@ -4220,7 +4224,7 @@ class _ThreadScrollbarState extends State<_ThreadScrollbar> {
 					items: widget.listController.items.toList(),
 					youIds: widget.persistentState.youIds.toSet(),
 					replyIdsToYou: widget.persistentState.replyIdsToYou()?.toSet() ?? const {},
-					highlightedIds: widget.highlightedPostIds,
+					highlightedIds: widget.highlightedPostIds.map((k, v) => MapEntry(k, v.resolve(context))),
 					hotIds: widget.hotPostIds,
 					theme: theme
 				),
@@ -4242,7 +4246,7 @@ class _ThreadScrollbarCustomPainter extends CustomPainter {
 	final List<RefreshableListItem<Post>> items;
 	final Set<int> youIds;
 	final Set<int> replyIdsToYou;
-	final Set<int> highlightedIds;
+	final Map<int, Color> highlightedIds;
 	final Set<int> hotIds;
 	final SavedTheme theme;
 
@@ -4266,7 +4270,7 @@ class _ThreadScrollbarCustomPainter extends CustomPainter {
 		}
 		final youPaint = ui.Paint()..color = theme.secondaryColor;
 		final replyToYouPaint = ui.Paint()..color = theme.secondaryColor.towardsBlack(0.5);
-		final highlightedPaint = ui.Paint()..color = theme.secondaryColor;
+		final highlightedPaints = <Color, Paint>{};
 		final hotPaint = ui.Paint()..color = theme.secondaryColor.shiftHue(90);
 		canvas.saveLayer(null, Paint()..color = Colors.white.withValues(alpha: 0.5)..blendMode = BlendMode.multiply);
 		final hd = size.height / (items.length + 1);
@@ -4277,8 +4281,8 @@ class _ThreadScrollbarCustomPainter extends CustomPainter {
 			if (replyIdsToYou.contains(item.id)) {
 				return replyToYouPaint;
 			}
-			if (highlightedIds.contains(item.id)) {
-				return highlightedPaint;
+			if (highlightedIds[item.id] case final color?) {
+				return highlightedPaints[color] ??= ui.Paint()..color = color;
 			}
 			if (hotIds.contains(item.id)) {
 				return hotPaint;
@@ -4345,7 +4349,7 @@ class _ThreadScrollbarCustomPainter extends CustomPainter {
 		return
 			!setEquals(youIds, oldDelegate.youIds) ||
 			!setEquals(replyIdsToYou, oldDelegate.replyIdsToYou) ||
-			!setEquals(highlightedIds, oldDelegate.highlightedIds) ||
+			!mapEquals(highlightedIds, oldDelegate.highlightedIds) ||
 			!setEquals(hotIds, oldDelegate.hotIds) ||
 			!listEquals(items, oldDelegate.items) ||
 			theme != oldDelegate.theme;

@@ -259,8 +259,8 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 		if (type?.hide == true) {
 			results.add('Hidden');
 		}
-		if (type?.highlight == true) {
-			results.add('Highlighted');
+		if (type?.highlight != null) {
+			results.add('Highlighted: ${type?.highlight}');
 		}
 		if (type?.pinToTop == true) {
 			results.add('Pinned to top of catalog');

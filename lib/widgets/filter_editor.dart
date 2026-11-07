@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:chan/models/board.dart';
 import 'package:chan/pages/board_switcher.dart';
 import 'package:chan/services/filtering.dart';
@@ -11,6 +13,7 @@ import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart' hide colorToHex;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
@@ -309,7 +312,7 @@ Future<Wrapper<CustomFilter?>?> editFilter(BuildContext context, CustomFilter? o
 	int? minReplyCount = filter.minReplyCount;
 	int? maxReplyCount = filter.maxReplyCount;
 	bool hide = filter.outputType.hide;
-	bool highlight = filter.outputType.highlight;
+	HighlightColor? highlight = filter.outputType.highlight;
 	bool pinToTop = filter.outputType.pinToTop;
 	bool autoSave = filter.outputType.autoSave;
 	AutoWatchType? autoWatch = filter.outputType.autoWatch;
@@ -725,7 +728,7 @@ Future<Wrapper<CustomFilter?>?> editFilter(BuildContext context, CustomFilter? o
 											onTap: () {
 												if (!hide) {
 													hide = true;
-													highlight = false;
+													highlight = null;
 													pinToTop = false;
 													autoSave = false;
 													autoWatch = null;
@@ -745,8 +748,70 @@ Future<Wrapper<CustomFilter?>?> editFilter(BuildContext context, CustomFilter? o
 								padding: const EdgeInsets.all(16),
 								alignment: Alignment.center,
 								child: AdaptiveListSection(
-									children: <(String, bool, ValueChanged<bool>)>[
-										('Highlight', highlight, (v) => highlight = v),
+									children: <(String, bool, FutureOr<void> Function(bool))>[
+										(switch (highlight) {
+											CustomHighlightColor(color: final color) => 'Highlight: ${color.toCssHex()}',
+											null || DefaultHighlightColor() => 'Highlight'
+										}, highlight != null, (v) async {
+											if (v) {
+												final defaultColor = context.read<SavedTheme>().secondaryColor;
+												Color c = defaultColor;
+												await showAdaptiveModalPopup(
+													context: context,
+													builder: (context) => StatefulBuilder(
+														builder: (context, setActionSheetState) {
+															return AdaptiveActionSheet(
+																title: const Text('Select Highlight Color'),
+																message: Theme(
+																	data: ThemeData(
+																		textTheme: Theme.of(context).textTheme.apply(
+																			bodyColor: ChanceTheme.primaryColorOf(context),
+																			displayColor: ChanceTheme.primaryColorOf(context),
+																		),
+																		canvasColor: ChanceTheme.backgroundColorOf(context)
+																	),
+																	child: Padding(
+																		padding: MediaQuery.viewInsetsOf(context),
+																		child: Column(
+																			mainAxisSize: MainAxisSize.min,
+																			children: [
+																				Material(
+																					color: Colors.transparent,
+																					child: ColorPicker(
+																						pickerColor: c,
+																						onColorChanged: (newColor) {
+																							c = newColor;
+																							setActionSheetState(() {});
+																						},
+																						enableAlpha: false,
+																						portraitOnly: true,
+																						displayThumbColor: true,
+																						hexInputBar: true
+																					)
+																				),
+																				AdaptiveFilledButton(
+																					padding: const EdgeInsets.all(8),
+																					color: defaultColor,
+																					onPressed: (c == defaultColor) ? null : () {
+																						c = defaultColor;
+																						setActionSheetState(() {});
+																					},
+																					child: Text('Reset to default color', style: TextStyle(color: defaultColor.computeLuminance() > 0.5 ? Colors.black : Colors.white))
+																				)
+																			]
+																		)
+																	)
+																)
+															);
+														}
+													)
+												);
+												highlight = c == defaultColor ? const DefaultHighlightColor() : CustomHighlightColor(c);
+											}
+											else {
+												highlight = null;
+											}
+										}),
 										('Pin-to-top', pinToTop, (v) => pinToTop = v),
 										('Auto-save', autoSave, (v) => autoSave = v),
 										('Auto-watch', autoWatch != null, (v) => autoWatch = (v ? const AutoWatchType(push: null) : null)),
@@ -770,9 +835,9 @@ Future<Wrapper<CustomFilter?>?> editFilter(BuildContext context, CustomFilter? o
 										trailing: t.$2 ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
 										backgroundColor: ChanceTheme.barColorOf(context),
 										backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
-										onTap: () {
-											t.$3(!t.$2);
-											if (highlight || pinToTop || autoSave || autoWatch != null || notify || collapse) {
+										onTap: () async {
+											await t.$3(!t.$2);
+											if (highlight != null || pinToTop || autoSave || autoWatch != null || notify || collapse) {
 												hide = false;
 											}
 											setInnerState(() {});
@@ -980,6 +1045,7 @@ class _FilterEditorState extends State<FilterEditor> {
 													'`;site:<list>` Only apply on certain sites\n'
 													'`;excludeSite:<list>` Don\'t apply on certain sites\n'
 													'`;highlight` Highlight instead of hiding matches\n'
+													'`;highlight:<hex>` Set the highlight color\n'
 													'`;top` Pin match to top of list instead of hiding\n'
 													'`;notify` Send a push notification (if enabled) for matches\n'
 													'`;save` Automatically save matching threads\n'
@@ -1080,7 +1146,7 @@ class _FilterEditorState extends State<FilterEditor> {
 						final icons = [
 							if (filter.value.outputType == FilterResultType.empty) const Icon(CupertinoIcons.eye),
 							if (filter.value.outputType.hide) const Icon(CupertinoIcons.eye_slash),
-							if (filter.value.outputType.highlight) const Icon(CupertinoIcons.sun_max_fill),
+							if (filter.value.outputType.highlight case final color?) Icon(CupertinoIcons.sun_max_fill, color: color.resolve(context)),
 							if (filter.value.outputType.pinToTop) const Icon(CupertinoIcons.arrow_up_to_line),
 							if (filter.value.outputType.autoSave) Icon(Adaptive.icons.bookmarkFilled),
 							if (filter.value.outputType.autoWatch != null) const Icon(CupertinoIcons.bell),
