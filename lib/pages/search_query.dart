@@ -20,6 +20,8 @@ import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
+import 'package:chan/widgets/refreshable_list.dart';
+import 'package:chan/widgets/scroll_tracker.dart';
 import 'package:chan/widgets/search_query_editor.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
@@ -56,7 +58,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 
 	Future<void> _runQuery() async {
 		final lastResult = result.data;
-		result = const AsyncSnapshot.waiting();
+		result = lastResult != null ? AsyncSnapshot.withData(ConnectionState.waiting, lastResult) : const AsyncSnapshot.waiting();
 		setState(() {});
 		try {
 			final site = ImageboardRegistry.instance.getImageboard(widget.query.imageboardKey)!.site;
@@ -77,6 +79,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 	}
 
 	Widget _buildPagination() {
+		final theme = context.watch<SavedTheme>();
 		return Row(
 			mainAxisAlignment: MainAxisAlignment.spaceAround,
 			children: [
@@ -161,7 +164,18 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 						}
 						controller.dispose();
 					},
-					icon: Text('Page $page')
+					icon: Text.rich(
+						TextSpan(
+							children: [
+								TextSpan(text: 'Page $page'),
+								if (result.data?.archive case final archive? when archive != ImageboardRegistry.instance.getImageboard(widget.query.imageboardKey)?.site) TextSpan(
+									text: '\n${archive.name}',
+									style: TextStyle(color: theme.primaryColor.withValues(alpha: 0.7))
+								)
+							]
+						),
+						textAlign: TextAlign.center,
+					)
 				),
 				const Spacer(),
 				AdaptiveIconButton(
@@ -218,113 +232,141 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 	Widget _build(BuildContext context, SelectedSearchResult? currentValue, ValueChanged<SelectedSearchResult?> setValue) {
 		if (result.error != null) {
 			return Center(
-				child: ErrorMessageCard(result.error!.toStringDio(), remedies: {
-					'Retry': _runQuery,
-					...generateBugRemedies(result.error!, result.stackTrace!, context, afterFix: _runQuery)
-				})
+				child: Padding(
+					padding: const EdgeInsets.all(16),
+					child: ErrorMessageCard(result.error!.toStringDio(), remedies: {
+						'Retry': _runQuery,
+						...generateBugRemedies(result.error!, result.stackTrace!, context, afterFix: _runQuery)
+					})
+				)
 			);
 		}
 		else if (!loading && result.hasData) {
 			final queryPattern = RegExp(RegExp.escape(widget.query.query), caseSensitive: false);
-			return ImageboardScope(
-				imageboardKey: widget.query.imageboardKey,
-				child: MaybeScrollbar(
-					child: ListView.separated(
-						itemCount: result.data!.posts.length + 2,
-						itemBuilder: (context, i) {
-							if (i == 0 || i == result.data!.posts.length + 1) {
-								return _buildPagination();
-							}
-							final row = result.data!.posts[i - 1];
-							final imageboard = context.read<Imageboard>();
-							if (row.post != null) {
-								return ChangeNotifierProvider<PostSpanZoneData>(
-									create: (context) => PostSpanRootZoneData(
-										imageboard: imageboard,
-										thread: Thread(
-											board: row.post!.threadIdentifier.board,
-											id: row.post!.threadIdentifier.id,
-											isDeleted: false,
-											isArchived: false,
-											title: '',
-											isSticky: false,
-											replyCount: -1,
-											imageCount: -1,
-											time: DateTime.fromMillisecondsSinceEpoch(0),
-											posts_: [],
-											attachments: []
-										),
-										semanticRootIds: [-7],
-										style: PostSpanZoneStyle.linear
-									),
-									child: ValueListenableBuilder(
-										valueListenable: imageboard.persistence.listenForPersistentThreadStateChanges(row.post!.threadIdentifier),
-										builder: (context, threadState, _) {
-											return PostRow(
-												post: row.post!,
-												dim: (threadState?.showInHistory ?? false) && threadState?.unseenPostIds.data.contains(row.post!.id) == false,
+			final theme = context.watch<SavedTheme>();
+			return Stack(
+				children: [
+					Positioned.fill(
+						child: ImageboardScope(
+							imageboardKey: widget.query.imageboardKey,
+							child: RefreshableList(
+								initialList: result.data!.posts,
+								disableUpdates: true,
+								listUpdater: (_) => throw UnimplementedError(),
+								id: 'query',
+								filterableAdapter: (p) => (widget.query.imageboardKey ?? '', p.post ?? p.thread!),
+								itemBuilder: (context, row, options) {
+									final imageboard = context.read<Imageboard>();
+									if (row.post != null) {
+										return ChangeNotifierProvider<PostSpanZoneData>(
+											create: (context) => PostSpanRootZoneData(
+												imageboard: imageboard,
+												thread: Thread(
+													board: row.post!.threadIdentifier.board,
+													id: row.post!.threadIdentifier.id,
+													isDeleted: false,
+													isArchived: false,
+													title: '',
+													isSticky: false,
+													replyCount: -1,
+													imageCount: -1,
+													time: DateTime.fromMillisecondsSinceEpoch(0),
+													posts_: [],
+													attachments: []
+												),
+												semanticRootIds: [-7],
+												style: PostSpanZoneStyle.linear
+											),
+											child: ValueListenableBuilder(
+												valueListenable: imageboard.persistence.listenForPersistentThreadStateChanges(row.post!.threadIdentifier),
+												builder: (context, threadState, _) {
+													return PostRow(
+														post: row.post!,
+														dim: (threadState?.showInHistory ?? false) && threadState?.unseenPostIds.data.contains(row.post!.id) == false,
+														onThumbnailTap: (attachment) => _showGallery(context, attachment),
+														showCrossThreadLabel: false,
+														showBoardName: true,
+														allowTappingLinks: false,
+														showPostNumber: false,
+														isSelected: (context.watch<MasterDetailLocation?>()?.twoPane != false) && currentValue?.result == row.threadOrPostIdentifier,
+														onTap: () => setValue(SelectedSearchResult(
+															imageboard: imageboard,
+															result: row.threadOrPostIdentifier,
+															threadSearch: null,
+															fromArchive: result.data!.archive.isArchive ? result.data!.archive.name : null
+														)),
+														baseOptions: PostSpanRenderOptions(
+															highlightPattern: widget.query.query.isEmpty ? null : queryPattern
+														),
+													);
+												}
+											)
+										);
+									}
+									else {
+										final matchingPostIndex = row.thread!.posts_.indexWhere((p) => p.buildText().toLowerCase().contains(widget.query.query.toLowerCase()));
+										return GestureDetector(
+											onTap: () => setValue(SelectedSearchResult(
+												imageboard: imageboard,
+												result: row.threadOrPostIdentifier,
+												// Only do a thread-search if we have a match in lastReplies and not OP
+												threadSearch: (matchingPostIndex > 0) ? widget.query.query : null,
+												fromArchive: result.data!.archive.isArchive ? result.data!.archive.name : null
+											)),
+											child: ThreadRow(
+												thread: row.thread!,
 												onThumbnailTap: (attachment) => _showGallery(context, attachment),
-												showCrossThreadLabel: false,
-												showBoardName: true,
-												allowTappingLinks: false,
-												showPostNumber: false,
 												isSelected: (context.watch<MasterDetailLocation?>()?.twoPane != false) && currentValue?.result == row.threadOrPostIdentifier,
-												onTap: () => setValue(SelectedSearchResult(
-													imageboard: imageboard,
-													result: row.threadOrPostIdentifier,
-													threadSearch: null,
-													fromArchive: result.data!.archive.isArchive ? result.data!.archive.name : null
-												)),
+												replyCountUnreliable: result.data!.replyCountsUnreliable,
+												imageCountUnreliable: result.data!.imageCountsUnreliable,
+												semanticParentIds: const [-7],
+												showBoardName: true,
+												dimReadThreads: true,
+												showLastReplies: true,
 												baseOptions: PostSpanRenderOptions(
 													highlightPattern: widget.query.query.isEmpty ? null : queryPattern
 												),
-											);
-										}
+											)
+										);
+									}
+								}
+							)
+						)
+					),
+					Positioned.fill(
+						child: SafeArea(
+							child: Align(
+								alignment: Alignment.bottomCenter,
+								child: AncestorScrollBuilder(
+									builder: (context, direction, _) => AnimatedOpacity(
+										opacity: direction == VerticalDirection.up ? 1.0 : 0.0,
+										duration: const Duration(milliseconds: 350),
+										curve: Curves.ease,
+										child: IgnorePointer(
+											ignoring: direction == VerticalDirection.down,
+											child: Container(
+												color: theme.barColor,
+												child: _buildPagination()
+											)
+										)
 									)
-								);
-							}
-							else {
-								final matchingPostIndex = row.thread!.posts_.indexWhere((p) => p.buildText().toLowerCase().contains(widget.query.query.toLowerCase()));
-								return GestureDetector(
-									onTap: () => setValue(SelectedSearchResult(
-										imageboard: imageboard,
-										result: row.threadOrPostIdentifier,
-										// Only do a thread-search if we have a match in lastReplies and not OP
-										threadSearch: (matchingPostIndex > 0) ? widget.query.query : null,
-										fromArchive: result.data!.archive.isArchive ? result.data!.archive.name : null
-									)),
-									child: ThreadRow(
-										thread: row.thread!,
-										onThumbnailTap: (attachment) => _showGallery(context, attachment),
-										isSelected: (context.watch<MasterDetailLocation?>()?.twoPane != false) && currentValue?.result == row.threadOrPostIdentifier,
-										replyCountUnreliable: result.data!.replyCountsUnreliable,
-										imageCountUnreliable: result.data!.imageCountsUnreliable,
-										semanticParentIds: const [-7],
-										showBoardName: true,
-										dimReadThreads: true,
-										showLastReplies: true,
-										baseOptions: PostSpanRenderOptions(
-											highlightPattern: widget.query.query.isEmpty ? null : queryPattern
-										),
-									)
-								);
-							}
-						},
-						separatorBuilder: (context, i) => const ChanceDivider()
+								)
+							)
+						)
 					)
-				)
+				]
 			);
 		}
 		return Column(
 			children: [
-				if (result.hasData) SafeArea(
-					bottom: false,
-					child: _buildPagination()
-				),
 				const Expanded(
 					child: Center(
 						child: CircularProgressIndicator.adaptive()
 					)
+				),
+				if (result.hasData) SafeArea(
+					top: false,
+					child: _buildPagination()
 				)
 			]
 		);
