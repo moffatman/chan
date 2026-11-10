@@ -506,110 +506,120 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		if (document.querySelector('.alert') case dom.Element alert) {
 			throw FoolFuukaException(alert.nodes.last.text?.trim() ?? alert.innerHtml);
 		}
-		final posts = document.querySelectorAll('.post');
-		if (posts.isEmpty) {
+		final postElements = document.querySelectorAll('.post');
+		if (postElements.isEmpty) {
 			throw FoolFuukaException('No results');
 		}
 		/// Maximum number the API will page through
 		final maxResults = RegExp(r'(\d+) results found').firstMatch(document.querySelector('small')!.text)!.group(1)!.parseInt;
-		return ImageboardArchiveSearchResultPage(
-			posts: posts.map((dom.Element data) => unsafe(data.outerHtml, () {
-				final board = data.attributes['data-board']!;
-				final id = data.id.parseInt;
-				final asLink = _decodeUrl(Uri.parse(data.querySelector('.post_controls a.parent')!.attributes['href']!))!;
-				Attachment? attachment;
-				final img = data.querySelector('img.post_image');
-				final filename = data.querySelector('.post_file_filename')?.text;
-				final fileMetadata = data.querySelector('.post_file_metadata')?.text.trim();
-				if (img != null && filename != null && fileMetadata != null) {
-					final href = img.parent!.attributes['href']!;
-					final url = Uri.parse(href);
-					final metadata = _fileMetadataPattern.firstMatch(fileMetadata)!;
-					int multiplier = 1;
-					final fileSizePrefix = metadata.group(2)!.toLowerCase();
-					if (fileSizePrefix.startsWith('m')) {
-						multiplier = kMB;
-					} else if (fileSizePrefix.startsWith('k')) {
-						multiplier = kKB;
-					}
-					final serverFilename = url.pathSegments.last;
-					attachment = Attachment(
-						board: board,
-						type: AttachmentType.fromFilename(serverFilename),
-						id: serverFilename.beforeFirst('.'),
-						ext: '.${serverFilename.afterLast('.')}',
-						filename: filename,
-						url: href,
-						thumbnailUrl: img.attributes['src']!,
-						md5: img.attributes['data-md5'] ?? '',
-						width: metadata.group(3)?.parseInt,
-						height: metadata.group(4)?.parseInt,
-						threadId: asLink.threadId,
-						sizeInBytes: (metadata.group(1)!.parseDouble * multiplier).round(),
-						useRandomUseragent: useRandomUseragent,
-						isRateLimited: hasAttachmentRateLimit,
-						spoiler: img.classes.contains('is_spoiler_image')
-					);
+		bool replyCountsUnreliable = false;
+		final posts = postElements.tryMap((dom.Element data) => unsafe(data.outerHtml, () {
+			if (data.classes.contains('stub')) {
+				// not a real post
+				return null;
+			}
+			final board = data.attributes['data-board']!;
+			final id = data.id.parseInt;
+			final asLink = _decodeUrl(Uri.parse(data.querySelector('.post_controls a.parent')!.attributes['href']!))!;
+			Attachment? attachment;
+			final img = data.querySelector('img.post_image');
+			final filename = data.querySelector('.post_file_filename')?.text;
+			final fileMetadata = data.querySelector('.post_file_metadata')?.text.trim();
+			if (img != null && filename != null && fileMetadata != null) {
+				final href = img.parent!.attributes['href']!;
+				final url = Uri.parse(href);
+				final metadata = _fileMetadataPattern.firstMatch(fileMetadata)!;
+				int multiplier = 1;
+				final fileSizePrefix = metadata.group(2)!.toLowerCase();
+				if (fileSizePrefix.startsWith('m')) {
+					multiplier = kMB;
+				} else if (fileSizePrefix.startsWith('k')) {
+					multiplier = kKB;
 				}
-				ImageboardFlag? flag;
-				if (data.querySelector('.flag') case final flagElement?) {
-					final pathParts = Uri.parse(flagElement.parent!.attributes['href']!).pathSegments;
-					final String imagePath;
-					if (pathParts[1] == 'troll_country') {
-						// /$board/troll_country/$code
-						imagePath = '/image/flags/${pathParts[0]}/${pathParts[2].toLowerCase()}.gif';
-					}
-					else {
-						// /$board/country/$code
-						imagePath = '/image/country/${pathParts[2].toLowerCase()}.gif';
-					}
-					flag = ImageboardFlag(
-						imageHeight: 11,
-						imageWidth: 16,
-						name: flagElement.attributes['title']!.beforeFirst('.'),
-						imageUrl: Uri.https(staticUrl, imagePath).toString()
-					);
-				}
-				final asPost = Post(
+				final serverFilename = url.pathSegments.last;
+				attachment = Attachment(
 					board: board,
-					text: data.querySelector('.text')!.innerHtml,
-					name: data.querySelector('.post_author')!.text,
-					time: DateTime.parse(data.querySelector('time')!.attributes['datetime']!),
-					threadId: asLink.threadId!,
-					id: id,
-					spanFormat: PostSpanFormat.foolFuuka,
-					attachments_: attachment == null ? [] : [attachment],
-					flag: flag,
-					trip: data.querySelector('.post_tripcode')?.text.trim().nonEmptyOrNull,
-					posterId: data.querySelector('.poster_hash')?.text.trim().afterLast(':'),
-					// 'Pass user since 2026.'
-					passSinceYear: data.querySelector('i.icon-tag')?.attributes['title']?.afterLast(' ').beforeFirst('.').tryParseInt,
-					isDeleted: data.querySelector('i.icon-trash') != null
+					type: AttachmentType.fromFilename(serverFilename),
+					id: serverFilename.beforeFirst('.'),
+					ext: '.${serverFilename.afterLast('.')}',
+					filename: filename,
+					url: href,
+					thumbnailUrl: (img.attributes['src'] ?? img.attributes['data-src'])!,
+					md5: img.attributes['data-md5'] ?? '',
+					width: metadata.group(3)?.parseInt,
+					height: metadata.group(4)?.parseInt,
+					threadId: asLink.threadId,
+					sizeInBytes: (metadata.group(1)!.parseDouble * multiplier).round(),
+					useRandomUseragent: useRandomUseragent,
+					isRateLimited: hasAttachmentRateLimit,
+					spoiler: img.classes.contains('is_spoiler_image')
 				);
-				if (!data.classes.contains('post_is_op')) {
-					return ImageboardArchiveSearchResult.post(asPost);
+			}
+			ImageboardFlag? flag;
+			if (data.querySelector('.flag') case final flagElement?) {
+				final pathParts = Uri.parse(flagElement.parent!.attributes['href']!).pathSegments;
+				final String imagePath;
+				if (pathParts[1] == 'troll_country') {
+					// /$board/troll_country/$code
+					imagePath = '/image/flags/${pathParts[0]}/${pathParts[2].toLowerCase()}.gif';
 				}
-				return ImageboardArchiveSearchResult.thread(Thread(
-					posts_: [asPost],
-					replyCount: data.querySelector('.post_data')!.nodes.tryMapOnce((node) {
-						if (node is dom.Text) {
-							return _threadRepliesPattern.firstMatch(node.text)?.group(1)?.tryParseInt;
-						}
-						return null;
-					})!,
-					imageCount: 1, // unreliable
-					id: id,
-					board: board,
-					title: data.querySelector('.post_title')?.text,
-					isSticky: data.querySelector('i.icon-pushpin') != null,
-					time: asPost.time,
-					attachments: asPost.attachments_
-				));
-			})).toList(),
+				else {
+					// /$board/country/$code
+					imagePath = '/image/country/${pathParts[2].toLowerCase()}.gif';
+				}
+				flag = ImageboardFlag(
+					imageHeight: 11,
+					imageWidth: 16,
+					name: flagElement.attributes['title']!.beforeFirst('.'),
+					imageUrl: Uri.https(staticUrl, imagePath).toString()
+				);
+			}
+			final asPost = Post(
+				board: board,
+				text: data.querySelector('.text')!.innerHtml,
+				name: data.querySelector('.post_author')!.text,
+				time: DateTime.parse(data.querySelector('time')!.attributes['datetime']!),
+				threadId: asLink.threadId!,
+				id: id,
+				spanFormat: PostSpanFormat.foolFuuka,
+				attachments_: attachment == null ? [] : [attachment],
+				flag: flag,
+				trip: data.querySelector('.post_tripcode')?.text.trim().nonEmptyOrNull,
+				posterId: data.querySelector('.poster_hash')?.text.trim().afterLast(':'),
+				// 'Pass user since 2026.'
+				passSinceYear: data.querySelector('i.icon-tag')?.attributes['title']?.afterLast(' ').beforeFirst('.').tryParseInt,
+				isDeleted: data.querySelector('i.icon-trash') != null
+			);
+			if (!data.classes.contains('post_is_op')) {
+				return ImageboardArchiveSearchResult.post(asPost);
+			}
+			final replyCount = data.querySelector('.post_data')!.nodes.tryMapOnce((node) {
+				if (node is dom.Text) {
+					return _threadRepliesPattern.firstMatch(node.text)?.group(1)?.tryParseInt;
+				}
+				return null;
+			});
+			if (replyCount == null) {
+				replyCountsUnreliable = true;
+			}
+			return ImageboardArchiveSearchResult.thread(Thread(
+				posts_: [asPost],
+				replyCount: replyCount ?? 0, // unreliable
+				imageCount: 0, // unreliable
+				id: id,
+				board: board,
+				title: data.querySelector('.post_title')?.text,
+				isSticky: data.querySelector('i.icon-pushpin') != null,
+				time: asPost.time,
+				attachments: asPost.attachments_
+			));
+		})).toList();
+		return ImageboardArchiveSearchResultPage(
+			posts: posts,
 			page: page,
 			maxPage: (maxResults / 25).ceil(),
 			count: maxResults,
-			replyCountsUnreliable: false,
+			replyCountsUnreliable: replyCountsUnreliable,
 			imageCountsUnreliable: true,
 			canJumpToArbitraryPage: true,
 			archive: this
