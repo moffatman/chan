@@ -515,7 +515,7 @@ class _SavedPageState extends State<SavedPage> {
 								thread = await imageboard.site.getThread(threadIdentifier, priority: RequestPriority.interactive);
 							}
 							on ThreadNotFoundException {
-								thread = await imageboard.site.getThreadFromArchive(threadIdentifier, priority: RequestPriority.interactive, customValidator: (t) async {
+								thread = await imageboard.site.getThreadFromArchive(threadIdentifier, isArchived: true, priority: RequestPriority.interactive, customValidator: (t) async {
 									if (_findMatchingAttachment(t, attachment) == null) {
 										throw Exception('Could not find attachment in thread');
 									}
@@ -539,7 +539,7 @@ class _SavedPageState extends State<SavedPage> {
 						child: ThreadPage(
 							thread: thread.identifier,
 							initialPostId: postId,
-							initiallyUseArchive: thread.archiveName,
+							initiallyHintArchive: thread.archiveName,
 							boardSemanticId: -1
 						)
 					)
@@ -1053,7 +1053,7 @@ class _SavedPageState extends State<SavedPage> {
 									// Lazy, just steal from list
 									for (final item in _threadListController.items) {
 										final (state, thread) = item.item;
-										if (state.useArchive || thread.isArchived) {
+										if (thread.isArchived) {
 											continue;
 										}
 										// TODO: Put this in a common place. PersistentThreadState. then use it in thread_watcher Persistence.tabs handling, drawer.dart, etc.
@@ -2090,7 +2090,7 @@ class MissingThreadsControls extends StatelessWidget {
 				}
 				on ThreadNotFoundException {
 					try {
-						newThread = await thread.imageboard.site.getThreadFromArchive(thread.item, priority: RequestPriority.interactive);
+						newThread = await thread.imageboard.site.getThreadFromArchive(thread.item, isArchived: true, priority: RequestPriority.interactive);
 					}
 					catch (e) {
 						if (context.mounted) {
@@ -2164,7 +2164,7 @@ class MissingAttachmentsControls extends StatelessWidget {
 					try {
 						// Get the archived thread
 						final redirectUrls = <String, String>{};
-						final archivedThread = await attachment.imageboard.site.getThreadFromArchive(threadIdentifier, priority: RequestPriority.interactive, customValidator: (thread) async {
+						final archivedThread = await attachment.imageboard.site.getThreadFromArchive(threadIdentifier, isArchived: true, priority: RequestPriority.interactive, customValidator: (thread) async {
 							final found = _findMatchingAttachment(thread, attachment.item.attachment)?.attachment;
 							if (found == null) {
 								throw Exception('Attachment not found in ${thread.archiveName}');

@@ -121,7 +121,7 @@ class SearchPageState extends State<SearchPage> {
 							child: ThreadPage(
 								thread: post.result.thread,
 								initialPostId: post.result.postId,
-								initiallyUseArchive: post.fromArchive,
+								initiallyHintArchive: post.fromArchive,
 								initialSearch: post.threadSearch,
 								boardSemanticId: -1
 							)
@@ -679,6 +679,10 @@ List<Widget> describeQuery(ImageboardArchiveSearchQuery q) {
 			final formattedBoardName = imageboard?.site.formatBoardName(boardName);
 			return _SearchQueryFilterTag(formattedBoardName ?? '/$boardName/', null, true);
 		}),
+		if (q.archiveName case final archiveName?) _RawSearchQueryFilterTag(const Padding(
+			padding: EdgeInsets.all(2),
+			child: Icon(CupertinoIcons.archivebox, size: 16, applyTextScaling: true)
+		), Text(archiveName)),
 		if (q.query.isNotEmpty) _SearchQueryFilterTag('Text', q.query),
 		if (q.mediaFilter == MediaFilter.onlyWithMedia) const _SearchQueryFilterTag('With images'),
 		if (q.mediaFilter == MediaFilter.onlyWithNoMedia) const _SearchQueryFilterTag('Without images'),

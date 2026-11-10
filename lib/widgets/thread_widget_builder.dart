@@ -67,7 +67,7 @@ class ThreadWidgetBuilder extends StatelessWidget {
 				if (threadState != null) {
 					final board = persistence?.getBoard(this.thread!.board);
 					final thread = threadState.thread ?? imageboard?.site.getThreadFromCatalogCache(threadState.identifier);
-					isArchived = thread?.isArchived ?? threadState.useArchive;
+					isArchived = thread?.isArchived ?? false;
 					final attachment = thread?.attachments.tryFirst;
 					longTitle = (thread?.title ?? thread?.posts_.tryFirst?.buildText().nonEmptyOrNull) ?? 'Thread ${threadState.id}';
 					if (board != null && board.icon == null && board.name.isNotEmpty) {

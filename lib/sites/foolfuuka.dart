@@ -302,9 +302,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		);
 	}
 	Future<Map> _getPostJson(String board, int id, {required RequestPriority priority, CancelToken? cancelToken}) async {
-		if (!(await getBoards(priority: priority, cancelToken: cancelToken)).any((b) => b.name == board)) {
-			throw BoardNotFoundException(this, board);
-		}
+		await checkBoards([board], priority: priority, cancelToken: cancelToken);
 		if (id == 0) {
 			// FoolFuuka engine doesn't handle this properly
 			throw PostNotFoundException(this, board, id);
@@ -389,9 +387,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	}
 	@override
 	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required RequestPriority priority, CancelToken? cancelToken}) async {
-		if (!(await getBoards(priority: priority, cancelToken: cancelToken)).any((b) => b.name == thread.board)) {
-			throw BoardNotFoundException(this, thread.board);
-		}
+		await checkBoards([thread.board], priority: priority, cancelToken: cancelToken);
 		final response = await getThreadUri(
 			thread,
 			Uri.https(baseUrl, '/_/api/chan/thread', {
@@ -474,11 +470,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 
 	@override
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult, required RequestPriority priority, CancelToken? cancelToken}) async {
-		final knownBoards = await getBoards(priority: RequestPriority.interactive);
-		final unknownBoards = query.boards.where((b) => !knownBoards.any((kb) => kb.name == b));
-		if (unknownBoards.isNotEmpty) {
-			throw BoardNotFoundException(this, unknownBoards.first);
-		}
+		await checkBoards(query.boards, priority: priority, cancelToken: cancelToken);
 		final response = await client.getUri(
 			Uri.https(baseUrl, '/_/search/${{
 				'text': query.query,

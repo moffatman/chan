@@ -955,7 +955,7 @@ class ChanTabs extends ChangeNotifier {
 		int? withInitialPostId,
 		String? withInitialSearch,
 		bool keepTabPopupOpen = false,
-		String? initiallyUseArchive
+		String? initiallyForceArchive
 	}) async {
 		final pos = atPosition ?? Persistence.tabs.length;
 		final thread = withThread ?? (withThreadId == null ? null : ThreadIdentifier(withBoard!, withThreadId));
@@ -970,8 +970,8 @@ class ChanTabs extends ChangeNotifier {
 		if (thread != null && withInitialPostId != null) {
 			tab.initialPostId[thread] = withInitialPostId;
 		}
-		if (thread != null && initiallyUseArchive != null) {
-			tab.initiallyUseArchive[thread] = initiallyUseArchive;
+		if (thread != null && initiallyForceArchive != null) {
+			tab.initiallyForceArchive[thread] = initiallyForceArchive;
 		}
 		insertInitializedTab(pos, tab,
 			keepTabPopupOpen: keepTabPopupOpen,
@@ -1210,7 +1210,7 @@ class ChanTabs extends ChangeNotifier {
 		required int? threadId,
 		int? postId,
 		required bool openNewTabIfNeeded,
-		String? initiallyUseArchive,
+		String? initiallyForceArchive,
 		bool showAnimationsForward = true
 	}) async {
 		if (threadId != null) {
@@ -1227,6 +1227,9 @@ class ChanTabs extends ChangeNotifier {
 				if (catalogTab != null) {
 					tab = catalogTab;
 					catalogTab.thread = ThreadIdentifier(board, threadId);
+					if (initiallyForceArchive != null) {
+						catalogTab.initiallyForceArchive[catalogTab.thread!] = initiallyForceArchive;
+					}
 					if (postId != null) {
 						catalogTab.initialPostId[ThreadIdentifier(board, threadId)] = postId;
 					}
@@ -1240,12 +1243,16 @@ class ChanTabs extends ChangeNotifier {
 				withBoard: board,
 				withThreadId: threadId,
 				withInitialPostId: postId,
-				initiallyUseArchive: initiallyUseArchive
+				initiallyForceArchive: initiallyForceArchive
 			);
 		}
 		if (tab != null) {
 			mainTabIndex = 0;
 			browseTabIndex = Persistence.tabs.indexOf(tab);
+			if (tabAlreadyExisted && threadId != null && initiallyForceArchive != null) {
+				tab.initiallyForceArchive[ThreadIdentifier(board, threadId)] = initiallyForceArchive;
+				await tab.threadPageState?.loadFromArchive(initiallyForceArchive);
+			}
 			if (tabAlreadyExisted && threadId != null && postId != null) {
 				tab.initialPostId[ThreadIdentifier(board, threadId)] = postId;
 				tab.threadPageState?.scrollToPost(postId);
@@ -1388,7 +1395,7 @@ class ChanTabs extends ChangeNotifier {
 	}
 
 	void _onNotificationTapped(Imageboard imageboard, BoardThreadOrPostIdentifier notification, {
-		String? initiallyUseArchive,
+		String? initiallyForceArchive,
 		bool showAnimationsForward = true
 	}) => _initializer.holdForFunction(() async {
 		// Close any gallery or other popup
@@ -1446,7 +1453,7 @@ class ChanTabs extends ChangeNotifier {
 			threadId: notification.threadId,
 			postId: notification.postId,
 			openNewTabIfNeeded: false,
-			initiallyUseArchive: initiallyUseArchive,
+			initiallyForceArchive: initiallyForceArchive,
 			showAnimationsForward: showAnimationsForward
 		)) {
 			final thread = notification.threadIdentifier;
@@ -1458,7 +1465,7 @@ class ChanTabs extends ChangeNotifier {
 					threadId: notification.threadId,
 					postId: notification.postId,
 					openNewTabIfNeeded: true,
-					initiallyUseArchive: initiallyUseArchive,
+					initiallyForceArchive: initiallyForceArchive,
 					showAnimationsForward: showAnimationsForward
 				);
 			}
@@ -1649,7 +1656,7 @@ class ChanTabs extends ChangeNotifier {
 					}, cancellable: true);
 				}
 				if (dest != null) {
-					_onNotificationTapped(dest.$1, dest.$2, initiallyUseArchive: dest.$3, showAnimationsForward: showAnimationsForward);
+					_onNotificationTapped(dest.$1, dest.$2, initiallyForceArchive: dest.$3, showAnimationsForward: showAnimationsForward);
 					return;
 				}
 			}

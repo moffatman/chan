@@ -400,7 +400,8 @@ class ThreadWatcher extends ChangeNotifier {
 				newThread = await site.getThreadFromArchive(
 					threadState.identifier,
 					priority: priority,
-					cancelToken: cancelToken
+					cancelToken: cancelToken,
+					isArchived: true
 				);
 			}
 			on ThreadNotFoundException {

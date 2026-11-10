@@ -4,6 +4,7 @@ import 'package:chan/models/search.dart';
 import 'package:chan/pages/picker.dart';
 import 'package:chan/services/countries.dart';
 import 'package:chan/services/md5.dart';
+import 'package:chan/services/pick_archive.dart';
 import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
@@ -351,6 +352,33 @@ class _SearchQueryEditorState extends State<SearchQueryEditor> {
 					padding: const EdgeInsets.only(top: 16),
 					alignment: Alignment.center,
 					child: Text('MD5: ${query.md5}')
+				),
+				if (imageboard case final i? when i.site.archives.length > 1 && query.boards.isNotEmpty) Container(
+					padding: const EdgeInsets.only(top: 16),
+					alignment: Alignment.center,
+					child: AdaptiveThinButton(
+						onPressed: () async {
+							widget.onPickerShow?.call();
+							final String? archiveName;
+							try {
+								archiveName = await pickArchive(context, i, query.boards, offerAny: true);
+							}
+							finally {
+								widget.onPickerHide?.call();
+							}
+							if (!mounted) return;
+							if (archiveName case final name?) {
+								setState(() {
+									query.archiveName = name.isEmpty ? null : name;
+								});
+								widget.onChanged();
+							}
+						},
+						child: Text(switch (query.archiveName) {
+							String archiveName => 'Archive: $archiveName',
+							null => 'Pick Archive'
+						})
+					)
 				),
 				if (widget.onSubmitted != null) Container(
 					padding: const EdgeInsets.only(top: 16),

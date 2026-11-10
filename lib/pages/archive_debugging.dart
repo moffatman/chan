@@ -65,8 +65,10 @@ class WrappedArchive extends ImageboardSite {
   }
 
   @override
-  Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator, required RequestPriority priority, CancelToken? cancelToken, String? archiveName}) {
-    return archive.getThread(thread, priority: priority, cancelToken: cancelToken);
+  Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {required bool? isArchived, Future<void> Function(Thread)? customValidator, required RequestPriority priority, CancelToken? cancelToken, String? archiveName}) async {
+    final result = await archive.getThread(thread, priority: priority, cancelToken: cancelToken);
+    result.isArchived = isArchived ?? result.isArchived;
+    return result;
   }
 
   @override

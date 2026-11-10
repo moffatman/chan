@@ -1134,7 +1134,7 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 					child: ThreadPage(
 						thread: ThreadIdentifier(board, actualThreadId),
 						initialPostId: postId,
-						initiallyUseArchive: threadId == null ? '' : null,
+						initiallyForceArchive: threadId == null ? '' : null,
 						boardSemanticId: -1
 					)
 				)

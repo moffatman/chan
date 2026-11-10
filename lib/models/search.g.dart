@@ -187,6 +187,19 @@ class ImageboardArchiveSearchQueryFields {
     fieldName: 'countryCode',
     merger: PrimitiveMerger(),
   );
+  static String? getArchiveName(ImageboardArchiveSearchQuery x) =>
+      x.archiveName;
+  static void setArchiveName(ImageboardArchiveSearchQuery x, String? v) =>
+      x.archiveName = v;
+  static const int kArchiveName = 15;
+  static const archiveName =
+      HiveFieldAdapter<ImageboardArchiveSearchQuery, String?>(
+    getter: getArchiveName,
+    setter: setArchiveName,
+    fieldNumber: kArchiveName,
+    fieldName: 'archiveName',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class ImageboardArchiveSearchQueryAdapter
@@ -216,13 +229,14 @@ class ImageboardArchiveSearchQueryAdapter
     11: ImageboardArchiveSearchQueryFields.subject,
     12: ImageboardArchiveSearchQueryFields.filename,
     13: ImageboardArchiveSearchQueryFields.oldestFirst,
-    14: ImageboardArchiveSearchQueryFields.countryCode
+    14: ImageboardArchiveSearchQueryFields.countryCode,
+    15: ImageboardArchiveSearchQueryFields.archiveName
   };
 
   @override
   ImageboardArchiveSearchQuery read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final List<dynamic> fields = List.filled(15, null);
+    final List<dynamic> fields = List.filled(16, null);
     fields[7] = PostDeletionStatusFilter.none;
     fields[13] = false;
     for (int i = 0; i < numOfFields; i++) {
@@ -248,13 +262,14 @@ class ImageboardArchiveSearchQueryAdapter
       filename: fields[12] as String?,
       oldestFirst: fields[13] as bool,
       countryCode: fields[14] as String?,
+      archiveName: fields[15] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, ImageboardArchiveSearchQuery obj) {
     writer
-      ..writeByte(15)
+      ..writeByte(16)
       ..writeByte(0)
       ..write(obj.query)
       ..writeByte(1)
@@ -284,7 +299,9 @@ class ImageboardArchiveSearchQueryAdapter
       ..writeByte(13)
       ..write(obj.oldestFirst)
       ..writeByte(14)
-      ..write(obj.countryCode);
+      ..write(obj.countryCode)
+      ..writeByte(15)
+      ..write(obj.archiveName);
   }
 
   @override

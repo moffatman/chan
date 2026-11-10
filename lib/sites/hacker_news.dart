@@ -602,7 +602,7 @@ class SiteHackerNews extends ImageboardSite {
 	bool get hasSharedIdSpace => true;
 
 	@override
-	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator, required RequestPriority priority, CancelToken? cancelToken, String? archiveName}) => getThread(thread, priority: priority, cancelToken: cancelToken);
+	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {required bool? isArchived, Future<void> Function(Thread)? customValidator, required RequestPriority priority, CancelToken? cancelToken, String? archiveName}) => getThread(thread, priority: priority, cancelToken: cancelToken);
 
 	@override
 	List<CatalogVariantGroup> get catalogVariantGroups => const [

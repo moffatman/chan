@@ -562,7 +562,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			final archivedThread = await site.getThreadFromArchive(ThreadIdentifier(
 				attachment.board,
 				attachment.threadId!
-			), customValidator: (thread) async {
+			), isArchived: true, customValidator: (thread) async {
 				final newAttachment = thread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.id == attachment.id)
 					?? thread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.filename == attachment.filename && a.id.contains(attachment.id));
 				if (newAttachment == null) {

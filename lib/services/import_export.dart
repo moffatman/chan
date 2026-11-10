@@ -510,8 +510,7 @@ Future<List<ImportLog>> import(File archive) async {
 				PersistentThreadStateFields.lastSeenPostId.fieldName,
 				PersistentThreadStateFields.lastOpenedTime.fieldName,
 				PersistentThreadStateFields.firstVisiblePostId.fieldName,
-				PersistentThreadStateFields.firstVisiblePostAlignment.fieldName,
-				PersistentThreadStateFields.useArchive.fieldName
+				PersistentThreadStateFields.firstVisiblePostAlignment.fieldName
 			]
 		);
 		await hiveImportLazyMap<Thread>(

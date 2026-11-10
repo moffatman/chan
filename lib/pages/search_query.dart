@@ -59,7 +59,10 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 		result = const AsyncSnapshot.waiting();
 		setState(() {});
 		try {
-			final siteToUse = result.data?.archive ?? ImageboardRegistry.instance.getImageboard(widget.query.imageboardKey)!.site;
+			final site = ImageboardRegistry.instance.getImageboard(widget.query.imageboardKey)!.site;
+			final selectedArchive = site.enabledArchives.tryFirstWhere((a) => a.name == widget.query.archiveName);
+			final previousArchive = [site, ...site.enabledArchives].tryFirstWhere((a) => identical(a, lastResult?.archive));
+			final siteToUse = selectedArchive ?? previousArchive ?? site;
 			final newResult = await siteToUse.search(widget.query, page: page ?? 1, lastResult: lastResult, priority: RequestPriority.interactive);
 			result = AsyncSnapshot.withData(ConnectionState.done, newResult);
 			page = result.data?.page;
@@ -468,7 +471,7 @@ openSearch({
 								child: ThreadPage(
 									thread: result.result.thread,
 									initialPostId: result.result.postId,
-									initiallyUseArchive: result.fromArchive,
+									initiallyHintArchive: result.fromArchive,
 									initialSearch: result.threadSearch,
 									boardSemanticId: -1
 								)

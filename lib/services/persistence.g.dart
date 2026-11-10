@@ -134,15 +134,17 @@ class PersistentThreadStateFields {
     fieldName: '_deprecatedThread',
     merger: NullableMerger(AdaptedMerger(ThreadAdapter.kTypeId)),
   );
-  static bool getUseArchive(PersistentThreadState x) => x.useArchive;
-  static void setUseArchive(PersistentThreadState x, bool v) =>
-      x.useArchive = v;
-  static const int kUseArchive = 5;
-  static const useArchive = HiveFieldAdapter<PersistentThreadState, bool>(
-    getter: getUseArchive,
-    setter: setUseArchive,
-    fieldNumber: kUseArchive,
-    fieldName: 'useArchive',
+  static bool getDeprecatedUseArchive(PersistentThreadState x) =>
+      x.deprecatedUseArchive;
+  static void setDeprecatedUseArchive(PersistentThreadState x, bool v) =>
+      x.deprecatedUseArchive = v;
+  static const int kDeprecatedUseArchive = 5;
+  static const deprecatedUseArchive =
+      HiveFieldAdapter<PersistentThreadState, bool>(
+    getter: getDeprecatedUseArchive,
+    setter: setDeprecatedUseArchive,
+    fieldNumber: kDeprecatedUseArchive,
+    fieldName: 'deprecatedUseArchive',
     merger: PrimitiveMerger(),
   );
   static List<int> getPostsMarkedAsYou(PersistentThreadState x) =>
@@ -495,7 +497,7 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
     6: PersistentThreadStateFields.savedTime,
     3: PersistentThreadStateFields.receipts,
     4: PersistentThreadStateFields._deprecatedThread,
-    5: PersistentThreadStateFields.useArchive,
+    5: PersistentThreadStateFields.deprecatedUseArchive,
     7: PersistentThreadStateFields.postsMarkedAsYou,
     8: PersistentThreadStateFields.hiddenPostIds,
     9: PersistentThreadStateFields.deprecatedDraftReply,
@@ -569,7 +571,7 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       ..savedTime = fields[6] as DateTime?
       ..receipts = (fields[3] as List).cast<PostReceipt>()
       .._deprecatedThread = fields[4] as Thread?
-      ..useArchive = fields[5] as bool
+      ..deprecatedUseArchive = fields[5] as bool
       ..postsMarkedAsYou = (fields[7] as List).cast<int>()
       ..hiddenPostIds = (fields[8] as List).cast<int>()
       ..deprecatedDraftReply = fields[9] as String?
@@ -607,7 +609,7 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       ..writeByte(4)
       ..write(obj._deprecatedThread)
       ..writeByte(5)
-      ..write(obj.useArchive)
+      ..write(obj.deprecatedUseArchive)
       ..writeByte(7)
       ..write(obj.postsMarkedAsYou)
       ..writeByte(8)

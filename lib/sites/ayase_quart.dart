@@ -290,11 +290,7 @@ class AyaseQuartArchive extends ImageboardSiteArchive {
 		if (query.countryCode != null) {
 			throw UnsupportedError('AyaseQuart does not support searching by country');
 		}
-		final knownBoards = await getBoards(priority: RequestPriority.interactive);
-		final unknownBoards = query.boards.where((b) => !knownBoards.any((kb) => kb.name == b));
-		if (unknownBoards.isNotEmpty) {
-			throw BoardNotFoundException(this, unknownBoards.first);
-		}
+		await checkBoards(query.boards, priority: priority, cancelToken: cancelToken);
 		return _search({
 			'boards': query.boards.join(','),
 			'hits_per_page': '50',

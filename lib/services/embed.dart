@@ -242,7 +242,7 @@ Future<EmbedData?> loadEmbedData(String url, {
 			on ThreadNotFoundException {
 				// Maybe dead?
 			}
-			thread ??= await target.$1.site.getThreadFromArchive(target.$2.threadIdentifier!, priority: RequestPriority.lowest, archiveName: target.$3);
+			thread ??= await target.$1.site.getThreadFromArchive(target.$2.threadIdentifier!, isArchived: true, priority: RequestPriority.lowest, archiveName: target.$3);
 			final post = thread.posts_.tryFirstWhere((p) => p.id == target.$2.postId) ?? thread.posts_.first;
 			if (post.id == post.threadId) {
 				return EmbedData(

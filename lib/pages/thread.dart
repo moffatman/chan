@@ -5,7 +5,6 @@ import 'dart:ui' as ui;
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/main.dart';
 import 'package:chan/models/attachment.dart';
-import 'package:chan/models/board.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/overscroll_modal.dart';
@@ -19,6 +18,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/outbox.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/pick_archive.dart';
 import 'package:chan/services/posts_image.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
@@ -140,7 +140,8 @@ enum _AttachmentCachingStatus {
 class ThreadPage extends StatefulWidget {
 	final ThreadIdentifier thread;
 	final int? initialPostId;
-	final String? initiallyUseArchive;
+	final String? initiallyForceArchive;
+	final String? initiallyHintArchive;
 	final int boardSemanticId;
 	final String? initialSearch;
 	final ValueChanged<ThreadIdentifier>? onWantChangeThread;
@@ -148,7 +149,8 @@ class ThreadPage extends StatefulWidget {
 	const ThreadPage({
 		required this.thread,
 		this.initialPostId,
-		this.initiallyUseArchive,
+		this.initiallyForceArchive,
+		this.initiallyHintArchive,
 		required this.boardSemanticId,
 		this.initialSearch,
 		this.onWantChangeThread,
@@ -218,6 +220,8 @@ class ThreadPageState extends State<ThreadPage> {
 	late final StreamSubscription<(Attachment, Object)> _cacheSubscription;
 	(Object, StackTrace)? _ensureAllTranslatedError;
 	final Set<int> _hotPostIds = {};
+	// null: live; empty: any archive; otherwise: preferred archive.
+	String? _archiveToLoad;
 
 	static const _kHighlightZero = 0.0;
 	static const _kHighlightPartial = 0.35;
@@ -328,11 +332,11 @@ class ThreadPageState extends State<ThreadPage> {
 	});
 
 	bool get useTree => persistentState.useTree ?? context.read<Persistence>().browserState.useTree ?? context.read<ImageboardSite>().useTree;
-	String? get archiveName {
+	String? get archiveNameForUrl {
 		if (persistentState.thread?.identifier == widget.thread) {
 			return persistentState.thread?.archiveName;
 		}
-		return widget.initiallyUseArchive;
+		return _archiveToLoad ?? widget.initiallyHintArchive;
 	}
 
 	/// Returns whether a load was needed
@@ -746,13 +750,15 @@ class ThreadPageState extends State<ThreadPage> {
 			Future.microtask(() => _maybeInitialAutoTranslate(thread));
 		}
 		else {
-			persistentState.ensureThreadLoaded().then((thread) {
+			final stateToLoad = persistentState;
+			stateToLoad.ensureThreadLoaded().then((thread) {
+				if (!mounted || persistentState != stateToLoad) return;
+				_archiveToLoad ??= thread?.archiveName;
 				_onThreadStateListenableUpdate();
 				_maybeInitialAutoTranslate(thread);
 			});
 		}
-		persistentState.useArchive |= widget.initiallyUseArchive != null;
-		persistentState.useArchive |= context.read<PersistentBrowserTab?>()?.initiallyUseArchive[widget.thread] != null;
+		_archiveToLoad = widget.initiallyForceArchive ?? context.read<PersistentBrowserTab?>()?.initiallyForceArchive[widget.thread] ?? persistentState.thread?.archiveName;
 		persistentState.save();
 		_maybeUpdateWatch();
 		persistentState.thread?.preinit();
@@ -880,12 +886,14 @@ class ThreadPageState extends State<ThreadPage> {
 			_weakNavigatorKey.currentState!.popAllExceptFirst();
 			persistentState.save(); // Save old state in case it had pending scroll update to save
 			persistentState = context.read<Persistence>().getThreadState(widget.thread, updateOpenedTime: true);
-			persistentState.ensureThreadLoaded().then((thread) {
+			final stateToLoad = persistentState;
+			stateToLoad.ensureThreadLoaded().then((thread) {
+				if (!mounted || persistentState != stateToLoad) return;
+				_archiveToLoad ??= thread?.archiveName;
 				_onThreadStateListenableUpdate();
 				_maybeInitialAutoTranslate(thread);
 			});
-			persistentState.useArchive |= widget.initiallyUseArchive != null;
-			persistentState.useArchive |= context.read<PersistentBrowserTab?>()?.initiallyUseArchive[widget.thread] != null;
+			_archiveToLoad = widget.initiallyForceArchive ?? context.read<PersistentBrowserTab?>()?.initiallyForceArchive[widget.thread] ?? persistentState.thread?.archiveName;
 			final oldZone = zone;
 			Future.delayed(const Duration(milliseconds: 100), () => oldZone.dispose());
 			final imageboard = context.read<Imageboard>();
@@ -909,7 +917,6 @@ class ThreadPageState extends State<ThreadPage> {
 			);
 			_updateHotPostIds();
 			_maybeUpdateWatch();
-			persistentState.save();
 			if ((persistentState.firstVisiblePostAlignment ?? 0) < 0) {
 				// Scrolled down somewhat
 				blocked = true;
@@ -926,13 +933,18 @@ class ThreadPageState extends State<ThreadPage> {
 			}
 			setState(() {});
 		}
-		else if (widget.initialPostId != oldWidget.initialPostId && widget.initialPostId != null) {
-			_ensurePostLoaded(widget.initialPostId!).then((_) async {
-				setState(() {});
-				await WidgetsBinding.instance.endOfFrame;
-				await _listController.animateTo((post) => post.id == widget.initialPostId!, orElseLast: (post) => post.id <= widget.initialPostId!, alignment: 0.0, duration: const Duration(milliseconds: 500));
-				await _glowPost(widget.initialPostId!);
-			});
+		else {
+			if (widget.initialPostId != oldWidget.initialPostId && widget.initialPostId != null) {
+				_ensurePostLoaded(widget.initialPostId!).then((_) async {
+					setState(() {});
+					await WidgetsBinding.instance.endOfFrame;
+					await _listController.animateTo((post) => post.id == widget.initialPostId!, orElseLast: (post) => post.id <= widget.initialPostId!, alignment: 0.0, duration: const Duration(milliseconds: 500));
+					await _glowPost(widget.initialPostId!);
+				});
+			}
+			if (widget.initiallyForceArchive != oldWidget.initiallyForceArchive && widget.initiallyForceArchive != null) {
+				loadFromArchive(widget.initiallyForceArchive);
+			}
 		}
 		_searching |= widget.initialSearch?.isNotEmpty ?? false;
 	}
@@ -944,7 +956,7 @@ class ThreadPageState extends State<ThreadPage> {
 		setHandoffUrl(_foreground ? context.read<ImageboardSite>().getWebUrl(
 			board: widget.thread.board,
 			threadId: widget.thread.id,
-			archiveName: archiveName
+			archiveName: archiveNameForUrl
 		) : null);
 	}
 
@@ -1102,16 +1114,18 @@ class ThreadPageState extends State<ThreadPage> {
 		}
 	}
 
+	Future<void> loadFromArchive(String? archiveToLoad) async {
+		setState(() => _archiveToLoad = archiveToLoad);
+		await _listController.blockAndUpdate();
+	}
+
 	Future<void> _switchToLive() async {
 		if (persistentState.thread?.isDeleted == true || persistentState.thread?.isArchived == true) {
 			persistentState.thread?.isDeleted = false;
 			persistentState.thread?.isArchived = false;
 			persistentState.didMutateThread();
 		}
-		persistentState.useArchive = false;
-		await persistentState.save();
-		setState(() {});
-		await _listController.blockAndUpdate();
+		await loadFromArchive(null);
 	}
 
 	Future<void> _tapWatchButton({required bool long}) async {
@@ -1325,16 +1339,14 @@ class ThreadPageState extends State<ThreadPage> {
 		final bool firstLoad = oldThread == null;
 		// The thread might switch in this interval
 		_checkForeground();
-		final Thread newThread;
-		if (tmpPersistentState.useArchive) {
+		Thread newThread;
+		if (_archiveToLoad case final requestedArchiveName?) {
 			newThread = await site.getThreadFromArchive(
 				widget.thread,
 				priority: _priority,
 				cancelToken: cancelToken,
-				archiveName:
-					tmpPersistentState.thread?.archiveName ??
-					widget.initiallyUseArchive ??
-					context.read<PersistentBrowserTab?>()?.initiallyUseArchive[widget.thread]
+				archiveName: requestedArchiveName,
+				isArchived: null
 			);
 		}
 		else {
@@ -1377,8 +1389,18 @@ class ThreadPageState extends State<ThreadPage> {
 					tmpPersistentState.thread?.isDeleted = true;
 					_listController.state?.forceRebuildId++;
 					setState(() {});
+					rethrow;
 				}
-				rethrow;
+				if (widget.initiallyHintArchive == null) {
+					rethrow;
+				}
+				newThread = await site.getThreadFromArchive(
+					widget.thread,
+					priority: _priority,
+					cancelToken: cancelToken,
+					archiveName: widget.initiallyHintArchive,
+					isArchived: true
+				);
 			}
 		}
 		if (!mounted) throw StateError('Thread page disposed');
@@ -1890,7 +1912,7 @@ class ThreadPageState extends State<ThreadPage> {
 													text: site.getWebUrl(
 														board: widget.thread.board,
 														threadId: widget.thread.id,
-														archiveName: archiveName
+														archiveName: archiveNameForUrl
 													),
 													type: "text",
 													sharePositionOrigin: _shareButtonKey.currentContext?.globalSemanticBounds,
@@ -2222,14 +2244,20 @@ class ThreadPageState extends State<ThreadPage> {
 																					_limitCounter(persistentState.thread!.currentPage!, context.read<Persistence>().getBoard(widget.thread.board).pageCount),
 																					const Spacer()
 																				],
-																				if (persistentState.thread!.isArchived || persistentState.thread!.isDeleted) ...[
+																				if (persistentState.thread!.isArchived || persistentState.thread!.isDeleted || persistentState.thread!.archiveName != null) ...[
 																					GestureDetector(
 																						behavior: HitTestBehavior.opaque,
 																						onTap: _switchToLive,
 																						child: Row(
 																							children: [
-																								Icon(persistentState.thread!.isDeleted ? CupertinoIcons.trash : CupertinoIcons.archivebox, applyTextScaling: true),
-																								const SizedBox(width: 8),
+																								if (persistentState.thread!.isDeleted) const Padding(
+																									padding: EdgeInsets.only(right: 8),
+																									child: Icon(CupertinoIcons.trash, applyTextScaling: true)
+																						 		)
+																								else if (persistentState.thread!.isArchived) const Padding(
+																									padding: EdgeInsets.only(right: 8),
+																									child: Icon(CupertinoIcons.archivebox, applyTextScaling: true)
+																						 		),
 																								Text(persistentState.thread!.archiveName ?? (persistentState.thread!.isDeleted ? 'Deleted' : 'Archived'))
 																							]
 																						)
@@ -2242,7 +2270,7 @@ class ThreadPageState extends State<ThreadPage> {
 																),
 																remedies: {
 																	if (site.archives.isNotEmpty) ThreadNotFoundException: ('Try archive', () async {
-																		persistentState.useArchive = true;
+																		_archiveToLoad = '';
 																		await persistentState.save();
 																	})
 																},
@@ -2526,7 +2554,9 @@ class ThreadPageState extends State<ThreadPage> {
 																		ensureAllTranslatedError: _ensureAllTranslatedError,
 																		resetEnsureAllTranslatedError: () => setState(() {
 																			_ensureAllTranslatedError = null;
-																		})
+																		}),
+																		archiveToLoad: _archiveToLoad,
+																		loadFromArchive: loadFromArchive
 																	)
 																)
 															)
@@ -2621,6 +2651,8 @@ class _ThreadPositionIndicator extends StatefulWidget {
 	final Future<void> Function(List<Post>, {required bool interactive}) ensureAllTranslated;
 	final (Object, StackTrace)? ensureAllTranslatedError;
 	final VoidCallback resetEnsureAllTranslatedError;
+	final String? archiveToLoad;
+	final ValueChanged<String?> loadFromArchive;
 	
 	const _ThreadPositionIndicator({
 		required this.persistentState,
@@ -2649,6 +2681,8 @@ class _ThreadPositionIndicator extends StatefulWidget {
 		required this.ensureAllTranslated,
 		required this.ensureAllTranslatedError,
 		required this.resetEnsureAllTranslatedError,
+		required this.archiveToLoad,
+		required this.loadFromArchive,
 		this.developerModeButtons = const [],
 		Key? key
 	}) : super(key: key);
@@ -3080,7 +3114,6 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 		final postSortingMethod = widget.persistentState.effectivePostSortingMethod;
 		final poll = widget.thread?.poll;
 		final site = context.watch<ImageboardSite>();
-		final persistence = context.watch<Persistence>();
 		return Stack(
 			alignment: widget.reversed ? Alignment.bottomLeft : Alignment.bottomRight,
 			children: [
@@ -3178,71 +3211,17 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 												if (site.archives.isEmpty) [('Archive', const Icon(CupertinoIcons.archivebox, size: 19, applyTextScaling: true), null)]
 												else [
 													if (site.archives.length > 1) ('', const Icon(CupertinoIcons.gear, size: 19, applyTextScaling: true), () async {
-														final archives = await modalLoad(context, 'Scanning archives...', (controller) async {
-															return (await Future.wait(
-																site.archives.map(
-																	(s) async {
-																		if (persistence.browserState.disabledArchiveNames.contains(s.name)) {
-																			return (s, <ImageboardBoard>[]);
-																		}
-																		return (s, await s.getBoards(priority: RequestPriority.interactive));
-																	}
-																)
-															)).tryMap((e) {
-																if (e.$2.any((b) => b.boardKey == widget.persistentState.boardKey)) {
-																	return e.$1;
-																}
-																return null;
-															}).toList();
-														});
-														if (!context.mounted) {
-															return;
-														}
-														if (archives.isEmpty) {
-															showToast(
-																context: context,
-																message: 'Board not archived',
-																icon: CupertinoIcons.exclamationmark_triangle
-															);
-															return;
-														}
-														final archive = await showAdaptiveDialog<ImageboardSiteArchive>(
-															context: context,
-															barrierDismissible: true,
-															builder: (context) => AdaptiveAlertDialog(
-																title: const Text('Select archive'),
-																actions: [
-																	for (final a in archives) AdaptiveDialogAction(
-																		onPressed: () => Navigator.pop(context, a),
-																		child: Text(a.name)
-																	),
-																	AdaptiveDialogAction(
-																		onPressed: () => Navigator.pop(context),
-																		child: const Text('Cancel')
-																	)
-																]
-															)
-														);
-														if (archive != null) {
+														final archiveName = await pickArchive(context, context.read<Imageboard>(), [widget.persistentState.boardKey.s]);
+														if (archiveName != null) {
 															// Dreadful hack
-															widget.persistentState.thread?.archiveName = archive.name;
-															widget.persistentState.useArchive = true;
-															widget.persistentState.save();
-															setState(() {});
-															widget.listController.blockAndUpdate();
+															widget.loadFromArchive(archiveName);
 														}
 													}),
-													if (widget.persistentState.useArchive) ('Live', const ImageboardIcon(applyTextScaling: true), () {
-														widget.persistentState.useArchive = false;
-														widget.persistentState.save();
-														setState(() {});
-														widget.listController.blockAndUpdate();
+													if (widget.archiveToLoad != null) ('Live', const ImageboardIcon(applyTextScaling: true), () {
+														widget.loadFromArchive(null);
 													})
 													else ('Archive', const Icon(CupertinoIcons.archivebox, size: 19, applyTextScaling: true), () async {
-														widget.persistentState.useArchive = true;
-														widget.persistentState.save();
-														setState(() {});
-														widget.listController.blockAndUpdate();
+														widget.loadFromArchive('');
 													})
 												],
 												if (widget.persistentState.autoTranslate) [('Original', const Icon(Icons.translate, size: 19, applyTextScaling: true), () {
@@ -3592,7 +3571,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 												}
 											)
 										),
-										if (!widget.blocked && (widget.persistentState.thread?.archiveName != null || (widget.persistentState.thread?.isArchived ?? widget.persistentState.useArchive))) AnimatedBuilder(
+										if (!widget.blocked && (widget.persistentState.thread?.archiveName != null || (widget.persistentState.thread?.isArchived ?? widget.archiveToLoad != null))) AnimatedBuilder(
 											animation: widget.listController.scrollController ?? const AlwaysStoppedAnimation(null),
 											builder: (context, child) => AnimatedCrossFade(
 												firstChild: child!,

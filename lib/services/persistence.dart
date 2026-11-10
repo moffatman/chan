@@ -1062,7 +1062,6 @@ class Persistence extends ChangeNotifier {
 					newTs.board = ts._deprecatedThread?.board ?? '';
 					newTs.id = ts._deprecatedThread?.id ?? 0;
 					setCachedThread(imageboardKey, newTs.board, newTs.id, ts._deprecatedThread);
-					newTs.useArchive = ts.useArchive;
 					newTs.postsMarkedAsYou = ts.postsMarkedAsYou;
 					newTs.hiddenPostIds = ts.hiddenPostIds;
 					newTs.deprecatedDraftReply = ts.deprecatedDraftReply;
@@ -1696,7 +1695,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	@HiveField(4)
 	Thread? _deprecatedThread;
 	@HiveField(5)
-	bool useArchive = false;
+	bool deprecatedUseArchive = false;
 	@HiveField(7, defaultValue: <int>[], merger: SetLikePrimitiveListMerger<int>())
 	List<int> postsMarkedAsYou = [];
 	@HiveField(8, defaultValue: <int>[], merger: SetLikePrimitiveListMerger<int>())
@@ -1994,7 +1993,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	}
 
 	@override
-	String toString() => 'PersistentThreadState(key: $boxKey, lastSeenPostId: $lastSeenPostId, receipts: $receipts, lastOpenedTime: $lastOpenedTime, savedTime: $savedTime, useArchive: $useArchive, showInHistory: $showInHistory)';
+	String toString() => 'PersistentThreadState(key: $boxKey, lastSeenPostId: $lastSeenPostId, receipts: $receipts, lastOpenedTime: $lastOpenedTime, savedTime: $savedTime, showInHistory: $showInHistory)';
 
 	@override
 	@HiveField(19, defaultValue: '')
@@ -2328,7 +2327,7 @@ class PersistentBrowserTab extends EasyListenable {
 	// Do not persist
 	final Map<ThreadIdentifier, int> initialPostId = {};
 	// Do not persist
-	final Map<ThreadIdentifier, String> initiallyUseArchive = {};
+	final Map<ThreadIdentifier, String> initiallyForceArchive = {};
 	// Do not persist
 	final tabKey = GlobalKey(debugLabel: 'PersistentBrowserTab.tabKey');
 	// Do not persist
