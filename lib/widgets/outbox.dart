@@ -95,7 +95,7 @@ class QueueEntryWidget extends StatelessWidget {
 
 	Widget _buildQueuedDeletion(QueuedDeletion entry) {
 		// Lazy but this should never really be seen
-		return Text('Deletion of ${entry.imageboardKey}/${entry.thread.board}/${entry.thread.id}/${entry.receipt.id}');
+		return Text('Deletion of ${entry.imageboardKey}/${entry.thread.board}/${entry.thread.id}/${entry.params.id}');
 	}
 
 	@override

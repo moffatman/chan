@@ -175,17 +175,17 @@ class SiteKarachan extends ImageboardSite with DecodeGenericUrlMixin {
 	String get res => 'res';
 
 	@override
-	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, CancelToken cancelToken, {required bool imageOnly}) async {
+	Future<void> deletePost(ThreadIdentifier thread, PostDeletionParams params, CaptchaSolution captchaSolution, CancelToken cancelToken, {required bool imageOnly}) async {
 		final response = await client.postUri<String>(
 			Uri.https(baseUrl, '/imgboard.php'),
 			data: FormData.fromMap({
 				'delete': 'Usuń',
 				'format': 'json',
-				'pwd': receipt.password,
+				'pwd': params.password,
 				'board': thread.board,
 				'reason': '',
 				'mode': 'usrform',
-				'del%${thread.board}%${receipt.id}': 'delete',
+				'del%${thread.board}%${params.id}': 'delete',
 				if (imageOnly) 'onlyimgdel': 'on'
 			}),
 			options: Options(

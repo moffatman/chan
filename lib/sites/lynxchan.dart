@@ -345,15 +345,15 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 	String get res => 'res';
 
 	@override
-	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, CancelToken cancelToken, {required bool imageOnly}) async {
+	Future<void> deletePost(ThreadIdentifier thread, PostDeletionParams params, CaptchaSolution captchaSolution, CancelToken cancelToken, {required bool imageOnly}) async {
 		final response = await client.postUri<Map>(Uri.https(baseUrl, '/contentActions.js', {
 			'json': '1'
 		}), data: {
 			'action': 'delete',
-			'password': receipt.password,
+			'password': params.password,
 			'confirmation': 'true',
-			if (thread.id == receipt.id)'${thread.board}-${receipt.id}': 'true'
-			else '${thread.board}-${thread.id}-${receipt.id}': 'true',
+			if (thread.id == params.id)'${thread.board}-${params.id}': 'true'
+			else '${thread.board}-${thread.id}-${params.id}': 'true',
 			if (imageOnly) 'deleteUploads': 'true'
 		}, options: Options(
 			extra: {

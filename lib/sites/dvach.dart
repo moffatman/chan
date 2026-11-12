@@ -454,4 +454,7 @@ class SiteDvachPasscodeLoginSystem extends ImageboardSiteLoginSystem {
 
 	@override
 	bool get hidden => false;
+
+	@override
+	bool get admin => false;
 }

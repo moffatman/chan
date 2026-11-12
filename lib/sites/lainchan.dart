@@ -939,15 +939,68 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 		);
 	}
 
+	Future<void> _modDeletePost(ThreadIdentifier thread, PostDeletionParams params, CancelToken cancelToken, {required bool imageOnly}) async {
+		final savedFields = loginSystem.getSavedLoginFields();
+		if (savedFields == null || !loginSystem.admin) {
+			throw Exception('Tried to delete other user\'s post without admin credentials');
+		}
+		if (!loginSystem.isLoggedIn(Persistence.currentCookies)) {
+			await loginSystem.login(savedFields, cancelToken);
+		}
+		final page = await client.get(
+			_getWebUrl(thread.board, threadId: thread.id, mod: true),
+			options: Options(
+				validateStatus: (x) => true,
+				extra: {
+					kPriority: RequestPriority.interactive
+				}
+			),
+			cancelToken: cancelToken
+		);
+		final pageDoc = parse(page.data);
+		final postElement = pageDoc.getElementById(params.id == thread.id ? 'op_${params.id}' : 'reply_${params.id}');
+		if (postElement == null) {
+			throw Exception('Could not find post to get deletion token');
+		}
+		final deleteText = imageOnly ? '[F]' : '[D]';
+		final deleteElement = postElement.querySelectorAll('.controls a').tryFirstWhere((e) => e.text == deleteText);
+		if (deleteElement == null) {
+			throw Exception('Could not find deletion button on post');
+		}
+		final location = RegExp(r"document\.location='([^']+)'").firstMatch(deleteElement.attributes['onclick'] ?? '')?.group(1);
+		if (location == null) {
+			throw Exception('Could not find deletion link on deletion button');
+		}
+		// For some reason it is GET request...
+		final response = await client.get(
+			'https://$baseUrl$basePath/mod.php$location',
+			options: Options(
+				validateStatus: (x) => true,
+				extra: {
+					kPriority: RequestPriority.interactive
+				}
+			),
+			cancelToken: cancelToken
+		);
+		final responseDoc = parse(response.data);
+		if ((responseDoc.querySelector('title')?.text, responseDoc.querySelector('h2')?.text) case ('Error', String error)) {
+			throw DeletionFailedException(error);
+		}
+	}
+
 	@override
-	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, CancelToken cancelToken, {required bool imageOnly}) async {
+	Future<void> deletePost(ThreadIdentifier thread, PostDeletionParams params, CaptchaSolution captchaSolution, CancelToken cancelToken, {required bool imageOnly}) async {
+		if (params.password.isEmpty) {
+			await _modDeletePost(thread, params, cancelToken, imageOnly: imageOnly);
+			return;
+		}
 		final response = await client.postUri(
 			Uri.https(sysUrl, '$basePath/post.php'),
 			data: FormData.fromMap({
 				'board': thread.board,
-				'delete_${receipt.id}': 'on',
+				'delete_${params.id}': 'on',
 				'delete': 'Delete',
-				'password': receipt.password,
+				'password': params.password,
 				if (imageOnly) 'file': 'on'
 			}),
 			options: Options(
@@ -1162,4 +1215,7 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
 
 	@override
 	bool get hidden => true;
+
+	@override
+	bool get admin => true;
 }

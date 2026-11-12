@@ -4,7 +4,6 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/services/captcha.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/outbox.dart';
-import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/outbox.dart';
 import 'package:chan/widgets/util.dart';
@@ -15,11 +14,11 @@ Future<void> deletePost({
 	required BuildContext context,
 	required Imageboard imageboard,
 	required ThreadIdentifier thread,
-	required PostReceipt receipt,
+	required PostDeletionParams params,
 	required bool imageOnly
 }) async {
 	try {
-		final entry = Outbox.instance.submitDeletion(imageboard.key, thread, receipt, imageOnly: imageOnly);
+		final entry = Outbox.instance.submitDeletion(imageboard.key, thread, params, imageOnly: imageOnly);
 		QueueState<QueuedDeletion, void>? lastState;
 		void listener() {
 			if (!context.mounted) {
@@ -35,7 +34,7 @@ Future<void> deletePost({
 			if (state is QueueStateDone<QueuedDeletion, void>) {
 				onSuccessfulCaptchaSubmitted(state.captchaSolution);
 				entry.removeListener(listener);
-				showToast(context: context, message: 'Deleted ${imageOnly ? 'file(s) from' : 'post'} /${thread.board}/${receipt.id}', icon: CupertinoIcons.delete);
+				showToast(context: context, message: 'Deleted ${imageOnly ? 'file(s) from' : 'post'} /${thread.board}/${params.id}', icon: CupertinoIcons.delete);
 			}
 			else if (state is QueueStateFailed<QueuedDeletion, void>) {
 				alertError(context, state.error, state.stackTrace, actions: {

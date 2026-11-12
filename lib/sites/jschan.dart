@@ -190,16 +190,16 @@ class SiteJsChan extends ImageboardSite with Http304CachingThreadMixin, Http304C
 	}
 
 	@override
-	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, CancelToken cancelToken, {required bool imageOnly}) async {
+	Future<void> deletePost(ThreadIdentifier thread, PostDeletionParams params, CaptchaSolution captchaSolution, CancelToken cancelToken, {required bool imageOnly}) async {
 		final response = await client.postUri(
 			Uri.https(baseUrl, '/forms/board/${thread.board}/actions'),
 			data: {
-				'checkedposts': receipt.id.toString(),
+				'checkedposts': params.id.toString(),
 				'hide_name': '1',
 				if (imageOnly) 'unlink_file': '1'
 				else 'delete': '1',
 				'report_reason': '',
-				'postpassword': receipt.password,
+				'postpassword': params.password,
 				if (captchaSolution is JsChanGridCaptchaSolution) 'captcha': captchaSolution.selected.toList()..sort()
 				else if (captchaSolution is JsChanTextCaptchaSolution) 'captcha': captchaSolution.text
 				else if (captchaSolution is HCaptchaSolution) 'captcha': captchaSolution.token

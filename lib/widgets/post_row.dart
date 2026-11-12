@@ -12,6 +12,7 @@ import 'package:chan/services/reverse_image_search.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/services/translation.dart';
 import 'package:chan/services/util.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/cheating_paragraph.dart';
 import 'package:chan/widgets/cupertino_inkwell.dart';
@@ -1301,7 +1302,10 @@ class PostRow extends StatelessWidget {
 						post: latestPost.identifier
 					)
 				),
-				if (receipt != null) ...[
+				if (receipt != null || switch (site.loginSystem) {
+					final loginSystem? => loginSystem.admin && loginSystem.getSavedLoginFields() != null,
+					null => false
+				}) ...[
 					if (!latestPost.attachmentDeleted && latestPost.attachments.isNotEmpty) ContextMenuAction(
 						child: Text('Delete ${latestPost.attachments.tryFirst?.type.noun}${latestPost.attachments.length > 1 ? 's' : ''}'),
 						trailingIcon: CupertinoIcons.delete,
@@ -1310,7 +1314,7 @@ class PostRow extends StatelessWidget {
 							context: context,
 							imageboard: context.read<Imageboard>(),
 							thread: latestPost.threadIdentifier,
-							receipt: receipt,
+							params: receipt ?? PostDeletionParams(id: latestPost.id, password: ''),
 							imageOnly: true
 						)
 					),
@@ -1322,7 +1326,7 @@ class PostRow extends StatelessWidget {
 							context: context,
 							imageboard: context.read<Imageboard>(),
 							thread: latestPost.threadIdentifier,
-							receipt: receipt,
+							params: receipt ?? PostDeletionParams(id: latestPost.id, password: ''),
 							imageOnly: false
 						)
 					)

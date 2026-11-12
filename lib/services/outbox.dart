@@ -657,7 +657,7 @@ class QueuedReport extends QueueEntry<QueuedReport, void> {
 class QueuedDeletion extends QueueEntry<QueuedDeletion, void> {
 	@override
 	final ThreadIdentifier thread;
-	final PostReceipt receipt;
+	final PostDeletionParams params;
 	bool _useLoginSystem;
 	@override
 	void setUseLoginSystem(bool newUseLoginSystem) => _useLoginSystem = newUseLoginSystem;
@@ -668,14 +668,14 @@ class QueuedDeletion extends QueueEntry<QueuedDeletion, void> {
 	QueuedDeletion({
 		required super.imageboardKey,
 		required this.thread,
-		required this.receipt,
+		required this.params,
 		required super.state,
 		required this.imageOnly
 	}) : _useLoginSystem = true;
 
 	@override
 	Future<QueueSubmissionResult<QueuedDeletion, void>> _submitImpl(CaptchaSolution captchaSolution, CancelToken cancelToken) async {
-		await site.deletePost(thread, receipt, captchaSolution, cancelToken, imageOnly: imageOnly);
+		await site.deletePost(thread, params, captchaSolution, cancelToken, imageOnly: imageOnly);
 		return const QueueSubmissionResult(null, null);
 	}
 
@@ -697,7 +697,7 @@ class QueuedDeletion extends QueueEntry<QueuedDeletion, void> {
 	@override
 	bool shouldReplace(QueueEntry other) {
 		if (other is QueuedDeletion) {
-			return other.imageboardKey == imageboardKey && other.thread == thread && other.receipt.id == receipt.id;
+			return other.imageboardKey == imageboardKey && other.thread == thread && other.params.id == params.id;
 		}
 		return false;
 	}
@@ -929,11 +929,11 @@ class Outbox extends ChangeNotifier {
 		return entry;
 	}
 
-	QueuedDeletion submitDeletion(String imageboardKey, ThreadIdentifier thread, PostReceipt receipt, {required bool imageOnly}) {
+	QueuedDeletion submitDeletion(String imageboardKey, ThreadIdentifier thread, PostDeletionParams params, {required bool imageOnly}) {
 		final entry = QueuedDeletion(
 			imageboardKey: imageboardKey,
 			thread: thread,
-			receipt: receipt,
+			params: params,
 			state: QueueStateNeedsCaptcha(),
 			imageOnly: imageOnly
 		);

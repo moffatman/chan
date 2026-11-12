@@ -2161,9 +2161,11 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 }
 
 @HiveType(typeId: 4)
-class PostReceipt {
+class PostReceipt implements PostDeletionParams {
+	@override
 	@HiveField(0)
 	final String password;
+	@override
 	@HiveField(1)
 	final int id;
 	@HiveField(2, defaultValue: '')

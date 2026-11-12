@@ -1765,6 +1765,19 @@ class ImageboardRedirectGateway {
 	String toString() => 'ImageboardRedirectGateway(name: $name, alwaysNeedsManualSolving: $alwaysNeedsManualSolving, autoClickSelector: $autoClickSelector)';
 }
 
+class PostDeletionParams {
+	final String password;
+	final int id;
+
+	PostDeletionParams({
+		required this.id,
+		required this.password
+	});
+
+	@override
+	String toString() => 'PostDeletionParams(id: $id, password: $password)';
+}
+
 class CacheConstraints {
 	final DateTime fetchedOnOrAfter;
 	final DateTime? dataOnOrAfter;
@@ -2292,7 +2305,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	bool get supportsWebPostingFallback => false;
 	Future<EncodedWebPost?> encodePostForWeb(DraftPost post) async => null;
 	Duration getActionCooldown(String board, ImageboardAction action, CookieJar cookies) => const Duration(seconds: 3);
-	Future<void> deletePost(ThreadIdentifier thread, PostReceipt receipt, CaptchaSolution captchaSolution, CancelToken cancelToken, {required bool imageOnly}) async {
+	Future<void> deletePost(ThreadIdentifier thread, PostDeletionParams params, CaptchaSolution captchaSolution, CancelToken cancelToken, {required bool imageOnly}) async {
 		throw UnimplementedError('Post deletion is not implemented on $name ($runtimeType)');
 	}
 
@@ -2811,6 +2824,7 @@ abstract class ImageboardSiteLoginSystem {
 	String get name;
 	bool get hidden;
 	Uri? get iconUrl => null;
+	bool get admin;
 	List<ImageboardSiteLoginField> getLoginFields();
 	Future<void> login(Map<ImageboardSiteLoginField, String> fields, CancelToken cancelToken);
 	Map<ImageboardSiteLoginField, String>? getSavedLoginFields() {
