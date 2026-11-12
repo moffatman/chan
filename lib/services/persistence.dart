@@ -255,6 +255,7 @@ class Persistence extends ChangeNotifier {
 	static const savedAttachmentsDir = 'saved_attachments';
 	static const fontsDir = 'ttf';
 	static late final DateTime appLaunchTime;
+	static DateTime lastAppUseTime = DateTime(2000);
 	static (String?, ThreadIdentifier?)? _threadIdToBumpInHistory;
 
 	static Future<Box<T>> _openBoxWithBackup<T>(String name, {
@@ -675,6 +676,12 @@ class Persistence extends ChangeNotifier {
 			if (e.value case PersistentThreadState state) {
 				_sharedThreadStateStream.add(state);
 			}
+		});
+		lastAppUseTime = sharedThreadStateBox.values.fold(appLaunchTime.subtract(const Duration(seconds: 1)), (d, s) {
+			if (s.lastOpenedTime.isBefore(d)) {
+				return s.lastOpenedTime;
+			}
+			return d;
 		});
 		_startBoxBackupTimer(sharedThreadStateBox, sharedThreadStatesBoxName);
 		_startBoxBackupTimer(sharedBoardsBox, sharedBoardsBoxName);
@@ -1401,7 +1408,7 @@ class Persistence extends ChangeNotifier {
 	}
 
 	Future<void> storeBoards(List<ImageboardBoard> newBoards) async {
-		final deadline = DateTime.now().subtract(const Duration(days: 3));
+		final deadline = lastAppUseTime.subtract(const Duration(days: 14));
 		for (final k in sharedBoardsBox.keys) {
 			if (k is! String || !k.startsWith('$imageboardKey/')) {
 				continue;
