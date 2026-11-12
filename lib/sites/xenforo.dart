@@ -1048,12 +1048,17 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 	String formatBoardNameWithoutTrailingSlash(String name) => name.beforeFirst('.');
 
 	@override
-	String formatUsername(String name) {
+	String formatUsernameShort(String name) {
 		final int lastDotPos = name.lastIndexOf('.');
 		if (lastDotPos == -1) {
 			return name;
 		}
 		return name.substring(0, lastDotPos);
+	}
+	
+	@override
+	String formatUsername(String name) {
+		return formatUsernameShort(name);
 	}
 
 	@override

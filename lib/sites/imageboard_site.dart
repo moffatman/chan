@@ -2246,6 +2246,7 @@ abstract class ImageboardSiteArchive {
 	String formatBoardNameWithoutTrailingSlash(String name) => '/$name';
 	String formatBoardLink(String name) => '>>/$name/';
 	String formatBoardSearchLink(String name, String query) => '>>>/$name/$query';
+	String formatUsernameShort(String name) => name;
 	String formatUsername(String name) => name;
 
 	@override

@@ -247,7 +247,7 @@ Future<EmbedData?> loadEmbedData(String url, {
 			if (post.id == post.threadId) {
 				return EmbedData(
 					title: thread.title,
-					provider: target.$1.site.name,
+					provider: '${target.$1.site.formatBoardName(thread.board)} - ${target.$1.site.name}',
 					author: target.$1.site.formatUsername(post.name),
 					thumbnailUrl: post.attachments.tryFirst?.thumbnailUrl ?? thread.attachments.tryFirst?.thumbnailUrl,
 					imageboardTarget: (target.$1.key, target.$2, target.$3)
@@ -260,7 +260,7 @@ Future<EmbedData?> loadEmbedData(String url, {
 			}
 			return EmbedData(
 				title: 'Reply to "$title"',
-				provider: '${target.$1.site.name} (${target.$1.site.formatBoardName(thread.board)})',
+				provider: '${target.$1.site.formatBoardName(thread.board)} - ${target.$1.site.name}',
 				author: target.$1.site.formatUsername(post.name),
 				thumbnailUrl: post.attachments.tryFirst?.thumbnailUrl ?? thread.attachments.tryFirst?.thumbnailUrl,
 				imageboardTarget: (target.$1.key, target.$2, target.$3)

@@ -1215,7 +1215,7 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 		String text = '>>$postId';
 		final linkedPost = zone.findPost(postId);
 		if (linkedPost != null && !zone.imageboard.site.explicitIds) {
-			text = '@${zone.imageboard.site.formatUsername(linkedPost.name)}';
+			text = '>>${zone.imageboard.site.formatUsername(linkedPost.name)}';
 		}
 		Color color = theme.secondaryColor;
 		if (postId == threadId) {
@@ -1451,7 +1451,7 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 	void _estimateHeight(_HeightEstimator estimator) {
 		int characters = 2 + postId.numberOfDigits;
 		if ((estimator.zone, estimator.zone?.findPost(postId)) case (final zone?, final post?) when boardKey == zone.boardKey && !zone.imageboard.site.explicitIds) {
-			characters = 1 + zone.imageboard.site.formatUsername(post.name).length;
+			characters = 2 + zone.imageboard.site.formatUsername(post.name).length;
 		}
 		if (threadId == null) {
 			// Treated like normal text
@@ -3037,7 +3037,7 @@ class PostUserLinkSpan extends PostTerminalSpan {
 	@override
 	build(context, post, zone, settings, theme, options) {
 		return TextSpan(
-			text: '/u/${zone.imageboard.site.formatUsername(username)}',
+			text: zone.imageboard.site.formatUsername(username),
 			style: options.baseTextStyle.copyWith(
 				color: options.overrideTextColor ?? theme.secondaryColor,
 				decorationColor: options.overrideTextColor ?? theme.secondaryColor,
@@ -4185,12 +4185,12 @@ TextSpan buildPostInfoRow({
 			]
 			else if (field == PostDisplayField.name) ...[
 				if (settings.showNameOnPosts && !(settings.hideDefaultNamesOnPosts && post.name == site.defaultUsername && post.trip == null)) TextSpan(
-					text: settings.filterProfanity(site.formatUsername(post.name)) + ((isYourPost && post.trip == null) ? ' (You)' : '') + (thisPostIsPostedByOP ? ' (OP)' : ''),
+					text: settings.filterProfanity(site.formatUsernameShort(post.name)) + ((isYourPost && post.trip == null) ? ' (You)' : '') + (thisPostIsPostedByOP ? ' (OP)' : ''),
 					style: TextStyle(fontWeight: FontWeight.w600, fontVariations: CommonFontVariations.w600, color: isYourPost ? theme.secondaryColor : (thisPostIsPostedByOP ? theme.secondaryColor.shiftHue(20).shiftSaturation(-0.3) : null)),
 					recognizer: (interactive && (post.name != zone.imageboard.site.defaultUsername || post.trip != null)) ? (TapGestureRecognizer(debugOwner: post)..onTap = () {
 						final postIdsToShow = zone.findThread(post.threadId)?.posts.where((p) => p.name == post.name && p.trip == post.trip).map((p) => p.id).toList() ?? [];
 						if (postIdsToShow.isEmpty) {
-							alertError(context, 'Could not find any posts with name "${site.formatUsername(post.name)}". This is likely a problem with Chance...', null);
+							alertError(context, 'Could not find any posts with name "${site.formatUsernameShort(post.name)}". This is likely a problem with Chance...', null);
 						}
 						else {
 							WeakNavigator.push(context, PostsPage(

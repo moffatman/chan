@@ -458,7 +458,7 @@ class ThreadRow extends StatelessWidget {
 				!(op.name.isEmpty && (op.trip == null || !settings.showTripOnPosts))
 			) ...[
 				TextSpan(
-					text: settings.filterProfanity(site.formatUsername(op.name)),
+					text: settings.filterProfanity(site.formatUsernameShort(op.name)),
 					style: TextStyle(
 						fontWeight: FontWeight.w600,
 						fontVariations: CommonFontVariations.w600,
