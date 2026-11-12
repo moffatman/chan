@@ -923,7 +923,7 @@ class _SavedPageState extends State<SavedPage> {
 															forceShowInHistory: true,
 															hideThumbnails: options.hideThumbnails,
 															baseOptions: PostSpanRenderOptions(
-																highlightPattern: options.queryPattern
+																highlightPatterns: options.highlightPatterns
 															),
 															dimReadThreads: watch.item.$1.zombie,
 															invertCountersIfUnread: true,
@@ -1178,7 +1178,7 @@ class _SavedPageState extends State<SavedPage> {
 													forceShowInHistory: true,
 													hideThumbnails: options.hideThumbnails,
 													baseOptions: PostSpanRenderOptions(
-														highlightPattern: options.queryPattern
+														highlightPatterns: options.highlightPatterns
 													),
 													onThumbnailLoadError: (error, stackTrace) {
 														state.imageboard?.threadWatcher.fixBrokenThread(state.identifier);
@@ -1347,7 +1347,7 @@ class _SavedPageState extends State<SavedPage> {
 											showYourPostBorder: false,
 											hideThumbnails: options.hideThumbnails,
 											baseOptions: PostSpanRenderOptions(
-												highlightPattern: options.queryPattern
+												highlightPatterns: options.highlightPatterns
 											),
 											onThumbnailLoadError: (e, st) async {
 												await item.imageboard.threadWatcher.fixBrokenThread(item.thread.identifier);
@@ -1508,7 +1508,7 @@ class _SavedPageState extends State<SavedPage> {
 												showSiteIcon: true,
 												hideThumbnails: options.hideThumbnails,
 												baseOptions: PostSpanRenderOptions(
-													highlightPattern: options.queryPattern
+													highlightPatterns: options.highlightPatterns
 												),
 												onThumbnailLoadError: (e, st) async {
 													final firstThread = threadState?.thread ?? savedPost.item.$2;

@@ -1174,7 +1174,7 @@ class BoardPageState extends State<BoardPage> {
 							);
 						},
 						baseOptions: PostSpanRenderOptions(
-							highlightPattern: options.queryPattern
+							highlightPatterns: options.highlightPatterns
 						)
 					),
 					onTap: () => _onThreadSelected(thread.identifier)

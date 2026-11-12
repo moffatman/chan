@@ -130,12 +130,13 @@ class FilterResultType {
 }
 
 class FilterResult {
-	FilterResultType type;
-	String reason;
-	FilterResult(this.type, this.reason);
+	final FilterResultType type;
+	final String reason;
+	final String? matchedText;
+	FilterResult(this.type, this.reason, {this.matchedText});
 
 	@override
-	String toString() => 'FilterResult(type: $type, reason: $reason)';
+	String toString() => 'FilterResult(type: $type, reason: $reason, matchedText: $matchedText)';
 }
 
 abstract class Filterable {
@@ -330,12 +331,18 @@ class CustomFilter implements Filter {
 		if (repliesToOP != null && item.repliedToIds.contains(item.threadId) != repliesToOP) {
 			return null;
 		}
+		String? matchedText;
 		if (pattern.pattern.isNotEmpty) {
-			if (!patternFields.any((field) => pattern.hasMatch(item.getFilterFieldText(field) ?? ''))) {
+			matchedText = patternFields.tryMapOnce((field) => pattern.firstMatch(item.getFilterFieldText(field) ?? '')?.group(0));
+			if (matchedText == null) {
 				return null;
 			}
+			if (matchedText.isEmpty) {
+				// Some weird regex use case
+				matchedText = null;
+			}
 		}
-		return FilterResult(outputType, label.isEmpty ? 'Matched "$configuration"' : '$label filter');
+		return FilterResult(outputType, label.isEmpty ? 'Matched "$configuration"' : '$label filter', matchedText: matchedText);
 	}
 
 	static final _separatorPattern = RegExp(r':|,');

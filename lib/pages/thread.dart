@@ -2315,7 +2315,7 @@ class ThreadPageState extends State<ThreadPage> {
 																			knownTreeChildCount: options.knownTreeChildCount,
 																			highlightReplyCount: settings.showHotPostsInScrollbar && !site.supportsPostUpvotes ? _hotPostIds.contains(post.id) : false,
 																			baseOptions: PostSpanRenderOptions(
-																				highlightPattern: options.queryPattern
+																				highlightPatterns: options.highlightPatterns
 																			),
 																			highlight: _shouldHighlightPost(post.id),
 																			onTap: options.queryPattern != null ? () async {

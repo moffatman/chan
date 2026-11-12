@@ -218,7 +218,7 @@ class HistoryPageState extends State<HistoryPage> {
 														showBoardName: true,
 														hideThumbnails: options.hideThumbnails,
 														baseOptions: PostSpanRenderOptions(
-															highlightPattern: options.queryPattern
+															highlightPatterns: options.highlightPatterns
 														),
 														onThumbnailTap: (initialAttachment) {
 															final attachments = _listController.items.where((item) => item.item.imageboard != null).expand((item) => item.item.thread!.attachments.map((attachment) => TaggedAttachment(

@@ -581,7 +581,10 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 						},
 						hideThumbnails: options.hideThumbnails,
 						baseOptions: PostSpanRenderOptions(
-							highlightPattern: options.queryPattern ?? (_query.isEmpty ? null : queryPattern)
+							highlightPatterns: [
+								...options.highlightPatterns,
+								if (_query.isNotEmpty) (queryPattern, Colors.orange)
+							]
 						),
 					)
 				)
@@ -704,7 +707,10 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 								showSiteIcon: ImageboardRegistry.instance.count > 1,
 								hideThumbnails: options.hideThumbnails,
 								baseOptions: PostSpanRenderOptions(
-									highlightPattern: _query.isEmpty ? null : queryPattern
+									highlightPatterns: [
+										...options.highlightPatterns,
+										if (_query.isNotEmpty) (queryPattern, Colors.orange)
+									]
 								),
 							)
 						)

@@ -1104,20 +1104,28 @@ class RefreshableListItemOptions {
 	/// Number of direct, loaded children in this occurrence of the assembled tree.
 	/// Null outside tree mode; zero when this occurrence has no children.
 	final int? knownTreeChildCount;
+	final (Pattern, Color)? highlightPattern;
 
 	const RefreshableListItemOptions({
 		this.hideThumbnails = false,
 		this.queryPattern,
 		this.inFilterFooter = false,
-		this.knownTreeChildCount
+		this.knownTreeChildCount,
+		this.highlightPattern
 	});
 
 	RefreshableListItemOptions copyWith({int? knownTreeChildCount}) => RefreshableListItemOptions(
 		hideThumbnails: hideThumbnails,
 		queryPattern: queryPattern,
 		inFilterFooter: inFilterFooter,
-		knownTreeChildCount: knownTreeChildCount ?? this.knownTreeChildCount
+		knownTreeChildCount: knownTreeChildCount ?? this.knownTreeChildCount,
+		highlightPattern: highlightPattern
 	);
+
+	List<(Pattern, Color)> get highlightPatterns => [
+		if (queryPattern case final queryPattern?) (queryPattern, Colors.yellow),
+		if (highlightPattern case final highlightPattern?) highlightPattern
+	];
 
 	@override
 	bool operator == (Object other) =>
@@ -1126,13 +1134,14 @@ class RefreshableListItemOptions {
 		other.hideThumbnails == hideThumbnails &&
 		other.queryPattern == queryPattern &&
 		other.inFilterFooter == inFilterFooter &&
-		other.knownTreeChildCount == knownTreeChildCount;
+		other.knownTreeChildCount == knownTreeChildCount &&
+		other.highlightPattern == highlightPattern;
 	
 	@override
-	int get hashCode => Object.hash(hideThumbnails, queryPattern, inFilterFooter, knownTreeChildCount);
+	int get hashCode => Object.hash(hideThumbnails, queryPattern, inFilterFooter, knownTreeChildCount, highlightPattern);
 
 	@override
-	String toString() => 'RefreshableListItemOptions(hideThumbnails: $hideThumbnails, queryPattern: $queryPattern, inFilterFooter: $inFilterFooter, knownTreeChildCount: $knownTreeChildCount)';
+	String toString() => 'RefreshableListItemOptions(hideThumbnails: $hideThumbnails, queryPattern: $queryPattern, inFilterFooter: $inFilterFooter, knownTreeChildCount: $knownTreeChildCount, highlightPattern: $highlightPattern)';
 }
 
 class RefreshableList<T extends Object> extends StatefulWidget {
@@ -3104,9 +3113,16 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					}
 					final result = widget.useFiltersFromContext && filterableAdapter != null ? filter.filter(pair.$1, pair.$2) : null;
 					if (result != null) {
-						final options = switch ((result.type.hideThumbnails, result.type.hide)) {
-							(false, false) => normalOptions,
-							(bool hideThumbnails, bool hide) => RefreshableListItemOptions(
+						final options = switch ((result.type.hideThumbnails, result.type.hide, result.type.highlight, result.matchedText)) {
+							(false, false, _, null) => normalOptions,
+							(false, false, null, _) => normalOptions,
+							(bool hideThumbnails, bool hide, HighlightColor color, String pattern) => RefreshableListItemOptions(
+								queryPattern: queryPattern,
+								hideThumbnails: hideThumbnails,
+								inFilterFooter: hide,
+								highlightPattern: (pattern, color.resolve(context))
+							),
+							(bool hideThumbnails, bool hide, _, _) => RefreshableListItemOptions(
 								queryPattern: queryPattern,
 								hideThumbnails: hideThumbnails,
 								inFilterFooter: hide

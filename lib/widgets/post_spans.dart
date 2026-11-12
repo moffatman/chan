@@ -69,7 +69,7 @@ class PostSpanRenderOptions {
 	final PointerEnterEventListener? onEnter;
 	final PointerExitEventListener? onExit;
 	final bool shrinkWrap;
-	final RegExp? highlightPattern;
+	final List<(Pattern, Color)> highlightPatterns;
 	final bool imageShareMode;
 	final bool revealYourPosts;
 	final bool hiddenWithinSpoiler;
@@ -90,7 +90,7 @@ class PostSpanRenderOptions {
 		this.onEnter,
 		this.onExit,
 		this.shrinkWrap = false,
-		this.highlightPattern,
+		this.highlightPatterns = const [],
 		this.imageShareMode = false,
 		this.revealYourPosts = true,
 		this.hiddenWithinSpoiler = false,
@@ -130,7 +130,7 @@ class PostSpanRenderOptions {
 		showRawSource: showRawSource,
 		onEnter: onEnter ?? this.onEnter,
 		onExit: onExit ?? this.onExit,
-		highlightPattern: highlightPattern,
+		highlightPatterns: highlightPatterns,
 		imageShareMode: imageShareMode,
 		revealYourPosts: revealYourPosts,
 		hiddenWithinSpoiler: hiddenWithinSpoiler ?? this.hiddenWithinSpoiler,
@@ -736,29 +736,65 @@ class PostTextSpan extends PostTerminalSpan {
 	InlineSpan build(context, post, zone, settings, theme, options) {
 		final children = <InlineSpan>[];
 		final str = settings.filterProfanity(text);
-		final highlightPattern = options.highlightPattern;
-		if (highlightPattern != null) {
-			int lastEnd = 0;
-			for (final match in highlightPattern.allMatches(str)) {
-				if (match.start != lastEnd) {
-					children.add(TextSpan(
-						text: str.substring(lastEnd, match.start),
-						recognizer: options.recognizer
-					));
+		if (options.highlightPatterns.isNotEmpty) {
+			final ranges = <(TextRange, Color)>[];
+			for (final pattern in options.highlightPatterns) {
+				for (final match in pattern.$1.allMatches(str)) {
+					ranges.add((TextRange(start: match.start, end: match.end), pattern.$2));
 				}
-				children.add(TextSpan(
-					text: match.group(0)!,
-					style: const TextStyle(
-						color: Colors.black,
-						backgroundColor: Colors.yellow
-					),
-					recognizer: options.recognizer
-				));
-				lastEnd = match.end;
 			}
-			if (lastEnd < str.length) {
+			mergeSort(ranges, compare: (a, b) {
+				return a.$1.start.compareTo(b.$1.start);
+			});
+			int start = 0;
+			final stack = <(TextRange, Color)>[];
+			TextStyle? mergeStack() {
+				if (stack.isEmpty) {
+					return null;
+				}
+				if (stack.length == 1) {
+					return TextStyle(
+						color: Colors.black,
+						backgroundColor: stack.first.$2
+					);
+				}
+				double r = 0, g = 0, b = 0;
+				for (final entry in stack) {
+					r += entry.$2.r;
+					g += entry.$2.g;
+					b += entry.$2.b;
+				}
+				return TextStyle(
+					color: Colors.black,
+					backgroundColor: Color.from(
+						alpha: 1,
+						red: r / stack.length,
+						green: g / stack.length,
+						blue: b / stack.length
+					)
+				);
+			}
+			for (int i = 0; i < text.length; i++) {
+				if (ranges.tryFirst?.$1.start == i || stack.any((r) => r.$1.end == i)) {
+					if (start != i) {
+						// Cut off previous stack
+						children.add(TextSpan(
+							text: TextRange(start: start, end: i).textInside(text),
+							style: mergeStack(),
+							recognizer: options.recognizer
+						));
+						start = i;
+					}
+					stack.addAll(ranges.where((r) => r.$1.start == i));
+					ranges.removeWhere((r) => r.$1.start == i);
+					stack.removeWhere((r) => r.$1.end == i);
+				}
+			}
+			if (start < text.length) {
+				// Add final range
 				children.add(TextSpan(
-					text: str.substring(lastEnd),
+					text: TextRange(start: start, end: text.length).textInside(text),
+					style: mergeStack(),
 					recognizer: options.recognizer
 				));
 			}
@@ -4069,7 +4105,7 @@ TextSpan buildPostInfoRow({
 	bool showPostNumber = true,
 	bool forceAbsoluteTime = false,
 	ValueChanged<TaggedAttachment>? propagatedOnThumbnailTap,
-	RegExp? highlightPattern
+	List<(Pattern, Color)> highlightPatterns = const []
 }) {
 	final site = zone.imageboard.site;
 	final thread = zone.findThread(post.threadId);
@@ -4126,7 +4162,7 @@ TextSpan buildPostInfoRow({
 			'${(zone.translatedTitle(post.threadId)?.data ?? thread?.title)}\n',
 		).build(context, post, zone, settings, theme, PostSpanRenderOptions(
 			baseTextStyle: TextStyle(fontWeight: FontWeight.w600, fontVariations: CommonFontVariations.w600, color: theme.titleColor, fontSize: 17),
-			highlightPattern: highlightPattern
+			highlightPatterns: highlightPatterns
 		)),
 		for (final field in settings.postDisplayFieldOrder)
 			if (thread != null && showPostNumber && field == PostDisplayField.postNumber && settings.showPostNumberOnPosts && site.explicitIds) TextSpan(

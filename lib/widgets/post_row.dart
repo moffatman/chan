@@ -684,7 +684,7 @@ class PostRow extends StatelessWidget {
 																			forceAbsoluteTime: forceAbsoluteTime,
 																			propagatedOnThumbnailTap: baseOptions?.propagateOnThumbnailTap == true ? onThumbnailTap : null,
 																			interactive: allowTappingLinks,
-																			highlightPattern: baseOptions?.highlightPattern
+																			highlightPatterns: baseOptions?.highlightPatterns ?? []
 																		),
 																		if (mouseSettings.supportMouse) ...replyIds.map((id) => PostQuoteLinkSpan(
 																			board: latestPost.board,

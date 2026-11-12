@@ -296,7 +296,10 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 															fromArchive: result.data!.archive.isArchive ? result.data!.archive.name : null
 														)),
 														baseOptions: PostSpanRenderOptions(
-															highlightPattern: widget.query.query.isEmpty ? null : queryPattern
+															highlightPatterns: [
+																...options.highlightPatterns,
+																if (widget.query.query.isNotEmpty) (queryPattern, Colors.orange)
+															]
 														),
 													);
 												}
@@ -324,7 +327,10 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 												dimReadThreads: true,
 												showLastReplies: true,
 												baseOptions: PostSpanRenderOptions(
-													highlightPattern: widget.query.query.isEmpty ? null : queryPattern
+													highlightPatterns: [
+														...options.highlightPatterns,
+														if (widget.query.query.isNotEmpty) (queryPattern, Colors.orange)
+													]
 												),
 											)
 										);
@@ -420,7 +426,10 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 												AdaptiveFilledButton(
 													onPressed: () async {
 														final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
-															builder: (ctx) => const BoardSwitcherPage()
+															builder: (ctx) => BoardSwitcherPage(
+																initialImageboardKey: widget.query.imageboardKey,
+																initialBoardName: widget.query.boards.trySingle,
+															)
 														));
 														if (newBoard != null) {
 															widget.query.imageboardKey = newBoard.imageboard.key;
