@@ -427,8 +427,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 													onPressed: () async {
 														final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
 															builder: (ctx) => BoardSwitcherPage(
-																initialImageboardKey: widget.query.imageboardKey,
-																initialBoardName: widget.query.boards.trySingle,
+																initialImageboardKey: widget.query.imageboardKey
 															)
 														));
 														if (newBoard != null) {
