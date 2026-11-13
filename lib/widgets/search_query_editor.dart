@@ -100,6 +100,16 @@ class _SearchQueryEditorState extends State<SearchQueryEditor> {
 		}
 	}
 
+	Future<T> _wrapPicker<T>(Future<T> future) async {
+		try {
+			widget.onPickerShow?.call();
+			return await future;
+		}
+		finally {
+			widget.onPickerHide?.call();
+		}
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		final query = widget.query;
@@ -146,9 +156,8 @@ class _SearchQueryEditorState extends State<SearchQueryEditor> {
 								query.mediaFilter = newValue.value!;
 							}
 							else {
-								widget.onPickerShow?.call();
 								final controller = TextEditingController(text: query.md5);
-								final md5Str = await showAdaptiveModalPopup<String>(
+								final md5Str = await _wrapPicker(showAdaptiveModalPopup<String>(
 									context: context,
 									builder: (context) => AdaptiveAlertDialog(
 										title: const Text('Search by MD5'),
@@ -179,11 +188,11 @@ class _SearchQueryEditorState extends State<SearchQueryEditor> {
 											)
 										]
 									)
-								);
+								));
 								controller.dispose();
-								widget.onPickerHide?.call();
 								if (md5Str == null) {
 									// Cancelled
+									return;
 								}
 								else {
 									query.md5 = md5Str.nonEmptyOrNull;
@@ -226,14 +235,16 @@ class _SearchQueryEditorState extends State<SearchQueryEditor> {
 										textAlign: TextAlign.center
 									),
 									onPressed: () async {
-										widget.onPickerShow?.call();
-										final newDate = await pickDate(
+										final newDate = await _wrapPicker(pickDate(
 											context: context,
 											initialDate: query.startDate
-										);
-										widget.onPickerHide?.call();
-										query.startDate = newDate;
-										widget.onChanged();
+										));
+										if (newDate != query.startDate) {
+											setState(() {
+												query.startDate = newDate;
+											});
+											widget.onChanged();
+										}
 									}
 								)
 							),
@@ -246,14 +257,16 @@ class _SearchQueryEditorState extends State<SearchQueryEditor> {
 										textAlign: TextAlign.center
 									),
 									onPressed: () async {
-										widget.onPickerShow?.call();
-										final newDate = await pickDate(
+										final newDate = await _wrapPicker(pickDate(
 											context: context,
 											initialDate: query.endDate
-										);
-										widget.onPickerHide?.call();
-										query.endDate = newDate;
-										widget.onChanged();
+										));
+										if (newDate != query.endDate) {
+											setState(() {
+												query.endDate = newDate;
+											});
+											widget.onChanged();
+										}
 									}
 								)
 							)
@@ -313,7 +326,12 @@ class _SearchQueryEditorState extends State<SearchQueryEditor> {
 										const SizedBox(height: 4),
 										AdaptiveTextField(
 											controller: field.controller,
-											onChanged: field.cb
+											onChanged: (s) {
+												setState(() {
+													field.cb(s);
+												});
+												widget.onChanged();
+											}
 										)
 									]
 								)
@@ -327,17 +345,20 @@ class _SearchQueryEditorState extends State<SearchQueryEditor> {
 					alignment: Alignment.center,
 					child: AdaptiveThinButton(
 						onPressed: () async {
-							final picked = await pick<CountryFlag?>(
+							final picked = await _wrapPicker(pick<CountryFlag?>(
 								context: context,
 								items: [null, ...kCountries.values],
 								getName: (country) => country?.name ?? 'none',
 								getCode: (country) => country?.code ?? 'none',
 								itemBuilder: (country) => Text(country == null ? '🏳️ None' : '${country.emoji} ${country.name}'),
 								selectedItem: kCountries[query.countryCode]
-							);
-							setState(() {
-								query.countryCode = picked?.code;
-							});
+							));
+							if (picked?.code != query.countryCode) {
+								setState(() {
+									query.countryCode = picked?.code;
+								});
+								widget.onChanged();
+							}
 						},
 						child: Text(switch (query.countryCode) {
 							String countryCode => switch (kCountries[countryCode]) {
@@ -358,18 +379,10 @@ class _SearchQueryEditorState extends State<SearchQueryEditor> {
 					alignment: Alignment.center,
 					child: AdaptiveThinButton(
 						onPressed: () async {
-							widget.onPickerShow?.call();
-							final String? archiveName;
-							try {
-								archiveName = await pickArchive(context, i, query.boards, offerAny: true);
-							}
-							finally {
-								widget.onPickerHide?.call();
-							}
-							if (!mounted) return;
-							if (archiveName case final name?) {
+							final archiveName = await _wrapPicker(pickArchive(context, i, query.boards, offerAny: true));
+							if (archiveName != null) {
 								setState(() {
-									query.archiveName = name.isEmpty ? null : name;
+									query.archiveName = archiveName.isEmpty ? null : archiveName;
 								});
 								widget.onChanged();
 							}
