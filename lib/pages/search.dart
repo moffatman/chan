@@ -736,6 +736,7 @@ class _RawSearchQueryFilterTag extends StatelessWidget {
 					child: field
 				),
 				if (value case final value?) SegmentedWidgetSegment(
+					flexible: true,
 					color: ChanceTheme.primaryColorOf(context).withValues(alpha: invert ? 0.15 : 0.3),
 					child: value
 				)
