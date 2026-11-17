@@ -1020,6 +1020,9 @@ class ChanTabs extends ChangeNotifier {
 	}
 
 	void closeBrowseTab(int browseIndex) {
+		if (Persistence.tabs.length == 1) {
+			throw StateError('Tried to close last tab');
+		}
 		final removed = Persistence.tabs.removeAt(browseIndex);
 		removed.removeListener(_onTabUpdate);
 		browseCountListenable = Listenable.merge([activeBrowserTab, ...Persistence.tabs.map((x) => x.unseen)]);
@@ -2004,13 +2007,21 @@ class _ChanHomePageState extends State<ChanHomePage> {
 														thread: thread,
 														initialPostId: _tabs._devFakeTab.initialPostId[thread],
 														boardSemanticId: -1,
-													), (_) {}),
+													), (_) {}, (builder, settings) => adaptivePageRoute(
+														builder: builder,
+														settings: settings,
+														showAnimationsForward: false
+													)),
 											(_, String board) => ((context) =>
 													BoardPage(
 														initialBoard: devImageboard!.persistence.getBoard(board),
 														allowChangingBoard: false,
 														semanticId: -1
-													), (_) {}),
+													), (_) {}, (builder, settings) => adaptivePageRoute(
+														builder: builder,
+														settings: settings,
+														showAnimationsForward: false
+													)),
 											_ => null
 										},
 									)

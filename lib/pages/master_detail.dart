@@ -81,6 +81,7 @@ class MasterDetailPage<T> extends StatelessWidget {
 	final Widget Function(BuildContext context, bool Function(BuildContext, T) isSelected, ValueChanged<T?> valueSetter) masterBuilder;
 	final BuiltDetailPane Function(T? selectedValue, ValueChanged<T?> valueSetter, bool poppedOut) detailBuilder;
 	final T? initialValue;
+	final InitialNavigatorRoute? Function()? buildInitialMasterAboveRoot;
 	final ValueChanged<T?>? onValueChanged;
 	final GlobalKey<MultiMasterDetailPage1State>? multiMasterDetailPageKey;
 	const MasterDetailPage({
@@ -88,6 +89,7 @@ class MasterDetailPage<T> extends StatelessWidget {
 		required this.masterBuilder,
 		required this.detailBuilder,
 		this.initialValue,
+		this.buildInitialMasterAboveRoot,
 		this.onValueChanged,
 		this.multiMasterDetailPageKey,
 		Key? key
@@ -102,6 +104,7 @@ class MasterDetailPage<T> extends StatelessWidget {
 				masterBuilder: masterBuilder,
 				detailBuilder: detailBuilder,
 				initialValue: initialValue,
+				buildInitialMasterAboveRoot: buildInitialMasterAboveRoot,
 				onValueChanged: onValueChanged
 			)
 		);
@@ -118,6 +121,7 @@ class MultiMasterPane<T> {
 	final ValueChanged<T?>? onValueChanged;
 	int _automatedPopStack = 0;
 	final bool useRootNavigator;
+	final InitialNavigatorRoute? Function()? buildInitialMasterAboveRoot;
 
 	MultiMasterPane({
 		required this.masterBuilder,
@@ -127,6 +131,7 @@ class MultiMasterPane<T> {
 		this.icon,
 		T? initialValue,
 		this.useRootNavigator = false,
+		this.buildInitialMasterAboveRoot,
 		this.onValueChanged
 	}) : currentValue = ValueNotifier<T?>(initialValue);
 
@@ -322,7 +327,9 @@ abstract class _MultiMasterDetailPageState<S extends _MultiMasterDetailPage> ext
 			// Hack to peek at top route
 			// Need to pop with value=false so can't just use popUntil
 			masterKey.currentState?.popUntil((route) {
-				continuePopping = route.settings != dontAutoPopSettings;
+				final isInitialMaster = route.settings.name == PrimaryScrollControllerInjectingNavigatorState.kInitialAboveRoot &&
+					panes[selectedPane].buildInitialMasterAboveRoot?.call() != null;
+				continuePopping = route.settings != dontAutoPopSettings && !isInitialMaster;
 				if (continuePopping) {
 					panes[selectedPane]._automatedPopStack++;
 					masterKey.currentState?.pop();
@@ -368,11 +375,13 @@ abstract class _MultiMasterDetailPageState<S extends _MultiMasterDetailPage> ext
 		}
 	}
 
-	(WidgetBuilder, ValueChanged<dynamic>)? _buildMasterInitialAboveRoot() {
+	InitialNavigatorRoute? _buildMasterInitialAboveRoot() {
+		final pane = panes[_tabController.index];
+		final initialMaster = pane.buildInitialMasterAboveRoot?.call();
+		if (initialMaster != null) return initialMaster;
 		if (!onePane) {
 			return null;
 		}
-		final pane = panes[_tabController.index];
 		if (pane.useRootNavigator) {
 			return null;
 		}
@@ -381,7 +390,15 @@ abstract class _MultiMasterDetailPageState<S extends _MultiMasterDetailPage> ext
 			return null;
 		}
 		final built = pane.buildDetail(() => _onNewValue(pane, showAnimationsForward: false));
-		return ((context) => built, (value) => _onPushReturn(pane, value));
+		return (
+			(context) => built,
+			(value) => _onPushReturn(pane, value),
+			(builder, settings) => adaptivePageRoute(
+				builder: builder,
+				settings: settings,
+				showAnimationsForward: false
+			)
+		);
 	}
 
 	@override

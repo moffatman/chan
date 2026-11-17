@@ -72,18 +72,24 @@ class _MyPopListener extends PopEntry<dynamic> {
 	ValueListenable<bool> get canPopNotifier => const StoppedValueListenable(true);
 	@override
 	void onPopInvoked(bool didPop) {
-		onPop(null);
+		if (didPop) onPop(null);
 	}
 	@override
 	void onPopInvokedWithResult(bool didPop, dynamic result) {
-		onPop(result);
+		if (didPop) onPop(result);
 	}
 }
+
+typedef InitialNavigatorRoute = (
+	WidgetBuilder builder,
+	ValueChanged<dynamic> onPop,
+	PageRoute Function(WidgetBuilder builder, RouteSettings settings) routeBuilder
+);
 
 class PrimaryScrollControllerInjectingNavigator extends StatefulWidget {
 	final List<NavigatorObserver> observers;
 	final WidgetBuilder buildRoot;
-	final (WidgetBuilder builder, ValueChanged<dynamic> onPop)? buildInitialAboveRoot;
+	final InitialNavigatorRoute? buildInitialAboveRoot;
 	final GlobalKey<NavigatorState> navigatorKey;
 	const PrimaryScrollControllerInjectingNavigator({
 		this.observers = const [],
@@ -130,10 +136,9 @@ class PrimaryScrollControllerInjectingNavigatorState extends State<PrimaryScroll
 		key: widget.navigatorKey,
 		onGenerateRoute: (settings) {
 			if (widget.buildInitialAboveRoot case final x? when settings.name == kInitialAboveRoot) {
-				return adaptivePageRoute(
-					settings: settings,
-					builder: (context) => _injectController(context, x.$1),
-					showAnimationsForward: false
+				return x.$3(
+					(context) => _injectController(context, x.$1),
+					settings
 				)..registerPopEntry(_MyPopListener(x.$2));
 			}
 			return adaptivePageRoute(
