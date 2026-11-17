@@ -395,7 +395,7 @@ class BoardPageState extends State<BoardPage> {
 				_loadCompleter = Completer<void>()
 					..future.then((_) async {
 						try {
-							await _listController.animateTo((t) => t.identifier == selectedThread, alignment: 1.0);
+							await _listController.animateTo((t) => t.identifier == selectedThread, alignment: 0.5);
 						}
 						on ItemNotFoundException {
 							// Ignore, the thread must not be in catalog
