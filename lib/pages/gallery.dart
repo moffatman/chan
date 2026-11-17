@@ -9,6 +9,7 @@ import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/pages/posts.dart';
+import 'package:chan/services/apple.dart';
 import 'package:chan/services/audio.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/launch_url_externally.dart';
@@ -899,7 +900,11 @@ class _GalleryPageState extends State<GalleryPage> {
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<Settings>();
-		final layoutInsets = MediaQuery.paddingOf(context);
+		final duo = context.watch<DuoLayout?>();
+		final layoutInsets = MediaQuery.paddingOf(context).copyWith(
+			left: duo?.side == AxisDirection.left ? 0 : null,
+			right: duo?.side == AxisDirection.right ? 0 : null
+		);
 		final zone = widget.zone;
 		final onThreadSelected = widget.onThreadSelected;
 		return ExtendedImageSlidePage(

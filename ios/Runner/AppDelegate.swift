@@ -69,6 +69,7 @@ class MyFileExportDelegate : NSObject, UIDocumentPickerDelegate {
 
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate, FlutterSceneLifeCycleDelegate {
   var appleChannel: FlutterMethodChannel?
+  var pendingDuoLayoutConfigurations: [(ChanceFlutterViewController) -> Void] = []
   var garbageKeepAlive: [any NSObjectProtocol] = []
 
   // UIKit can request application restoration even when UIScene is enabled.
@@ -110,6 +111,25 @@ class MyFileExportDelegate : NSObject, UIDocumentPickerDelegate {
       (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
       if (call.method == "isOnMac") {
         result(Utils.isOnMac)
+      }
+      else if (call.method == "configureDuoLayout") {
+        let configure: (ChanceFlutterViewController) -> Void = { controller in
+          if let args = call.arguments as? [String: Any], let width = args["barWidth"] as? NSNumber {
+            controller.duoBarWidth = CGFloat(truncating: width)
+          }
+          if let args = call.arguments as? [String: Any], let height = args["navigationBarHeight"] as? NSNumber {
+            controller.navigationBarHeight = CGFloat(truncating: height)
+          }
+          // Complete the request only after Dart has applied the layout event.
+          controller.pushDuoLayout(force: true, completion: result)
+        }
+        if let controller = registrar.viewController as? ChanceFlutterViewController,
+           controller.isViewLoaded, controller.view.window != nil, !controller.view.bounds.isEmpty {
+          configure(controller)
+        } else {
+          // The implicit engine may start Dart before its scene is attached.
+          self.pendingDuoLayoutConfigurations.append(configure)
+        }
       }
       else if (call.method == "isDevelopmentBuild") {
         #if targetEnvironment(simulator)

@@ -7,6 +7,7 @@ import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/apple.dart';
 import 'package:chan/services/screen_size_hacks.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/adaptive.dart';
@@ -28,6 +29,12 @@ class ImageboardTab extends StatelessWidget {
 		return AnimatedBuilder(
 			animation: tab,
 			builder: (context, child) {
+				final drawerMode = Settings.androidDrawerSetting.watch(context);
+				final sidebarWidth = navigationSidebarWidthOf(context);
+				final sidebarOnRight = !drawerMode && context.watch<DuoLayout?>()?.side == AxisDirection.right;
+				final loaderOffset = sidebarWidth > 0
+					? Offset((sidebarOnRight ? 1 : -1) * sidebarWidth / 2, 0)
+					: (drawerMode ? Offset.zero : const Offset(0, 25));
 				return MultiProvider(
 					providers: [
 						ChangeNotifierProvider.value(value: tab),
@@ -51,7 +58,7 @@ class ImageboardTab extends StatelessWidget {
 					child: tab.imageboardKey == null ? child : ImageboardScope(
 						imageboardKey: tab.imageboardKey!,
 						overridePersistence: tab.incognitoPersistence,
-						loaderOffset: Settings.androidDrawerSetting.watch(context) ? Offset.zero : (isScreenWide(context) ? const Offset(-42.5, 0) : const Offset(0, 25)),
+						loaderOffset: loaderOffset,
 						child: child!
 					)
 				);

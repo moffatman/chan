@@ -1,23 +1,46 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/widgets/adaptive.dart';
+import 'package:chan/widgets/notifying_icon.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class TabMenuAction {
 	final IconData icon;
 	final String title;
 	final VoidCallback? onPressed;
+	final VoidCallback? onLongPress;
+	final Color? color;
+	final ValueListenable<int>? primaryCount;
+	final ValueListenable<int>? secondaryCount;
 	final bool isDestructiveAction;
+	final bool? isSelected;
 
 	const TabMenuAction({
 		required this.icon,
 		required this.title,
 		required this.onPressed,
+		this.onLongPress,
+		this.color,
+		this.primaryCount,
+		this.secondaryCount,
+		this.isSelected,
 		this.isDestructiveAction = false
 	});
+
+	Widget buildIcon({bool constrainBadge = false}) {
+		final widget = Icon(icon, color: onPressed != null && isDestructiveAction ? Colors.red : color);
+		return primaryCount == null && secondaryCount == null ? widget : NotifyingIcon(
+			icon: widget,
+			constrainBadge: constrainBadge,
+			primaryCount: primaryCount,
+			secondaryCount: secondaryCount
+		);
+	}
 }
 
 class _TabMenuOverlay extends StatefulWidget {
@@ -46,6 +69,8 @@ class _TabMenuOverlayState extends State<_TabMenuOverlay> with SingleTickerProvi
 	late final AnimationController _animationController;
 	late final Animation<double> _animation;
 	bool fakeDone = false;
+	int? _swipePointer;
+	Offset? _swipeOrigin;
 
 	@override
 	void initState() {
@@ -76,6 +101,10 @@ class _TabMenuOverlayState extends State<_TabMenuOverlay> with SingleTickerProvi
 	@override
 	Widget build(BuildContext context) {
 		final screenSize = MediaQuery.sizeOf(context);
+		final padding = MediaQuery.paddingOf(context);
+		final horizontal = axisDirectionToAxis(widget.direction) == Axis.horizontal;
+		final menuHeight = max(widget.origin.height, widget.titles == Axis.vertical ? 80.0 : 44.0);
+		final menuTop = max(padding.top, min(widget.origin.top, screenSize.height - padding.bottom - menuHeight));
 		lastSize ??= screenSize;
 		if (screenSize != lastSize) {
 			// window was resized
@@ -109,43 +138,78 @@ class _TabMenuOverlayState extends State<_TabMenuOverlay> with SingleTickerProvi
 				break;
 		}
 		final actions = widget.actions.map((action) {
-			final icon = Icon(action.icon, color: (action.onPressed != null) && action.isDestructiveAction ? Colors.red : null);
+			final icon = action.buildIcon();
 			final titles = widget.titles;
-			return AdaptiveIconButton(
-				padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-				onPressed: action.onPressed == null ? null : () {
-					action.onPressed?.call();
-					onDone();
-				},
-				icon: titles == null ? icon : Flex(
-					direction: titles,
-					mainAxisSize: MainAxisSize.min,
-					crossAxisAlignment: CrossAxisAlignment.center,
-					children: [
-						icon,
-						const SizedBox(height: 4, width: 8),
-						Flexible(
-							child: Text(
-								action.title,
-								overflow: TextOverflow.visible,
-								textAlign: TextAlign.center,
-								style: widget.origin.size.aspectRatio < 1.5
-									// Not much space (near-square), shrink font
-									? const TextStyle(fontSize: 15) : null
+			return Semantics(
+				selected: action.isSelected,
+				child: Opacity(
+					opacity: action.isSelected == false ? 0.5 : 1,
+					child: GestureDetector(
+						onLongPress: action.onLongPress == null ? null : () {
+							action.onLongPress!.call();
+							onDone();
+						},
+						child: AdaptiveIconButton(
+							padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+							onPressed: action.onPressed == null ? null : () {
+								action.onPressed?.call();
+								onDone();
+							},
+							icon: titles == null ? icon : Flex(
+								direction: titles,
+								mainAxisSize: MainAxisSize.min,
+								crossAxisAlignment: CrossAxisAlignment.center,
+								children: [
+									icon,
+									const SizedBox(height: 4, width: 8),
+									Flexible(
+										child: Text(
+											action.title,
+											overflow: TextOverflow.visible,
+											textAlign: TextAlign.center,
+											style: widget.origin.size.aspectRatio < 1.5
+												// Not much space (near-square), shrink font
+												? const TextStyle(fontSize: 15) : null
+										)
+									)
+								]
 							)
 						)
-					]
+					)
 				)
 			);
 		}).toList();
+		final menuContent = Flex(
+			mainAxisSize: MainAxisSize.min,
+			direction: axisDirectionToAxis(widget.direction),
+			children: [
+				for (final action in axisDirectionIsReversed(widget.direction) ? actions.reversed : actions)
+					if (horizontal) Flexible(child: action)
+					else action
+			]
+		);
 		final menu = Container(
 			decoration: BoxDecoration(
 				color: ChanceTheme.barColorOf(context),
 				borderRadius: borderRadius
 			),
-			child: Flex(
-				direction: axisDirectionToAxis(widget.direction),
-				children: axisDirectionIsReversed(widget.direction) ? actions.reversed.toList() : actions
+			child: ConstrainedBox(
+				constraints: BoxConstraints(
+					maxWidth: horizontal ? max(0,
+						widget.direction == AxisDirection.left
+							? widget.origin.left - padding.left
+							: screenSize.width - widget.origin.right - padding.right
+					) : double.infinity,
+					maxHeight: horizontal ? double.infinity : max(0,
+						widget.direction == AxisDirection.up
+							? widget.origin.top - padding.top
+							: screenSize.height - widget.origin.bottom - padding.bottom
+					)
+				),
+				child: horizontal ? menuContent : SingleChildScrollView(
+					reverse: widget.direction == AxisDirection.up,
+					child: menuContent
+				)
 			)
 		);
 		return IgnorePointer(
@@ -154,7 +218,35 @@ class _TabMenuOverlayState extends State<_TabMenuOverlay> with SingleTickerProvi
 				animation: _animation,
 				child: FadeTransition(
 					opacity: _animation,
-					child: menu
+					child: Listener(
+						// Observe the swipe without competing with a scrollable menu.
+						behavior: HitTestBehavior.opaque,
+						onPointerDown: (event) {
+							if (_swipePointer != null) return;
+							_swipePointer = event.pointer;
+							_swipeOrigin = event.position;
+						},
+						onPointerCancel: (event) {
+							if (_swipePointer != event.pointer) return;
+							_swipePointer = null;
+							_swipeOrigin = null;
+						},
+						onPointerUp: (event) {
+							if (_swipePointer != event.pointer) return;
+							final delta = event.position - _swipeOrigin!;
+							_swipePointer = null;
+							_swipeOrigin = null;
+							final closingDistance = switch (widget.direction) {
+								AxisDirection.up => delta.dy,
+								AxisDirection.down => -delta.dy,
+								AxisDirection.left => delta.dx,
+								AxisDirection.right => -delta.dx
+							};
+							final crossDistance = horizontal ? delta.dy.abs() : delta.dx.abs();
+							if (closingDistance >= 32 && closingDistance > crossDistance) onDone();
+						},
+						child: menu
+					)
 				),
 				builder: (context, child) => Stack(
 					fit: StackFit.expand,
@@ -183,14 +275,14 @@ class _TabMenuOverlayState extends State<_TabMenuOverlay> with SingleTickerProvi
 						)
 						else if (widget.direction == AxisDirection.left) Positioned(
 							right: screenSize.width - widget.origin.left - (1 - _animation.value) * 15,
-							height: widget.origin.height,
-							top: widget.origin.top,
+							height: menuHeight,
+							top: menuTop,
 							child: child!
 						)
 						else if (widget.direction == AxisDirection.right) Positioned(
 							left: widget.origin.right - (1 - _animation.value) * 15,
-							height: widget.origin.height,
-							top: widget.origin.top,
+							height: menuHeight,
+							top: menuTop,
 							child: child!
 						)
 					]

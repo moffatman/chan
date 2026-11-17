@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:chan/main.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:mutex/mutex.dart';
@@ -43,7 +44,7 @@ Future<void> initializeIsDevelopmentBuild() async {
 	}
 }
 
-Future<void> initializeHandoff() async {
+Future<void> initializeAppleChannel() async {
 	if (!Platform.isIOS) {
 		return;
 	}
@@ -53,6 +54,19 @@ Future<void> initializeHandoff() async {
 			arguments: {'url': String url}
 		)) {
 			fakeLinkStream.add(url);
+		}
+		else if (call case MethodCall(method: 'duoLayoutChanged', arguments: Map arguments)) {
+			final side = switch (arguments['side']) {
+				1 => AxisDirection.left,
+				2 => AxisDirection.right,
+				3 => AxisDirection.up,
+				_ => null
+			};
+			double inset(String key) => (arguments[key] as num?)?.toDouble() ?? 0;
+			duoLayout.value = side == null ? null : (
+				side: side,
+				padding: EdgeInsets.fromLTRB(inset('left'), inset('top'), inset('right'), inset('bottom'))
+			);
 		}
 	});
 }
@@ -126,4 +140,26 @@ Future<List<String>> getUIFontFamilyNames() async {
 		throw Exception('Error listing local fonts');
 	}
 	return result;
+}
+
+/// Insets for the system bar's edge; [AxisDirection.up] uses the top navbar.
+typedef DuoLayout = ({AxisDirection side, EdgeInsets padding});
+
+extension DuoLayoutProperties on DuoLayout {
+	bool get hasSidebar => side == AxisDirection.left || side == AxisDirection.right;
+}
+
+final duoLayout = ValueNotifier<DuoLayout?>(null);
+
+Future<void> configureDuoLayout({double barWidth = 85}) async {
+	if (!Platform.isIOS) return;
+	try {
+		await _platform.invokeMethod<void>('configureDuoLayout', {
+			'barWidth': barWidth,
+			'navigationBarHeight': 44 * barWidth / 85
+		});
+	}
+	on MissingPluginException {
+		return;
+	}
 }

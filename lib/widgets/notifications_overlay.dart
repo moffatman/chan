@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:chan/main.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
+import 'package:chan/services/apple.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/screen_size_hacks.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/util.dart';
@@ -191,34 +193,55 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 		return Stack(
 			children: [
 				widget.child,
-				if (widget.onePane) ...shown.indexed.map((notification) => Align(
-					alignment: Alignment.topCenter,
-					child: Padding(
-						padding: EdgeInsets.only(top: 44 + MediaQuery.paddingOf(context).top + (24 * notification.$1)),
-						child: CornerNotification(
-							notification: notification.$2,
-							onTap: () => _notificationTapped(notification.$2),
-							onTapClose: () => closeNotification(notification.$2),
-							onTapMute: () => muteNotification(notification.$2),
-							maxWidth: double.infinity
-						)
-					)
-				))
-				else Align(
-					alignment: Alignment.topRight,
-					child: Column(
-						crossAxisAlignment: CrossAxisAlignment.end,
-						children: [
-							const SizedBox(height: 50),
-							...shown.map((notification) => CornerNotification(
-								key: ValueKey(notification),
-								notification: notification,
-								onTap: () => _notificationTapped(notification),
-								onTapClose: () => closeNotification(notification),
-								onTapMute: () => muteNotification(notification),
-								maxWidth: 300
-							))
-						]
+				Positioned.fill(
+					child: Builder(
+						builder: (context) {
+							final safePadding = MediaQuery.paddingOf(context);
+							final duo = context.watch<DuoLayout?>();
+							final topBarPadding = duo?.side == AxisDirection.up ? duo!.padding : null;
+							final androidDrawer = Settings.androidDrawerSetting.watch(context);
+							final sidebarWidth = navigationSidebarWidthOf(context);
+							final sidebarOnRight = !androidDrawer && duo?.side == AxisDirection.right;
+							final scale = Settings.interfaceScaleSetting.watch(context);
+							final toolbarHeight = ChanceTheme.materialOf(context) ? kToolbarHeight : kMinInteractiveDimensionCupertino;
+							return Padding(
+								// This layer is outside the page scaffolds and their safe areas.
+								padding: EdgeInsets.only(
+									left: (!androidDrawer && duo?.side == AxisDirection.left ? 0 : safePadding.left) + (sidebarOnRight ? 0 : sidebarWidth),
+									right: (sidebarOnRight ? 0 : safePadding.right) + (sidebarOnRight ? sidebarWidth : 0),
+									top: toolbarHeight + (topBarPadding == null ? safePadding.top : topBarPadding.top / scale),
+									bottom: safePadding.bottom
+								),
+								child: widget.onePane ? Stack(
+									children: shown.indexed.map((notification) => Align(
+										alignment: Alignment.topCenter,
+										child: Padding(
+											padding: EdgeInsets.only(top: 24.0 * notification.$1),
+											child: CornerNotification(
+												notification: notification.$2,
+												onTap: () => _notificationTapped(notification.$2),
+												onTapClose: () => closeNotification(notification.$2),
+												onTapMute: () => muteNotification(notification.$2),
+												maxWidth: double.infinity
+											)
+										)
+									)).toList()
+								) : Align(
+									alignment: Alignment.topRight,
+									child: Column(
+										crossAxisAlignment: CrossAxisAlignment.end,
+										children: shown.map((notification) => CornerNotification(
+											key: ValueKey(notification),
+											notification: notification,
+											onTap: () => _notificationTapped(notification),
+											onTapClose: () => closeNotification(notification),
+											onTapMute: () => muteNotification(notification),
+											maxWidth: 300
+										)).toList()
+									)
+								)
+							);
+						}
 					)
 				)
 			]

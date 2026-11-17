@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:chan/main.dart';
 import 'package:chan/pages/master_detail.dart';
+import 'package:chan/services/apple.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/screen_size_hacks.dart';
 import 'package:chan/services/settings.dart';
@@ -15,6 +17,58 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+
+Widget _withNavigationBarPadding(BuildContext context, Widget child, {double horizontalContentPadding = 0}) {
+	final nativePadding = context.select<DuoLayout?, EdgeInsets?>((layout) => layout?.side == AxisDirection.up ? layout!.padding : null);
+	if (nativePadding == null) {
+		return child;
+	}
+	final location = context.watch<MasterDetailLocation?>();
+	if (location == MasterDetailLocation.twoPaneVerticalDetail) {
+		return child;
+	}
+	final scale = Settings.interfaceScaleSetting.watch(context);
+	final padding = nativePadding / scale;
+	final safePadding = MediaQuery.paddingOf(context);
+	final view = View.of(context);
+	final additionalInsets = sumAdditionalSafeAreaInsets();
+	// The bar insets are window-relative. SafeArea ancestors have already
+	// consumed part of that space before this navbar is laid out.
+	final consumedLeft = math.max(0.0, (view.padding.left / view.devicePixelRatio - additionalInsets.left) / scale - safePadding.left);
+	final consumedRight = math.max(0.0, (view.padding.right / view.devicePixelRatio - additionalInsets.right) / scale - safePadding.right);
+	final sidebarWidth = navigationSidebarWidthOf(context);
+	double leftOffset = consumedLeft + sidebarWidth;
+	double rightOffset = consumedRight;
+	if (location == MasterDetailLocation.twoPaneHorizontalMaster || location == MasterDetailLocation.twoPaneHorizontalDetail) {
+		final contentWidth = MediaQuery.sizeOf(context).width - consumedLeft - consumedRight - sidebarWidth;
+		final masterWidth = contentWidth * Settings.twoPaneSplitSetting.watch(context) / twoPaneSplitDenominator;
+		if (location == MasterDetailLocation.twoPaneHorizontalDetail) {
+			leftOffset += masterWidth;
+		}
+		else {
+			rightOffset += contentWidth - masterWidth;
+		}
+	}
+	// The navbar's own content padding already contributes to this clearance.
+	final left = math.max(safePadding.left, padding.left - leftOffset - horizontalContentPadding);
+	final right = math.max(safePadding.right, padding.right - rightOffset - horizontalContentPadding);
+	final target = EdgeInsets.only(left: left, right: right);
+	return TweenAnimationBuilder<EdgeInsets>(
+		tween: EdgeInsetsTween(begin: target, end: target),
+		duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 250),
+		curve: Curves.easeInOutCubic,
+		builder: (context, animatedPadding, child) {
+			if (animatedPadding.left == safePadding.left && animatedPadding.right == safePadding.right) {
+				return child!;
+			}
+			return MediaQuery(
+				data: MediaQuery.of(context).copyWith(padding: safePadding.copyWith(left: animatedPadding.left, right: animatedPadding.right)),
+				child: child!
+			);
+		},
+		child: child
+	);
+}
 
 class AdaptiveBarAction<T> {
 	final Widget icon;
@@ -180,25 +234,27 @@ class _AppBarWithBackButtonPriority extends StatelessWidget implements Preferred
 			));
 		}
 		_handleLeadings(context: context, leadings: leadings, bar: bar);
-		final child = AppBar(
-			leadingWidth: leadings.length > 1 ? leadings.length * 48 : null,
-			leading: leadings.isEmpty ? null : Row(
-				mainAxisSize: MainAxisSize.min,
-				children: leadings
-			),
-			surfaceTintColor: Colors.transparent,
-			foregroundColor: ChanceTheme.primaryColorOf(context),
-			//centerTitle: true,
-			title: Container(
-				height: 44,
-				alignment: Alignment.centerLeft,
-				child: bar.title
-			),
-			actions: bar.actions,
-			backgroundColor: bar.backgroundColor,
-			systemOverlayStyle: SystemUiOverlayStyle(
-				statusBarBrightness: bar.brightness ?? ChanceTheme.brightnessOf(context),
-				statusBarIconBrightness: (bar.brightness ?? ChanceTheme.brightnessOf(context)).inverted
+		final child = _withNavigationBarPadding(context,
+			AppBar(
+				leadingWidth: leadings.length > 1 ? leadings.length * 48 : null,
+				leading: leadings.isEmpty ? null : Row(
+					mainAxisSize: MainAxisSize.min,
+					children: leadings
+				),
+				surfaceTintColor: Colors.transparent,
+				foregroundColor: ChanceTheme.primaryColorOf(context),
+				//centerTitle: true,
+				title: Container(
+					height: 44,
+					alignment: Alignment.centerLeft,
+					child: bar.title
+				),
+				actions: bar.actions,
+				backgroundColor: bar.backgroundColor,
+				systemOverlayStyle: SystemUiOverlayStyle(
+					statusBarBrightness: bar.brightness ?? ChanceTheme.brightnessOf(context),
+					statusBarIconBrightness: (bar.brightness ?? ChanceTheme.brightnessOf(context)).inverted
+				)
 			)
 		);
 		if (!autoHideOnScroll) {
@@ -292,15 +348,19 @@ class _CupertinoNavigationBar extends StatelessWidget implements ObstructingPref
 
 	@override
 	Widget build(BuildContext context) {
-		final child = CupertinoNavigationBar(
-			automaticallyImplyLeading: false,
-			automaticBackgroundVisibility: false,
-			transitionBetweenRoutes: transitionBetweenRoutes,
-			leading: leading,
-			middle: middle,
-			backgroundColor: backgroundColor,
-			trailing: trailing,
-			brightness: brightness
+		final child = _withNavigationBarPadding(context,
+			CupertinoNavigationBar(
+				automaticallyImplyLeading: false,
+				automaticBackgroundVisibility: false,
+				transitionBetweenRoutes: transitionBetweenRoutes,
+				leading: leading,
+				middle: middle,
+				backgroundColor: backgroundColor,
+				trailing: trailing,
+				brightness: brightness
+			),
+			// CupertinoNavigationBar adds 16px before its leading and after its trailing content.
+			horizontalContentPadding: 16
 		);
 		if (!autoHideOnScroll) {
 			return child;
@@ -396,6 +456,33 @@ class AdaptiveScaffoldState extends State<AdaptiveScaffold> {
 
 	@override
 	Widget build(BuildContext context) {
+		final padding = context.select<DuoLayout?, EdgeInsets?>((layout) => layout?.side == AxisDirection.up ? layout!.padding : null);
+		if (padding == null || widget.bar == null) {
+			return _build(context);
+		}
+		final safePadding = MediaQuery.paddingOf(context);
+		if (safePadding.top == 0) {
+			return _build(context);
+		}
+		final scale = Settings.interfaceScaleSetting.watch(context);
+		final view = View.of(context);
+		final rootTop = (view.padding.top / view.devicePixelRatio - sumAdditionalSafeAreaInsets().top) / scale;
+		final viewPadding = MediaQuery.viewPaddingOf(context);
+		final top = math.max(0.0, safePadding.top - rootTop + padding.top / scale);
+		final viewTop = math.max(0.0, viewPadding.top - rootTop + padding.top / scale);
+		if (top == safePadding.top && viewTop == viewPadding.top) {
+			return _build(context);
+		}
+		return MediaQuery(
+			data: MediaQuery.of(context).copyWith(
+				padding: safePadding.copyWith(top: top),
+				viewPadding: viewPadding.copyWith(top: viewTop)
+			),
+			child: Builder(builder: _build)
+		);
+	}
+
+	Widget _build(BuildContext context) {
 		final bar_ = widget.bar;
 		final autoHideBars = !widget.disableAutoBarHiding && Settings.hideBarsWhenScrollingDownSetting.watch(context);
 		if (ChanceTheme.materialOf(context)) {
