@@ -102,7 +102,7 @@ packages:
     description:
       path: "."
       ref: master
-      resolved-ref: "363461385e70fc54ab993a1f43c56bb044d6d41d"
+      resolved-ref: b01eafb00dbd7f98b9d950f3d70ad542f4971db6
       url: "https://github.com/moffatman/auto_size_text.git"
     source: git
     version: "3.0.0"
