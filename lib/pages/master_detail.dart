@@ -73,7 +73,14 @@ class BuiltDetailPane {
 		required this.pageRouteBuilder
 	});
 
-	PageRoute pageRoute({required bool? showAnimations, required bool? showAnimationsForward}) => pageRouteBuilder((context) => widget, showAnimations: showAnimations, showAnimationsForward: showAnimationsForward);
+	Widget buildRouteContent(BuildContext context, Key? contentKey) {
+		if (contentKey == null) return widget;
+		// A layout-driven pop can leave the outgoing route mounted briefly.
+		if (context.watch<MasterDetailLocation?>()?.twoPane ?? false) return const SizedBox.shrink();
+		return KeyedSubtree(key: contentKey, child: widget);
+	}
+
+	PageRoute pageRoute({Key? contentKey, required bool? showAnimations, required bool? showAnimationsForward}) => pageRouteBuilder((context) => buildRouteContent(context, contentKey), showAnimations: showAnimations, showAnimationsForward: showAnimationsForward);
 }
 
 class MasterDetailPage<T> extends StatelessWidget {
@@ -161,23 +168,34 @@ class MultiMasterPane<T> {
 		}
 	}
 
-	Widget buildDetail(VoidCallback onNewValue) {
+	Widget buildInlineDetail(VoidCallback onNewValue, {Key? contentKey}) {
 		return ValueListenableBuilder(
 			valueListenable: currentValue,
-			builder: (context, T? v, child) => detailBuilder(v, (newValue) {
-				currentValue.value = newValue;
-				callOnValueChanged(newValue);
-				onNewValue();
-			}, false).widget
+			builder: (context, T? v, child) => KeyedSubtree(
+				key: contentKey,
+				child: detailBuilder(v, (newValue) {
+					currentValue.value = newValue;
+					callOnValueChanged(newValue);
+					onNewValue();
+				}, false).widget
+			)
 		);
 	}
 
-	PageRoute buildDetailRoute(VoidCallback onNewValue, {bool? showAnimations, required bool? showAnimationsForward}) {
+	PageRoute createDetailRoute(VoidCallback onNewValue, {Key? contentKey, bool? showAnimations, required bool? showAnimationsForward}) {
 		return detailBuilder(currentValue.value, (newValue) {
 				currentValue.value = newValue;
 				callOnValueChanged(newValue);
 				onNewValue();
-			}, true).pageRoute(showAnimations: showAnimations, showAnimationsForward: showAnimationsForward);
+			}, true).pageRoute(contentKey: contentKey, showAnimations: showAnimations, showAnimationsForward: showAnimationsForward);
+	}
+
+	BuiltDetailPane buildInitialDetailContent(VoidCallback onNewValue) {
+		return detailBuilder(currentValue.value, (newValue) {
+			currentValue.value = newValue;
+			callOnValueChanged(newValue);
+			onNewValue();
+		}, true);
 	}
 
 	void dispose() {
@@ -351,8 +369,11 @@ abstract class _MultiMasterDetailPageState<S extends _MultiMasterDetailPage> ext
 		if (onePane) {
 			if (pane.currentValue.value != null) {
 				_popMasterValueRoutes();
-				(pane.useRootNavigator ? Navigator.of(context, rootNavigator: true) : masterKey.currentState!).push(pane.buildDetailRoute(
+				// New selections get a new page; only layout changes reuse its key.
+				if (!pane.useRootNavigator) _detailContentKey = GlobalKey(debugLabel: '${widget.id} _detailContentKey');
+				(pane.useRootNavigator ? Navigator.of(context, rootNavigator: true) : masterKey.currentState!).push(pane.createDetailRoute(
 					() => _onNewValue(pane, showAnimationsForward: false),
+					contentKey: pane.useRootNavigator ? null : _detailContentKey,
 					showAnimationsForward: showAnimationsForward
 				)).then((v) => _onPushReturn(pane, v));
 			}
@@ -389,9 +410,10 @@ abstract class _MultiMasterDetailPageState<S extends _MultiMasterDetailPage> ext
 		if (value == null) {
 			return null;
 		}
-		final built = pane.buildDetail(() => _onNewValue(pane, showAnimationsForward: false));
+		final built = pane.buildInitialDetailContent(() => _onNewValue(pane, showAnimationsForward: false));
+		final contentKey = _detailContentKey;
 		return (
-			(context) => built,
+			(context) => built.buildRouteContent(context, contentKey),
 			(value) => _onPushReturn(pane, value),
 			(builder, settings) => adaptivePageRoute(
 				builder: builder,
@@ -503,10 +525,7 @@ abstract class _MultiMasterDetailPageState<S extends _MultiMasterDetailPage> ext
 					],
 					buildRoot: (context) => AnimatedBuilder(
 						animation: _rebuild,
-						builder: (context, _) => KeyedSubtree(
-							key: _detailContentKey,
-							child: panes[_tabController.index].buildDetail(() => _onNewValue(panes[_tabController.index], showAnimationsForward: false))
-						)
+						builder: (context, _) => panes[_tabController.index].buildInlineDetail(() => _onNewValue(panes[_tabController.index], showAnimationsForward: false), contentKey: _detailContentKey)
 					)
 				)
 			)
@@ -514,8 +533,9 @@ abstract class _MultiMasterDetailPageState<S extends _MultiMasterDetailPage> ext
 		if (lastOnePane != null && lastOnePane != onePane) {
 			final pane = panes[_tabController.index];
 			if (onePane && pane.currentValue.value != null) {
-				masterKey.currentState!.push(pane.buildDetailRoute(
+				masterKey.currentState!.push(pane.createDetailRoute(
 					() => _onNewValue(pane, showAnimationsForward: false),
+					contentKey: pane.useRootNavigator ? null : _detailContentKey,
 					showAnimationsForward: false
 				)).then((v) => _onPushReturn(pane, v));
 			}
