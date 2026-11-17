@@ -2042,7 +2042,7 @@ class PostLinkSpan extends PostTerminalSpan {
 									children: [
 										Row(
 											children: [
-												left,
+												Flexible(child: left),
 												if (right != null) ...[
 													const Spacer(),
 													right,
