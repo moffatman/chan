@@ -1058,7 +1058,7 @@ class SiteXenforo extends ImageboardSite with ForumSite {
 	
 	@override
 	String formatUsername(String name) {
-		return formatUsernameShort(name);
+		return '@${formatUsernameShort(name)}';
 	}
 
 	@override
