@@ -83,6 +83,7 @@ class StationaryNotifyingIcon extends StatelessWidget {
 							minWidth: 16
 						),
 						height: 16,
+						padding: const EdgeInsets.all(1),
 						alignment: Alignment.center,
 						child: AutoSizeText(
 							primary.toString(),
@@ -102,6 +103,7 @@ class StationaryNotifyingIcon extends StatelessWidget {
 							minWidth: 16
 						),
 						height: 16,
+						padding: const EdgeInsets.all(1),
 						alignment: Alignment.center,
 						child: AutoSizeText(
 							secondary.toString(),
