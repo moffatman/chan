@@ -1745,6 +1745,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	Imageboard? get devImageboard => ImageboardRegistry.instance.dev;
 	_AuthenticationStatus _authenticationStatus = _AuthenticationStatus.ok;
 	final _drawerScaffoldKey = GlobalKey<AdaptiveScaffoldState>(debugLabel: '_ChanHomePageState._drawerScaffoldKey');
+	final _paginatedTabListKey = GlobalKey<PaginatedReorderableListState>(debugLabel: '_ChanHomePageState._paginatedTabListKey');
 
 	void _onSlowScrollDirectionChange() async {
 		if (!Settings.instance.tabMenuHidesWhenScrollingDown) {
@@ -2344,6 +2345,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				if (usingHomeBoard) buildTabIcon(0),
 				Expanded(
 					child: usePaginatedTabBar ? PaginatedReorderableList(
+						key: _paginatedTabListKey,
 						controller: _tabs._paginatedTabListController,
 						physics: const FasterSnappingPageScrollPhysics(),
 						paginationDelegate: ChanTabs._tabListPaginationDelegate,
