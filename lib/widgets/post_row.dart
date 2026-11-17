@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:chan/pages/selectable_post.dart';
 import 'package:chan/services/android.dart';
 import 'package:chan/services/delete_post.dart';
@@ -471,6 +473,14 @@ class PostRow extends StatelessWidget {
 			// Otherwise show reply count
 			_ => true
 		});
+		int replyCountForPlaceholder = replyIds.length;
+		if (replyIds.isEmpty && post.isThread && post.boardKey == parentZone.boardKey) {
+			final thread = parentZone.findThread(post.threadId);
+			if (thread != null && thread.posts_.length < thread.replyCount) {
+				// Guesstimate, just need to be in same order of magnitude
+				replyCountForPlaceholder = math.min(thread.replyCount, 7 + (0.3 * thread.replyCount).round());
+			}
+		}
 		final replyCountColor = highlightReplyCount ? theme.secondaryColor.shiftHue(90) : theme.secondaryColor;
 		openReplies() {
 			if (replyIds.isNotEmpty) {
@@ -549,8 +559,8 @@ class PostRow extends StatelessWidget {
 									padding: const EdgeInsets.only(left: 8, right: 8, top: 8, bottom: 16),
 									child: overrideReplyCount!
 								)
-							) : ((settings.cloverStyleRepliesButton || replyIds.isEmpty) ? null :
-								SizedBox(width: (replyIds.length.numberOfDigitsLinear * 8 * settings.textScale) + 32, height: 44)
+							) : ((settings.cloverStyleRepliesButton || replyCountForPlaceholder == 0) ? null :
+								SizedBox(width: (replyCountForPlaceholder.numberOfDigitsLinear * 8 * settings.textScale) + 32, height: 44)
 							)) : null,
 							overflow: TextOverflow.fade
 						)
