@@ -1721,8 +1721,23 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	}
 
 	void _syncTreeBatchOverrides() {
+		final batches = widget.treeAdapter?.getTreeBatchOverrides?.call().toList();
+		if (batches == null) return;
+		if (batches.length != _treeBatchOverrides.length) {
+			// Another view may have split or compacted the shared batches. Its
+			// batch positions no longer match ours; preserve our assignments and
+			// keep newly recorded arrivals in our open batch.
+			for (final ids in batches) {
+				for (final id in ids) {
+					if (!_treeBatchOverrides.any((batch) => batch.contains(id))) {
+						_treeBatchOverrides.last.add(id);
+					}
+				}
+			}
+			return;
+		}
 		int index = 0;
-		for (final ids in widget.treeAdapter?.getTreeBatchOverrides?.call() ?? const <Set<int>>[]) {
+		for (final ids in batches) {
 			_treeBatchOverrides[index++].addAll(ids);
 		}
 	}
