@@ -384,8 +384,6 @@ class ThreadRow extends StatelessWidget {
 		final grey = theme.primaryColorWithBrightness(0.6);
 		String? threadAsUrl;
 		final firstUrl = latestThread.attachments.tryFirstWhere((a) => a.type == AttachmentType.url)?.url;
-		final backgroundColor = isSelected ? theme.primaryColorWithBrightness(0.2) : theme.backgroundColor;
-		final opacityBasedBackgroundColor = isSelected ? theme.primaryColor.withValues(alpha: 0.25) : null;
 		final borderColor = isSelected ? theme.primaryColorWithBrightness(0.8) : theme.primaryColorWithBrightness(0.2);
 		if (firstUrl != null) {
 			threadAsUrl = Uri.parse(firstUrl).host.replaceFirst(_leadingWwwPattern, '');
@@ -614,7 +612,7 @@ class ThreadRow extends StatelessWidget {
 											shrinkHeight: !settings.squareThumbnails,
 											hide: hideThumbnails,
 											cornerIcon: AttachmentThumbnailCornerIcon(
-												backgroundColor: backgroundColor,
+												backgroundColor: theme.backgroundColor,
 												borderColor: borderColor,
 												size: null
 											)
@@ -760,7 +758,7 @@ class ThreadRow extends StatelessWidget {
 										mayObscure: true,
 										hide: hideThumbnails,
 										cornerIcon: AttachmentThumbnailCornerIcon(
-											backgroundColor: backgroundColor,
+											backgroundColor: theme.backgroundColor,
 											borderColor: borderColor,
 											size: 19,
 											alignment: switch ((settings.catalogGridModeAttachmentInBackground, settings.catalogGridModeTextAboveAttachment)) {
@@ -847,7 +845,7 @@ class ThreadRow extends StatelessWidget {
 					child: BackdropFilter(
 						filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
 						child: Container(
-							color: backgroundColor.withValues(alpha: 0.8),
+							color: theme.backgroundColor.withValues(alpha: 0.8),
 							width: double.infinity,
 							child: txt
 						)
@@ -938,7 +936,7 @@ class ThreadRow extends StatelessWidget {
 						child: Container(
 							decoration: BoxDecoration(
 								borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8)),
-								color: backgroundColor,
+								color: theme.backgroundColor,
 								border: Border.all(color: borderColor)
 							),
 							padding: const EdgeInsets.only(top: 2, bottom: 2, left: 6, right: 6),
@@ -958,9 +956,19 @@ class ThreadRow extends StatelessWidget {
 		);
 		final container = Container(
 			decoration: BoxDecoration(
-				color: (settings.materialStyle && Material.maybeOf(context)?.color == theme.backgroundColor) ? opacityBasedBackgroundColor : backgroundColor,
+				color: (isSelected || (settings.materialStyle && Material.maybeOf(context)?.color == theme.backgroundColor)) ? null : theme.backgroundColor,
 				border: style.isGrid ? Border.all(color: borderColor) : null,
-				borderRadius: borderRadius
+				borderRadius: borderRadius,
+				boxShadow: isSelected ? [
+					BoxShadow(
+						color: theme.primaryColor.withValues(alpha: 0.2)
+					),
+					BoxShadow(
+						color: theme.primaryColorWithBrightness(0.05),
+						spreadRadius: 0,
+						blurRadius: 48
+					),
+				] : []
 			),
 			margin: (style.isGrid && settings.catalogGridModeCellBorderRadiusAndMargin) ? const EdgeInsets.only(
 				top: 0,
