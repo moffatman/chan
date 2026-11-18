@@ -32,6 +32,7 @@ import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
+import 'package:chan/widgets/default_gesture_detector.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/notifying_icon.dart';
@@ -602,10 +603,11 @@ class ThreadPageState extends State<ThreadPage> {
 			if (firstIndex != -1) {
 				_firstSeenIndex = min(firstIndex, _firstSeenIndex ?? firstIndex);
 				final firstItem = _listController.getItem(firstIndex);
-				if (persistentState.firstVisiblePostId != firstItem.item.id) {
+				final firstVisibleId = firstItem.isSyntheticParentOfId ?? firstItem.item.id;
+				if (persistentState.firstVisiblePostId != firstVisibleId) {
 					runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
 				}
-				persistentState.firstVisiblePostId = firstItem.item.id;
+				persistentState.firstVisiblePostId = firstVisibleId;
 				persistentState.firstVisiblePostAlignment = _listController.getItemAlignment(firstIndex);
 			}
 			final i0 = _firstSeenIndex;
@@ -614,7 +616,7 @@ class ThreadPageState extends State<ThreadPage> {
 				final items = _listController.items.toList();
 				final i0Clamped = i0.clamp(0, items.length - 1);
 				final seenIds = items.sublist(i0Clamped, i1.clamp(i0Clamped, items.length - 1) + 1)
-														 .where((p) => !_listController.isItemHidden(p).isHidden && p.representsUnloadedPages.isEmpty)
+														 .where((p) => p.isSyntheticParentOfId == null && !_listController.isItemHidden(p).isHidden && p.representsUnloadedPages.isEmpty)
 														 .expand((p) => [p.item.id, ...p.representsKnownStubChildren]);
 				final lengthBefore = persistentState.unseenPostIds.data.length;
 				persistentState.unseenPostIds.data.removeAll(seenIds);
@@ -987,7 +989,7 @@ class ThreadPageState extends State<ThreadPage> {
 		final imageboard = context.read<Imageboard>();
 		final commonParentIds = [widget.boardSemanticId, 0];
 		List<TaggedAttachment> attachments = _listController.items.expand((item) {
-			if (item.representsStubChildren || _listController.isItemHidden(item).isDuplicate) {
+			if (item.isSyntheticParentOfId != null || item.representsStubChildren || _listController.isItemHidden(item).isDuplicate) {
 				return const <TaggedAttachment>[];
 			}
 			return item.item.attachments.map((a) => TaggedAttachment(
@@ -2333,12 +2335,13 @@ class ThreadPageState extends State<ThreadPage> {
 																	required Post? value,
 																	required Set<int> collapsedChildIds,
 																	required bool loading,
-																	required double? peekContentHeight,
+																	required bool showBody,
 																	required List<int>? stubChildIds,
-																	required bool alreadyDim
+																	required bool dim,
+																	required bool showChildCount
 																}) {
 																	if ((value?.id ?? 0).isNegative) {
-																		return Row(
+																		final summary = Row(
 																			mainAxisAlignment: MainAxisAlignment.center,
 																			children: [
 																				const Icon(CupertinoIcons.doc, applyTextScaling: true),
@@ -2353,20 +2356,23 @@ class ThreadPageState extends State<ThreadPage> {
 																				const Icon(CupertinoIcons.arrow_up_down, applyTextScaling: true)
 																			]
 																		);
+																		return dim ? Opacity(opacity: 0.5, child: summary) : summary;
 																	}
 																	final newCount = collapsedChildIds.where((id) => (_highlightPosts[id] ?? _kHighlightZero) > _kHighlightZero).length;
 																	final unseenCount = collapsedChildIds.where(persistentState.unseenPostIds.data.contains).length;
 																	final isDeletedStub = value != null && value.isDeleted && value.text.isEmpty && value.attachments.isEmpty;
-																	if (peekContentHeight != null && value != null) {
+																	if (showBody && value != null) {
 																		final style = TextStyle(
 																			color: theme.secondaryColor,
 																			fontWeight: FontWeight.bold,
 																			fontVariations: CommonFontVariations.bold
 																		);
-																		final post = Builder(
+																		return Builder(
 																			builder: (context) => PostRow(
 																				post: value,
-																				dim: !alreadyDim && (isDeletedStub || peekContentHeight.isFinite),
+																				onTap: context.read<DefaultOnTapCallback?>()?.onTap,
+																				showReplyCount: showChildCount,
+																				dim: isDeletedStub || dim,
 																				highlight: _shouldHighlightPost(value.id),
 																				onThumbnailTap: (attachment) {
 																					_showGallery(initialAttachment: attachment);
@@ -2394,18 +2400,9 @@ class ThreadPageState extends State<ThreadPage> {
 																				)
 																			)
 																		);
-																		return IgnorePointer(
-																			ignoring: peekContentHeight.isFinite,
-																			child: ConstrainedBox(
-																				constraints: BoxConstraints(
-																					maxHeight: peekContentHeight
-																				),
-																				child: post
-																			)
-																		);
 																	}
 																	const style = TextStyle(fontSize: 16);
-																	return IgnorePointer(
+																	final summary = IgnorePointer(
 																		child: Container(
 																			width: double.infinity,
 																			padding: const EdgeInsets.all(8),
@@ -2461,6 +2458,7 @@ class ThreadPageState extends State<ThreadPage> {
 																			)
 																		)
 																	);
+																	return dim ? Opacity(opacity: 0.5, child: summary) : summary;
 																},
 																filterHint: 'Search in thread',
 																injectBelowScrollbar: settings.showYousInScrollbar ? Positioned(
@@ -2768,7 +2766,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 		}
 		// TODO: Determine if this needs to be / can be memoized
 		for (int i = 0; i < items.length - 1; i++) {
-			if (widget.listController.isItemHidden(items[i]).isDuplicate) {
+			if (items[i].isSyntheticParentOfId != null || widget.listController.isItemHidden(items[i]).isDuplicate) {
 				continue;
 			}
 			if (i > lastVisibleIndex) {
@@ -3041,7 +3039,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 			if (lastVisibleIndex != -1) {
 				final markAsRead = widget.listController.items
 														.skip(lastVisibleIndex + 1)
-														.where((p) => !widget.listController.isItemHidden(p).isHidden && p.representsUnloadedPages.isEmpty)
+														.where((p) => p.isSyntheticParentOfId == null && !widget.listController.isItemHidden(p).isHidden && p.representsUnloadedPages.isEmpty)
 														.expand((p) => [p.item.id, ...p.representsKnownStubChildren])
 														.toSet();
 				widget.persistentState.unseenPostIds.data.removeAll(markAsRead);
@@ -3059,7 +3057,7 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 			});
 			final imageboard = context.read<Imageboard>();
 			final attachments = widget.listController.items.expand((item) {
-				if (item.representsStubChildren || widget.listController.isItemHidden(item).isDuplicate) {
+				if (item.isSyntheticParentOfId != null || item.representsStubChildren || widget.listController.isItemHidden(item).isDuplicate) {
 					return const <TaggedAttachment>[];
 				}
 				return item.item.attachments.map((a) => TaggedAttachment(
@@ -3946,13 +3944,13 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 													int targetIndex = widget.listController.items.toList().asMap().entries.tryLastWhere((entry) {
 														return entry.key < firstVisibleIndex &&
 															(widget.persistentState.unseenPostIds.data.contains(entry.value.item.id) || entry.value.representsKnownStubChildren.any(widget.persistentState.unseenPostIds.data.contains)) &&
-															!widget.listController.isItemHidden(entry.value).isDuplicate &&
+															entry.value.isSyntheticParentOfId == null && !widget.listController.isItemHidden(entry.value).isDuplicate &&
 															// First try to find a non-stub
 															!entry.value.representsStubChildren;
 													})?.key ?? widget.listController.items.toList().asMap().entries.tryLastWhere((entry) {
 														return entry.key < firstVisibleIndex &&
 															(widget.persistentState.unseenPostIds.data.contains(entry.value.item.id) || entry.value.representsKnownStubChildren.any(widget.persistentState.unseenPostIds.data.contains)) &&
-															!widget.listController.isItemHidden(entry.value).isDuplicate;
+															entry.value.isSyntheticParentOfId == null && !widget.listController.isItemHidden(entry.value).isDuplicate;
 													})?.key ?? -1;
 													if (targetIndex != -1) {
 														widget.resetLayoutIndexes();

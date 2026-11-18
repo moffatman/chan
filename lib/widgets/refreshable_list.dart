@@ -13,6 +13,7 @@ import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/default_gesture_detector.dart';
 import 'package:chan/widgets/sliver_staggered_grid.dart';
+import 'package:chan/widgets/soft_height_cap.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
@@ -344,8 +345,12 @@ class RefreshableListItem<T extends Object> {
 	final String? filterReason;
 	final int id;
 	final List<int> parentIds;
+	/// The first root ID identifies a synthetic parent group, which may have
+	/// several sibling roots. Null for ordinary rows.
+	final int? isSyntheticParentOfId;
 	final Set<int> treeDescendantIds;
 	final int? _depth;
+	final int? _colorDepth;
 	final _RefreshableTreeItemsCacheKey _key;
 	final RefreshableListState _state;
 
@@ -359,19 +364,23 @@ class RefreshableListItem<T extends Object> {
 		this.filterReason,
 		required this.id,
 		this.parentIds = const [],
+		this.isSyntheticParentOfId,
 		Set<int>? treeDescendantIds,
 		this.representsUnknownStubChildren = false,
 		this.representsKnownStubChildren = const [],
 		this.representsUnloadedPages = const [],
-		int? depth
+		int? depth,
+		int? colorDepth
 	}) : treeDescendantIds = treeDescendantIds ?? {},
 	     _depth = depth,
-			 _key = state._internHashKey(_RefreshableTreeItemsCacheKey(parentIds, id, representsUnknownStubChildren || representsKnownStubChildren.isNotEmpty)),
+			 _colorDepth = colorDepth,
+			 _key = state._internHashKey(_RefreshableTreeItemsCacheKey(parentIds, id, representsUnknownStubChildren || representsKnownStubChildren.isNotEmpty, isSyntheticParentOfId)),
 			 _state = state;
 
 	@override
 	String toString({bool long = false}) => 'RefreshableListItem<$T>(${[
 		id.toString(),
+		if (isSyntheticParentOfId != null) 'parent preview for $isSyntheticParentOfId',
 		if (representsStubChildren) 'representsStubs: ${representsUnknownStubChildren ? '<unknown>' : representsKnownStubChildren.length > 1 ? representsKnownStubChildren : '<known(${representsKnownStubChildren.length})>'}',
 		if (representsUnloadedPages.isNotEmpty) 'representsUnloadedPages: $representsUnloadedPages',
 		if (treeDescendantIds.isNotEmpty) 'treeDescendantIds: $treeDescendantIds)',
@@ -395,6 +404,7 @@ class RefreshableListItem<T extends Object> {
 		(other.item == item) &&
 		(other.options == options) &&
 		(other.id == id) &&
+		(other.isSyntheticParentOfId == isSyntheticParentOfId) &&
 		(other.representsUnknownStubChildren == representsUnknownStubChildren) &&
 		listEquals(other.representsKnownStubChildren, representsKnownStubChildren) &&
 		listEquals(other.representsUnloadedPages, representsUnloadedPages) &&
@@ -405,20 +415,23 @@ class RefreshableListItem<T extends Object> {
 		listEquals(other.parentIds, parentIds) &&
 		setEquals(other.treeDescendantIds, treeDescendantIds) &&
 		(other._depth == _depth) &&
+		(other._colorDepth == _colorDepth) &&
 		(other._state == _state);
 
 	@override
-	int get hashCode => Object.hash(item, options, representsUnknownStubChildren, representsKnownStubChildren.length, representsUnloadedPages.length, highlighted, pinned, filterCollapsed, filterReason, parentIds.length, treeDescendantIds.length, _depth, _state);
+	int get hashCode => Object.hash(item, options, representsUnknownStubChildren, representsKnownStubChildren.length, representsUnloadedPages.length, highlighted, pinned, filterCollapsed, filterReason, parentIds.length, treeDescendantIds.length, _depth, _colorDepth, _state, isSyntheticParentOfId);
 
 	RefreshableListItem<T> copyWith({
 		List<int>? parentIds,
 		bool? representsUnknownStubChildren,
 		List<int>? representsKnownStubChildren,
 		int? depth,
+		int? colorDepth,
 	}) => RefreshableListItem(
 		item: item,
 		options: options,
 		id: id,
+		isSyntheticParentOfId: isSyntheticParentOfId,
 		highlighted: highlighted,
 		pinned: pinned,
 		filterCollapsed: filterCollapsed,
@@ -429,8 +442,18 @@ class RefreshableListItem<T extends Object> {
 		representsKnownStubChildren: representsKnownStubChildren ?? this.representsKnownStubChildren,
 		representsUnloadedPages: representsUnloadedPages,
 		depth: depth,
+		colorDepth: colorDepth ?? _colorDepth,
 		state: _state
 	);
+
+	RefreshableListItem? get _syntheticParent {
+		if (parentIds.isEmpty) return null;
+		final parent = _state._refreshableTreeItems.syntheticParents[parentIds.length == 1 ? id : parentIds[1]];
+		return parent?.id == parentIds.first ? parent : null;
+	}
+
+	/// Keeps a detached subtree's colors aligned with its original ancestry.
+	int get colorDepth => _colorDepth ?? depth + (_syntheticParent?.colorDepth ?? 0);
 
 	int get depth {
 		if (_depth != null) {
@@ -518,6 +541,8 @@ enum TreeItemCollapseType {
 	childCollapsed,
 	mutuallyCollapsed,
 	mutuallyChildCollapsed,
+	parentPreview,
+	parentOfDetachedSubtree,
 	topLevelCollapsed,
 	newInsertCollapsed,
 	parentOfNewInsert;
@@ -560,24 +585,28 @@ class _RefreshableTreeItemsCacheKey {
 	final List<int> parentIds;
 	final int thisId;
 	final bool representsStubChildren;
+	final int? isSyntheticParentOfId;
 
-	_RefreshableTreeItemsCacheKey(this.parentIds, this.thisId, this.representsStubChildren);
+	_RefreshableTreeItemsCacheKey(this.parentIds, this.thisId, this.representsStubChildren, [this.isSyntheticParentOfId]);
 
 	@override
 	bool operator ==(Object other) =>
 		identical(this, other) ||
 		other is _RefreshableTreeItemsCacheKey &&
 		other.thisId == thisId &&
+		other.isSyntheticParentOfId == isSyntheticParentOfId &&
 		listEquals(other.parentIds, parentIds) &&
 		other.representsStubChildren == representsStubChildren;
 	
 	@override
-	int get hashCode => Object.hash(thisId, Object.hashAll(parentIds), representsStubChildren);
+	int get hashCode => Object.hash(thisId, Object.hashAll(parentIds), representsStubChildren, isSyntheticParentOfId);
 
 	@override
-	String toString() => '_RefreshableTreeItemsCacheKey(thisId: $thisId, parentIds: $parentIds, representsStubChildren: $representsStubChildren)';
+	String toString() => '_RefreshableTreeItemsCacheKey(thisId: $thisId, parentIds: $parentIds, representsStubChildren: $representsStubChildren, isSyntheticParentOfId: $isSyntheticParentOfId)';
 
 	bool isDirectParentOf(_RefreshableTreeItemsCacheKey child) {
+		// Synthetic groups use syntheticParents to associate all their roots.
+		if (isSyntheticParentOfId != null || child.isSyntheticParentOfId != null) return false;
 		if (parentIds.length + 1 != child.parentIds.length) {
 			return false;
 		}
@@ -590,10 +619,11 @@ class _RefreshableTreeItemsCacheKey {
 	}
 
 	bool isPeerOf(_RefreshableTreeItemsCacheKey other) {
-		return thisId == other.thisId && listEquals(other.parentIds, parentIds);
+		return thisId == other.thisId && isSyntheticParentOfId == other.isSyntheticParentOfId && listEquals(other.parentIds, parentIds);
 	}
 
 	bool isDescendantOf(_RefreshableTreeItemsCacheKey ancestor) {
+		if (isSyntheticParentOfId != null || ancestor.isSyntheticParentOfId != null) return false;
 		if (parentIds.length < (ancestor.parentIds.length + 1)) {
 			return false;
 		}
@@ -621,10 +651,13 @@ class _DummyStatus {
 	String toString() => '_DummyStatus($type, $height)';
 }
 
-class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
+class _RefreshableTreeItems<T extends Object> extends EasyListenable {
 	final List<List<int>> manuallyCollapsedItems;
 	final Map<int, int> defaultPrimarySubtreeParents = {};
 	final Map<int, int> primarySubtreeParents;
+	// Absent: initial capped preview. True: full subtree. False: collapsed row.
+	final Map<int, bool> syntheticParentExpansion = {};
+	final Map<int, RefreshableListItem<T>> syntheticParents = {};
 	final Map<List<int>, CancelToken> loadingOmittedItems = {};
 	final Map<_RefreshableTreeItemsCacheKey, TreeItemCollapseType?> _cache = Map.identity();
 	final Map<_RefreshableTreeItemsCacheKey, _DummyStatus> _dummyCache = Map.identity();
@@ -642,18 +675,42 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 		required this.state
 	});
 
+	Iterable<int> detachedChildIds(int parentId) sync* {
+		for (final entry in syntheticParents.entries) {
+			final parent = entry.value;
+			if (entry.key == parent.isSyntheticParentOfId && parent.id == parentId) {
+				yield* parent.treeDescendantIds;
+			}
+		}
+	}
+
 	TreeItemCollapseType? isItemHidden(RefreshableListItem<T> item) {
 		final key = item._key;
 		return _cache.putIfAbsent(key, () {
+			if (item.isSyntheticParentOfId != null) {
+				return switch (syntheticParentExpansion[item.isSyntheticParentOfId]) {
+					null => TreeItemCollapseType.parentPreview,
+					true => null,
+					false => TreeItemCollapseType.collapsed
+				};
+			}
+			final parent = item._syntheticParent;
+			final hasSyntheticParent = parent != null;
+			if (parent != null) {
+				if (syntheticParentExpansion[parent.isSyntheticParentOfId] == false) {
+					return TreeItemCollapseType.childCollapsed;
+				}
+			}
 			// Need to check all parent prefixes
 			for (int d = 0; d < key.parentIds.length; d++) {
+				if (d == 0 && hasSyntheticParent) continue;
 				final primaryParent = primarySubtreeParents[key.parentIds[d]] ?? defaultPrimarySubtreeParents[key.parentIds[d]];
 				final theParentId = d == 0 ? -1 : key.parentIds[d - 1];
 				if (primaryParent != null && primaryParent != theParentId) {
 					return TreeItemCollapseType.mutuallyChildCollapsed;
 				}
 			}
-			if (key.parentIds.isNotEmpty) {
+			if (key.parentIds.isNotEmpty && !hasSyntheticParent) {
 				if (state._automaticallyCollapsedTopLevelItems.contains(item._firstEffectiveParentId)) {
 					return TreeItemCollapseType.childCollapsed;
 				}
@@ -694,6 +751,8 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 			}
 			// By iterating reversed it will properly handle collapses within collapses
 			for (final collapsed in manuallyCollapsedItems.reversed.followedBy(state._automaticallyCollapsedItems)) {
+				// Collapsing the original parent does not collapse its context copies.
+				if (hasSyntheticParent && collapsed.length == 1 && collapsed.first == key.parentIds.first) continue;
 				if (collapsed.length > key.parentIds.length + 1) {
 					continue;
 				}
@@ -761,6 +820,9 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 						return TreeItemCollapseType.parentOfNewInsert;
 					}
 				}
+			}
+			if (!key.representsStubChildren && detachedChildIds(item.id).isNotEmpty) {
+				return TreeItemCollapseType.parentOfDetachedSubtree;
 			}
 			return null;
 		});
@@ -1151,9 +1213,10 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		required T? value,
 		required Set<int> collapsedChildIds,
 		required bool loading,
-		required double? peekContentHeight,
+		required bool showBody,
 		required List<int>? stubChildIds,
-		required bool alreadyDim
+		required bool dim,
+		required bool showChildCount
 	})? collapsedItemBuilder;
 	final List<T>? initialList;
 	/// When the initial data was fetched. Skip the initial refresh while it is
@@ -1338,6 +1401,13 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		super.didChangeDependencies();
 		_tickersEnabled = TickerMode.valuesOf(context).enabled;
 		controller._scrollWaitsEnabled.value = _tickersEnabled;
+	}
+
+	@override
+	void reassemble() {
+		super.reassemble();
+		_lastTree = null;
+		forceRebuildId++;
 	}
 
 	Future<void> _lockSliverForNextRebuild({bool bottomOnly = false, bool lockAtMiddle = false}) async {
@@ -1680,15 +1750,19 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				itemsById[parentId] != null && !adapter.getIsStub(itemsById[parentId]!));
 			if (parentId == null) continue;
 			final batch = parentId == adapter.opId ? 0 : treeBatchForId(_treeBatchBoundaries, _treeBatchOverrides, parentId);
-			for (final ids in _treeBatchOverrides) {
-				ids.remove(id);
-			}
-			_treeBatchOverrides[batch].add(id);
+			_moveToTreeBatch(id, batch);
 			placedAny = true;
 		}
 		if (!placedAny) return;
 		_lastTree = null;
 		_saveTreeBatches();
+	}
+
+	void _moveToTreeBatch(int id, int batch) {
+		for (final ids in _treeBatchOverrides) {
+			ids.remove(id);
+		}
+		_treeBatchOverrides[batch].add(id);
 	}
 
 	void _onUpdateAnimation() {
@@ -1758,7 +1832,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		for (int i = first; i <= last; i++) {
 			final built = controller._items[i];
 			final item = built.item;
-			if (!built.hasGoodState || item.representsStubChildren || adapter.getIsStub(item.item) ||
+			if (!built.hasGoodState || item.isSyntheticParentOfId != null || item.representsStubChildren || adapter.getIsStub(item.item) ||
 					_refreshableTreeItems.isItemHidden(item).isHidden) {
 				continue;
 			}
@@ -2077,7 +2151,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		final depth = item.depth;
 		final depthWidth = depth > 0 ? min(width / 2, (pow(depth, 0.60) * 20)) : 0;
 		final height = widget.treeAdapter?.estimateHeight?.call(item.item, item.parentIds, width - depthWidth);
-		if (height != null && _refreshableTreeItems.isItemHidden(item) == TreeItemCollapseType.mutuallyCollapsed) {
+		final collapseType = _refreshableTreeItems.isItemHidden(item);
+		if (height != null && (collapseType == TreeItemCollapseType.mutuallyCollapsed || collapseType == TreeItemCollapseType.parentPreview)) {
 			return min(height, 90);
 		}
 		return height;
@@ -2107,6 +2182,24 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 		final range = controller.useDummyItemsInRange;
 		return range != null && itemIndex < range.$2 && itemIndex > range.$1;
+	}
+
+	Widget _withTreeBorder(BuildContext context, RefreshableListItem<T> value, Widget child, {bool dummy = false}) {
+		if (!useTree) return child;
+		final depth = value.depth;
+		final colorDepth = value.colorDepth;
+		if (depth == 0 && colorDepth == 0) return child;
+		final width = dummy ? estimateWidth(context) : MediaQuery.sizeOf(context).width;
+		return Container(
+			margin: EdgeInsets.only(left: depth > 0 ? min(width / 2, (pow(depth, 0.60) * 20) - 5) : 0),
+			decoration: BoxDecoration(
+				border: colorDepth > 0 ? Border(left: BorderSide(
+					width: 5,
+					color: ChanceTheme.secondaryColorOf(context).withMinValue(0.5).withSaturation(0.5).shiftHue(colorDepth * 25).withValues(alpha: 0.7)
+				)) : null
+			),
+			child: child
+		);
 	}
 
 	Widget _itemBuilder(BuildContext context, RefreshableListItem<T> value, bool dummy) {
@@ -2154,24 +2247,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					]
 				]
 			);
-			if (useTree && value.depth > 0) {
-				return Container(
-					margin: EdgeInsets.only(
-						left: min(estimateWidth(context) / 2, (pow(value.depth, 0.60) * 20) - 5)
-					),
-					decoration: BoxDecoration(
-						border: Border(left: BorderSide(
-							width: 5,
-							color: ChanceTheme.secondaryColorOf(context).withMinValue(0.5).withSaturation(0.5).shiftHue(value.depth * 25).withValues(alpha: 0.7)
-						))
-					),
-					child: child
-				);
-			}
-			return child;
+			return _withTreeBorder(context, value, child, dummy: true);
 		}
 		Widget child;
-		Widget? collapsed;
 		CancelToken? loadingOmittedItems;
 		final TreeItemCollapseType? isHidden;
 		if (widget.treeAdapter != null && useTree) {
@@ -2180,7 +2258,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		else {
 			isHidden = null;
 		}
-		if (widget.treeAdapter != null && (useTree || value.representsStubChildren || value.representsUnloadedPages.isNotEmpty) && !isHidden.isHidden) {
+		if (widget.treeAdapter != null && value.isSyntheticParentOfId == null && (useTree || value.representsStubChildren || value.representsUnloadedPages.isNotEmpty) && !isHidden.isHidden) {
 			loadingOmittedItems = context.select<_RefreshableTreeItems<T>, CancelToken?>((c) => c.isItemLoadingOmittedItems(value.parentIds, value.id));
 		}
 		if (value.representsUnloadedPages.isNotEmpty) {
@@ -2275,10 +2353,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				context: context,
 				value: null,
 				collapsedChildIds: value.representsKnownStubChildren.toSet(),
+				showChildCount: true,
 				loading: loadingOmittedItems != null,
-				peekContentHeight: null,
+				showBody: false,
 				stubChildIds: value.representsKnownStubChildren,
-				alreadyDim: false
+				dim: false
 			) ?? Container(
 				height: 30,
 				alignment: Alignment.center,
@@ -2289,21 +2368,6 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			child = Builder(
 				builder: (context) => widget.itemBuilder(context, value.item, value.options)
 			);
-			collapsed = widget.collapsedItemBuilder?.call(
-				context: context,
-				value: value.item,
-				collapsedChildIds: value.treeDescendantIds,
-				loading: loadingOmittedItems != null,
-				peekContentHeight: (widget.treeAdapter?.collapsedItemsShowBody ?? false) ? double.infinity : null,
-				stubChildIds: null,
-				alreadyDim: value.filterCollapsed
-			);
-			if (value.filterCollapsed && collapsed != null) {
-				collapsed = Opacity(
-					opacity: 0.5,
-					child: collapsed
-				);
-			}
 		}
 		else {
 			child = const SizedBox(width: double.infinity);
@@ -2313,7 +2377,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				// Avoid possible heavy build+layout cost for hidden items
 				child = const SizedBox(width: double.infinity);
 			}
-			else if (isHidden == TreeItemCollapseType.mutuallyCollapsed ||
+			else if ((value.isSyntheticParentOfId != null && isHidden != TreeItemCollapseType.collapsed) || isHidden == TreeItemCollapseType.mutuallyCollapsed ||
+							isHidden == TreeItemCollapseType.parentPreview ||
+						isHidden == TreeItemCollapseType.parentOfDetachedSubtree ||
 								isHidden == TreeItemCollapseType.topLevelCollapsed ||
 								isHidden == TreeItemCollapseType.parentOfNewInsert) {
 				final Set<int> collapsedChildIds;
@@ -2330,22 +2396,28 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						return e.key[value.parentIds.length] == value.id;
 					}).map((x) => x.key.last).toSet();
 				}
+				else if (isHidden == TreeItemCollapseType.parentOfDetachedSubtree) {
+					collapsedChildIds = _refreshableTreeItems.detachedChildIds(value.id).toSet();
+				}
 				else {
 					collapsedChildIds = value.treeDescendantIds;
 				}
-				child = widget.collapsedItemBuilder?.call(
+				final dim = value.isSyntheticParentOfId != null || isHidden == TreeItemCollapseType.mutuallyCollapsed;
+				final body = widget.collapsedItemBuilder?.call(
 					context: context,
 					value: value.item,
 					collapsedChildIds: collapsedChildIds,
+					showChildCount: value.isSyntheticParentOfId == null,
 					loading: loadingOmittedItems != null,
-					peekContentHeight: isHidden == TreeItemCollapseType.mutuallyCollapsed ? 90 : double.infinity,
+					showBody: true,
 					stubChildIds: null,
-					alreadyDim: false
-				) ?? Stack(
+					dim: dim
+				);
+				child = body ?? Stack(
 					alignment: Alignment.bottomRight,
 					children: [
 						child,
-						CupertinoButton(
+						if (value.isSyntheticParentOfId == null) CupertinoButton(
 							padding: EdgeInsets.zero,
 							onPressed: isHidden != TreeItemCollapseType.parentOfNewInsert ? null : () {
 								_refreshableTreeItems.revealNewInsertsBelow(value);
@@ -2360,8 +2432,23 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						)
 					]
 				);
+				if (body == null && dim) child = Opacity(opacity: 0.5, child: child);
 			}
 			else {
+				Widget? collapsed;
+				final dim = value.isSyntheticParentOfId != null || value.filterCollapsed;
+				if (!isHidden.isHidden && !value.representsStubChildren && value.representsUnloadedPages.isEmpty) {
+					collapsed = widget.collapsedItemBuilder?.call(
+						context: context,
+						value: value.item,
+						collapsedChildIds: value.treeDescendantIds,
+						showChildCount: value.isSyntheticParentOfId == null || isHidden == TreeItemCollapseType.collapsed,
+						loading: loadingOmittedItems != null,
+						showBody: value.isSyntheticParentOfId == null && (widget.treeAdapter?.collapsedItemsShowBody ?? false),
+						stubChildIds: null,
+						dim: dim
+					);
+				}
 				child = AnimatedCrossFade(
 					key: ValueKey(value._key),
 					duration: _treeAnimationDuration,
@@ -2369,10 +2456,13 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					firstCurve: Curves.ease,
 					//secondCurve: Curves.ease,
 					firstChild: child,
-					secondChild: (!isHidden.isHidden && !value.representsStubChildren) ? (collapsed ?? const SizedBox(
-						height: 30,
-						width: double.infinity,
-						child: Text('Something hidden')
+					secondChild: (!isHidden.isHidden && !value.representsStubChildren) ? (collapsed ?? Opacity(
+						opacity: dim ? 0.5 : 1,
+						child: const SizedBox(
+							height: 30,
+							width: double.infinity,
+							child: Text('Something hidden')
+						)
 					)) : const SizedBox(
 						height: 0,
 						width: double.infinity
@@ -2380,21 +2470,46 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					crossFadeState: isHidden == null ? CrossFadeState.showFirst : CrossFadeState.showSecond,
 				);
 			}
-			if (value.parentIds.isNotEmpty && !isHidden.isHidden) {
-				child = widget.treeAdapter!.wrapTreeChild(child, value.parentIds);
-			}
 			if (isHidden != TreeItemCollapseType.mutuallyChildCollapsed) {
-				child = AnimatedSize(
-					duration: _treeAnimationDuration,
-					alignment: Alignment.topCenter,
-					curve: Curves.ease,
-					child: child
-				);
-				child = DefaultGestureDetector(
+				final isPreview = isHidden == TreeItemCollapseType.parentPreview || isHidden == TreeItemCollapseType.mutuallyCollapsed;
+				final content = isPreview ? IgnorePointer(child: child) : child;
+				child = Builder(builder: (context) => DefaultGestureDetector(
 					behavior: HitTestBehavior.translucent,
 					onTap: loadingOmittedItems?.cancel ?? () async {
 						if (!value.representsStubChildren) {
-							if (isHidden == TreeItemCollapseType.mutuallyCollapsed) {
+							if (value.isSyntheticParentOfId != null || isHidden == TreeItemCollapseType.parentOfDetachedSubtree) {
+								controller._lockSliverListAtKey(ValueKey(value._key));
+								if (value.isSyntheticParentOfId case final rootId?) {
+									final expansion = _refreshableTreeItems.syntheticParentExpansion;
+									final expanded = expansion[rootId];
+									expansion[rootId] = expanded == null
+										? context.findAncestorRenderObjectOfType<RenderSoftHeightCap>()!.isTruncated : !expanded;
+									_refreshableTreeItems._cache.clear();
+									_refreshableTreeItems.didUpdate();
+								}
+								else {
+									final detachedIds = _refreshableTreeItems.detachedChildIds(value.id).toSet();
+									if (detachedIds.isNotEmpty) {
+										final adapter = widget.treeAdapter!;
+										final batch = value.id == adapter.opId ? 0 : treeBatchForId(_treeBatchBoundaries, _treeBatchOverrides, value.id);
+										for (final item in originalList ?? <T>[]) {
+											final id = adapter.getId(item);
+											if (adapter.getIsStub(item) || !detachedIds.contains(id)) continue;
+											_moveToTreeBatch(id, batch);
+										}
+										_lastTree = null;
+										_saveTreeBatches();
+										setState(() {});
+									}
+								}
+								try {
+									await _onTreeCollapseOrExpand(value, true);
+								}
+								finally {
+									controller._unlockSliverList();
+								}
+							}
+							else if (isHidden == TreeItemCollapseType.mutuallyCollapsed) {
 								context.read<_RefreshableTreeItems<T>>().swapSubtreeTo(value);
 								// This should be removed in forked_flutter
 								Future.delayed(_treeAnimationDuration, () => controller._alignToItemIfPartiallyAboveFold(value));
@@ -2435,6 +2550,24 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 							_loadOmittedItems(value);
 						}
 					},
+					child: content
+				));
+				if (isPreview) {
+					child = SoftHeightCap(
+						maxHeight: 90,
+						tolerance: MediaQuery.textScalerOf(context).scale(20),
+						child: child
+					);
+				}
+			}
+			if (value.parentIds.isNotEmpty && !isHidden.isHidden) {
+				child = widget.treeAdapter!.wrapTreeChild(child, value.parentIds);
+			}
+			if (isHidden != TreeItemCollapseType.mutuallyChildCollapsed) {
+				child = AnimatedSize(
+					duration: _treeAnimationDuration,
+					alignment: Alignment.topCenter,
+					curve: Curves.ease,
 					child: child
 				);
 			}
@@ -2462,20 +2595,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				)
 			);
 		}
-		final depth = value.depth;
-		if (depth > 0 && useTree) {
-			child = Container(
-				margin: EdgeInsets.only(left: min(MediaQuery.sizeOf(context).width / 2, (pow(depth, 0.60) * 20) - 5)),
-				decoration: BoxDecoration(
-					border: Border(left: BorderSide(
-						width: 5,
-						color: ChanceTheme.secondaryColorOf(context).withMinValue(0.5).withSaturation(0.5).shiftHue(value.depth * 25).withValues(alpha: 0.7)
-					))
-				),
-				child: child
-			);
-		}
-		return child;
+		return _withTreeBorder(context, value, child);
 	}
 
 	bool _shouldPreCollapseOnSubsequentEncounter(RefreshableListItem<T> item, _TreeNode<RefreshableListItem<T>> node) {
@@ -2600,6 +2720,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			}
 		}
 
+		final hadSyntheticParents = _refreshableTreeItems.syntheticParents.isNotEmpty;
+		_refreshableTreeItems.syntheticParents.clear();
 		final firstTreeBuild = _treeBatchBoundaries.isEmpty;
 		final maxId = linear.fold<int>(0, (m, i) => max(m, i.representsKnownStubChildren.fold<int>(i.id, (n, j) => max(n, j))));
 		final boundaries = _treeBatchBoundaries;
@@ -2609,6 +2731,30 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		final batchRoots = List.generate(boundaries.length + 1, (_) => <_TreeNode<RefreshableListItem<T>>>[]);
 
 		final Set<int> itemsWithOmittedReplies = {};
+
+		int rootOrderId(_TreeNode<RefreshableListItem<T>> node) => node.item.isSyntheticParentOfId ?? node.id;
+
+		void addRoot(_TreeNode<RefreshableListItem<T>> node) {
+			final batch = batchFor(node.id);
+			final parentId = adapter.newRepliesAreLinear && node.parents.isEmpty && !adapter.getIsStub(node.item.item)
+				? adapter.getParentIds(node.item.item).tryFirstWhere((id) => id != adapter.opId && id != node.id && treeMap[id] != null &&
+					!adapter.getIsStub(treeMap[id]!.item.item) && batchFor(id) < batch)
+				: null;
+			if (parentId == null) {
+				batchRoots[batch].add(node);
+				return;
+			}
+			final parent = treeMap[parentId]!.item;
+			batchRoots[batch].add(_TreeNode(RefreshableListItem<T>(
+				item: parent.item,
+				options: parent.options,
+				id: parentId,
+				isSyntheticParentOfId: node.id,
+				state: this
+			), parentId, false)..children.add(node));
+			// This is display context, not an owner: trailing-branch checks must
+			// still stop at the detached reply rather than reaching the old parent.
+		}
 
 		void visitLinear(RefreshableListItem<T> item) {
 			final id = adapter.getId(item.item);
@@ -2650,9 +2796,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				return;
 			}
 			final batch = batchFor(id);
-			final treeRoots1 = batchRoots[batch];
 			if (parentIds.isEmpty) {
-				treeRoots1.add(node);
+				addRoot(node);
 			}
 			else if (adapter.newRepliesAreLinear) {
 				// A reply may extend an earlier batch's trailing branch: this
@@ -2670,7 +2815,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					return !acceptableParentIds!.contains(parentId);
 				});
 				if (parentIds.isEmpty) {
-					treeRoots1.add(node);
+					addRoot(node);
 				}
 				else {
 					node.parents.addAll(parentIds.tryMap((id) => treeMap[id]));
@@ -2758,7 +2903,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				}
 				if (foundOP) {
 					if (adapter.repliesToOPAreTopLevel) {
-						treeRoots1.add(node);
+						addRoot(node);
 					}
 					else {
 						final op = treeMap[adapter.opId];
@@ -2783,7 +2928,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		if (adapter.newRepliesAreLinear && _lastTreeOrder != null) {
 			for (int i = 0; i < controller.itemsLength; i++) {
 				final item = controller.getItem(i);
-				if (!item.representsStubChildren) displayedOrder.putIfAbsent(item.id, () => i);
+				if (!item.representsStubChildren && item.isSyntheticParentOfId == null) displayedOrder.putIfAbsent(item.id, () => i);
 			}
 		}
 		for (int batch = 0; batch < itemsByBatch.length; batch++) {
@@ -2800,7 +2945,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				// Resolve missing-parent roots before the next batch checks the tail.
 				final addedOrphans = <int>{};
 				for (final orphan in orphans.values.expand((nodes) => nodes)) {
-					if (orphan.parents.isEmpty && addedOrphans.add(orphan.id)) batchRoots[batchFor(orphan.id)].add(orphan);
+					if (orphan.parents.isEmpty && addedOrphans.add(orphan.id)) addRoot(orphan);
 				}
 				orphans.clear();
 			}
@@ -2839,13 +2984,15 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			if (lastTreeOrder != null) {
 				const infiniteIndex = 1 << 50;
 				mergeSort(treeRoots, compare: (a, b) {
-					if (a.id == adapter.opId) return b.id == adapter.opId ? 0 : -1;
-					if (b.id == adapter.opId) return 1;
-					final batchComparison = batchFor(a.id).compareTo(batchFor(b.id));
+					final idA = rootOrderId(a);
+					final idB = rootOrderId(b);
+					if (idA == adapter.opId) return idB == adapter.opId ? 0 : -1;
+					if (idB == adapter.opId) return 1;
+					final batchComparison = batchFor(idA).compareTo(batchFor(idB));
 					if (batchComparison != 0) return batchComparison;
-					if (adapter.newRepliesAreLinear && batchFor(a.id) == boundaries.length) return 0;
-					final idxA = lastTreeOrder.treeRootIndexLookup[a.id] ?? infiniteIndex;
-					final idxB = lastTreeOrder.treeRootIndexLookup[b.id] ?? infiniteIndex;
+					if (adapter.newRepliesAreLinear && batchFor(idA) == boundaries.length) return 0;
+					final idxA = lastTreeOrder.treeRootIndexLookup[idA] ?? infiniteIndex;
+					final idxB = lastTreeOrder.treeRootIndexLookup[idB] ?? infiniteIndex;
 					return idxA.compareTo(idxB);
 				});
 				for (final entry in treeMap.entries) {
@@ -2861,7 +3008,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			final newOrder = _lastTreeOrder = (
 				treeRootIndexLookup: {
 					for (int i = 0; i < treeRoots.length; i++)
-						treeRoots[i].id: i
+						rootOrderId(treeRoots[i]): i
 				},
 				treeChildrenIndexLookup: treeMap.map((k, v) => MapEntry(k, {
 					for (int i = 0; i < v.children.length; i++)
@@ -2912,9 +3059,18 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				// Bail
 				throw const _TreeTooDeepException();
 			}
-			final item = node.item.copyWith(parentIds: parentIds);
+			final isSynthetic = node.item.isSyntheticParentOfId != null;
+			final item = node.item.copyWith(
+				parentIds: parentIds,
+				colorDepth: isSynthetic ? encountered[node.id]?.colorDepth ?? 0 : null
+			);
 			item.options = item.options.copyWith(knownTreeChildCount: node.children.length);
 			out.add(item);
+			if (isSynthetic) {
+				for (final child in node.children) {
+					_refreshableTreeItems.syntheticParents[child.id] = item;
+				}
+			}
 			final ids = [
 				...parentIds,
 				node.id
@@ -2925,7 +3081,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					_refreshableTreeItems.defaultPrimarySubtreeParents.putIfAbsent(node.id, () => parentIds.tryLast ?? -1);
 				}
 			}
-			else if (adapter.initiallyCollapseSecondLevelReplies &&
+			else if (!isSynthetic && adapter.initiallyCollapseSecondLevelReplies &&
 							 item.depth == 0 && // TODO: Test it
 							 (node.children.isNotEmpty || willAddOmittedChildNode)) {
 				automaticallyTopLevelCollapsed.add(node.id);
@@ -2974,7 +3130,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					item.treeDescendantIds.add(-1);
 				}
 			}
-			encountered[node.id] = item;
+			if (!isSynthetic) encountered[node.id] = item;
 			return item.treeDescendantIds;
 		}
 		_TreeNode<RefreshableListItem<T>>? firstRoot;
@@ -3000,12 +3156,37 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				orphanEncountered.add(orphan.id);
 			}
 		}
-		for (final root in treeRoots) {
+		for (int i = 0; i < treeRoots.length; i++) {
+			final root = treeRoots[i];
 			if (adapter.getIsStub(root.item.item)) {
 				stubRoots.add(root);
 				continue;
 			}
-			dumpNode(root, root.parents.any((r) => r.id == adapter.opId) ? [adapter.opId] : []);
+			if (root.item.isSyntheticParentOfId != null) {
+				final batch = batchFor(rootOrderId(root));
+				while (i + 1 < treeRoots.length) {
+					final next = treeRoots[i + 1];
+					if (adapter.getIsStub(next.item.item)) {
+						stubRoots.add(next);
+						i++;
+						continue;
+					}
+					if (next.item.isSyntheticParentOfId == null || next.id != root.id || batchFor(rootOrderId(next)) != batch) break;
+					root.children.addAll(next.children);
+					i++;
+				}
+			}
+			dumpNode(root,
+				root.parents.any((r) => r.id == adapter.opId) ? [adapter.opId] : []);
+		}
+		final expansion = _refreshableTreeItems.syntheticParentExpansion;
+		// A sibling's state follows the group's first root after grouping changes.
+		for (final entry in expansion.entries.toList()) {
+			expansion.remove(entry.key);
+			if (_refreshableTreeItems.syntheticParents[entry.key]?.isSyntheticParentOfId case final groupId?) expansion[groupId] = entry.value;
+		}
+		if (hadSyntheticParents || _refreshableTreeItems.syntheticParents.isNotEmpty) {
+			_refreshableTreeItems._cache.clear();
 		}
 		if (firstRoot != null && (firstRoot.stubChildIds.isNotEmpty || firstRoot.hasOmittedReplies || stubRoots.isNotEmpty ||
 				adapter.newRepliesAreLinear && orphanStubs.isNotEmpty)) {
@@ -4152,7 +4333,8 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	}
 	void invalidateAfter(RefreshableListItem<T> item, bool looseEquality) {
 		final index = looseEquality ?
-			_items.indexWhere((i) => i.item.item == item.item && i.item.representsStubChildren == item.representsStubChildren) :
+			_items.indexWhere((i) => i.item.item == item.item && i.item.representsStubChildren == item.representsStubChildren &&
+				i.item.isSyntheticParentOfId == item.isSyntheticParentOfId) :
 			_items.indexWhere((i) => i.item == item);
 		if (index == -1) {
 			print('Could not find $item in list to invalidate after');
@@ -4401,10 +4583,10 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		Curve curve = Curves.easeInOut,
 		bool revealIfHidden = true
 	}) async {
-		int targetIndex = _items.indexWhere((i) => f(i.item.item));
+		int targetIndex = _items.indexWhere((i) => i.item.isSyntheticParentOfId == null && f(i.item.item));
 		if (targetIndex == -1) {
 			if (orElseLast != null) {
-				targetIndex = _items.lastIndexWhere((i) => orElseLast(i.item.item));
+				targetIndex = _items.lastIndexWhere((i) => i.item.isSyntheticParentOfId == null && orElseLast(i.item.item));
 			}
 			if (targetIndex == -1) {
 				throw const ItemNotFoundException('No matching item to scroll to');
@@ -4418,10 +4600,10 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		Duration duration = const Duration(milliseconds: 200),
 		bool revealIfHidden = true
 	}) async {
-		int targetIndex = _items.indexWhere((i) => f(i.item.item));
+		int targetIndex = _items.indexWhere((i) => i.item.isSyntheticParentOfId == null && f(i.item.item));
 		if (targetIndex == -1) {
 			if (orElseLast != null) {
-				targetIndex = _items.lastIndexWhere((i) => orElseLast(i.item.item));
+				targetIndex = _items.lastIndexWhere((i) => i.item.isSyntheticParentOfId == null && orElseLast(i.item.item));
 			}
 			if (targetIndex == -1) {
 				throw const ItemNotFoundException('No matching item to scroll to');

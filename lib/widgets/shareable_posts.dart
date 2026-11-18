@@ -152,16 +152,17 @@ class _ShareablePostsState extends State<ShareablePosts> {
 						required Post? value,
 						required Set<int> collapsedChildIds,
 						required bool loading,
-						required double? peekContentHeight,
+						required bool showBody,
 						required List<int>? stubChildIds,
-						required bool alreadyDim
+						required bool dim,
+						required bool showChildCount
 					}) {
 						final settings = context.watch<Settings>();
-						if (peekContentHeight != null && value != null) {
-							final post = Builder(
+						if (showBody && value != null) {
+							return Builder(
 								builder: (context) => PostRow(
 									post: value,
-									dim: !alreadyDim && peekContentHeight.isFinite,
+									dim: dim,
 									baseOptions: baseOptions,
 									showBoardName: value.id == primaryPostId,
 									showSiteIcon: value.id == primaryPostId,
@@ -169,7 +170,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 									showYourPostBorder: style.revealYourPosts,
 									revealSpoilerImages: true,
 									forceAbsoluteTime: true,
-									showReplyCount: widget.style.showReplyCounts,
+									showReplyCount: widget.style.showReplyCounts && showChildCount,
 									overrideReplyCount: Row(
 										mainAxisSize: MainAxisSize.min,
 										children: [
@@ -189,17 +190,8 @@ class _ShareablePostsState extends State<ShareablePosts> {
 									)
 								)
 							);
-							return IgnorePointer(
-								ignoring: peekContentHeight.isFinite,
-								child: ConstrainedBox(
-									constraints: BoxConstraints(
-										maxHeight: peekContentHeight
-									),
-									child: post
-								)
-							);
 						}
-						return IgnorePointer(
+						final summary = IgnorePointer(
 							child: Container(
 								width: double.infinity,
 								padding: const EdgeInsets.all(8),
@@ -230,6 +222,7 @@ class _ShareablePostsState extends State<ShareablePosts> {
 								)
 							)
 						);
+						return dim ? Opacity(opacity: 0.5, child: summary) : summary;
 					},
 					useTree: true,
 					controller: controller,

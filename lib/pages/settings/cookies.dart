@@ -569,11 +569,12 @@ class _CookieSettingsPageState extends State<CookieSettingsPage> {
 						required value,
 						required collapsedChildIds,
 						required loading,
-						required peekContentHeight,
+						required showBody,
 						required stubChildIds,
-						required alreadyDim
+						required dim,
+						required showChildCount
 					}) {
-						return value == null ? const SizedBox.shrink() : _CookieGroupRow(
+						final summary = value == null ? const SizedBox.shrink() : _CookieGroupRow(
 							item: value,
 							collapsed: true,
 							onAdd: () => _addCookie(
@@ -581,6 +582,7 @@ class _CookieSettingsPageState extends State<CookieSettingsPage> {
 								domain: value.newCookieDomain
 							)
 						);
+						return dim ? Opacity(opacity: 0.5, child: summary) : summary;
 					},
 					useTree: true,
 					treeAdapter: RefreshableTreeAdapter(
