@@ -1129,7 +1129,9 @@ class _GalleryPageState extends State<GalleryPage> {
 															animation: _getController(attachment),
 															builder: (context, _) => GestureDetector(
 																onTap: _getController(attachment).isFullResolution ? _toggleChrome : () {
+																	lightHapticFeedback();
 																	_getController(attachment).loadFullAttachment().then((x) {
+																		lightHapticFeedback();
 																		if (!mounted) return;
 																		_currentAttachmentChanged.didUpdate();
 																	});

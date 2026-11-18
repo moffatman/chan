@@ -5079,6 +5079,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		return false;
 	}
 	Future<void> blockAndUpdate() async {
+		lightHapticFeedback();
 		_lastLaidOutRange = null;
 		state?.originalList = null;
 		state?.sortedList = null;
