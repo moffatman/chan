@@ -466,6 +466,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	}
 
 	void _onPageChanged(int index) async {
+		lightHapticFeedback();
 		final attachment = widget.attachments[index];
 		currentIndex = index;
 		if (!_animatingNow) {
