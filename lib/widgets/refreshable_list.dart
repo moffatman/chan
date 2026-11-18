@@ -676,10 +676,17 @@ class _RefreshableTreeItems<T extends Object> extends EasyListenable {
 	});
 
 	Iterable<int> detachedChildIds(int parentId) sync* {
-		for (final entry in syntheticParents.entries) {
-			final parent = entry.value;
-			if (entry.key == parent.isSyntheticParentOfId && parent.id == parentId) {
-				yield* parent.treeDescendantIds;
+		final pending = [parentId];
+		final visited = {parentId};
+		for (int i = 0; i < pending.length; i++) {
+			for (final entry in syntheticParents.entries) {
+				final parent = entry.value;
+				if (entry.key != parent.isSyntheticParentOfId || parent.id != pending[i]) continue;
+				for (final id in parent.treeDescendantIds) {
+					if (!visited.add(id)) continue;
+					pending.add(id);
+					yield id;
+				}
 			}
 		}
 	}
