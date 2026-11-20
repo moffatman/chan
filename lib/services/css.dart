@@ -123,6 +123,7 @@ extension ToString on Expression {
 		_ => null
 	};
 	double? get pixels => switch (this) {
+		Expressions(expressions: [Expression single]) => single.pixels,
 		LengthTerm(value: num value, unit: int unit) => switch (unit) {
 			TokenKind.UNIT_LENGTH_PX => value.toDouble(),
 			TokenKind.UNIT_LENGTH_CM => (96/2.54) * value.toDouble(),

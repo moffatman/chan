@@ -3155,6 +3155,9 @@ class PostCssSpan extends PostSpanWithChild {
 			else if (key == 'font-family') {
 				style = style.copyWith(fontFamily: value.string);
 			}
+			else if (key == 'font-size') {
+				style = style.copyWith(fontSize: value.pixels);
+			}
 			else if (key == 'text-shadow') {
 				final shadows = value.shadows;
 				if (shadows == null) {
@@ -3169,7 +3172,7 @@ class PostCssSpan extends PostSpanWithChild {
 			else if (key == '-webkit-text-fill-color' && value.string == 'transparent') {
 				foundTextFillColorTransparent = true;
 			}
-			else if (key == 'animation' || key == 'padding' || key == 'border-radius') {
+			else if (key == 'animation' || key == 'padding' || key == 'border-radius' || key == 'text-align' || key.startsWith('margin')) {
 				// Ignore
 			}
 			else {

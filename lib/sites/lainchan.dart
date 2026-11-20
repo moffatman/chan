@@ -176,7 +176,7 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 							);
 						}
 						else {
-							yield PostLinkSpan(node.attributes['href']!, name: node.text.nonEmptyOrNull);
+							yield PostLinkSpan(node.attributes['href']!, name: node.text.trim().nonEmptyOrNull);
 						}
 					}
 					else if (node.localName == 'strong' || node.localName == 'b') {
@@ -251,10 +251,13 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 					}
 					else if (node.localName == 'p') {
 						if (node.classes.contains('quote')) {
-							yield PostQuoteSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
+							yield PostQuoteSpan(PostNodeSpan(visit(node.nodes.trim()).toList(growable: false)));
+						}
+						else if (node.attributes['style'] case final css?) {
+							yield PostCssSpan(PostNodeSpan(visit(node.nodes.trim()).toList(growable: false)), css);
 						}
 						else {
-							yield* visit(node.nodes);
+							yield* visit(node.nodes.trim());
 						}
 						yield const PostLineBreakSpan();
 					}
@@ -326,6 +329,12 @@ class SiteLainchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 						yield PostStrikethroughSpan(PostNodeSpan(visit(node.nodes).toList(growable: false)));
 					}
 					else if (node.localName == 'wbr') {
+						// Do nothing
+					}
+					else if (node.localName == 'div') {
+						yield* visit(node.nodes);
+					}
+					else if (node.localName == 'script') {
 						// Do nothing
 					}
 					else {
