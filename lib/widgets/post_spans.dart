@@ -1195,6 +1195,33 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 				)
 			));
 		});
+		final recognizer2 = options.overridingRecognizer ?? (LongPressGestureRecognizer(debugOwner: this, duration: kLongPressTimeout ~/ 2)..onLongPress = () {
+			shareOne(
+				context: context,
+				text: zone.imageboard.site.getWebUrl(board: board, threadId: actualThreadId, postId: postId, archiveName: archiveName),
+				type: "text",
+				sharePositionOrigin: null,
+				additionalOptions: {
+					'Open in new tab': () async {
+						final newTabZone = context.read<OpenInNewTabZone?>();
+						final imageboardKey = context.read<Imageboard>().key;
+						if (newTabZone != null && ImageboardRegistry.instance.getImageboard(imageboardKey) != null) {
+							// Checking ImageboardRegistry to rule-out dev board
+							newTabZone.onWantOpenThreadInNewTab(imageboardKey, ThreadIdentifier(board, actualThreadId), initialPostId: postId, initiallyHintArchive: archiveName);
+							return;
+						}
+						context.read<ChanTabs>().addNewTab(
+							withImageboardKey: imageboardKey,
+							withBoard: board,
+							withThread: ThreadIdentifier(board, actualThreadId),
+							withInitialPostId: postId,
+							initiallyHintArchive: archiveName,
+							activate: true
+						);
+					}
+				}
+			);
+		});
 		return (TextSpan(
 			text: text,
 			style: options.baseTextStyle.copyWith(
@@ -1202,7 +1229,8 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 				decoration: TextDecoration.underline,
 				decorationColor: options.overrideTextColor ?? color
 			),
-			recognizer: recognizer
+			recognizer: recognizer,
+			recognizer2: recognizer2
 		), recognizer);
 	}
   (TextSpan, TapGestureRecognizer) _buildDeadLink(BuildContext context, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options) {
