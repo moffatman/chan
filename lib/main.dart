@@ -672,7 +672,7 @@ void clearOverlayNotifications(Notifications notifications, Watch watch) {
 }
 
 class OpenInNewTabZone {
-	final void Function(String, ThreadIdentifier, {bool incognito, bool activate, int? initialPostId}) onWantOpenThreadInNewTab;
+	final void Function(String, ThreadIdentifier, {bool incognito, bool activate, int? initialPostId, String? initiallyHintArchive}) onWantOpenThreadInNewTab;
 	@override
 	final int hashCode;
 
@@ -969,6 +969,7 @@ class ChanTabs extends ChangeNotifier {
 		int? withInitialPostId,
 		String? withInitialSearch,
 		bool keepTabPopupOpen = false,
+		String? initiallyHintArchive,
 		String? initiallyForceArchive
 	}) async {
 		final pos = atPosition ?? Persistence.tabs.length;
@@ -986,6 +987,9 @@ class ChanTabs extends ChangeNotifier {
 		}
 		if (thread != null && initiallyForceArchive != null) {
 			tab.initiallyForceArchive[thread] = initiallyForceArchive;
+		}
+		if (thread != null && initiallyHintArchive != null) {
+			tab.initiallyHintArchive[thread] = initiallyHintArchive;
 		}
 		insertInitializedTab(pos, tab,
 			keepTabPopupOpen: keepTabPopupOpen,
@@ -1939,11 +1943,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					Provider.value(
 						value: OpenInNewTabZone(
 							hashCode: 0,
-							onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true, int? initialPostId}) => _tabs.addNewTab(
+							onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true, int? initialPostId, String? initiallyHintArchive}) => _tabs.addNewTab(
 								withImageboardKey: imageboardKey,
 								withBoard: thread.board,
 								withThreadId: thread.id,
 								withInitialPostId: initialPostId,
+								initiallyHintArchive: initiallyHintArchive,
 								activate: activate,
 								incognito: incognito
 							)
@@ -1966,11 +1971,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			child = Provider.value(
 				value: OpenInNewTabZone(
 					hashCode: 0,
-					onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true, int? initialPostId}) => _tabs.addNewTab(
+					onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true, int? initialPostId, String? initiallyHintArchive}) => _tabs.addNewTab(
 						withImageboardKey: imageboardKey,
 						withBoard: thread.board,
 						withThreadId: thread.id,
 						withInitialPostId: initialPostId,
+						initiallyHintArchive: initiallyHintArchive,
 						activate: activate,
 						incognito: incognito
 					)
@@ -1984,11 +1990,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			child = Provider.value(
 				value: OpenInNewTabZone(
 					hashCode: 0,
-					onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true, int? initialPostId}) => _tabs.addNewTab(
+					onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true, int? initialPostId, String? initiallyHintArchive}) => _tabs.addNewTab(
 						withImageboardKey: imageboardKey,
 						withBoard: thread.board,
 						withThreadId: thread.id,
 						withInitialPostId: initialPostId,
+						initiallyHintArchive: initiallyHintArchive,
 						activate: activate,
 						incognito: incognito
 					)
@@ -2021,11 +2028,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					child: Provider.value(
 						value: OpenInNewTabZone(
 							hashCode: 0,
-							onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true, int? initialPostId}) => _tabs.addNewTab(
+							onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true, int? initialPostId, String? initiallyHintArchive}) => _tabs.addNewTab(
 								withImageboardKey: imageboardKey,
 								withBoard: thread.board,
 								withThreadId: thread.id,
 								withInitialPostId: initialPostId,
+								initiallyHintArchive: initiallyHintArchive,
 								activate: activate,
 								incognito: incognito
 							)

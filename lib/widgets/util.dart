@@ -606,7 +606,7 @@ Future<void> openImageboardTarget(BuildContext context, (Imageboard, BoardThread
 			) : ThreadPage(
 				thread: imageboardTarget.$2.threadIdentifier!,
 				initialPostId: imageboardTarget.$2.postId,
-				initiallyForceArchive: imageboardTarget.$3,
+				initiallyHintArchive: imageboardTarget.$3,
 				boardSemanticId: -1
 			)
 		)

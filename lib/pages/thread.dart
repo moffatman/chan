@@ -337,7 +337,7 @@ class ThreadPageState extends State<ThreadPage> {
 		if (persistentState.thread?.identifier == widget.thread) {
 			return persistentState.thread?.archiveName;
 		}
-		return _archiveToLoad ?? widget.initiallyHintArchive;
+		return _archiveToLoad ?? widget.initiallyHintArchive ?? context.read<PersistentBrowserTab?>()?.initiallyHintArchive[widget.thread];
 	}
 
 	/// Returns whether a load was needed
@@ -1339,6 +1339,7 @@ class ThreadPageState extends State<ThreadPage> {
 		final notifications = context.read<Notifications>();
 		final oldThread = tmpPersistentState.thread;
 		final bool firstLoad = oldThread == null;
+		final initiallyHintArchive = widget.initiallyHintArchive ?? context.read<PersistentBrowserTab?>()?.initiallyHintArchive[widget.thread];
 		// The thread might switch in this interval
 		_checkForeground();
 		Thread newThread;
@@ -1393,14 +1394,14 @@ class ThreadPageState extends State<ThreadPage> {
 					setState(() {});
 					rethrow;
 				}
-				if (widget.initiallyHintArchive == null) {
+				if (initiallyHintArchive == null) {
 					rethrow;
 				}
 				newThread = await site.getThreadFromArchive(
 					widget.thread,
 					priority: _priority,
 					cancelToken: cancelToken,
-					archiveName: widget.initiallyHintArchive,
+					archiveName: initiallyHintArchive,
 					isArchived: true
 				);
 			}

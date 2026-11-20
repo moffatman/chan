@@ -1091,6 +1091,7 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 	BoardKey get boardKey => ImageboardBoard.getKey(board);
 	final int? threadId;
 	final int postId;
+	final String? archiveName;
 	final Key? key;
 
 	static const kTypeId = 11;
@@ -1098,6 +1099,9 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 	void dump(BytesBuilder builder, {bool writeTypeId = true}) {
 		if (key != null) {
 			throw PostSpanDumpException('Encoding PostQuoteLinkSpan.key is not supported: $key');
+		}
+		if (archiveName != null) {
+			throw PostSpanDumpException('Encoding PostQuoteLinkSpan.archiveName is not supported: $archiveName');
 		}
 		if (writeTypeId) builder.addByte(kTypeId);
 		builder.addString(board);
@@ -1118,12 +1122,14 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 		required String board,
 		required int this.threadId,
 		required this.postId,
+		this.archiveName,
 		this.key
 	}) : board = intern(board);
 
 	PostQuoteLinkSpan.dead({
 		required String board,
 		required this.postId,
+		this.archiveName,
 		this.key
 	}) : board = intern(board), threadId = null;
 
@@ -1145,6 +1151,9 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 		else if (options.showCrossThreadLabel) {
 			text += ' (Cross-thread)';
 		}
+		if (archiveName != null) {
+			text += ' (${archiveName?.nonEmptyOrNull ?? 'Archived'})';
+		}
 		final Color color;
 		if (isOldThread) {
 			color = theme.secondaryColor.shiftHue(-20);
@@ -1158,7 +1167,7 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 				final imageboardKey = context.read<Imageboard>().key;
 				if (newTabZone != null && ImageboardRegistry.instance.getImageboard(imageboardKey) != null) {
 					// Checking ImageboardRegistry to rule-out dev board
-					newTabZone.onWantOpenThreadInNewTab(imageboardKey, ThreadIdentifier(board, actualThreadId), initialPostId: postId);
+					newTabZone.onWantOpenThreadInNewTab(imageboardKey, ThreadIdentifier(board, actualThreadId), initialPostId: postId, initiallyHintArchive: archiveName);
 					return;
 				}
 			}
@@ -1171,6 +1180,7 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 						thread: ThreadIdentifier(board, actualThreadId),
 						initialPostId: postId,
 						initiallyForceArchive: threadId == null ? '' : null,
+						initiallyHintArchive: archiveName,
 						boardSemanticId: -1
 					)
 				)
@@ -1461,9 +1471,19 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 			if (threadId == postId) {
 				characters += 5; // ' (OP)'
 			}
-			if (threadId != estimator.zone?.primaryThreadId) {
+			final isDifferentBoard = board.toLowerCase() != estimator.post.board.toLowerCase();
+			if (isDifferentBoard || threadId != estimator.zone?.primaryThreadId) {
 				// Treated like normal text
+				if (isDifferentBoard) {
+					estimator.addCharacters(2 + (estimator.zone?.imageboard.site.formatBoardNameWithoutTrailingSlash(board).length ?? board.length));
+				}
 				estimator.addCharacters(characters + 15); // ' (Cross-thread)'
+				if (archiveName == '') {
+					estimator.addCharacters(11); // ' (Archived)'
+				}
+				else if (archiveName?.length case final length?) {
+					estimator.addCharacters(3 + length); // ' ($archiveName)'
+				}
 			}
 			else {
 				// Doesn't line break
@@ -1993,6 +2013,7 @@ class PostLinkSpan extends PostTerminalSpan {
 								board: imageboardTarget.$2.board,
 								threadId: thread.id,
 								postId: imageboardTarget.$2.postId ?? thread.id,
+								archiveName: imageboardTarget.$3,
 								key: ObjectKey(this)
 							).build(context, post, zone, settings, theme, options);
 						}
