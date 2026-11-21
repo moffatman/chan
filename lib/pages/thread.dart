@@ -2453,11 +2453,11 @@ class ThreadPageState extends State<ThreadPage> {
 																					),
 																					if (value != null)
 																						if (unseenCount > 0) Text(
-																							'($unseenCount unseen) ',
+																							collapsedChildIds.length == unseenCount ? ' unseen ' : '($unseenCount unseen) ',
 																							style: style
 																						)
 																						else if (newCount > 0) Text(
-																							'($newCount new) ',
+																							collapsedChildIds.length == newCount ? ' new ' : '($newCount new) ',
 																							style: style
 																						),
 																					const Icon(CupertinoIcons.chevron_down, size: 18, applyTextScaling: true)
