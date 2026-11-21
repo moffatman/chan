@@ -155,9 +155,9 @@ class _RenderSegmentedLayout extends RenderBox with ContainerRenderObjectMixin<R
 		var x = 0.0;
 		for (final child in getChildrenAsList()) {
 			final width = child.size.width;
-			// Stretch only the decorated segment; its Align keeps the actual
-			// content at its measured size and vertically centers it.
-			child.layout(BoxConstraints.tight(Size(width, size.height)), parentUsesSize: true);
+			// Keep the measured width constraints: tightening to the resulting
+			// width can round down and wrap text into the now-fixed height.
+			child.layout(child.constraints.tighten(height: size.height), parentUsesSize: true);
 			(child.parentData! as _SegmentParentData).offset = Offset(
 				_textDirection == TextDirection.ltr ? x : size.width - x - width,
 				0
