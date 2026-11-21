@@ -26,6 +26,7 @@ import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/css_colors.dart';
 import 'package:chan/widgets/cupertino_inkwell.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
+import 'package:chan/widgets/pop_without_animation.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
@@ -444,7 +445,7 @@ String formatCount(int count) {
 	return count.toString();
 }
 
-class TransparentRoute<T> extends PageRoute<T> {
+class TransparentRoute<T> extends PageRoute<T> with PopWithoutAnimation<T> {
 	final bool? showAnimations;
 	final bool? showAnimationsForward;
 	TransparentRoute({
@@ -475,7 +476,7 @@ class TransparentRoute<T> extends PageRoute<T> {
 	Duration get transitionDuration => (showAnimationsForward ?? showAnimations ?? Persistence.settings.showAnimations) ? const Duration(milliseconds: 150) : Duration.zero;
 
 	@override
-	Duration get reverseTransitionDuration => (showAnimations ?? Persistence.settings.showAnimations) ? const Duration(milliseconds: 150) : Duration.zero;
+	Duration get normalReverseTransitionDuration => (showAnimations ?? Persistence.settings.showAnimations) ? const Duration(milliseconds: 150) : Duration.zero;
 
 	@override
   Widget buildPage(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
@@ -498,7 +499,7 @@ class TransparentRoute<T> extends PageRoute<T> {
 	}
 }
 
-class TrulyTransparentRoute<T> extends PageRoute<T> {
+class TrulyTransparentRoute<T> extends PageRoute<T> with PopWithoutAnimation<T> {
 	TrulyTransparentRoute({
 		required this.builder,
 		RouteSettings? settings,

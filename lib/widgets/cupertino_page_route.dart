@@ -9,6 +9,7 @@ import 'dart:math';
 import 'dart:ui' show lerpDouble;
 
 import 'package:chan/services/persistence.dart';
+import 'package:chan/widgets/pop_without_animation.dart';
 import 'package:chan/widgets/weak_gesture_recognizer.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -216,7 +217,7 @@ mixin CupertinoRouteTransitionMixin<T> on PageRoute<T> {
 	}
 }
 
-class FullWidthCupertinoPageRoute<T> extends PageRoute<T> with CupertinoRouteTransitionMixin<T> {
+class FullWidthCupertinoPageRoute<T> extends PageRoute<T> with CupertinoRouteTransitionMixin<T>, PopWithoutAnimation<T> {
 	final bool? showAnimations;
 	final bool? showAnimationsForward;
 	final bool useFullWidthGestures;

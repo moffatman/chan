@@ -1,9 +1,10 @@
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
+import 'package:chan/widgets/pop_without_animation.dart';
 import 'package:flutter/material.dart';
 
-class _MaterialPageRoute<T> extends MaterialPageRoute<T> {
+class _MaterialPageRoute<T> extends MaterialPageRoute<T> with PopWithoutAnimation<T> {
 	final bool? showAnimations;
 	final bool? showAnimationsForward;
 
@@ -19,7 +20,7 @@ class _MaterialPageRoute<T> extends MaterialPageRoute<T> {
 		((showAnimationsForward ?? showAnimations) ?? Persistence.settings.showAnimations) ? const Duration(milliseconds: 300) : Duration.zero;
 
 	@override
-	Duration get reverseTransitionDuration =>
+	Duration get normalReverseTransitionDuration =>
 		(showAnimations ?? Persistence.settings.showAnimations) ? const Duration(milliseconds: 300) : Duration.zero;
 }
 

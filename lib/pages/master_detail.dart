@@ -6,6 +6,7 @@ import 'package:chan/services/theme.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/injecting_navigator.dart';
+import 'package:chan/widgets/pop_without_animation.dart';
 import 'package:chan/widgets/scroll_tracker.dart';
 import 'package:chan/widgets/util.dart';
 
@@ -73,14 +74,11 @@ class BuiltDetailPane {
 		required this.pageRouteBuilder
 	});
 
-	Widget buildRouteContent(BuildContext context, Key? contentKey) {
-		if (contentKey == null) return widget;
-		// A layout-driven pop can leave the outgoing route mounted briefly.
-		if (context.watch<MasterDetailLocation?>()?.twoPane ?? false) return const SizedBox.shrink();
-		return KeyedSubtree(key: contentKey, child: widget);
-	}
-
-	PageRoute pageRoute({Key? contentKey, required bool? showAnimations, required bool? showAnimationsForward}) => pageRouteBuilder((context) => buildRouteContent(context, contentKey), showAnimations: showAnimations, showAnimationsForward: showAnimationsForward);
+	PageRoute pageRoute({Key? contentKey, required bool? showAnimations, required bool? showAnimationsForward}) => pageRouteBuilder(
+		(context) => contentKey == null ? widget : KeyedSubtree(key: contentKey, child: widget),
+		showAnimations: showAnimations,
+		showAnimationsForward: showAnimationsForward
+	);
 }
 
 class MasterDetailPage<T> extends StatelessWidget {
@@ -172,7 +170,7 @@ class MultiMasterPane<T> {
 		return ValueListenableBuilder(
 			valueListenable: currentValue,
 			builder: (context, T? v, child) => KeyedSubtree(
-				key: contentKey,
+				key: v == null ? null : contentKey,
 				child: detailBuilder(v, (newValue) {
 					currentValue.value = newValue;
 					callOnValueChanged(newValue);
@@ -339,7 +337,7 @@ abstract class _MultiMasterDetailPageState<S extends _MultiMasterDetailPage> ext
 		return null;
 	}
 
-	void _popMasterValueRoutes() {
+	void _popMasterValueRoutes({bool animate = true}) {
 		bool continuePopping = true;
 		while ((masterKey.currentState?.canPop() ?? false) && continuePopping) {
 			// Hack to peek at top route
@@ -350,7 +348,11 @@ abstract class _MultiMasterDetailPageState<S extends _MultiMasterDetailPage> ext
 				continuePopping = route.settings != dontAutoPopSettings && !isInitialMaster;
 				if (continuePopping) {
 					panes[selectedPane]._automatedPopStack++;
-					masterKey.currentState?.pop();
+					if (!animate && route is PopWithoutAnimation) {
+						route.popWithoutAnimation();
+					} else {
+						masterKey.currentState?.pop();
+					}
 				}
 				return true;
 			});
@@ -413,7 +415,7 @@ abstract class _MultiMasterDetailPageState<S extends _MultiMasterDetailPage> ext
 		final built = pane.buildInitialDetailContent(() => _onNewValue(pane, showAnimationsForward: false));
 		final contentKey = _detailContentKey;
 		return (
-			(context) => built.buildRouteContent(context, contentKey),
+			(context) => KeyedSubtree(key: contentKey, child: built.widget),
 			(value) => _onPushReturn(pane, value),
 			(builder, settings) => adaptivePageRoute(
 				builder: builder,
@@ -540,7 +542,7 @@ abstract class _MultiMasterDetailPageState<S extends _MultiMasterDetailPage> ext
 				)).then((v) => _onPushReturn(pane, v));
 			}
 			else {
-				_popMasterValueRoutes();
+				_popMasterValueRoutes(animate: onePane);
 				while (detailKey.currentState?.canPop() ?? false) {
 					pane._automatedPopStack++;
 					detailKey.currentState?.pop();
