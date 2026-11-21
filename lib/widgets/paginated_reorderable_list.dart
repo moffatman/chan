@@ -15,6 +15,17 @@ typedef PaginatedReorderableListIndicatorBuilder = Widget Function(
 
 enum _AlignmentPullEdge { leading, trailing }
 
+// A sidebar's last page can overlap the preceding page. Its final snap
+// interval is then shorter than the regular page stride.
+double _pageAtOffset(double pixels, double pageExtent, double? partialEnd) {
+  if (partialEnd == null) return pixels / pageExtent;
+  final previousPage = (partialEnd / pageExtent).floor();
+  final previousOffset = previousPage * pageExtent;
+  if (pixels <= previousOffset) return pixels / pageExtent;
+  return previousPage +
+      ((pixels - previousOffset) / (partialEnd - previousOffset)).clamp(0, 1);
+}
+
 class _ReorderProxyDropListener extends StatefulWidget {
   final Animation<double> animation;
   final Listenable scrollPosition;
@@ -99,6 +110,7 @@ class _PaginatedPageScrollPhysics extends PageScrollPhysics {
   final double viewportPadding;
   final PaginatedReorderableListDelegate paginationDelegate;
   final bool Function() isViewportAnimating;
+  final double? Function() partialEnd;
 
   const _PaginatedPageScrollPhysics(
       {required this.gutterExtent,
@@ -106,6 +118,7 @@ class _PaginatedPageScrollPhysics extends PageScrollPhysics {
       required this.viewportPadding,
       required this.paginationDelegate,
       required this.isViewportAnimating,
+      required this.partialEnd,
       super.parent});
 
   @override
@@ -116,6 +129,7 @@ class _PaginatedPageScrollPhysics extends PageScrollPhysics {
         viewportPadding: viewportPadding,
         paginationDelegate: paginationDelegate,
         isViewportAnimating: isViewportAnimating,
+        partialEnd: partialEnd,
         parent: buildParent(ancestor));
   }
 
@@ -167,14 +181,17 @@ class _PaginatedPageScrollPhysics extends PageScrollPhysics {
       return parent?.createBallisticSimulation(position, velocity);
     }
     final tolerance = toleranceFor(position);
-    var page = position.pixels / pageExtent;
+    final end = partialEnd();
+    var page = _pageAtOffset(position.pixels, pageExtent, end);
     if (velocity < -tolerance.velocity) {
       page -= 0.5;
     } else if (velocity > tolerance.velocity) {
       page += 0.5;
     }
     final target = (page.roundToDouble() * pageExtent)
-        .clamp(position.minScrollExtent, position.maxScrollExtent);
+        .clamp(position.minScrollExtent,
+            math.min(position.maxScrollExtent, end ?? double.infinity))
+        .toDouble();
     if (target == position.pixels) return null;
     return ScrollSpringSimulation(spring, position.pixels, target, velocity,
         tolerance: tolerance);
@@ -185,6 +202,7 @@ class _PaginatedPageScrollPhysics extends PageScrollPhysics {
 class PaginatedReorderableListController extends ScrollController {
   final int initialPage;
   double? _pageExtent;
+  double? _partialEnd;
   int? _itemsPerPage;
   int _leadingEmptySlots = 0;
   int? _pendingPage;
@@ -200,7 +218,7 @@ class PaginatedReorderableListController extends ScrollController {
     }
     final pixels = position.pixels
         .clamp(position.minScrollExtent, position.maxScrollExtent);
-    final page = pixels / _pageExtent!;
+    final page = _pageAtOffset(pixels, _pageExtent!, _partialEnd);
     final roundedPage = page.roundToDouble();
     return (page - roundedPage).abs() < 0.0000000001 ? roundedPage : page;
   }
@@ -215,8 +233,10 @@ class PaginatedReorderableListController extends ScrollController {
   }
 
   void _setPageGeometry(double pageExtent, int itemsPerPage,
-      int leadingEmptySlots, {int? pendingPageOverride}) {
+      int leadingEmptySlots,
+      {double? partialEnd, int? pendingPageOverride, bool revealInLayout = false}) {
     _pageExtent = pageExtent;
+    _partialEnd = partialEnd;
     _itemsPerPage = itemsPerPage;
     _leadingEmptySlots = leadingEmptySlots;
     if (pendingPageOverride != null) {
@@ -224,7 +244,7 @@ class PaginatedReorderableListController extends ScrollController {
     }
     if (_pendingPage case final pendingPage? when hasClients) {
       _pendingPage = null;
-      jumpToPage(pendingPage);
+      if (!revealInLayout) jumpToPage(pendingPage);
     }
   }
 
@@ -262,21 +282,10 @@ class PaginatedReorderableListController extends ScrollController {
         .findAncestorStateOfType<PaginatedReorderableListState>();
     final renderList = list?._renderList;
     if (list == null || renderList == null || index < 0 || index >= list.widget.itemCount) return;
-    final padding = list.widget.padding;
-    final (before, after) = switch (position.axisDirection) {
-      AxisDirection.down => (padding.top, padding.bottom),
-      AxisDirection.up => (padding.bottom, padding.top),
-      AxisDirection.right => (padding.left, padding.right),
-      AxisDirection.left => (padding.right, padding.left)
-    };
-    final start = before + renderList._layoutOffsetForIndex(index);
-    final end = start + renderList._animatedExtentForIndex(index);
     final pixels = position.pixels;
-    final target = (start < pixels + before
-            ? start - before
-            : end > pixels + position.viewportDimension - after
-                ? end - position.viewportDimension + after
-                : pixels)
+    final visibleExtent =
+        position.viewportDimension - list.widget.padding.along(position.axis);
+    final target = renderList._offsetToReveal(index, pixels, visibleExtent)
         .clamp(position.minScrollExtent, position.maxScrollExtent)
         .toDouble();
     if ((target - pixels).abs() <= precisionErrorTolerance) return;
@@ -287,7 +296,8 @@ class PaginatedReorderableListController extends ScrollController {
     }
   }
 
-  double _pixelsForPage(int page) => page * _pageExtent!;
+  double _pixelsForPage(int page) =>
+      math.min(page * _pageExtent!, _partialEnd ?? double.infinity);
 }
 
 /// A keyed item for [PaginatedReorderableList].
@@ -493,6 +503,7 @@ class _PaginatedSliverReorderableList extends SliverReorderableList {
   final double gutterExtent;
   final double leadingGutterExtent;
   final double viewportPadding;
+  final bool keepSelectedVisible;
   final bool previousAlignPagesToEnd;
   final bool alignPagesToEnd;
   final Animation<double> pageAlignmentAnimation;
@@ -507,6 +518,7 @@ class _PaginatedSliverReorderableList extends SliverReorderableList {
       required this.gutterExtent,
       required this.leadingGutterExtent,
       required this.viewportPadding,
+      required this.keepSelectedVisible,
       required this.previousAlignPagesToEnd,
       required this.alignPagesToEnd,
       required this.pageAlignmentAnimation,
@@ -614,6 +626,7 @@ class _PaginatedSliverReorderableListState extends SliverReorderableListState {
         gutterExtent: configuration.gutterExtent,
         leadingGutterExtent: configuration.leadingGutterExtent,
         viewportPadding: configuration.viewportPadding,
+        keepSelectedVisible: configuration.keepSelectedVisible,
         previousAlignPagesToEnd: configuration.previousAlignPagesToEnd,
         alignPagesToEnd: configuration.alignPagesToEnd,
         pageAlignmentAnimation: configuration.pageAlignmentAnimation,
@@ -641,6 +654,7 @@ class _SliverSelectedFirstList extends SliverMultiBoxAdaptorWidget {
   final double gutterExtent;
   final double leadingGutterExtent;
   final double viewportPadding;
+  final bool keepSelectedVisible;
   final bool previousAlignPagesToEnd;
   final bool alignPagesToEnd;
   final Animation<double> pageAlignmentAnimation;
@@ -661,6 +675,7 @@ class _SliverSelectedFirstList extends SliverMultiBoxAdaptorWidget {
       required this.gutterExtent,
       required this.leadingGutterExtent,
       required this.viewportPadding,
+      required this.keepSelectedVisible,
       required this.previousAlignPagesToEnd,
       required this.alignPagesToEnd,
       required this.pageAlignmentAnimation,
@@ -683,6 +698,7 @@ class _SliverSelectedFirstList extends SliverMultiBoxAdaptorWidget {
         gutterExtent: gutterExtent,
         leadingGutterExtent: leadingGutterExtent,
         viewportPadding: viewportPadding,
+        keepSelectedVisible: keepSelectedVisible,
         previousAlignPagesToEnd: previousAlignPagesToEnd,
         alignPagesToEnd: alignPagesToEnd,
         pageAlignmentAnimation: pageAlignmentAnimation,
@@ -706,6 +722,7 @@ class _SliverSelectedFirstList extends SliverMultiBoxAdaptorWidget {
       ..gutterExtent = gutterExtent
       ..leadingGutterExtent = leadingGutterExtent
       ..viewportPadding = viewportPadding
+      ..keepSelectedVisible = keepSelectedVisible
       ..previousAlignPagesToEnd = previousAlignPagesToEnd
       ..alignPagesToEnd = alignPagesToEnd
       ..pageAlignmentAnimation = pageAlignmentAnimation
@@ -728,6 +745,7 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
       required double gutterExtent,
       required double leadingGutterExtent,
       required double viewportPadding,
+      required bool keepSelectedVisible,
       required bool previousAlignPagesToEnd,
       required bool alignPagesToEnd,
       required Animation<double> pageAlignmentAnimation,
@@ -745,6 +763,7 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
         _gutterExtent = gutterExtent,
         _leadingGutterExtent = leadingGutterExtent,
         _viewportPadding = viewportPadding,
+        _keepSelectedVisible = keepSelectedVisible,
         _previousAlignPagesToEnd = previousAlignPagesToEnd,
         _alignPagesToEnd = alignPagesToEnd,
         _pageAlignmentAnimation = pageAlignmentAnimation,
@@ -762,6 +781,13 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
   double _gutterExtent;
   double _leadingGutterExtent;
   double _viewportPadding;
+  bool _keepSelectedVisible;
+
+  set keepSelectedVisible(bool value) {
+    if (_keepSelectedVisible == value) return;
+    _keepSelectedVisible = value;
+    markNeedsLayout();
+  }
 
   set viewportPadding(double value) {
     if (_viewportPadding == value) return;
@@ -809,9 +835,24 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
   double? _lastViewportMainAxisExtent;
   double? _lastCrossAxisExtent;
   double? _lastLayoutPageExtent;
+  double? _lastPartialEnd;
   int? _lastLayoutItemCount;
   int? _lastLayoutLeadingEmptySlots;
   int? viewportCorrectedPage;
+  (double, double, int?, int)? _lastRevealGeometry;
+
+  double _offsetToReveal(int index, double pixels, double visibleExtent) {
+    // Status elements and controls may cover the entire remaining viewport.
+    // Preserve the position until there is space to reveal a tab again.
+    if (visibleExtent <= 0) return pixels;
+    final start = _layoutOffsetForIndex(index);
+    final extent = _animatedExtentForIndex(index);
+    final trailingOffset = start + extent - visibleExtent;
+    if (extent > visibleExtent) return trailingOffset;
+    if (start < pixels) return start;
+    if (trailingOffset > pixels) return trailingOffset;
+    return pixels;
+  }
 
   int get itemsPerPage => _itemsPerPage;
   double get pageExtent => _pageExtent;
@@ -984,10 +1025,24 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
 
   double get _pageExtent => _itemsPerPage * _interiorEqualExtent;
 
+  bool get _usesSidebarSlots => constraints.axis == Axis.vertical &&
+      _leadingGutterExtent == 0 && _gutterExtent == 0 &&
+      _selectedItemExtentFactor == 1;
+
+  double? get partialEnd => _hasLayoutMetrics &&
+          _usesSidebarSlots && !_alignPagesToEnd &&
+          _pageCount > 1 && _itemCount % _itemsPerPage != 0
+      ? (_itemCount - _itemsPerPage) * _interiorEqualExtent
+      : null;
+
+  double _offsetForPage(int page) =>
+      math.min(page * _pageExtent, partialEnd ?? double.infinity);
+
   double get _pageAlignedExtent {
     final target = switch (_pageCount) {
       0 => 0.0,
       1 => _viewportExtent,
+      _ when partialEnd != null => partialEnd! + _viewportExtent,
       final count => count * _pageExtent +
           physicalLeadingGutterExtent +
           physicalGutterExtent,
@@ -1247,12 +1302,27 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
         math.max(0.0, scrollOffset - _leadingEmptyExtent), itemExtent);
   }
 
+  void _startViewportAnimation(int page, double scrollOffset) {
+    _viewportTargetPage = page;
+    _viewportStartScrollOffset = scrollOffset;
+    _viewportAnimationPending = true;
+    final generation = ++_viewportAnimationGeneration;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!attached || generation != _viewportAnimationGeneration) return;
+      _viewportAnimationPending = false;
+      onViewportChanged();
+    });
+  }
+
   @override
   void performLayout() {
     final previousViewportExtent = _lastViewportMainAxisExtent;
     final previousPageExtent = _lastLayoutPageExtent;
     final previousItemsPerPage = _itemsPerPage;
-    if (!animateViewportChanges ||
+    final restoreSelectedPage = !_keepSelectedVisible &&
+        _lastRevealGeometry != null && _isValidIndex(_selectedIndex);
+    if (!_keepSelectedVisible) _lastRevealGeometry = null;
+    if (_keepSelectedVisible || !animateViewportChanges ||
         constraints.axis != Axis.vertical ||
         _lastLayoutItemCount != _itemCount) {
       _viewportStartOffsets = null;
@@ -1272,11 +1342,23 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
     final scrollOffset = padding is RenderSliverPadding
         ? padding.constraints.scrollOffset
         : constraints.scrollOffset;
-    if (animateViewportChanges &&
+    final previousCount = _lastLayoutItemCount;
+    final closeAtEnd = !_keepSelectedVisible && _usesSidebarSlots &&
+        _alignPagesToEnd &&
+        previousCount == _itemCount + 1 &&
+        _itemCount >= resolvedItemsPerPage && resolvedItemsPerPage > 1 &&
+        _selectedIndex == _itemCount - 1 &&
+        _previousSelectedIndex == _itemCount &&
+        previousViewportExtent == _viewportExtent &&
+        previousItemsPerPage == resolvedItemsPerPage &&
+        previousPageExtent != null &&
+        scrollOffset >= ((previousCount! - 1) ~/ previousItemsPerPage) *
+            previousPageExtent - 1;
+    if (!_keepSelectedVisible && animateViewportChanges &&
         constraints.axis == Axis.vertical &&
         previousPageExtent != null &&
         previousPageExtent > 0 &&
-        previousViewportExtent != _viewportExtent &&
+        (previousViewportExtent != _viewportExtent || restoreSelectedPage) &&
         _lastLayoutItemCount == _itemCount &&
         _itemCount > 0) {
       // Capture the currently displayed geometry, including an interrupted
@@ -1289,16 +1371,17 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
           List<double>.generate(_itemCount, _animatedExtentForIndex);
       final scrollExtent = _pageAlignedExtent;
       _snapshotViewportExtent = null;
-      final oldPage =
-          _viewportTargetPage ?? (scrollOffset / previousPageExtent).round();
+      final oldPage = _viewportTargetPage ??
+          _pageAtOffset(scrollOffset, previousPageExtent, _lastPartialEnd).round();
       final oldLeadingSlots = _lastLayoutLeadingEmptySlots ?? 0;
       final newLeadingSlots =
           !_alignPagesToEnd || _itemCount <= resolvedItemsPerPage
               ? 0
               : (resolvedItemsPerPage - _itemCount % resolvedItemsPerPage) %
                   resolvedItemsPerPage;
-      _viewportTargetPage =
-          PaginatedReorderableListState._pageWithGreatestItemOverlap(
+      final targetPage = restoreSelectedPage
+          ? (_selectedIndex! + newLeadingSlots) ~/ resolvedItemsPerPage
+          : PaginatedReorderableListState._pageWithGreatestItemOverlap(
               itemCount: _itemCount,
               oldPage: oldPage,
               oldItemsPerPage: previousItemsPerPage,
@@ -1308,14 +1391,7 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
       _viewportStartOffsets = offsets;
       _viewportStartExtents = extents;
       _viewportStartScrollExtent = scrollExtent;
-      _viewportStartScrollOffset = scrollOffset;
-      _viewportAnimationPending = true;
-      final generation = ++_viewportAnimationGeneration;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!attached || generation != _viewportAnimationGeneration) return;
-        _viewportAnimationPending = false;
-        onViewportChanged();
-      });
+      _startViewportAnimation(targetPage, scrollOffset);
     }
     if (_itemsPerPage != resolvedItemsPerPage ||
         _lastViewportMainAxisExtent != _viewportExtent ||
@@ -1326,22 +1402,31 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
     }
     _itemsPerPage = resolvedItemsPerPage;
     _hasLayoutMetrics = true;
-    final canPreservePageDuringLayout = previousPageExtent != null &&
+    final canPreservePageDuringLayout = !_keepSelectedVisible &&
+        previousPageExtent != null &&
         previousPageExtent > 0 &&
         previousViewportExtent != _viewportExtent &&
         previousItemsPerPage == _itemsPerPage &&
         _lastLayoutItemCount == _itemCount &&
         _lastLayoutLeadingEmptySlots == _leadingEmptySlots &&
         _itemCount > 0;
+    final previousPartialEnd = _lastPartialEnd;
+    _lastPartialEnd = partialEnd;
     _lastLayoutPageExtent = _pageExtent;
     _lastLayoutItemCount = _itemCount;
     _lastLayoutLeadingEmptySlots = _leadingEmptySlots;
+    if (closeAtEnd && animateViewportChanges) {
+      // The remaining tabs keep their screen positions on the first frame.
+      // Only the slot vacated by the closed tab needs to slide away.
+      _startViewportAnimation(_pageCount - 1,
+          _offsetForPage(_pageCount - 1) + _interiorEqualExtent);
+    }
     if (_viewportTargetPage case final targetPage?) {
       final page = targetPage.clamp(0, _pageCount - 1);
       viewportCorrectedPage = page;
       final t = _viewportAnimationProgress;
       final targetOffset = _viewportStartScrollOffset +
-          (page * _pageExtent - _viewportStartScrollOffset) * t;
+          (_offsetForPage(page) - _viewportStartScrollOffset) * t;
       if (t == 1) {
         _viewportStartOffsets = null;
         _viewportStartExtents = null;
@@ -1353,11 +1438,15 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
         geometry = SliverGeometry(scrollOffsetCorrection: correction);
         return;
       }
-    } else if (canPreservePageDuringLayout) {
-      final page =
-          (scrollOffset / previousPageExtent).round().clamp(0, _pageCount - 1);
+    } else if (closeAtEnd || restoreSelectedPage || canPreservePageDuringLayout) {
+      final page = closeAtEnd
+          ? _pageCount - 1
+          : restoreSelectedPage
+          ? _pageForIndex(_selectedIndex!, _alignPagesToEnd)
+          : _pageAtOffset(scrollOffset, previousPageExtent!, previousPartialEnd)
+              .round().clamp(0, _pageCount - 1);
       viewportCorrectedPage = page;
-      final correction = page * _pageExtent - scrollOffset;
+      final correction = _offsetForPage(page) - scrollOffset;
       if (correction.abs() > precisionErrorTolerance) {
         // Correct before paint instead of jumping in the post-frame sync.
         geometry = SliverGeometry(scrollOffsetCorrection: correction);
@@ -1366,10 +1455,10 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
     }
     if (!_didCorrectInitialSelectedPage && _itemCount > 0 && _pageExtent > 0) {
       _didCorrectInitialSelectedPage = true;
-      if (_isValidIndex(_selectedIndex)) {
+      if (!_keepSelectedVisible && _isValidIndex(_selectedIndex)) {
         final selectedPage =
             _pageForIndex(_selectedIndex!, _alignPagesToEnd);
-        final selectedPageOffset = selectedPage * _pageExtent;
+        final selectedPageOffset = _offsetForPage(selectedPage);
         // SliverPadding subtracts its leading clearance from the child's
         // scroll offset. Page targets use the scrollable's original offset.
         final correction = selectedPageOffset - scrollOffset;
@@ -1464,8 +1553,48 @@ class _RenderSelectedFirstList extends RenderSliverVariedExtentList {
 
     if (geometry?.scrollOffsetCorrection == null) {
       final pageAlignedExtent = _pageAlignedExtent;
-      final paintExtent =
-          calculatePaintOffset(constraints, from: 0, to: pageAlignedExtent);
+      final viewportExtent = constraints.viewportMainAxisExtent;
+      final revealPadding = padding is RenderSliverPadding
+          ? padding.resolvedPadding!
+          : EdgeInsets.zero;
+      final visibleExtent =
+          viewportExtent - revealPadding.along(constraints.axis);
+      final hasRoom = !_keepSelectedVisible || visibleExtent > 0;
+      if (_keepSelectedVisible && _isValidIndex(_selectedIndex)) {
+        final revealGeometry =
+            (visibleExtent, _viewportExtent, _selectedIndex, _itemCount);
+        final previousReveal = _lastRevealGeometry;
+        _lastRevealGeometry = revealGeometry;
+        if (hasRoom && revealGeometry != previousReveal) {
+          final maxOffset = math.max(0.0, pageAlignedExtent - visibleExtent);
+          // If the last tab was at the bottom, let it follow the bottom edge
+          // as the keyboard recedes. A user scroll away from the end releases it.
+          final followsEnd = partialEnd != null &&
+              _selectedIndex == _itemCount - 1 &&
+              previousReveal != null &&
+              previousReveal.$1 > 0 &&
+              previousReveal.$2 == _viewportExtent &&
+              previousReveal.$3 == _selectedIndex &&
+              previousReveal.$4 == _itemCount &&
+              scrollOffset >= pageAlignedExtent - previousReveal.$1 - 1;
+          final target = followsEnd
+              ? maxOffset
+              : _offsetToReveal(_selectedIndex!, scrollOffset, visibleExtent)
+                  .clamp(0.0, maxOffset);
+          final correction = target - scrollOffset;
+          if (correction.abs() > precisionErrorTolerance) {
+            geometry = SliverGeometry(scrollOffsetCorrection: correction);
+            return;
+          }
+        }
+      } else {
+        _lastRevealGeometry = null;
+      }
+      // Keep the list laid out and its offset intact when the status area and
+      // controls meet, but hide the tabs until there is room between them.
+      final paintExtent = hasRoom
+          ? calculatePaintOffset(constraints, from: 0, to: pageAlignedExtent)
+          : 0.0;
       final cacheExtent =
           calculateCacheOffset(constraints, from: 0, to: pageAlignedExtent);
       geometry = geometry!.copyWith(
@@ -1722,7 +1851,6 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
   int _laidOutLeadingEmptySlots = 0;
   double _pageExtent = 1;
   bool _hasLayout = false;
-  bool _revealSelectedAfterLayout = false;
   int? _lastLaidOutItemCount;
   int _pageCorrectionGeneration = 0;
   int _scrollNotificationPageUpdateGeneration = 0;
@@ -1794,17 +1922,12 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
         parent: _pageAlignmentController,
         curve: widget.selectedItemAnimationCurve);
     _currentPage = widget.controller?.initialPage ?? widget.initialPage;
-    _revealSelectedAfterLayout = widget.obscuredExtent > 0;
     _schedulePaginationSync();
   }
 
   @override
   void didUpdateWidget(PaginatedReorderableList oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _revealSelectedAfterLayout = widget.obscuredExtent > 0 &&
-        (_revealSelectedAfterLayout ||
-            oldWidget.obscuredExtent != widget.obscuredExtent ||
-            oldWidget.selectedIndex != widget.selectedIndex);
     _validatePageIndicatorConfiguration();
     _pageAlignmentController.duration = widget.selectedItemAnimationDuration;
     _pageAlignmentAnimation.curve = widget.selectedItemAnimationCurve;
@@ -1824,6 +1947,22 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
       _alignmentPullStartPage = null;
       _alignmentPullExtent = 0;
       _alignmentPullArmed = false;
+    }
+    if (oldWidget.obscuredExtent == 0 &&
+        widget.obscuredExtent > 0 &&
+        widget.selectedIndex != null) {
+      // A scroll started before the keyboard appeared still has an old page
+      // target. Stop it after layout, which has already revealed the selection.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || widget.obscuredExtent == 0 || !_controller.hasClients) {
+          return;
+        }
+        final position = _controller.position;
+        if (position is ScrollPositionWithSingleContext &&
+            position.isScrollingNotifier.value) {
+          position.goIdle();
+        }
+      });
     }
     _schedulePaginationSync();
   }
@@ -1960,11 +2099,8 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
     if (notification is ScrollStartNotification &&
         notification.dragDetails != null) {
       _clearAlignmentPull();
-      final pixels = notification.metrics.pixels.clamp(
-          notification.metrics.minScrollExtent,
-          notification.metrics.maxScrollExtent);
       _alignmentPullStartPage =
-          _clampPage((pixels / _pageExtent).round());
+          _clampPage((_controller.page ?? _currentPage.toDouble()).round());
       return;
     }
     if (notification is ScrollUpdateNotification &&
@@ -2103,13 +2239,6 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || generation != _pageCorrectionGeneration) return;
       _syncPaginationFromRender();
-      if (_revealSelectedAfterLayout) {
-        _revealSelectedAfterLayout = false;
-        if (widget.selectedIndex case final index?) {
-          _controller.ensureItemVisible(index,
-              duration: Duration.zero, curve: Curves.ease);
-        }
-      }
     });
   }
 
@@ -2188,7 +2317,10 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
         : null;
     _controller._setPageGeometry(newPageExtent, newItemsPerPage,
         newLeadingEmptySlots,
-        pendingPageOverride: initialSelectedPage);
+        partialEnd: renderList.partialEnd,
+        pendingPageOverride: initialSelectedPage,
+        revealInLayout:
+            widget.obscuredExtent > 0 && widget.selectedIndex != null);
     var targetPage = _clampPage(_currentPage);
     if (!_hasLayout) {
       _hasLayout = true;
@@ -2222,7 +2354,9 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
       return;
     }
 
-    if (_controller.hasClients && !renderList.isViewportAnimating) {
+    if (widget.pageSnapping &&
+        _controller.hasClients &&
+        !renderList.isViewportAnimating) {
       final actualPage = _controller.page ?? 0;
       if ((actualPage - targetPage).abs() > 0.0001) {
         _controller.jumpToPage(targetPage);
@@ -2497,8 +2631,10 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
   Widget _buildPageIndicators(BuildContext context) {
     final currentPage = _clampPage(_currentPage);
     final effectiveItemsPerPage = itemsPerPage;
-    final hiddenBefore = math.max(
-        0, currentPage * effectiveItemsPerPage - leadingEmptySlots);
+    final hiddenBefore = currentPage == pageCount - 1 &&
+            _renderList?.partialEnd != null
+        ? widget.itemCount - effectiveItemsPerPage
+        : math.max(0, currentPage * effectiveItemsPerPage - leadingEmptySlots);
     final hiddenAfter = math
         .max(
             0,
@@ -2544,7 +2680,8 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
                     widget.leadingGutterExtent ?? widget.gutterExtent,
                 viewportPadding: viewportPadding,
                 paginationDelegate: widget.paginationDelegate,
-                isViewportAnimating: () => _renderList?.isViewportAnimating ?? false)
+                isViewportAnimating: () => _renderList?.isViewportAnimating ?? false,
+                partialEnd: () => _renderList?.partialEnd)
             .applyTo(inheritedPhysics)
         : inheritedPhysics;
 
@@ -2575,6 +2712,7 @@ class PaginatedReorderableListState extends State<PaginatedReorderableList>
                                     widget.leadingGutterExtent ??
                                         widget.gutterExtent,
                                 viewportPadding: viewportPadding,
+                                keepSelectedVisible: widget.obscuredExtent > 0,
                                 previousAlignPagesToEnd:
                                     _previousAlignPagesToEnd,
                                 alignPagesToEnd: _alignPagesToEnd,

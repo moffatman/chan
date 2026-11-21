@@ -1309,8 +1309,11 @@ class ChanTabs extends ChangeNotifier {
 		final globalIndex = index ?? browseTabIndex;
 		final listIndex = usingHomeBoard ? max(0, globalIndex - 1) : globalIndex;
 		final listItemCount = max(0, Persistence.tabs.length - (usingHomeBoard ? 1 : 0));
-		if (_paginatedTabListController.position.axis == Axis.vertical && MediaQuery.viewInsetsOf(_homePageState.context).bottom > 0) {
-			await _paginatedTabListController.ensureItemVisible(listIndex, duration: duration, curve: Curves.ease);
+		if ((_homePageState._paginatedTabListKey.currentState?.widget.obscuredExtent ?? 0) > 0) {
+			// The shrinking viewport already reveals the active tab during layout.
+			if (globalIndex != browseTabIndex) {
+				await _paginatedTabListController.ensureItemVisible(listIndex, duration: duration, curve: Curves.ease);
+			}
 			return;
 		}
 		final lastPage = listItemCount == 0 ? 0 : (_paginatedTabListController.pageForItem(listItemCount - 1) ?? ((listItemCount - 1) ~/ itemsPerPage));
