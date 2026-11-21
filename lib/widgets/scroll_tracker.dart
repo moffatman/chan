@@ -5,12 +5,40 @@ import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/injecting_navigator.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
 class ScrollTracker {
 	final isScrolling = ValueNotifier<bool>(false);
 	final slowScrollDirection = ValueNotifier<VerticalDirection?>(null);
+	final _tabPopupHideRequests = Set<Object>.identity();
+	final _tabPopupHidden = ValueNotifier(false);
+	ValueListenable<bool> get tabPopupHidden => _tabPopupHidden;
+
+	void hideTabPopup(Object sentinel) {
+		if (_tabPopupHideRequests.add(sentinel) && _tabPopupHideRequests.length == 1) {
+			_updateTabPopupVisibility();
+		}
+	}
+
+	void showTabPopup(Object sentinel) {
+		if (_tabPopupHideRequests.remove(sentinel) && _tabPopupHideRequests.isEmpty) {
+			_updateTabPopupVisibility();
+		}
+	}
+
+	void _updateTabPopupVisibility() {
+		// Pickers can request or release a hide while widgets are being built.
+		if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.persistentCallbacks) {
+			SchedulerBinding.instance.addPostFrameCallback((_) {
+				_tabPopupHidden.value = _tabPopupHideRequests.isNotEmpty;
+			});
+		} else {
+			_tabPopupHidden.value = _tabPopupHideRequests.isNotEmpty;
+		}
+	}
+
 	VerticalDirection _lastNonNullDirection = VerticalDirection.up;
 	VerticalDirection get lastNonNullDirection {
 		return slowScrollDirection.value ?? _lastNonNullDirection;
@@ -142,6 +170,7 @@ class ScrollTracker {
 	void dispose() {
 		isScrolling.dispose();
 		slowScrollDirection.dispose();
+		_tabPopupHidden.dispose();
 	}
 }
 

@@ -1771,6 +1771,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	late final _tabListChanges = Listenable.merge([_tabs.activeBrowserTab, _tabs._tabController]);
 	final _keys = <int, GlobalKey>{};
 	late final ValueNotifier<bool> _showTabPopup;
+	late final _visibleTabPopup = Combining2ValueListenable(
+		child1: _showTabPopup,
+		child2: ScrollTracker.instance.tabPopupHidden,
+		combine: (show, hidden) => show &&
+			!(hidden && Settings.instance.tabMenuHidesWhenScrollingDown)
+	);
 	Imageboard? get devImageboard => ImageboardRegistry.instance.dev;
 	_AuthenticationStatus _authenticationStatus = _AuthenticationStatus.ok;
 	final _drawerScaffoldKey = GlobalKey<AdaptiveScaffoldState>(debugLabel: '_ChanHomePageState._drawerScaffoldKey');
@@ -1820,7 +1826,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 
 	Future<void> _setAdditionalSafeAreaInsets() async {
 		await setAdditionalSafeAreaInsets('main', EdgeInsets.only(
-			bottom: 60 + 44 + (_showTabPopup.value ? 80 : 0)
+			bottom: 60 + 44 + (_visibleTabPopup.value ? 80 : 0)
 		) * Settings.instance.interfaceScale);
 	}
 
@@ -1838,7 +1844,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		_tabs = ChanTabs._(this);
 		_tabs.addListener(_tabsListener);
 		_showTabPopup = ValueNotifier(false)
-			..addListener(_setAdditionalSafeAreaInsets)
 			..addListener(() {
 				Persistence.settings.showTabPopup = _showTabPopup.value;
 				Persistence.settings.save();
@@ -1846,6 +1851,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					Future.microtask(() => _tabs._animateTabList(duration: Duration.zero));
 				}
 			});
+		_visibleTabPopup.addListener(_setAdditionalSafeAreaInsets);
 		if (Persistence.settings.showTabPopup) {
 			Future.delayed(const Duration(milliseconds: 50), () {
 				SchedulerBinding.instance.addPostFrameCallback((_) {
@@ -2835,7 +2841,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						_backButton();
 					},
 					child: ValueListenableBuilder(
-						valueListenable: _showTabPopup,
+						valueListenable: _visibleTabPopup,
 						builder: (context, showTabPopup, child) {
 							final theme = context.watch<SavedTheme>();
 							return DecoratedBox(
@@ -2967,7 +2973,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 												)
 											),
 											if (index == 0) ValueListenableBuilder(
-												valueListenable: _showTabPopup,
+												valueListenable: _visibleTabPopup,
 												builder: (context, showTabPopup, _) => Expander(
 													bottomSafe: true,
 													expanded: showTabPopup,
@@ -2982,7 +2988,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										mainAxisAlignment: MainAxisAlignment.end,
 										children: [
 											ValueListenableBuilder(
-												valueListenable: _showTabPopup,
+												valueListenable: _visibleTabPopup,
 												builder: (context, showTabPopup, child) => Expander(
 													bottomSafe: false,
 													keepTickersEnabledWhenCollapsed: true,
@@ -3016,7 +3022,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 																	animation: _tabListChanges,
 																		builder: (context, _) => Selector<Settings, bool>(
 																			selector: (context, settings) => settings.usingHomeBoard,
-																			builder: (context, _, __) => _buildTabList(Axis.horizontal, _showTabPopup)
+																			builder: (context, _, __) => _buildTabList(Axis.horizontal, _visibleTabPopup)
 																		)
 																	)
 																),
@@ -3099,6 +3105,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		super.dispose();
 		_tabs.removeListener(_tabsListener);
 		_tabs.dispose();
+		_visibleTabPopup.removeListener(_setAdditionalSafeAreaInsets);
 		ScrollTracker.instance.slowScrollDirection.removeListener(_onSlowScrollDirectionChange);
 	}
 }
@@ -3195,19 +3202,23 @@ class ChanceCupertinoTabBar extends CupertinoTabBar {
 					onRightSwipe();
 				}
 			},
-			child: Settings.hideBarsWhenScrollingDownSetting.watch(context) ? AncestorScrollBuilder(
-				builder: (context, direction, _) => AnimatedOpacity(
-					opacity: direction == VerticalDirection.up ? 1.0 : 0.0,
-					duration: const Duration(milliseconds: 350),
-					curve: Curves.ease,
-					child: IgnorePointer(
-						ignoring: direction == VerticalDirection.down,
-						child: SafeArea(
-							top: false,
-							bottom: false,
-							child: super.build(context)
-						)
-					)
+			child: Settings.hideBarsWhenScrollingDownSetting.watch(context) ? ValueListenableBuilder(
+				valueListenable: ScrollTracker.instance.tabPopupHidden,
+				builder: (context, hidden, child) => AncestorScrollBuilder(
+					builder: (context, direction, _) {
+						final show = !hidden && direction == VerticalDirection.up;
+						return AnimatedOpacity(
+							opacity: show ? 1.0 : 0.0,
+							duration: const Duration(milliseconds: 350),
+							curve: Curves.ease,
+							child: IgnorePointer(ignoring: !show, child: child)
+						);
+					}
+				),
+				child: SafeArea(
+					top: false,
+					bottom: false,
+					child: super.build(context)
 				)
 			) : SafeArea(
 				top: false,
