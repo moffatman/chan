@@ -1211,6 +1211,7 @@ class PostQuoteLinkSpan extends PostTerminalSpan {
 							return;
 						}
 						context.read<ChanTabs>().addNewTab(
+							openerTabId: context.read<PersistentBrowserTab?>()?.id,
 							withImageboardKey: imageboardKey,
 							withBoard: board,
 							withThread: ThreadIdentifier(board, actualThreadId),
@@ -2042,6 +2043,7 @@ class PostLinkSpan extends PostTerminalSpan {
 					if (imageboardTarget != null)
 						'Open in new tab': () async {
 							context.read<ChanTabs>().addNewTab(
+								openerTabId: context.read<PersistentBrowserTab?>()?.id,
 								withImageboardKey: imageboardTarget?.$1 ?? context.read<Imageboard?>()?.key,
 								withBoard: imageboardTarget?.$2.board,
 								withThread: imageboardTarget?.$2.threadIdentifier,
