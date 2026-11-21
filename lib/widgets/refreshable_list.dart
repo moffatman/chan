@@ -2741,6 +2741,32 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 
 		int rootOrderId(_TreeNode<RefreshableListItem<T>> node) => node.item.isSyntheticParentOfId ?? node.id;
 
+		void restoreTreeOrder(List<_TreeNode<RefreshableListItem<T>>> roots, Iterable<_TreeNode<RefreshableListItem<T>>> nodes) {
+			final lastTreeOrder = _lastTreeOrder;
+			if (lastTreeOrder == null || adapter.isPaged) return;
+			const infiniteIndex = 1 << 50;
+			mergeSort(roots, compare: (a, b) {
+				final idA = rootOrderId(a);
+				final idB = rootOrderId(b);
+				if (idA == adapter.opId) return idB == adapter.opId ? 0 : -1;
+				if (idB == adapter.opId) return 1;
+				final batchComparison = batchFor(idA).compareTo(batchFor(idB));
+				if (batchComparison != 0) return batchComparison;
+				if (adapter.newRepliesAreLinear && batchFor(idA) == boundaries.length) return 0;
+				final idxA = lastTreeOrder.treeRootIndexLookup[idA] ?? infiniteIndex;
+				final idxB = lastTreeOrder.treeRootIndexLookup[idB] ?? infiniteIndex;
+				return idxA.compareTo(idxB);
+			});
+			for (final node in nodes) {
+				if (adapter.newRepliesAreLinear && batchFor(node.id) == boundaries.length) continue;
+				mergeSort(node.children, compare: (a, b) {
+					final idxA = lastTreeOrder.treeChildrenIndexLookup[node.id]?[a.id] ?? infiniteIndex;
+					final idxB = lastTreeOrder.treeChildrenIndexLookup[node.id]?[b.id] ?? infiniteIndex;
+					return idxA.compareTo(idxB);
+				});
+			}
+		}
+
 		void addRoot(_TreeNode<RefreshableListItem<T>> node) {
 			final batch = batchFor(node.id);
 			final parentId = adapter.newRepliesAreLinear && node.parents.isEmpty && !adapter.getIsStub(node.item.item)
@@ -2931,22 +2957,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		for (final item in linear) {
 			itemsByBatch[item.id == adapter.opId || (adapter.newRepliesAreLinear && adapter.getIsStub(item.item)) ? 0 : batchFor(item.id)].add(item);
 		}
-		final displayedOrder = <int, int>{};
-		if (adapter.newRepliesAreLinear && _lastTreeOrder != null) {
-			for (int i = 0; i < controller.itemsLength; i++) {
-				final item = controller.getItem(i);
-				if (!item.representsStubChildren && item.isSyntheticParentOfId == null) displayedOrder.putIfAbsent(item.id, () => i);
-			}
-		}
 		for (int batch = 0; batch < itemsByBatch.length; batch++) {
 			final items = itemsByBatch[batch];
-			if (batch < boundaries.length && displayedOrder.isNotEmpty) {
-				// Reconstruct protected content in its displayed order before
-				// deciding which ancestors can safely receive a trailing reply.
-				const infiniteIndex = 1 << 50;
-				mergeSort(items, compare: (a, b) =>
-					(displayedOrder[a.id] ?? infiniteIndex).compareTo(displayedOrder[b.id] ?? infiniteIndex));
-			}
 			items.forEach(visitLinear);
 			if (adapter.newRepliesAreLinear) {
 				// Resolve missing-parent roots before the next batch checks the tail.
@@ -2955,6 +2967,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					if (orphan.parents.isEmpty && addedOrphans.add(orphan.id)) addRoot(orphan);
 				}
 				orphans.clear();
+				// Restore display order after connecting parents. Visiting in display
+				// order can put a reply before its other parents and lose those links.
+				// The next batch must still see the displayed trailing branch.
+				restoreTreeOrder(batchRoots[batch], items.map((item) => treeMap[item.id]!));
 			}
 		}
 		if (adapter.newRepliesAreLinear && filteredValues.isNotEmpty) {
@@ -2988,29 +3004,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 
 		if (!adapter.isPaged) {
 			final lastTreeOrder = _lastTreeOrder;
-			if (lastTreeOrder != null) {
-				const infiniteIndex = 1 << 50;
-				mergeSort(treeRoots, compare: (a, b) {
-					final idA = rootOrderId(a);
-					final idB = rootOrderId(b);
-					if (idA == adapter.opId) return idB == adapter.opId ? 0 : -1;
-					if (idB == adapter.opId) return 1;
-					final batchComparison = batchFor(idA).compareTo(batchFor(idB));
-					if (batchComparison != 0) return batchComparison;
-					if (adapter.newRepliesAreLinear && batchFor(idA) == boundaries.length) return 0;
-					final idxA = lastTreeOrder.treeRootIndexLookup[idA] ?? infiniteIndex;
-					final idxB = lastTreeOrder.treeRootIndexLookup[idB] ?? infiniteIndex;
-					return idxA.compareTo(idxB);
-				});
-				for (final entry in treeMap.entries) {
-					if (adapter.newRepliesAreLinear && batchFor(entry.key) == boundaries.length) continue;
-					mergeSort(entry.value.children, compare: (a, b) {
-						final idxA = lastTreeOrder.treeChildrenIndexLookup[entry.key]?[a.id] ?? infiniteIndex;
-						final idxB = lastTreeOrder.treeChildrenIndexLookup[entry.key]?[b.id] ?? infiniteIndex;
-						return idxA.compareTo(idxB);
-					});
-				}
-			}
+			restoreTreeOrder(treeRoots, treeMap.values);
 
 			final newOrder = _lastTreeOrder = (
 				treeRootIndexLookup: {
@@ -4328,6 +4322,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	RefreshableListState<T>? state;
 	final Map<(int, bool), List<Completer<void>>> _itemCacheCallbacks = {};
 	int? currentTargetIndex;
+	CancelToken? _scrollCancelToken;
 	(int, int)? useDummyItemsInRange;
 	bool? _useTree;
 	final Map<int, RefreshableListItem<T>> _newInsertIndices = {};
@@ -4461,6 +4456,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	@override
 	void dispose() {
 		_isDisposed = true;
+		_scrollCancelToken?.cancel();
 		_scrollWaitsEnabled.value = false;
 		_scrollWaitsEnabled.dispose();
 		scrollController?.removeListener(_onScrollControllerNotification);
@@ -4472,6 +4468,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	}
 	void newContentId(String contentId) {
 		if (this.contentId != null && this.contentId != contentId) {
+			cancelCurrentAnimation();
 			for (final cbs in _itemCacheCallbacks.values) {
 				for (final cb in cbs) {
 					cb.completeError(Exception('page changed'));
@@ -4650,48 +4647,69 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				cost++;
 			}
 		}
-		if (cost > 20) {
-			useDummyItemsInRange = proposedRange;
-			for (final item in _items) {
-				item.cachedOffset = null;
-				item.cachedHeight = null;
-			}
-			state?._rebuild();
-			try {
-				await SchedulerBinding.instance.endOfFrame;
-				await _animateToIndex(targetIndex, alignment: alignment, duration: duration, curve: curve, startPixels: startPixels, revealIfHidden: revealIfHidden);
-			}
-			catch (e, st) {
-				print(e);
-				print(st);
-			}
-			for (int i = 0; i < _items.length; i++) {
-				_items[i].cachedOffset = null;
-				if (i < proposedRange.$2 && i > proposedRange.$1) {
-					_items[i].cachedHeight = null;
+		cancelCurrentAnimation();
+		final cancelToken = CancelToken();
+		_scrollCancelToken = cancelToken;
+		currentTargetIndex = targetIndex;
+		try {
+			if (cost > 20) {
+				useDummyItemsInRange = proposedRange;
+				for (final item in _items) {
+					item.cachedOffset = null;
+					item.cachedHeight = null;
 				}
-			}
-			try {
-				if (targetIndex == itemsLength - 1) {
-					_lockSliverListAtEnd();
-				}
-				else {
-					_lockSliverListAtKey(ValueKey(_items[targetIndex].item._key));
-				}
-				useDummyItemsInRange = null;
 				state?._rebuild();
-				await SchedulerBinding.instance.endOfFrame;
-				await SchedulerBinding.instance.endOfFrame;
+				try {
+					await SchedulerBinding.instance.endOfFrame;
+					if (cancelToken.isCancelled) return;
+					await _animateToIndex(targetIndex, alignment: alignment, duration: duration, curve: curve, startPixels: startPixels, revealIfHidden: revealIfHidden, cancelToken: cancelToken);
+				}
+				catch (e, st) {
+					if (cancelToken.isCancelled) return;
+					print(e);
+					print(st);
+				}
+				if (cancelToken.isCancelled) return;
+				try {
+					if (targetIndex == itemsLength - 1) {
+						_lockSliverListAtEnd();
+					}
+					else {
+						_lockSliverListAtKey(ValueKey(_items[targetIndex].item._key));
+					}
+					_clearDummyItems();
+					await SchedulerBinding.instance.endOfFrame;
+					await SchedulerBinding.instance.endOfFrame;
+				}
+				finally {
+					if (identical(_scrollCancelToken, cancelToken)) _unlockSliverList();
+				}
 			}
-			finally {
+			if (cancelToken.isCancelled) return;
+			await _animateToIndex(targetIndex, alignment: alignment, duration: duration, curve: curve, startPixels: startPixels, revealIfHidden: revealIfHidden, cancelToken: cancelToken);
+		}
+		on DioError {
+			if (!cancelToken.isCancelled) rethrow;
+		}
+		finally {
+			if (identical(_scrollCancelToken, cancelToken)) {
+				_clearDummyItems();
+				_scrollCancelToken = null;
+				currentTargetIndex = null;
 				_unlockSliverList();
 			}
 		}
-		else {
-			// Just to be safe
-			useDummyItemsInRange = null;
+	}
+
+	void _clearDummyItems() {
+		final range = useDummyItemsInRange;
+		if (range == null) return;
+		useDummyItemsInRange = null;
+		for (int i = 0; i < _items.length; i++) {
+			_items[i].cachedOffset = null;
+			if (i > range.$1 && i < range.$2) _items[i].cachedHeight = null;
 		}
-		await _animateToIndex(targetIndex, alignment: alignment, duration: duration, curve: curve, startPixels: startPixels, revealIfHidden: revealIfHidden);
+		state?._rebuild();
 	}
 	void _lockSliverListAtKey(Key key) {
 		// This is not supported on flutter master
@@ -4707,12 +4725,13 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		required Duration duration,
 		Curve curve = Curves.easeInOut,
 		required double startPixels,
-		required bool revealIfHidden
+		required bool revealIfHidden,
+		required CancelToken cancelToken
 	}) async {
 		try {
+			if (cancelToken.isCancelled) return;
 			print('$contentId animating to $targetIndex (${_items[targetIndex].item.item}) (alignment: $alignment)');
 			final start = DateTime.now();
-			currentTargetIndex = targetIndex;
 			if (revealIfHidden && isItemHidden(_items[targetIndex].item).isHidden) {
 				if (targetIndex < firstVisibleIndex) {
 					final index = _items.indexWhere((i) => !isItemHidden(i.item).isHidden, targetIndex);
@@ -4722,6 +4741,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				}
 				await state?._refreshableTreeItems.unhideItem(_items[targetIndex].item, includingParents: true);
 			}
+			if (cancelToken.isCancelled) return;
 			final initialContentId = contentId;
 			if (_estimateOffset(targetIndex) == null) {
 				// Or it will hang
@@ -4738,6 +4758,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				return Duration(milliseconds: max(50, (duration.inMilliseconds * fraction).round()));
 			}
 			Future<bool> attemptResolve() async {
+				if (cancelToken.isCancelled) return true;
 				if (scrollController!.position.outOfRange) {
 					scrollController!.position.jumpTo(scrollController!.position.maxScrollExtent);
 				}
@@ -4769,19 +4790,22 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				if ((estimate - scrollController!.position.pixels < 50)) {
 					await _tryCachingItem(targetIndex);
 				}
+				if (cancelToken.isCancelled) return true;
 				final delay = remainingDuration(estimate);
 				scrollController!.animateTo(
 					estimate,
 					duration: delay,
 					curve: cc
 				);
-				await Future.any([completer.future, Future.wait([Future.delayed(const Duration(milliseconds: 50)), Future.delayed(duration ~/ 4)])]);
+				await Future.any([completer.future, cancelToken.whenCancel, Future.wait([Future.delayed(const Duration(milliseconds: 50)), Future.delayed(duration ~/ 4)])]);
+				if (cancelToken.isCancelled) return true;
 				return (_items[targetIndex].cachedOffset != null);
 			}
 			if (_items[targetIndex].cachedOffset == null || _items[targetIndex].cachedHeight == null) {
 				while (contentId == initialContentId && !(await attemptResolve()) && DateTime.now().difference(start).inSeconds < 7 && targetIndex == currentTargetIndex) {
 					// Keep trying
 				}
+				if (cancelToken.isCancelled) return;
 				if (initialContentId != contentId) {
 					print('List was hijacked ($initialContentId -> $contentId)');
 					return;
@@ -4812,6 +4836,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 					)
 				);
 			}
+			if (cancelToken.isCancelled) return;
 
 			// The scrollController's maxScrollExtent is not trustworthy
 			double maxScrollExtent;
@@ -4840,16 +4865,18 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 					)
 				);
 			}
+			if (cancelToken.isCancelled) return;
 			await SchedulerBinding.instance.endOfFrame;
-			await waitUntilScrollingStops();
+			await waitUntilScrollingStops(cancelToken: cancelToken);
 		}
 		finally {
-			currentTargetIndex = null;
-			_unlockSliverList();
+			if (identical(_scrollCancelToken, cancelToken)) _unlockSliverList();
 		}
 	}
 	void cancelCurrentAnimation() {
+		_scrollCancelToken?.cancel();
 		currentTargetIndex = null;
+		_clearDummyItems();
 	}
 	double? _alignmentOffset(int index, double alignment) {
 		final viewportHeight = scrollController!.position.viewportDimension - topOffset - bottomOffset;
