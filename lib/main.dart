@@ -961,6 +961,7 @@ class ChanTabs extends ChangeNotifier {
 	Future<PersistentBrowserTab> addNewTab({
 		String? withImageboardKey,
 		int? atPosition,
+		String? openerTabId,
 		String? withBoard,
 		ThreadIdentifier? withThread,
 		int? withThreadId,
@@ -979,7 +980,8 @@ class ChanTabs extends ChangeNotifier {
 			board: withImageboardKey == null || withBoard == null ? null : withBoard,
 			thread: thread,
 			incognito: incognito,
-			initialSearch: withInitialSearch
+			initialSearch: withInitialSearch,
+			openerTabId: Persistence.tabs.any((tab) => tab.id == openerTabId) ? openerTabId : null
 		);
 		await tab.initialize();
 		if (thread != null && withInitialPostId != null) {
@@ -1003,6 +1005,9 @@ class ChanTabs extends ChangeNotifier {
 		bool activate = false
 	}) {
 		tab.addListener(_onTabUpdate);
+		if (activate && tab.board == null && Persistence.tabs.isNotEmpty) {
+			tab.openerTabId = Persistence.tabs[browseTabIndex].id;
+		}
 		Persistence.tabs.insert(pos, tab);
 		if (pos <= browseTabIndex) {
 			// Keep the same current tab afterwards
@@ -1019,7 +1024,8 @@ class ChanTabs extends ChangeNotifier {
 		_didModifyPersistentTabData();
 		notifyListeners();
 		Future.delayed(const Duration(milliseconds: 100), () {
-			_animateTabList(index: pos);
+			final index = Persistence.tabs.indexOf(tab);
+			if (index != -1) _animateTabList(index: index);
 		});
 	}
 
@@ -1041,24 +1047,38 @@ class ChanTabs extends ChangeNotifier {
 		if (Persistence.tabs.length == 1) {
 			throw StateError('Tried to close last tab');
 		}
+		final nextTab = browseIndex == browseTabIndex
+			? _nextTabAfterClosing(browseIndex)
+			: Persistence.tabs[browseTabIndex];
 		final removed = Persistence.tabs.removeAt(browseIndex);
 		removed.removeListener(_onTabUpdate);
 		browseCountListenable = Listenable.merge([activeBrowserTab, ...Persistence.tabs.map((x) => x.unseen)]);
-		final int newActiveTabIndex;
-		if (browseIndex > browseTabIndex) {
-			// The removed tab was after our current tab, don't have to do anything
-			newActiveTabIndex = browseTabIndex;
-		}
-		else if (browseIndex == browseTabIndex) {
-			// The current tab was removed
-			newActiveTabIndex = (browseTabIndex - 1).clamp(0, Persistence.tabs.length - 1);
-		}
-		else {
-			// A tab before the current one was removed, need to fix the index
-			newActiveTabIndex = browseTabIndex - 1;
-		}
-		browseTabIndex = newActiveTabIndex;
+		browseTabIndex = Persistence.tabs.indexOf(nextTab);
 		notifyListeners();
+	}
+
+	PersistentBrowserTab _nextTabAfterClosing(int index) {
+		final tabs = Persistence.tabs;
+		final closing = tabs[index];
+		final board = closing.thread?.boardKey ?? closing.boardKey;
+		PersistentBrowserTab? best;
+		var bestRank = -1;
+		var bestDistance = tabs.length;
+		for (final (i, tab) in tabs.indexed) {
+			if (i == index) continue;
+			if (tab.id == closing.openerTabId) return tab;
+			final sameImageboard = closing.imageboardKey != null && tab.imageboardKey == closing.imageboardKey;
+			final sameBoard = sameImageboard && board != null && (tab.thread?.boardKey ?? tab.boardKey) == board;
+			final rank = (sameBoard ? 4 : sameImageboard ? 2 : 0) +
+				(tab.incognito == closing.incognito ? 1 : 0);
+			final distance = (i - index).abs();
+			if (rank > bestRank || (rank == bestRank && distance < bestDistance)) {
+				best = tab;
+				bestRank = rank;
+				bestDistance = distance;
+			}
+		}
+		return best!;
 	}
 
 	Future<void> showNewTabPopup({
@@ -2235,6 +2255,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									_tabs.addNewTab(
 										withImageboardKey: Persistence.tabs[i].imageboardKey,
 										atPosition: i + 1,
+										openerTabId: Persistence.tabs[i].id,
 										withBoard: Persistence.tabs[i].board,
 										withThread: Persistence.tabs[i].thread,
 										incognito: Persistence.tabs[i].incognito,

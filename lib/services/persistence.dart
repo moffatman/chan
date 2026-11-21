@@ -2368,6 +2368,8 @@ class PersistentBrowserTab extends EasyListenable {
 	String id;
 	@HiveField(11)
 	DraftPost? draft;
+	@HiveField(12, defaultValue: null)
+	String? openerTabId;
 
 	PersistentBrowserTab({
 		this.board,
@@ -2381,7 +2383,8 @@ class PersistentBrowserTab extends EasyListenable {
 		this.catalogVariant,
 		this.incognito = false,
 		String id = '',
-		this.draft
+		this.draft,
+		this.openerTabId
 	}) : id = id.isEmpty ? const Uuid().v4() : id;
 
 	IncognitoPersistence? incognitoPersistence;

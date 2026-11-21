@@ -1174,6 +1174,17 @@ class PersistentBrowserTabFields {
     fieldName: 'draft',
     merger: NullableMerger(AdaptedMerger(DraftPostAdapter.kTypeId)),
   );
+  static String? getOpenerTabId(PersistentBrowserTab x) => x.openerTabId;
+  static void setOpenerTabId(PersistentBrowserTab x, String? v) =>
+      x.openerTabId = v;
+  static const int kOpenerTabId = 12;
+  static const openerTabId = HiveFieldAdapter<PersistentBrowserTab, String?>(
+    getter: getOpenerTabId,
+    setter: setOpenerTabId,
+    fieldNumber: kOpenerTabId,
+    fieldName: 'openerTabId',
+    merger: PrimitiveMerger(),
+  );
 }
 
 class PersistentBrowserTabAdapter extends TypeAdapter<PersistentBrowserTab> {
@@ -1198,13 +1209,14 @@ class PersistentBrowserTabAdapter extends TypeAdapter<PersistentBrowserTab> {
     8: PersistentBrowserTabFields.catalogVariant,
     9: PersistentBrowserTabFields.incognito,
     10: PersistentBrowserTabFields.id,
-    11: PersistentBrowserTabFields.draft
+    11: PersistentBrowserTabFields.draft,
+    12: PersistentBrowserTabFields.openerTabId
   };
 
   @override
   PersistentBrowserTab read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final List<dynamic> fields = List.filled(12, null);
+    final List<dynamic> fields = List.filled(13, null);
     fields[9] = false;
     fields[10] = '';
     for (int i = 0; i < numOfFields; i++) {
@@ -1228,13 +1240,14 @@ class PersistentBrowserTabAdapter extends TypeAdapter<PersistentBrowserTab> {
       incognito: fields[9] as bool,
       id: fields[10] as String,
       draft: fields[11] as DraftPost?,
+      openerTabId: fields[12] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, PersistentBrowserTab obj) {
     writer
-      ..writeByte(12)
+      ..writeByte(13)
       ..writeByte(0)
       ..write(obj.board)
       ..writeByte(1)
@@ -1258,7 +1271,9 @@ class PersistentBrowserTabAdapter extends TypeAdapter<PersistentBrowserTab> {
       ..writeByte(10)
       ..write(obj.id)
       ..writeByte(11)
-      ..write(obj.draft);
+      ..write(obj.draft)
+      ..writeByte(12)
+      ..write(obj.openerTabId);
   }
 
   @override

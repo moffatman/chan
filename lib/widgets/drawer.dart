@@ -261,6 +261,7 @@ class DrawerList<T extends Object> {
 					tabs.addNewTab(
 						withImageboardKey: tab.imageboardKey,
 						atPosition: i + 1,
+						openerTabId: tab.id,
 						withBoard: tab.board,
 						withThread: tab.thread,
 						incognito: tab.incognito,

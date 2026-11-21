@@ -45,6 +45,7 @@ class ImageboardTab extends StatelessWidget {
 									context.read<ChanTabs>().addNewTab(
 										withImageboardKey: imageboardKey,
 										atPosition: Persistence.tabs.indexOf(tab) + 1,
+										openerTabId: tab.id,
 										withBoard: thread.board,
 										withThreadId: thread.id,
 										withInitialPostId: initialPostId,
@@ -75,6 +76,8 @@ class ImageboardTab extends StatelessWidget {
 						(result) {
 							if (!context.mounted) return;
 							if (result case ImageboardScoped<ImageboardBoard> board) {
+								// This tab was opened from "new tab" button, we can clear the relationship now
+								tab.openerTabId = null;
 								final page = tab.boardPageKey.currentState;
 								if (page != null) {
 									page.swapBoard(board);
