@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
