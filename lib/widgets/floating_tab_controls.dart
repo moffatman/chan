@@ -111,7 +111,7 @@ class FloatingTabControlsState extends State<FloatingTabControls> {
 			extent: persistent || !widget.showLabels ? widget.buttonExtent : 76,
 			showLabel: widget.showLabels
 		);
-		Widget buildActionGroup(List<TabMenuAction> actions, bool visible) => IgnorePointer(
+		Widget buildActionGroup(Iterable<TabMenuAction> actions, bool visible) => IgnorePointer(
 			ignoring: !visible,
 			child: AnimatedCrossFade(
 				clipBehavior: Clip.none,
@@ -157,7 +157,7 @@ class FloatingTabControlsState extends State<FloatingTabControls> {
 										child: Padding(
 											padding: const EdgeInsets.symmetric(horizontal: 2, vertical: FloatingTabControls.innerPadding),
 											child: Column(mainAxisSize: MainAxisSize.min, children: [
-												buildActionGroup(widget.newTabActions, _expanded == _ExpandedControls.newTab),
+												buildActionGroup(widget.newTabActions.reversed, _expanded == _ExpandedControls.newTab),
 												_button(
 													icon: const Icon(CupertinoIcons.add),
 													title: 'New',
