@@ -133,7 +133,7 @@ extension _DisableUpdates on PersistentThreadState {
 enum _AttachmentCachingStatus {
 	uncached,
 	cached,
-	willNotAutoCacheDueToRateLimiting,
+	willNotAutoCache,
 	uncacheable;
 	bool get isCached => this == cached;
 }
@@ -632,10 +632,15 @@ class ThreadPageState extends State<ThreadPage> {
 		}
 	}
 
-	Future<void> _checkAttachmentCache(Attachment attachment) async {
+	Future<void> _checkAttachmentCache((Post, Attachment) item) async {
+		final (post, attachment) = item;
 		if (_cached[attachment] == _AttachmentCachingStatus.cached) return;
 		if (attachment.type == AttachmentType.pdf || attachment.type == AttachmentType.url) {
 			_cached[attachment] = _AttachmentCachingStatus.uncacheable;
+			return;
+		}
+		if (post.isDeleted) {
+			_cached[attachment] = _AttachmentCachingStatus.willNotAutoCache;
 			return;
 		}
 		_cached[attachment] = switch (await (await AttachmentCache.optimisticallyFindFile(attachment))?.exists()) {
@@ -645,7 +650,7 @@ class ThreadPageState extends State<ThreadPage> {
 	}
 
 	Future<void> _updateCached({required bool onscreenOnly}) async {
-		final attachments = (onscreenOnly ? _listController.visibleItems : _listController.items).expand((p) => p.item.attachments).toSet();
+		final attachments = (onscreenOnly ? _listController.visibleItems : _listController.items).expand((p) => p.item.attachments.map((a) => (p.item, a))).toSet();
 		await Future.wait(attachments.map(_checkAttachmentCache));
 	}
 
@@ -676,7 +681,7 @@ class ThreadPageState extends State<ThreadPage> {
 			if (attachment.isRateLimited) {
 				// Shouldn't preload as it will probably ban us from the server for too many requests
 				newlyRateLimited++;
-				_cached[attachment] = _AttachmentCachingStatus.willNotAutoCacheDueToRateLimiting;
+				_cached[attachment] = _AttachmentCachingStatus.willNotAutoCache;
 				continue;
 			}
 			final controller = AttachmentViewerController(
@@ -700,7 +705,7 @@ class ThreadPageState extends State<ThreadPage> {
 			_cached[attachment] = _AttachmentCachingStatus.cached;
 			_indicatorKey.currentState?.setState(() {});
 		}
-		final count = automatic ? newlyRateLimited : _cached.values.countOf(_AttachmentCachingStatus.willNotAutoCacheDueToRateLimiting);
+		final count = automatic ? newlyRateLimited : _cached.values.countOf(_AttachmentCachingStatus.willNotAutoCache);
 		if (mounted && count > 0) {
 			showToast(
 				context: context,
@@ -711,8 +716,9 @@ class ThreadPageState extends State<ThreadPage> {
 	}
 
 	void _onAttachmentCache((Attachment, Object) obj) {
-		if (persistentState.thread?.posts_.any((p) => p.attachments.contains(obj.$1)) ?? false) {
-			_checkAttachmentCache(obj.$1);
+		final post = persistentState.thread?.posts_.tryFirstWhere((p) => p.attachments.contains(obj.$1));
+		if (post != null) {
+			_checkAttachmentCache((post, obj.$1));
 		}
 	}
 
