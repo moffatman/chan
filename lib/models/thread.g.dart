@@ -187,16 +187,6 @@ class ThreadFields {
     fieldName: 'poll',
     merger: NullableMerger(AdaptedMerger(ImageboardPollAdapter.kTypeId)),
   );
-  static bool getIsEndless(Thread x) => x.isEndless;
-  static void setIsEndless(Thread x, bool v) => x.isEndless = v;
-  static const int kIsEndless = 20;
-  static const isEndless = HiveFieldAdapter<Thread, bool>(
-    getter: getIsEndless,
-    setter: setIsEndless,
-    fieldNumber: kIsEndless,
-    fieldName: 'isEndless',
-    merger: PrimitiveMerger(),
-  );
   static DateTime? getLastUpdatedTime(Thread x) => x.lastUpdatedTime;
   static void setLastUpdatedTime(Thread x, DateTime? v) =>
       x.lastUpdatedTime = v;
@@ -269,7 +259,6 @@ class ThreadAdapter extends TypeAdapter<Thread> {
     17: ThreadFields.suggestedVariant,
     18: ThreadFields.archiveName,
     19: ThreadFields.poll,
-    20: ThreadFields.isEndless,
     21: ThreadFields.lastUpdatedTime,
     22: ThreadFields.isLocked,
     23: ThreadFields.isNsfw,
@@ -281,7 +270,6 @@ class ThreadAdapter extends TypeAdapter<Thread> {
     final numOfFields = reader.readByte();
     final List<dynamic> fields = List.filled(25, null);
     fields[15] = false;
-    fields[20] = false;
     fields[22] = false;
     fields[23] = false;
     if (numOfFields == 255) {
@@ -326,7 +314,6 @@ class ThreadAdapter extends TypeAdapter<Thread> {
       suggestedVariant: fields[17] as ThreadVariant?,
       poll: fields[19] as ImageboardPoll?,
       archiveName: fields[18] as String?,
-      isEndless: fields[20] as bool,
       lastUpdatedTime: fields[21] as DateTime?,
       isLocked: fields[22] as bool,
       isNsfw: fields[23] as bool,
@@ -356,7 +343,6 @@ class ThreadAdapter extends TypeAdapter<Thread> {
       if (obj.suggestedVariant != null) 17: obj.suggestedVariant,
       if (obj.archiveName != null) 18: obj.archiveName,
       if (obj.poll != null) 19: obj.poll,
-      if (obj.isEndless) 20: obj.isEndless,
       if (obj.lastUpdatedTime != null) 21: obj.lastUpdatedTime,
       if (obj.isLocked) 22: obj.isLocked,
       if (obj.isNsfw) 23: obj.isNsfw,

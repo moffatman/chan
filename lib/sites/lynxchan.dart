@@ -548,9 +548,10 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 			attachments_: (obj['files'] as List?)?.cast<Map>().map((f) => _makeAttachment(board, threadId, f)).toList() ?? const []
 		);
 		final replies = (obj['posts'] as List?)?.cast<Map>().map((obj) => _makePost(board, op.id, obj['postId'] as int, obj)).toList() ?? [];
+		final replyCount = obj['postCount'] as int? ?? ((obj['omittedPosts'] as int? ?? obj['ommitedPosts'] as int? ?? 0) + replies.length);
 		return Thread(
 			posts_: [op, ...replies],
-			replyCount: obj['postCount'] as int? ?? ((obj['omittedPosts'] as int? ?? obj['ommitedPosts'] as int? ?? 0) + replies.length),
+			replyCount: replyCount,
 			imageCount: obj['fileCount'] as int? ?? ((obj['omittedFiles'] as int? ?? 0) + (replies.fold<int>(0, (c, p) => c + p.attachments_.length))),
 			id: op.id,
 			board: board,
@@ -559,7 +560,8 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 			time: DateTime.parse(obj['creation'] as String),
 			attachments: op.attachments_,
 			customSpoilerId: _getCustomSpoilerId(board, obj),
-			currentPage: obj['page'] as int?
+			currentPage: obj['page'] as int?,
+			stickyReplyCap: obj['cyclic'] == true ? 500 : null
 		);
 	}
 
@@ -716,7 +718,8 @@ class SiteLynxchan extends ImageboardSite with Http304CachingThreadMixin, Http30
 			time: op.time,
 			attachments: op.attachments_,
 			customSpoilerId: _getCustomSpoilerId(thread.board, data),
-			isArchived: data['archived'] as bool? ?? false
+			isArchived: data['archived'] as bool? ?? false,
+			stickyReplyCap: data['cyclic'] == true ? 500 : null
 		);
 	}
 

@@ -149,6 +149,10 @@ class SiteDvach extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 			{'board': {'threads_per_page': int x}} => x,
 			_ => null
 		};
+		final bumpLimit = switch (response.data) {
+			{'board': {'bump_limit': int x}} => x,
+			_ => null
+		};
 		return ((response.data as Map)['threads'] as List).cast<Map>().asMap().entries.map((e) {
 			final op = _makePost(board, e.value['num'] as int, e.value);
 			return Thread(
@@ -162,7 +166,7 @@ class SiteDvach extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 				currentPage: threadsPerPage == null ? null : ((e.key ~/ threadsPerPage) + 1),
 				replyCount: (e.value['posts_count'] as int) - 1,
 				imageCount: (e.value['files_count'] as int) - op.attachments.length,
-				isEndless: e.value['endless'] == 1,
+				stickyReplyCap: e.value['endless'] == 1 ? (bumpLimit ?? persistence?.maybeGetBoard(board)?.threadCommentLimit) : null,
 				lastUpdatedTime: switch (e.value['lasthit']) {
 					int s => DateTimeConversion.fromSecondsSinceEpoch(s),
 					_ => null
@@ -182,6 +186,10 @@ class SiteDvach extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 			'posts_count': int postsCount,
 			'files_count': int filesCount
 		}) {
+			final bumpLimit = switch (response.data) {
+				{'board': {'bump_limit': int x}} => x,
+				_ => null
+			};
 			final postDatas = postDatasRaw.cast<Map>();
 			final posts = postDatas.map((data) => _makePost(thread.board, thread.id, data)).toList();
 			return Thread(
@@ -194,7 +202,7 @@ class SiteDvach extends ImageboardSite with Http304CachingThreadMixin, Http304Ca
 				posts_: posts,
 				replyCount: postsCount - 1,
 				imageCount: filesCount - posts.first.attachments.length,
-				isEndless: postDatas.first['endless'] == 1
+				stickyReplyCap: postDatas.first['endless'] == 1 ? (bumpLimit ?? persistence?.maybeGetBoard(thread.board)?.threadCommentLimit) : null
 			);
 		}
 		throw PatternException(response.data, 'SiteDvach.makeThread');

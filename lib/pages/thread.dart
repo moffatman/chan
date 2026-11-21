@@ -3610,6 +3610,10 @@ class _ThreadPositionIndicatorState extends State<_ThreadPositionIndicator> with
 											Icon(CupertinoIcons.pin, color: theme.primaryColor.withValues(alpha: 0.5), applyTextScaling: true),
 											const SizedBox(width: 8)
 										],
+										if (!widget.blocked && (widget.persistentState.thread?.stickyReplyCap != null)) ...[
+											Icon(CupertinoIcons.repeat, color: theme.primaryColor.withValues(alpha: 0.5), applyTextScaling: true),
+											const SizedBox(width: 8)
+										],
 										if (widget.listController.state?.error case ValueListenable<(Object, StackTrace)?> listenable when !widget.blocked && widget.listController.itemsLength > 0) ValueListenableBuilder(
 											valueListenable: listenable,
 											builder: (context, error, _) {

@@ -74,8 +74,6 @@ class Thread extends HiveObject implements Filterable {
 	String? archiveName;
 	@HiveField(19, isOptimized: true)
 	ImageboardPoll? poll;
-	@HiveField(20, isOptimized: true, defaultValue: false)
-	bool isEndless;
 	@HiveField(21, isOptimized: true)
 	DateTime? lastUpdatedTime;
 	@HiveField(22, isOptimized: true, defaultValue: false)
@@ -104,7 +102,6 @@ class Thread extends HiveObject implements Filterable {
 		this.suggestedVariant,
 		this.poll,
 		this.archiveName,
-		this.isEndless = false,
 		this.lastUpdatedTime,
 		this.isLocked = false,
 		this.isNsfw = false,
@@ -672,7 +669,6 @@ class ThreadTail {
 			suggestedVariant: oldThread.suggestedVariant,
 			poll: oldThread.poll,
 			archiveName: oldThread.archiveName,
-			isEndless: oldThread.isEndless,
 			lastUpdatedTime: lastUpdatedTime,
 			isLocked: isLocked,
 			isNsfw: oldThread.isNsfw,
