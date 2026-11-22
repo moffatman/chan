@@ -343,6 +343,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 												final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
 													builder: (ctx) => BoardSwitcherPage(
 														initialImageboardKey: _filterBoard?.imageboard.key,
+														initialBoardName: _filterBoard?.item.name,
 														allowPickingWholeSites: true
 													)
 												));

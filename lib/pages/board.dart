@@ -412,7 +412,8 @@ class BoardPageState extends State<BoardPage> {
 	Future<void> _selectBoard() async {
 		final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
 			builder: (ctx) => BoardSwitcherPage(
-				initialImageboardKey: context.read<Imageboard?>()?.key
+				initialImageboardKey: context.read<Imageboard?>()?.key,
+				initialBoardName: board?.name
 			)
 		));
 		if (newBoard != null) {

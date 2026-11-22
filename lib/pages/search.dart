@@ -281,6 +281,8 @@ class _SearchComposePageState extends State<SearchComposePage> {
 					final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
 						builder: (ctx) => BoardSwitcherPage(
 							initialImageboardKey: query.imageboardKey,
+							// Pass '' to highlight the whole site
+							initialBoardName: query.boards.trySingle ?? '',
 							filterImageboards: (b) => b.site.supportsSearch('').options.text,
 							allowPickingWholeSites: true
 						)
@@ -474,7 +476,10 @@ class _SearchComposePageState extends State<SearchComposePage> {
 															CupertinoButton(
 																onPressed: () async {
 																	final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
-																		builder: (ctx) => const BoardSwitcherPage()
+																		builder: (ctx) => BoardSwitcherPage(
+																			initialImageboardKey: board.imageboard.key,
+																			initialBoardName: board.item.name
+																		)
 																	));
 																	if (newBoard != null) {
 																		setInnerState(() {
