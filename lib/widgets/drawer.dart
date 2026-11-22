@@ -7,6 +7,7 @@ import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_collection_actions.dart' as thread_actions;
 import 'package:chan/services/thread_collection_actions.dart';
 import 'package:chan/services/thread_watcher.dart';
+import 'package:chan/services/time_reordering.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
@@ -385,124 +386,35 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 				},
 				onRefresh: ImageboardRegistry.threadWatcherController.update,
 				onReorderItem: Persistence.settings.watchedThreadsSortingMethod == ThreadSortingMethod.savedTime ? (int oldIndex, int newIndex) {
-					// Make sure they are spaced enough to work
-					final affectedPersistences = Set<Persistence>.identity();
-					const kSafeDistance = Duration(seconds: 1);
-					int zombieIndex;
+					int groupStart = 0;
+					int groupEnd = watches.length;
 					if (Persistence.settings.showActiveWatchesAboveZombieWatches) {
-						zombieIndex = watches.indexWhere((w) => w.item.zombie);
+						int zombieIndex = watches.indexWhere((w) => w.item.zombie);
 						if (zombieIndex == -1) {
 							zombieIndex = watches.length;
 						}
-					}
-					else {
-						zombieIndex = watches.length;
-					}
-					if (zombieIndex > 0) {
-						Duration offset = Duration.zero;
-						for (int i = 0; i < zombieIndex - 1; i++) {
-							final distanceToNext = watches[i].item.watchTime.difference(watches[i + 1].item.watchTime);
-							if (offset > Duration.zero) {
-								// Move backwards in time to go further away
-								watches[i].item.watchTime = watches[i].item.watchTime.subtract(offset);
-								affectedPersistences.add(watches[i].imageboard.persistence);
-							}
-							if (distanceToNext < kSafeDistance) {
-								// They were already too close. We need to increase offset further
-								offset += (kSafeDistance - distanceToNext);
-							}
-							else if ((distanceToNext - offset) > kSafeDistance) {
-								// They are so far apart, we can give up offset so far
-								offset = Duration.zero;
-							}
-						}
-						if (offset > Duration.zero) {
-							final lastRealWatch = watches[zombieIndex - 1];
-							// Move backwards in time to go further away
-							lastRealWatch.item.watchTime = lastRealWatch.item.watchTime.subtract(offset);
-							affectedPersistences.add(lastRealWatch.imageboard.persistence);
-						}
-					}
-					if (zombieIndex < watches.length) {
-						Duration offset = Duration.zero;
-						for (int i = zombieIndex; i < watches.length - 1; i++) {
-							final distanceToNext = watches[i].item.watchTime.difference(watches[i + 1].item.watchTime);
-							if (offset > Duration.zero) {
-								// Move backwards in time to go further away
-								watches[i].item.watchTime = watches[i].item.watchTime.subtract(offset);
-								affectedPersistences.add(watches[i].imageboard.persistence);
-							}
-							if (distanceToNext < kSafeDistance) {
-								// They were already too close. We need to increase offset further
-								offset += (kSafeDistance - distanceToNext);
-							}
-							else if ((distanceToNext - offset) > kSafeDistance) {
-								// They are so far apart, we can give up offset so far
-								offset = Duration.zero;
-							}
-						}
-						if (offset > Duration.zero) {
-							// Move backwards in time to go further away
-							watches.last.item.watchTime = watches.last.item.watchTime.subtract(offset);
-							affectedPersistences.add(watches.last.imageboard.persistence);
-						}
-					}
-					if ((newIndex >= zombieIndex) != (oldIndex >= zombieIndex)) {
-						final watch = watches[oldIndex];
-						if (newIndex >= zombieIndex) {
-							// Move to end of non-zombiess
-							watch.item.watchTime = watches[zombieIndex - 1].item.watchTime.subtract(const Duration(minutes: 1));
+						if (oldIndex < zombieIndex) {
+							groupEnd = zombieIndex;
 						}
 						else {
-							// Move to beginning of zombies
-							watch.item.watchTime = watches[zombieIndex].item.watchTime.add(const Duration(minutes: 1));
+							groupStart = zombieIndex;
 						}
-						affectedPersistences.add(watch.imageboard.persistence);
 					}
-					else if ((newIndex - oldIndex).abs() == 1) {
-						// Just swap
-						final tmp = watches[oldIndex].item.watchTime;
-						watches[oldIndex].item.watchTime = watches[newIndex].item.watchTime;
-						watches[newIndex].item.watchTime = tmp;
-						affectedPersistences.add(watches[oldIndex].imageboard.persistence);
-						affectedPersistences.add(watches[newIndex].imageboard.persistence);
+					// Keep active and archived watches in their existing groups.
+					newIndex = newIndex.clamp(groupStart, groupEnd - 1);
+					if (oldIndex == newIndex) {
+						return;
 					}
-					else {
-						// Split the difference between adjacent things
-						/// "Before" visually, but actually later in time
-						DateTime newBefore;
-						/// "After" visually, but actually earlier in time
-						DateTime newAfter;
-						if (newIndex == 0) {
-							newBefore = DateTime.now();
-							newAfter = watches[0].item.watchTime;
+					final affectedPersistences = Set<Persistence>.identity();
+					reorderByTime(
+						watches.sublist(groupStart, groupEnd), oldIndex - groupStart, newIndex - groupStart,
+						reversed: Persistence.settings.reverseWatchedThreadsSorting,
+						getTime: (watch) => watch.item.watchTime,
+						setTime: (watch, time) {
+							watch.item.watchTime = time;
+							affectedPersistences.add(watch.imageboard.persistence);
 						}
-						else if (newIndex >= watches.length - 1) {
-							// Moving down to end
-							newBefore = watches.last.item.watchTime;
-							newAfter = newBefore.subtract(const Duration(hours: 1));
-						}
-						else if (newIndex == zombieIndex) {
-							// Moving to top of zombies list
-							newAfter = watches[newIndex].item.watchTime;
-							newBefore = newAfter.add(const Duration(hours: 1));
-						}
-						else if (oldIndex < newIndex) {
-							// Moving down visually (later in list)
-							newBefore = watches[newIndex - 1].item.watchTime;
-							newAfter = watches[newIndex].item.watchTime;
-						}
-						else {
-							// Moving up visually (earlier in list)
-							newBefore = watches[newIndex - 1].item.watchTime;
-							newAfter = watches[newIndex].item.watchTime;
-						}
-						final watch = watches[oldIndex];
-						// See note above... yeah it's confusing
-						assert(newBefore.isAfter(newAfter));
-						watch.item.watchTime = DateTime.fromMillisecondsSinceEpoch((newBefore.millisecondsSinceEpoch ~/ 2) + (newAfter.millisecondsSinceEpoch ~/ 2));
-						affectedPersistences.add(watch.imageboard.persistence);
-					}
+					);
 					for (final persistence in affectedPersistences) {
 						persistence.didUpdateBrowserState();
 					}
@@ -600,10 +512,10 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 			);
 		}
 		else {
-			List<PersistentThreadState> states = Persistence.sharedThreadStateBox.values.where((i) => i.savedTime != null && i.imageboard != null).toList();
-			states.sort(getSavedThreadsSortMethod());
-			states = states.take(100).toList();
-			for (final state in states) {
+			final allStates = Persistence.sharedThreadStateBox.values.where((i) => i.savedTime != null && i.imageboard != null).toList();
+			allStates.sort(getSavedThreadsSortMethod());
+			final visibleStates = allStates.take(100).toList();
+			for (final state in visibleStates) {
 				// Hacky way to kick off the loading
 				if (!_ensuredThreads.contains(state)) {
 					state.ensureThreadLoaded(catalog: true).then((_) => state.save());
@@ -611,7 +523,7 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 				}
 			}
 			list = DrawerList<PersistentThreadState>(
-				list: states,
+				list: visibleStates,
 				builder: (state, builder) => ThreadWidgetBuilder(
 					imageboard: state.imageboard,
 					persistence: null,
@@ -619,16 +531,30 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 					thread: state.identifier,
 					builder: builder,
 				),
-				onReorderItem: null,
+				onReorderItem: settings.savedThreadsSortingMethod == ThreadSortingMethod.savedTime ? (int oldIndex, int newIndex) {
+					if (oldIndex == newIndex) {
+						return;
+					}
+					reorderByTime(
+						allStates, oldIndex, newIndex,
+						reversed: settings.reverseSavedThreadsSorting,
+						getTime: (state) => state.savedTime!,
+						setTime: (state, time) {
+							state.savedTime = time;
+							state.save();
+						}
+					);
+					setState(() {});
+				} : null,
 				onRefresh: () async {
-					for (final state in states) {
+					for (final state in visibleStates) {
 						if (state.thread?.isArchived != true && state.threadWatch?.zombie != true) {
 							await state.imageboard?.threadWatcher.updateThread(state.identifier, priority: RequestPriority.interactive);
 						}
 					}
 				},
 				onClose: (i) {
-					final state = states[i];
+					final state = visibleStates[i];
 					final oldSavedTime = state.savedTime;
 					state.savedTime = null;
 					state.save();
@@ -642,9 +568,9 @@ class _ChanceDrawerState extends State<ChanceDrawer> with SingleTickerProviderSt
 						}
 					);
 				},
-				isSelected: (i) => tabs.mainTabIndex == 0 && tabs.currentBrowserThread == states[i].imageboard?.scope(states[i].identifier),
+				isSelected: (i) => tabs.mainTabIndex == 0 && tabs.currentBrowserThread == visibleStates[i].imageboard?.scope(visibleStates[i].identifier),
 				onSelect: (i) {
-					final state = states[i];
+					final state = visibleStates[i];
 					if (tabs.mainTabIndex != 0) {
 						tabs.mainTabIndex = 0;
 					}
