@@ -2424,14 +2424,17 @@ class ThreadPageState extends State<ThreadPage> {
 																			child: Row(
 																				children: [
 																					if (value != null) Expanded(
-																						child: Text.rich(
-																							buildPostInfoRow(
-																								post: value,
-																								isYourPost: persistentState.youIds.contains(value.id),
-																								settings: settings,
-																								theme: theme,
-																								context: context,
-																								zone: zone
+																						child: Padding(
+																							padding: const EdgeInsets.only(right: 8),
+																							child: Text.rich(
+																								buildPostInfoRow(
+																									post: value,
+																									isYourPost: persistentState.youIds.contains(value.id),
+																									settings: settings,
+																									theme: theme,
+																									context: context,
+																									zone: zone
+																								)
 																							)
 																						)
 																					)
