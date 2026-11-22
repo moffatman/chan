@@ -701,6 +701,8 @@ enum _AuthenticationStatus {
 	failed
 }
 
+final tabListTapRegionGroup = Object();
+
 class ChanTabs extends ChangeNotifier {
 	final _ChanHomePageState _homePageState;
 	final _initializer = TaskStack();
@@ -710,6 +712,7 @@ class ChanTabs extends ChangeNotifier {
 	final _tabController = CupertinoTabController();
 	final _paginatedTabListController = PaginatedReorderableListController();
 	final _legacyTabListController = ScrollController();
+	bool _revealTabAfterOutsideTap = false;
 	int _lastIndex = 0;
 	final _savedMasterDetailKey = GlobalKey<SavedPageMasterDetailPanesState>();
 	final _tabButtonKeys = <int, GlobalKey>{};
@@ -863,14 +866,23 @@ class ChanTabs extends ChangeNotifier {
 	}
 
 	int get browseTabIndex => activeBrowserTab.value;
-	set browseTabIndex(int index) {
+	set browseTabIndex(int index) => _selectBrowseTab(index);
+
+	void _selectBrowseTab(int index, {bool revealOnOutsideTap = false}) {
 		if (index < 0 || index >= Persistence.tabs.length) {
 			return;
 		}
+		_revealTabAfterOutsideTap = revealOnOutsideTap;
 		activeBrowserTab.value = index;
 		Persistence.currentTabIndex = index;
 		notifyListeners();
 		_didModifyPersistentTabData();
+		if (!revealOnOutsideTap) Future.microtask(_animateTabList);
+	}
+
+	void _onTabListTapOutside(PointerDownEvent _) {
+		if (!_revealTabAfterOutsideTap) return;
+		_revealTabAfterOutsideTap = false;
 		Future.microtask(_animateTabList);
 	}
 
@@ -1016,6 +1028,7 @@ class ChanTabs extends ChangeNotifier {
 		}
 		browseCountListenable = Listenable.merge([activeBrowserTab, ...Persistence.tabs.map((x) => x.unseen)]);
 		if (activate) {
+			_revealTabAfterOutsideTap = false;
 			_tabController.index = 0;
 			activeBrowserTab.value = pos;
 			Persistence.currentTabIndex = pos;
@@ -1043,7 +1056,7 @@ class ChanTabs extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	void closeBrowseTab(int browseIndex) {
+	void closeBrowseTab(int browseIndex, {bool revealOnOutsideTap = false}) {
 		if (Persistence.tabs.length == 1) {
 			throw StateError('Tried to close last tab');
 		}
@@ -1053,7 +1066,7 @@ class ChanTabs extends ChangeNotifier {
 		final removed = Persistence.tabs.removeAt(browseIndex);
 		removed.removeListener(_onTabUpdate);
 		browseCountListenable = Listenable.merge([activeBrowserTab, ...Persistence.tabs.map((x) => x.unseen)]);
-		browseTabIndex = Persistence.tabs.indexOf(nextTab);
+		_selectBrowseTab(Persistence.tabs.indexOf(nextTab), revealOnOutsideTap: revealOnOutsideTap);
 		notifyListeners();
 	}
 
@@ -1087,6 +1100,7 @@ class ChanTabs extends ChangeNotifier {
 		lightHapticFeedback();
 		showTabMenu(
 			context: context,
+			tapRegionGroup: tabListTapRegionGroup,
 			direction: direction,
 			titles: titles,
 			origin: context.globalSemanticBounds!,
@@ -1314,6 +1328,7 @@ class ChanTabs extends ChangeNotifier {
 	}
 
 	Future<void> _animateTabList({int? index, Duration duration = const Duration(milliseconds: 500)}) async {
+		if (_revealTabAfterOutsideTap) return;
 		if (!Settings.instance.usePaginatedTabBar) {
 			return _animateLegacyTabList(index: index, duration: duration);
 		}
@@ -2216,6 +2231,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				void showThisTabMenu() {
 					showTabMenu(
 						context: context,
+						tapRegionGroup: tabListTapRegionGroup,
 						direction: menuDirection,
 						titles: Axis.vertical,
 						origin: context.globalSemanticBounds!,
@@ -2227,7 +2243,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								onPressed: Persistence.tabs.length == 1 ? null : () {
 									final previouslyActiveTab = _tabs.browseTabIndex;
 									final closedTab = Persistence.tabs[-1 * index];
-									_tabs.closeBrowseTab(-1 * index);
+									_tabs.closeBrowseTab(-1 * index, revealOnOutsideTap: true);
 									if (closedTab.board != null) {
 										showUndoToast(
 											context: context,
@@ -2418,7 +2434,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				)
 			)
 		);
-		return Flex(
+		final list = Flex(
 			direction: axis,
 			crossAxisAlignment: CrossAxisAlignment.stretch,
 			children: [
@@ -2479,6 +2495,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					)
 				)
 			]
+		);
+		return TapRegion(
+			groupId: tabListTapRegionGroup,
+			behavior: HitTestBehavior.translucent,
+			onTapOutside: _tabs._onTabListTapOutside,
+			child: list
 		);
 	}
 
@@ -2777,7 +2799,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 																		right: FloatingTabControls.horizontalInset - sidebarIconOffset,
 																		top: topPadding + FloatingTabControls.inset,
 																		bottom: bottomPadding + FloatingTabControls.inset,
-																		child: controls!
+																		child: TapRegion(
+																			groupId: tabListTapRegionGroup,
+																			child: controls!
+																		)
 																	)
 																]);
 															}
@@ -3041,7 +3066,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 																		)
 																	)
 																),
-																_buildNewTabIcon(axis: Axis.horizontal)
+																TapRegion(
+																	groupId: tabListTapRegionGroup,
+																	child: _buildNewTabIcon(axis: Axis.horizontal)
+																)
 															]
 														)
 													)

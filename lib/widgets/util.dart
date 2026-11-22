@@ -198,7 +198,11 @@ void showToast({
 			bottom: 114 + padding.bottom,
 			left: 24 + padding.left,
 			right: 24 + padding.right,
-			child: child
+			child: TapRegion(
+				groupId: tabListTapRegionGroup,
+				behavior: HitTestBehavior.translucent,
+				child: child
+			)
 		),
 		child: Container(
 			padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),

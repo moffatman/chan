@@ -49,13 +49,15 @@ class _TabMenuOverlay extends StatefulWidget {
 	final List<TabMenuAction> actions;
 	final VoidCallback onDone;
 	final Axis? titles;
+	final Object? tapRegionGroup;
 
 	const _TabMenuOverlay({
 		required this.origin,
 		required this.direction,
 		required this.actions,
 		required this.onDone,
-		required this.titles
+		required this.titles,
+		required this.tapRegionGroup
 	});
 	
 	@override
@@ -245,7 +247,11 @@ class _TabMenuOverlayState extends State<_TabMenuOverlay> with SingleTickerProvi
 							final crossDistance = horizontal ? delta.dy.abs() : delta.dx.abs();
 							if (closingDistance >= 32 && closingDistance > crossDistance) onDone();
 						},
-						child: menu
+						child: TapRegion(
+							enabled: widget.tapRegionGroup != null,
+							groupId: widget.tapRegionGroup,
+							child: menu
+						)
 					)
 				),
 				builder: (context, child) => Stack(
@@ -304,7 +310,8 @@ Future<void> showTabMenu({
 	required Rect origin,
 	required AxisDirection direction,
 	required List<TabMenuAction> actions,
-	required Axis? titles
+	required Axis? titles,
+	Object? tapRegionGroup
 }) async {
 	final completer = Completer<void>();
 	final entry = OverlayEntry(
@@ -316,6 +323,7 @@ Future<void> showTabMenu({
 			direction: direction,
 			actions: actions,
 			titles: titles,
+			tapRegionGroup: tapRegionGroup,
 			onDone: completer.complete
 		)
 	);
