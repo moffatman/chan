@@ -1354,6 +1354,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	List<int> _treeBatchBoundaries = [];
 	List<Set<int>> _treeBatchOverrides = [<int>{}];
 	bool _hasRecordedTreeExposure = false;
+	int _lastExposedTreeIndex = -1;
 	bool _needToTransitionNewlyInsertedItems = false;
 	({
 		Map<int, int> treeRootIndexLookup,
@@ -1400,7 +1401,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		widget.updateAnimation?.addListener(_onUpdateAnimation);
 		_treeBatchBoundaries = widget.treeAdapter?.initialTreeBatchBoundaries.toList() ?? [];
 		_treeBatchOverrides = List.generate(_treeBatchBoundaries.length + 1, (_) => <int>{});
-		_syncTreeBatchOverrides();
+		_syncTreeBatchOverrides(restore: true);
 	}
 
 	@override
@@ -1490,8 +1491,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			error.value = null;
 			_treeBatchBoundaries = widget.treeAdapter?.initialTreeBatchBoundaries.toList() ?? [];
 			_treeBatchOverrides = List.generate(_treeBatchBoundaries.length + 1, (_) => <int>{});
-			_syncTreeBatchOverrides();
+			_syncTreeBatchOverrides(restore: true);
 			_hasRecordedTreeExposure = false;
+			_lastExposedTreeIndex = -1;
 			_lastTree = null;
 			lastUpdateTime = null;
 			_automaticallyCollapsedItems.clear();
@@ -1636,6 +1638,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 
 	void closeSearch() {
 		_searchFocusNode.unfocus();
+		if (searching) _invalidateSearchLayout();
 		_searchController.clear();
 		setState(() {
 			_lastTreeOrder = null;
@@ -1644,6 +1647,20 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
 			widget.onFilterChanged?.call(null);
 		});
+	}
+
+	void _invalidateSearchLayout() {
+		final scrollController = controller.scrollController;
+		if (controller.currentTargetIndex != null && scrollController != null && scrollController.activityIsDriven) {
+			scrollController.jumpTo(scrollController.position.pixels);
+		}
+		controller.cancelCurrentAnimation();
+		controller._lastLaidOutRange = null;
+		for (final item in controller._items) {
+			item.cachedOffset = null;
+			item.cachedHeight = null;
+		}
+		_refreshableTreeItems._dummyCache.clear();
 	}
 
 	void _focusSearch() {
@@ -1772,6 +1789,79 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		_treeBatchOverrides[batch].add(id);
 	}
 
+	/// Open-batch arrivals may join an earlier parent if every new placement
+	/// remains below the furthest row reached, regardless of who fetched them.
+	bool _placeUnexposedTreeReplies(Iterable<T> accepted) {
+		final adapter = widget.treeAdapter;
+		// Paged trees do not preserve child order, so joining a batch there
+		// would not guarantee insertion after the parent's existing descendants.
+		if (!useTree || adapter == null || !adapter.newRepliesAreLinear || adapter.isPaged ||
+				controller.currentTargetIndex != null || _lastTreeOrder == null ||
+				_lastExposedTreeIndex < 0 || _treeBatchBoundaries.isEmpty) {
+			return false;
+		}
+		final openBatch = _treeBatchBoundaries.length;
+		final rows = controller.items.toList();
+		final items = {for (final item in accepted) if (!adapter.getIsStub(item)) adapter.getId(item): item};
+		final protectedIds = {
+			for (final row in rows.take(_lastExposedTreeIndex + 1))
+				if (row.isSyntheticParentOfId != null) ...row.treeDescendantIds
+				else if (!row.representsStubChildren) row.id
+		};
+		// Moving a newly loaded parent can also move an existing reply that
+		// used to have no copy under that parent.
+		final parentsOfProtectedRows = {
+			for (final id in protectedIds)
+				if (items[id] case final item?) ...adapter.getParentIds(item)
+		};
+		final safeParents = <int, bool>{};
+		final placed = <int>{};
+		bool changed = false;
+		bool placedAny;
+		do {
+			placedAny = false;
+			for (final entry in items.entries) {
+				final id = entry.key;
+				if (id == adapter.opId || protectedIds.contains(id) || parentsOfProtectedRows.contains(id) ||
+						treeBatchForId(_treeBatchBoundaries, _treeBatchOverrides, id) != openBatch) {
+					continue;
+				}
+				// The builder can attach to additional parents across batch boundaries.
+				// Only move replies with one parent until placement uses the same check.
+				final parent = adapter.getParentIds(entry.value).where((parent) => parent != id).toSet().trySingle;
+				if (parent == null || !items.containsKey(parent)) continue;
+				final destination = parent == adapter.opId ? 0 : treeBatchForId(_treeBatchBoundaries, _treeBatchOverrides, parent);
+				if (destination == openBatch) continue;
+				final safe = placed.contains(parent) || safeParents.putIfAbsent(parent, () {
+					// OP replies shown as roots append after the destination batch.
+					if (parent == adapter.opId && adapter.repliesToOPAreTopLevel) {
+						return rows.lastIndexWhere((row) => treeBatchForId(_treeBatchBoundaries, _treeBatchOverrides, row.id) == destination) >= _lastExposedTreeIndex;
+					}
+					bool foundParent = false;
+					for (int i = 0; i < rows.length; i++) {
+						final row = rows[i];
+						if (row.id != parent || row.isSyntheticParentOfId != null || row.representsStubChildren) continue;
+						foundParent = true;
+						final ancestors = row.parentIds;
+						for (int j = i + 1; j <= _lastExposedTreeIndex; j++) {
+							final ancestry = rows[j].parentIds;
+							if (ancestry.length <= ancestors.length || ancestry[ancestors.length] != parent ||
+									!listEquals(ancestry.sublist(0, ancestors.length), ancestors)) {
+								return false;
+							}
+						}
+					}
+					return foundParent;
+				});
+				if (!safe) continue;
+				_moveToTreeBatch(id, destination);
+				placed.add(id);
+				placedAny = changed = true;
+			}
+		} while (placedAny);
+		return changed;
+	}
+
 	void _onUpdateAnimation() {
 		if (widget.disableUpdates) {
 			return;
@@ -1801,25 +1891,23 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		widget.treeAdapter?.onTreeBatchBoundariesChanged?.call(_treeBatchBoundaries.toList(), copyTreeBatchOverrides(_treeBatchOverrides));
 	}
 
-	void _syncTreeBatchOverrides() {
+	void _syncTreeBatchOverrides({bool restore = false}) {
 		final batches = widget.treeAdapter?.getTreeBatchOverrides?.call().toList();
-		if (batches == null) return;
-		if (batches.length != _treeBatchOverrides.length) {
-			// Another view may have split or compacted the shared batches. Its
-			// batch positions no longer match ours; preserve our assignments and
-			// keep newly recorded arrivals in our open batch.
-			for (final ids in batches) {
-				for (final id in ids) {
-					if (!_treeBatchOverrides.any((batch) => batch.contains(id))) {
-						_treeBatchOverrides.last.add(id);
-					}
-				}
+		if (batches == null || batches.isEmpty) return;
+		if (restore && batches.length == _treeBatchOverrides.length) {
+			final restored = <int>{};
+			for (int i = 0; i < batches.length; i++) {
+				_treeBatchOverrides[i].addAll(batches[i].where(restored.add));
 			}
 			return;
 		}
-		int index = 0;
-		for (final ids in batches) {
-			_treeBatchOverrides[index++].addAll(ids);
+		// Another view can have different boundaries even with the same batch count.
+		// Import pending arrivals and let this list choose their destination.
+		Set<int>? acceptedIds;
+		for (final id in batches.last) {
+			if (_treeBatchOverrides.any((batch) => batch.contains(id))) continue;
+			acceptedIds ??= _getLoadedItemIds() ?? {};
+			if (!acceptedIds.contains(id)) _treeBatchOverrides.last.add(id);
 		}
 	}
 
@@ -1835,6 +1923,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		final first = controller.firstVisibleIndex;
 		final last = controller.lastVisibleIndex;
 		if (first < 0 || last < first) return;
+		_lastExposedTreeIndex = max(_lastExposedTreeIndex, last);
 		int? exposedBatch;
 		for (int i = first; i <= last; i++) {
 			final built = controller._items[i];
@@ -1859,7 +1948,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			_treeBatchBoundaries.removeRange(keep, previousCount);
 			changed = true;
 		}
-		_hasRecordedTreeExposure = true;
+		if (!_hasRecordedTreeExposure) {
+			changed |= _placeUnexposedTreeReplies(originalList ?? <T>[]);
+			_hasRecordedTreeExposure = true;
+		}
 		if (exposedBatch == previousCount) {
 			final acceptedIds = _getLoadedItemIds() ?? <int>{};
 			// Known placeholders already have loading controls. Including their
@@ -2727,6 +2819,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			}
 		}
 
+		if (_placeUnexposedTreeReplies(linear.map((item) => item.item))) _saveTreeBatches();
 		final hadSyntheticParents = _refreshableTreeItems.syntheticParents.isNotEmpty;
 		_refreshableTreeItems.syntheticParents.clear();
 		final firstTreeBuild = _treeBatchBoundaries.isEmpty;
@@ -3614,6 +3707,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																						widget.onFilterChanged?.call('');
 																					},
 																					onChanged: (searchText) {
+																						_invalidateSearchLayout();
 																						setState(() {
 																							if (searchText.isEmpty) {
 																								_lastTreeOrder = null;
@@ -4380,6 +4474,8 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 					_itemCacheCallbacks.remove(position);
 				}
 			}
+			// Initial exposure needs the row offsets cached by this layout.
+			if (!_isDisposed && index == _lastLaidOutRange?.$2) state?._recordTreeExposure();
 		}
 	}
 	Future<void> _onSlowScroll() async {
@@ -4504,6 +4600,17 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			_items[0].item = items[0];
 		}
 		else if (!listEquals(items, this.items.toList())) {
+			final listState = state;
+			if (listState != null && listState._lastExposedTreeIndex >= 0) {
+				// Keep the protected prefix anchored when rows are inserted, removed,
+				// or explicitly moved. Cyclic threads can remove its final row.
+				final indices = {for (int i = 0; i < items.length; i++) items[i]._key: i};
+				int last = -1;
+				for (final row in _items.take(listState._lastExposedTreeIndex + 1)) {
+					last = max(last, indices[row.item._key] ?? -1);
+				}
+				listState._lastExposedTreeIndex = last;
+			}
 			final oldCachedHeights = (state?.useTree == _useTree) ? <RefreshableListItem<T>, double>{
 				for (final item in _items)
 					if (item.cachedHeight != null)
@@ -4697,6 +4804,8 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				_scrollCancelToken = null;
 				currentTargetIndex = null;
 				_unlockSliverList();
+				// The last scroll notification can arrive while the target is still set.
+				if (!_isDisposed && !cancelToken.isCancelled) slowScrolls.didUpdate();
 			}
 		}
 	}
@@ -4781,16 +4890,16 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				if (startPixels == estimate) {
 					return true;
 				}
+				if ((estimate - scrollController!.position.pixels).abs() < 50) {
+					await _tryCachingItem(targetIndex);
+					if (cancelToken.isCancelled || _items[targetIndex].cachedOffset != null) return true;
+				}
 				_itemCacheCallbacks.putIfAbsent((targetIndex, estimate > scrollController!.position.pixels), () => []).add(completer);
 				final cc = curve.recurve(
 					start: startPixels,
 					current: scrollController!.position.pixels,
 					end: estimate
 				);
-				if ((estimate - scrollController!.position.pixels < 50)) {
-					await _tryCachingItem(targetIndex);
-				}
-				if (cancelToken.isCancelled) return true;
 				final delay = remainingDuration(estimate);
 				scrollController!.animateTo(
 					estimate,
@@ -5150,10 +5259,11 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			return;
 		}
 		_lastLaidOutRange = (startIndex, endIndex);
+		// Autoscroll needs offsets for the displayed results during search too.
+		for (int i = startIndex; i <= endIndex; i++) {
+			_tryCachingItem(i);
+		}
 		if (state?.searching == false) {
-			for (int i = startIndex; i <= endIndex; i++) {
-				_tryCachingItem(i);
-			}
 			_newInsertIndices.removeWhere((i, item) {
 				if (i < startIndex || i >= endIndex) {
 					// i >= endIndex is used to always reveal the last item

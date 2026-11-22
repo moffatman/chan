@@ -622,6 +622,7 @@ class ThreadPageState extends State<ThreadPage> {
 				persistentState.unseenPostIds.data.removeAll(seenIds);
 				if (lengthBefore != persistentState.unseenPostIds.data.length) {
 					persistentState.didUpdate();
+					_indicatorKey.currentState?._updateCounts();
 					runWhenIdle(const Duration(milliseconds: 250), persistentState.save);
 				}
 			}
