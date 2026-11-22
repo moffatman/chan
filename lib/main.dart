@@ -1319,12 +1319,7 @@ class ChanTabs extends ChangeNotifier {
 		if (!Settings.instance.usePaginatedTabBar) {
 			return _animateLegacyTabList(index: index, duration: duration);
 		}
-		final viewportDimension = _paginatedTabListController.tryPosition?.viewportDimension;
-		if (viewportDimension == null) {
-			return;
-		}
-		final paginationDelegate = _paginatedTabListController.position.axis == Axis.vertical ? _sidebarTabListPaginationDelegate : _tabListPaginationDelegate;
-		final itemsPerPage = paginationDelegate.getMainAxisCount(viewportDimension);
+		if (!_paginatedTabListController.hasClients) return;
 		final usingHomeBoard = Settings.instance.usingHomeBoard;
 		final globalIndex = index ?? browseTabIndex;
 		final listIndex = usingHomeBoard ? max(0, globalIndex - 1) : globalIndex;
@@ -1336,8 +1331,9 @@ class ChanTabs extends ChangeNotifier {
 			}
 			return;
 		}
-		final lastPage = listItemCount == 0 ? 0 : (_paginatedTabListController.pageForItem(listItemCount - 1) ?? ((listItemCount - 1) ~/ itemsPerPage));
-		final targetPage = min(_paginatedTabListController.pageForItem(listIndex) ?? (listIndex ~/ itemsPerPage), lastPage);
+		if (listItemCount == 0) return;
+		final targetPage = _paginatedTabListController.pageForItem(listIndex.clamp(0, listItemCount - 1));
+		if (targetPage == null) return;
 		if (duration > Duration.zero) {
 			await _paginatedTabListController.animateToPage(targetPage, curve: Curves.ease, duration: duration);
 		}
@@ -2560,16 +2556,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 
 	double _duoBarWidth = 85 * Settings.instance.interfaceScale;
 
-	bool get androidDrawer => Settings.androidDrawerSetting.watch(context);
-
-	bool get persistentDrawer {
-		return androidDrawer && navigationSidebarWidthOf(context) > 0;
-	}
-
-	double get persistentDrawerWidth {
-		return navigationSidebarWidthOf(context);
-	}
-
 	@override
 	Widget build(BuildContext context) {
 		if (!ImageboardRegistry.instance.initialized || _authenticationStatus == _AuthenticationStatus.inProgress || !_tabs.initialized) {
@@ -2598,8 +2584,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		}
 		final notificationErrors = context.watch<ImageboardRegistry>().notificationErrors;
 		final filterError = context.select<Settings, String?>((s) => s.filterError);
-		final androidDrawer = this.androidDrawer;
-		final persistentDrawer = this.persistentDrawer;
+		final androidDrawer = Settings.androidDrawerSetting.watch(context);
+		final persistentDrawerWidth = androidDrawer ? navigationSidebarWidthOf(context) : 0.0;
+		final persistentDrawer = persistentDrawerWidth > 0;
 		final layout = context.watch<DuoLayout?>();
 		final duo = androidDrawer || layout?.hasSidebar != true ? null : layout;
 		final interfaceScale = Settings.interfaceScaleSetting.watch(context);
@@ -2651,7 +2638,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									left: duo?.side == AxisDirection.left ? 0 : null,
 									right: duo?.side == AxisDirection.right ? 0 : null
 								),
-								viewInsets: EdgeInsets.zero
+								// The sidebar uses the keyboard inset to position its controls.
+								viewInsets: androidDrawer ? EdgeInsets.zero : EdgeInsets.only(bottom: mq.viewInsets.bottom)
 							) : mq,
 							child: Builder(
 								builder: (context) => SafeArea(
@@ -2669,11 +2657,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 													persistent: true
 												) : Builder(
 													builder: (context) {
-														final padding = MediaQuery.paddingOf(context);
-														final targetTopPadding = duo == null ? padding.top : sidebarPadding.top;
+														final targetTopPadding = duo == null ? MediaQuery.paddingOf(context).top : sidebarPadding.top;
 														final safeBottomPadding = duo == null ? MediaQuery.viewPaddingOf(this.context).bottom : sidebarPadding.bottom;
-														final bottomPadding = max(safeBottomPadding, MediaQuery.viewInsetsOf(this.context).bottom);
-														final obscuredExtent = bottomPadding - safeBottomPadding;
 														// System bar and keyboard insets should not change the controls' layout mode.
 														final screenHeight = MediaQuery.sizeOf(context).height;
 														final bleedUnderStatus = duo != null && targetTopPadding > 0 && Settings.usePaginatedTabBarSetting.watch(context) && !context.select<Settings, bool>((s) => s.usingHomeBoard);
@@ -2765,6 +2750,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 																)
 															),
 															builder: (context, clearance, controls) {
+																final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+																final bottomPadding = max(safeBottomPadding, keyboardInset);
+																final obscuredExtent = bottomPadding - safeBottomPadding;
 																final topPadding = clearance.top;
 																return Stack(children: [
 																	Positioned.fill(
@@ -2807,10 +2795,14 @@ class _ChanHomePageState extends State<ChanHomePage> {
 												child: AnimatedBuilder(
 													animation: _tabs._tabController,
 													builder: (context, _) => Stack(children: [
-														Positioned.fill(child: SwitchingView(
-															currentIndex: _tabs.mainTabIndex,
-															items: const [0, 1, 2, 3, 4],
-															builder: (i) => _buildTab(i)
+														Positioned.fill(child: TransformedMediaQuery(
+															// Wide-screen content already receives the inset as padding.
+															transformation: (context, mq) => wideScreen ? mq.copyWith(viewInsets: EdgeInsets.zero) : mq,
+															child: SwitchingView(
+																currentIndex: _tabs.mainTabIndex,
+																items: const [0, 1, 2, 3, 4],
+																builder: (i) => _buildTab(i)
+															)
 														)),
 														if (!androidDrawer && Settings.swipeGesturesOnBottomBarSetting.watch(context)) Positioned(
 															left: 0,
