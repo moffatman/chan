@@ -221,6 +221,18 @@ class _AncestorScrollBuilderState extends State<AncestorScrollBuilder> {
 }
 
 class ScrollTrackerNavigatorObserver extends NavigatorObserver {
+	static bool _hapticsSuppressed = false;
+
+	static void withoutHaptics(VoidCallback navigate) {
+		final wasSuppressed = _hapticsSuppressed;
+		_hapticsSuppressed = true;
+		try {
+			navigate();
+		} finally {
+			_hapticsSuppressed = wasSuppressed;
+		}
+	}
+
 	static bool _isWeakIsh(Route route) {
 		return route is TransparentRoute || route is PopupRoute;
 	}
@@ -228,7 +240,7 @@ class ScrollTrackerNavigatorObserver extends NavigatorObserver {
 	@override
 	void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
 		// Initial routes are also pushed when a navigator is created.
-		if (previousRoute != null && route.settings.name != PrimaryScrollControllerInjectingNavigatorState.kInitialAboveRoot && route is! HapticRouteMixin) {
+		if (!_hapticsSuppressed && previousRoute != null && route.settings.name != PrimaryScrollControllerInjectingNavigatorState.kInitialAboveRoot && route is! HapticRouteMixin) {
 			lightHapticFeedback();
 		}
 		if (_isWeakIsh(route)) {
@@ -241,7 +253,7 @@ class ScrollTrackerNavigatorObserver extends NavigatorObserver {
 
 	@override
 	void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
-		lightHapticFeedback();
+		if (!_hapticsSuppressed) lightHapticFeedback();
 		if (_isWeakIsh(route)) {
 			ScrollTracker.instance.weakNavigatorDidPop();
 		}

@@ -533,21 +533,23 @@ abstract class _MultiMasterDetailPageState<S extends _MultiMasterDetailPage> ext
 			)
 		);
 		if (lastOnePane != null && lastOnePane != onePane) {
-			final pane = panes[_tabController.index];
-			if (onePane && pane.currentValue.value != null) {
-				masterKey.currentState!.push(pane.createDetailRoute(
-					() => _onNewValue(pane, showAnimationsForward: false),
-					contentKey: pane.useRootNavigator ? null : _detailContentKey,
-					showAnimationsForward: false
-				)).then((v) => _onPushReturn(pane, v));
-			}
-			else {
-				_popMasterValueRoutes(animate: onePane);
-				while (detailKey.currentState?.canPop() ?? false) {
-					pane._automatedPopStack++;
-					detailKey.currentState?.pop();
+			ScrollTrackerNavigatorObserver.withoutHaptics(() {
+				final pane = panes[_tabController.index];
+				if (onePane && pane.currentValue.value != null) {
+					masterKey.currentState!.push(pane.createDetailRoute(
+						() => _onNewValue(pane, showAnimationsForward: false),
+						contentKey: pane.useRootNavigator ? null : _detailContentKey,
+						showAnimationsForward: false
+					)).then((v) => _onPushReturn(pane, v));
 				}
-			}
+				else {
+					_popMasterValueRoutes(animate: onePane);
+					while (detailKey.currentState?.canPop() ?? false) {
+						pane._automatedPopStack++;
+						detailKey.currentState?.pop();
+					}
+				}
+			});
 		}
 		lastOnePane = onePane;
 		context.watch<WillPopZone?>()?.maybePop = _maybePop;
