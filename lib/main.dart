@@ -2744,6 +2744,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 																		onNewTab: () { lightHapticFeedback(); _tabs.addNewTab(activate: true); },
 																		onQuickAction: sidebarActions[4]!.onLongPress,
 																		buttonExtent: estimatedButtonHeight,
+																		horizontalOpenSwipeDirection: duo?.side == AxisDirection.right ? AxisDirection.left : AxisDirection.right,
 																		showLabels: !hideTabletLayoutLabels,
 																		showNavigation: showNavigation
 																	)

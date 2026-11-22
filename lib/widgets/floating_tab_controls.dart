@@ -16,6 +16,7 @@ class FloatingTabControls extends StatefulWidget {
 	final VoidCallback onNewTab;
 	final VoidCallback? onQuickAction;
 	final double buttonExtent;
+	final AxisDirection horizontalOpenSwipeDirection;
 	final bool showLabels;
 	final bool showNavigation;
 
@@ -31,10 +32,11 @@ class FloatingTabControls extends StatefulWidget {
 		required this.onNewTab,
 		required this.onQuickAction,
 		required this.buttonExtent,
+		required this.horizontalOpenSwipeDirection,
 		required this.showLabels,
 		required this.showNavigation,
 		super.key
-	});
+	}) : assert(horizontalOpenSwipeDirection == AxisDirection.left || horizontalOpenSwipeDirection == AxisDirection.right);
 
 	@override
 	State<FloatingTabControls> createState() => FloatingTabControlsState();
@@ -60,7 +62,7 @@ class FloatingTabControlsState extends State<FloatingTabControls> {
 		required String title,
 		required VoidCallback? onPressed,
 		VoidCallback? onLongPress,
-		VoidCallback? onSwipeUp,
+		VoidCallback? onMenuSwipe,
 		bool? selected,
 		required double extent,
 		required bool showLabel
@@ -70,8 +72,12 @@ class FloatingTabControlsState extends State<FloatingTabControls> {
 		selected: selected,
 		child: GestureDetector(
 			onLongPress: onLongPress,
-			onVerticalDragEnd: onSwipeUp == null ? null : (details) {
-				if ((details.primaryVelocity ?? 0) < 0) onSwipeUp();
+			onVerticalDragEnd: onMenuSwipe == null ? null : (details) {
+				if ((details.primaryVelocity ?? 0) < 0) onMenuSwipe();
+			},
+			onHorizontalDragEnd: onMenuSwipe == null ? null : (details) {
+				final velocity = details.primaryVelocity ?? 0;
+				if (widget.horizontalOpenSwipeDirection == AxisDirection.left ? velocity < 0 : velocity > 0) onMenuSwipe();
 			},
 			child: SizedBox(
 				height: extent,
@@ -114,7 +120,15 @@ class FloatingTabControlsState extends State<FloatingTabControls> {
 		Widget buildActionGroup(Iterable<TabMenuAction> actions, bool visible) => IgnorePointer(
 			ignoring: !visible,
 			child: AnimatedCrossFade(
-				clipBehavior: Clip.none,
+				clipBehavior: visible ? Clip.none : Clip.hardEdge,
+				layoutBuilder: (topChild, topKey, bottomChild, bottomKey) => Stack(
+					clipBehavior: Clip.none,
+					children: [
+						// Keep the outgoing actions above their trigger as their slot shrinks.
+						Positioned(key: bottomKey, left: 0, right: 0, bottom: 0, child: bottomChild),
+						Positioned(key: topKey, child: topChild)
+					]
+				),
 				firstChild: const SizedBox(width: double.infinity),
 				secondChild: Column(mainAxisSize: MainAxisSize.min, children: [
 					for (final action in actions) buildActionButton(action)
@@ -163,7 +177,7 @@ class FloatingTabControlsState extends State<FloatingTabControls> {
 													title: 'New',
 													onPressed: () { collapse(); widget.onNewTab(); },
 													onLongPress: () => _expand(_ExpandedControls.newTab),
-													onSwipeUp: () => _expand(_ExpandedControls.newTab),
+													onMenuSwipe: () => _expand(_ExpandedControls.newTab, toggle: true),
 													extent: widget.buttonExtent,
 													showLabel: widget.showLabels
 												),
@@ -176,7 +190,7 @@ class FloatingTabControlsState extends State<FloatingTabControls> {
 														title: 'Menu',
 														onPressed: () => _expand(_ExpandedControls.navigation, toggle: true),
 														onLongPress: widget.onQuickAction == null ? null : () { collapse(); widget.onQuickAction!(); },
-														onSwipeUp: () => _expand(_ExpandedControls.navigation),
+														onMenuSwipe: () => _expand(_ExpandedControls.navigation, toggle: true),
 														extent: widget.buttonExtent,
 														showLabel: widget.showLabels
 													)
