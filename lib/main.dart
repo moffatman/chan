@@ -1014,7 +1014,8 @@ class ChanTabs extends ChangeNotifier {
 	
 	void insertInitializedTab(int pos, PersistentBrowserTab tab, {
 		bool keepTabPopupOpen = false,
-		bool activate = false
+		bool activate = false,
+		bool revealInTabList = true
 	}) {
 		tab.addListener(_onTabUpdate);
 		if (activate && tab.board == null && Persistence.tabs.isNotEmpty) {
@@ -1036,10 +1037,12 @@ class ChanTabs extends ChangeNotifier {
 		_homePageState._onShouldShowTabPopup(keepTabPopupOpen || !activate || !Persistence.settings.closeTabSwitcherAfterUse);
 		_didModifyPersistentTabData();
 		notifyListeners();
-		Future.delayed(const Duration(milliseconds: 100), () {
-			final index = Persistence.tabs.indexOf(tab);
-			if (index != -1) _animateTabList(index: index);
-		});
+		if (revealInTabList) {
+			Future.delayed(const Duration(milliseconds: 100), () {
+				final index = Persistence.tabs.indexOf(tab);
+				if (index != -1) _animateTabList(index: index);
+			});
+		}
 	}
 
 	void onReorderItem(int oldIndex, int newIndex) {
@@ -2249,8 +2252,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 											context: context,
 											message: 'Closed tab',
 											onUndo: () {
-												_tabs.insertInitializedTab(-1 * index, closedTab);
-												_tabs.browseTabIndex = previouslyActiveTab;
+												_tabs.insertInitializedTab(-1 * index, closedTab, revealInTabList: false);
+												_tabs._selectBrowseTab(previouslyActiveTab, revealOnOutsideTap: true);
 											},
 											padding: const EdgeInsets.only(bottom: 50)
 										);
