@@ -445,6 +445,9 @@ class _GalleryPageState extends State<GalleryPage> {
 			_onPageChanged(index);
 		}
 		else {
+			if (index != currentIndex) {
+				lightHapticFeedback();
+			}
 			_animatingNow = true;
 			_shouldShowPosition.value = true;
 			await pageController.animateToPage(
@@ -466,7 +469,9 @@ class _GalleryPageState extends State<GalleryPage> {
 	}
 
 	void _onPageChanged(int index) async {
-		lightHapticFeedback();
+		if (!pageController.activityIsDriven && index != currentIndex) {
+			lightHapticFeedback();
+		}
 		final attachment = widget.attachments[index];
 		currentIndex = index;
 		if (!_animatingNow) {
