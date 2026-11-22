@@ -1060,25 +1060,23 @@ class ChanTabs extends ChangeNotifier {
 	PersistentBrowserTab _nextTabAfterClosing(int index) {
 		final tabs = Persistence.tabs;
 		final closing = tabs[index];
+		if (closing.openerTabId case final openerId?) {
+			final opener = tabs.tryFirstWhere((tab) => !identical(tab, closing) && tab.id == openerId);
+			if (opener != null) return opener;
+		}
+		if (index == 0) return tabs[1];
+		if (index == tabs.length - 1) return tabs[index - 1];
+
 		final board = closing.thread?.boardKey ?? closing.boardKey;
-		PersistentBrowserTab? best;
-		var bestRank = -1;
-		var bestDistance = tabs.length;
-		for (final (i, tab) in tabs.indexed) {
-			if (i == index) continue;
-			if (tab.id == closing.openerTabId) return tab;
+		int rank(PersistentBrowserTab tab) {
 			final sameImageboard = closing.imageboardKey != null && tab.imageboardKey == closing.imageboardKey;
 			final sameBoard = sameImageboard && board != null && (tab.thread?.boardKey ?? tab.boardKey) == board;
-			final rank = (sameBoard ? 4 : sameImageboard ? 2 : 0) +
+			return (sameBoard ? 4 : sameImageboard ? 2 : 0) +
 				(tab.incognito == closing.incognito ? 1 : 0);
-			final distance = (i - index).abs();
-			if (rank > bestRank || (rank == bestRank && distance < bestDistance)) {
-				best = tab;
-				bestRank = rank;
-				bestDistance = distance;
-			}
 		}
-		return best!;
+		final previous = tabs[index - 1];
+		final next = tabs[index + 1];
+		return rank(previous) >= rank(next) ? previous : next;
 	}
 
 	Future<void> showNewTabPopup({
