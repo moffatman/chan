@@ -6,6 +6,7 @@ import 'package:chan/main.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/apple.dart';
+import 'package:chan/services/extendable_timeout_exception.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/network_logging.dart';
 import 'package:chan/services/persistence.dart';
@@ -161,6 +162,7 @@ Future<void> updateNotificationsBadgeCount() async {
 const _notificationSettingsApiRoot = 'https://push.chance.surf';
 //const _notificationSettingsApiRoot = 'http://localhost:3001';
 const _kProtocolVersion = 1;
+const _kVapid = 'BIWLEnki-wBHz1nqXomyJ82jlMRma-gJib52yxXXeGeOQDu5h5nPXR4DBaJTwKrJDrOPaKhFR7wC9YxHMQBFZHc';
 
 class Notifications {
 	static final Map<String, Notifications> _children = {};
@@ -352,10 +354,11 @@ class Notifications {
 	static Future<void> tryUnifiedPushDistributor(String distributor) async {
 		final future = _waitForNextUnifiedPushEndpoint();
 		await UnifiedPush.saveDistributor(distributor);
-		await UnifiedPush.registerApp();
-		await future.timeout(const Duration(seconds: 2), onTimeout: () async {
+		await UnifiedPush.register(vapid: _kVapid);
+		final timeout = ExtendableTimeoutException.forKey(UnifiedPush, const Duration(seconds: 2));
+		await future.timeout(timeout.duration, onTimeout: () async {
 			await UnifiedPush.unregister();
-			throw TimeoutException('Distributor did not provide an endpoint');
+			throw timeout;
 		});
 	}
 
@@ -366,7 +369,7 @@ class Notifications {
 		final distributors = await UnifiedPush.getDistributors();
 		if (distributors.length == 1) {
 			await UnifiedPush.saveDistributor(distributors.single);
-			await UnifiedPush.registerApp();
+			await UnifiedPush.register(vapid: _kVapid);
 		}
 		for (final distributor in distributors) {
 			try {

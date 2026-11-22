@@ -1,17 +1,22 @@
 package com.moffatman.chan;
 
-import android.content.Context;
-import org.unifiedpush.android.foss_embedded_fcm_distributor.EmbeddedDistributorReceiver;
+import org.unifiedpush.android.embedded_fcm_distributor.EmbeddedDistributorReceiver;
+import org.unifiedpush.android.embedded_fcm_distributor.Gateway;
 
 public class EmbeddedDistributor extends EmbeddedDistributorReceiver {
-	@Override
-    public String getGoogleProjectNumber() {
-		return "500583514678"; // This value comes from the google-services.json
-	}
+    @Override
+    public Gateway getGateway() {
+        return new Gateway() {
+            @Override
+            public String getVapid() {
+                return "BIWLEnki-wBHz1nqXomyJ82jlMRma-gJib52yxXXeGeOQDu5h5nPXR4DBaJTwKrJDrOPaKhFR7wC9YxHMQBFZHc";
+            }
 
-	@Override
-    public String getEndpoint(Context context, String token, String instance) {
-        // This returns the endpoint of your FCM Rewrite-Proxy
-        return String.format("https://up-rewrite-proxy.chance.surf/FCM?v2&instance=%s&token=%s", instance, token);
+            @Override
+            public String getEndpoint(String token) {
+                // This returns the endpoint of your FCM Rewrite-Proxy
+                return String.format("https://up-rewrite-proxy.chance.surf/wpfcm?t=%s", token);
+            }
+        };
     }
 }
